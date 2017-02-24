@@ -105,25 +105,22 @@ messages:
 
    SomethingTryGo(what=$,row=$,col=$)
    {
-      local i, lPassive, each_obj;
+      local i, each_obj;
 
-      if IsClass(what,&user)
+      if (IsClass(what,&User)
+         AND (row = 15 AND col = 9))
       {
-         if (row=15) and (col=9)
+         foreach i in Send(what,@GetHolderPassive)
          {
-            lPassive=Send(what,@GetHolderPassive);
-            foreach i in lPassive
+            each_obj = Send(what,@HolderExtractObject,#data=i);
+            if IsClass(each_obj,&SanctuaryKey)
             {
-               each_obj = Send(what,@HolderExtractObject,#data=i);
-               if IsClass(each_obj,&SanctuaryKey)
-               {
-                  Send(each_obj,@Delete);
-                  Send(what,@MsgSendUser,#message_rsc=koctail_key_disappears);
-                  Send(SYS,@UtilGoToSquare,#what=what,#where=self,
-                        #what=what,#new_row=13,#new_col=9);
+               Send(each_obj,@Delete);
+               Send(what,@MsgSendUser,#message_rsc=koctail_key_disappears);
+               Send(SYS,@UtilGoToSquare,#what=what,#where=self,
+                     #new_row=13,#new_col=9);
 
-                  return TRUE;
-               }
+               return TRUE;
             }
          }
       }

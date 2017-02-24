@@ -141,7 +141,7 @@ messages:
       plRazaRIDs = [ RID_RAZA, RID_RAZA_FOREST, RID_FAROL_WEST ];
       plFlagRIDs = [ RID_E2, RID_F2, RID_F3, RID_H3, RID_I3, RID_J3, RID_C4,
                      RID_D4, RID_E4, RID_F4, RID_G4, RID_H4, RID_C5, RID_D5,
-                     RID_G5, RID_H5, RID_B6, RID_C6, RID_D6, RID_E6, RID_F6,
+                     RID_G5, RID_H5, RID_B6, RID_C6, RID_D6E6, RID_F6,
                      RID_G6, RID_H6, RID_I6, RID_C7, RID_D7, RID_E7, RID_F7,
                      RID_H7, RID_I7, RID_F8, RID_RAZA_FOREST, RID_FAROL_WEST
                    ];

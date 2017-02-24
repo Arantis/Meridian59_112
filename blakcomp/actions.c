@@ -1382,12 +1382,13 @@ stmt_type make_list_call(list_type l)
 /************************************************************************/
 stmt_type make_call(id_type function_id, list_type args)
 {
-   stmt_type stmt = (stmt_type) SafeMalloc(sizeof(stmt_struct));
-   call_stmt_type s = (call_stmt_type) SafeMalloc(sizeof(call_stmt_struct));
+   stmt_type stmt = (stmt_type)SafeMalloc(sizeof(stmt_struct));
+   call_stmt_type s = (call_stmt_type)SafeMalloc(sizeof(call_stmt_struct));
    int argnum = 0, argtype, continuation = ANONE, minargs = 0, i, index;
    const char *fname;
    arg_type arg;
    id_type id, new_id;
+   Bool check_settings = False;
 
    s->args = NULL;
 
@@ -1409,142 +1410,178 @@ stmt_type make_call(id_type function_id, list_type args)
    s->store_required = Functions[index].store_required;
 
    /* Check that types of arguments match "function prototype" in table */
-   for ( ; args != NULL; args = args->next)
+   for (; args != NULL; args = args->next)
    {
       argtype = Functions[index].params[argnum];
 
       /* See if we are looking for one or more expressions or parameters */
       if (continuation != ANONE)
-	 argtype = continuation;
+         argtype = continuation;
 
-      arg = (arg_type) args->data;
-      switch (argtype) 
+      arg = (arg_type)args->data;
+      switch (argtype)
       {
       case ANONE:
-	 action_error("Extra argument #%d to function %s", argnum+1, fname);
-	 return stmt; /* Ignore additional extra arguments */
-	 break;
+         action_error("Extra argument #%d to function %s", argnum + 1, fname);
+         return stmt; /* Ignore additional extra arguments */
+         break;
 
       case AEXPRESSIONS:
-	 continuation = AEXPRESSION;
-	 /* fall through */
+         continuation = AEXPRESSION;
+         /* fall through */
       case AEXPRESSION:
-	 /* Must have an expression here */
-	 if (arg->type != ARG_EXPR)
-	    action_error("Expecting expression in argument #%d",
-			 argnum+1, fname);
-	 else
-	    s->args = list_add_item(s->args, (void *) arg);
-	 break;
+         /* Must have an expression here */
+         if (arg->type != ARG_EXPR)
+            action_error("Expecting expression in argument #%d",
+               argnum + 1, fname);
+         else
+            s->args = list_add_item(s->args, (void *)arg);
+         break;
 
       case ASETTINGS:
-	 continuation = ASETTING;
-	 /* fall through */
+         continuation = ASETTING;
+         /* fall through */
       case ASETTING:
-	 if (arg->type != ARG_SETTING)
-	 {
-	    action_error("Expecting setting (i.e. #a=b ) in argument #%d",
-			 argnum+1, fname);
-	    break;
-	 }
-	 
-	 /* Find parameter id */
-	 id = arg->value.setting_val->id;
-	 lookup_id(id);
-	 
-	 switch(id->type)
-	 {
-	 case I_UNDEFINED:
-	    /* If parameter hasn't been defined yet, put on missing list */
-	    add_identifier(id, I_MISSING);
+         check_settings = True;
+         if (arg->type != ARG_SETTING)
+         {
+            action_error("Expecting setting (i.e. #a=b ) in argument #%d",
+               argnum + 1, fname);
+            break;
+         }
 
-	    /* Use source field to indicate where id came from for later checking */
-	    id->source = I_PARAMETER;
+         /* Find parameter id */
+         id = arg->value.setting_val->id;
+         lookup_id(id);
 
-	    s->args = list_add_item(s->args, (void *) arg);
-	    break;
-	    
-	 case I_MISSING:
-	    if (id->source != I_PARAMETER)
-	    {
-	       action_error("Duplicate identifier %s", id->name);
-	       break;
-	    }
-	    s->args = list_add_item(s->args, (void *) arg);
-	    break;
+         switch (id->type)
+         {
+         case I_UNDEFINED:
+            /* If parameter hasn't been defined yet, put on missing list */
+            add_identifier(id, I_MISSING);
 
-	    /* The tag here should be I_PARAMETER, but parameters also inserted as locals.
-	     */
-	 case I_LOCAL: 
-	    /* Unfortunately, we want the parameter id #, and not the local id #.  So
-	     * we have to look up the id again in the global table. */
-	    new_id = (id_type) table_lookup(st.globalvars, (void *) id, id_hash, id_compare);
+            /* Use source field to indicate where id came from for later checking */
+            id->source = I_PARAMETER;
 
-	    /* If it isn't there, then there happens to be a local variable of the same
-	     * name as this parameter, and the parameter hasn't appeared before.  Thus the
-	     * parameter id should be added as a missing variable.  We can't use the normal
-	     * lookup_id and add_identifier procs, since the local variable will mask
-	     * the missing one.
-	     */
-	    if (new_id == NULL)
-	    {
-	       /* Of course, the id might already have been inserted as a missing var */
-	       new_id = (id_type) table_lookup(st.missingvars, (void *) id, id_hash, id_compare);
-	       if (new_id == NULL)
-	       {
-		  id->source = I_PARAMETER;
-		  id->type = I_MISSING;
-		  id->idnum = ++st.maxid;
-		  table_insert(st.missingvars, (void *) id, id_hash, id_compare);
-	       }
-	       else 
-	       {
-		  /* If it was already there, make sure that it was a parameter */
-		  if (new_id->source != I_PARAMETER)
-		     action_error("Duplicate identifier %s", id->name);
-		  id->source = new_id->source;
-		  id->type = I_MISSING;
-		  id->source = I_PARAMETER;
-		  id->idnum = new_id->idnum;
-	       }
-	       
-	    }
-	    else 
-	    {
-	       id = new_id;
-	       if (id->type != I_PARAMETER)
-		  action_error("Can't find parameter %s", id->name);
-	    }
+            s->args = list_add_item(s->args, (void *)arg);
+            break;
 
-	    arg->value.setting_val->id = id;
-	    /* If literal exists, proceed normally */
-	    s->args = list_add_item(s->args, (void *) arg);
-	    break;
+         case I_MISSING:
+            if (id->source != I_PARAMETER)
+            {
+               action_error("Duplicate identifier %s", id->name);
+               break;
+            }
+            s->args = list_add_item(s->args, (void *)arg);
+            break;
 
-	    /* But if the identifier is from another handler, might not be local */
-	 case I_PARAMETER:
-	    s->args = list_add_item(s->args, (void *) arg);
-	    break;
+            /* The tag here should be I_PARAMETER, but parameters also inserted as locals.
+             */
+         case I_LOCAL:
+            /* Unfortunately, we want the parameter id #, and not the local id #.  So
+             * we have to look up the id again in the global table. */
+            new_id = (id_type)table_lookup(st.globalvars, (void *)id, id_hash, id_compare);
 
-	 default:
-	    action_error("Literal %s is a duplicate identifier", id->name);
-	 }
-	 break;
+            /* If it isn't there, then there happens to be a local variable of the same
+             * name as this parameter, and the parameter hasn't appeared before.  Thus the
+             * parameter id should be added as a missing variable.  We can't use the normal
+             * lookup_id and add_identifier procs, since the local variable will mask
+             * the missing one.
+             */
+            if (new_id == NULL)
+            {
+               /* Of course, the id might already have been inserted as a missing var */
+               new_id = (id_type)table_lookup(st.missingvars, (void *)id, id_hash, id_compare);
+               if (new_id == NULL)
+               {
+                  id->source = I_PARAMETER;
+                  id->type = I_MISSING;
+                  id->idnum = ++st.maxid;
+                  table_insert(st.missingvars, (void *)id, id_hash, id_compare);
+               }
+               else
+               {
+                  /* If it was already there, make sure that it was a parameter */
+                  if (new_id->source != I_PARAMETER)
+                     action_error("Duplicate identifier %s", id->name);
+                  id->source = new_id->source;
+                  id->type = I_MISSING;
+                  id->source = I_PARAMETER;
+                  id->idnum = new_id->idnum;
+               }
+
+            }
+            else
+            {
+               id = new_id;
+               if (id->type != I_PARAMETER)
+                  action_error("Can't find parameter %s", id->name);
+            }
+
+            arg->value.setting_val->id = id;
+            /* If literal exists, proceed normally */
+            s->args = list_add_item(s->args, (void *)arg);
+            break;
+
+            /* But if the identifier is from another handler, might not be local */
+         case I_PARAMETER:
+            s->args = list_add_item(s->args, (void *)arg);
+            break;
+
+         default:
+            action_error("Literal %s is a duplicate identifier", id->name);
+         }
+         break;
       }
-      
+
       argnum++;
    }
    /* Check that no arguments left out */
-   for (i=0; i < MAXARGS; i++)
+   for (i = 0; i < MAXARGS; i++)
    {
       argtype = Functions[index].params[i];
       if (argtype == ANONE || argtype == ASETTINGS || argtype == AEXPRESSIONS)
-	 break; /* Zero or more arguments follow */
-      
+         break; /* Zero or more arguments follow */
+
       minargs++;
    }
    if (argnum < minargs)
       action_error("Expecting %d arguments to %s; found %d", minargs, fname, argnum);
+
+   // Check calls with settings for duplicates.
+   if (check_settings)
+   {
+      list_type ptr, ptr1, prev = NULL, prev1 = NULL;
+      arg_type arg, arg1;
+      for (ptr = s->args; ptr != NULL; prev = ptr, ptr = ptr->next)
+      {
+         arg = (arg_type)ptr->data;
+
+         // Skip non-settings.
+         if (arg->type != ARG_SETTING)
+            continue;
+         prev1 = NULL;
+         for (ptr1 = ptr; ptr1 != NULL; prev1 = ptr1, ptr1 = ptr1->next)
+         {
+            // Skip first, same as above.
+            if (!prev1)
+               continue;
+
+            arg1 = (arg_type)ptr1->data;
+
+            // Skip non-settings.
+            if (arg1->type != ARG_SETTING)
+               continue;
+            if (arg->value.setting_val->id->idnum
+               == arg1->value.setting_val->id->idnum)
+            {
+               action_error("Duplicate argument in %s call, argument %s",
+                  fname, arg->value.setting_val->id->name);
+               break;
+            }
+         }
+      }
+   }
 
    /* Sort parameter arguments in increasing order for server efficiency */
    s->args = SortArgumentList(s->args);

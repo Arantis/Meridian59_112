@@ -1,0 +1,51 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+OldJasper is OldTown
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include oldjas.lkod
+
+   room_name_OldJasper = "Historic Jasper"
+   room_OldJasper = ojas.roo
+   OldJasper_music = city03.ogg
+
+classvars:
+
+   vrName = room_name_OldJasper
+
+   viTeleport_row = 46
+   viTeleport_col = 58
+
+   viTerrain_type = TERRAIN_CITY
+
+properties:
+
+   viPermanent_flags = ROOM_NO_PK
+
+   prRoom = room_OldJasper
+   piRoom_num = RID_OLD_JASPER
+
+   prMusic = OldJasper_music
+
+   piBaseLight = LIGHT_DARK
+   piOutside_factor = OUTDOORS_5
+
+   pbSnowGroundTexture = TRUE
+
+messages:
+
+end
+////////////////////////////////////////////////////////////////////////////////

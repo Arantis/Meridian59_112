@@ -5,6 +5,6 @@
 !include $(TOPDIR)\common.mak
 
 DEPEND = ..\ranged.bof
-BOFS = bow.bof crossbow.bof
+BOFS = bow.bof
 
 !include $(KODDIR)\kod.mak

@@ -594,16 +594,26 @@ messages:
       return;
    }
 
-   NewDeath(what=$,inKocatan=FALSE)
+   NewDeath(what=$,oRoom=$)
    {
       local oDeadPlayer;
 
       plCorpses = Cons(what,plCorpses);
-      if inKocatan
+
+      if (oRoom <> $)
       {
          oDeadPlayer = Send(what,@GetDearlyDeparted);
-         Send(oDeadPlayer,@SetPlayerFlag,#flag=PFLAG2_KOCATAN_DEATH,
-               #value=TRUE,#flagset=2);
+
+         if (Send(oRoom,@GetRegion) = RID_KOCATAN)
+         {
+            Send(oDeadPlayer,@SetPlayerFlag,#flag=PFLAG2_KOCATAN_DEATH,
+                  #value=TRUE,#flagset=2);
+         }
+         else if (Send(oRoom,@GetRoomNum) = RID_TOS_DEATH_ARENA)
+         {
+            Send(oDeadPlayer,@SetPlayerFlag,#flag=PFLAG2_DARENA_DEATH,
+                  #value=TRUE,#flagset=2);
+         }
       }
 
       return;
@@ -611,15 +621,15 @@ messages:
 
    CorpseDecomposed(what=$)
    {
-      local i, each_obj, oDeadPlayer;
+      local i;
 
       foreach i in plCorpses
       {
          if i = what
          {
             plCorpses = DelListElem(plCorpses,i);
-            oDeadPlayer = Send(what,@GetDearlyDeparted);
-            Send(oDeadPlayer,@SetPlayerFlag,#flag=PFLAG2_KOCATAN_DEATH,
+            Send(Send(what,@GetDearlyDeparted),@SetPlayerFlag,
+                  #flag=PFLAG2_KOCATAN_DEATH | PFLAG2_DARENA_DEATH,
                   #value=FALSE,#flagset=2);
          }
       }

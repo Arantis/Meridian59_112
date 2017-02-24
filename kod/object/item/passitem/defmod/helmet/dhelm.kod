@@ -1,0 +1,180 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+DaemonHelm is Helmet
+
+constants:
+
+   include blakston.khd
+
+   DAEMON_LIGHT = 20
+
+resources:
+
+   include dhelm.lkod
+
+   dHelm_name_rsc = "daemon helm"
+   dhelm_icon_male_rsc = dhelma.bgf
+   dhelm_icon_female_rsc = dhelmb.bgf
+   dHelm_desc_rsc = \
+      "The sight of this horned helmet strikes fear into the hearts of all "
+      "but the bravest warriors.  Perfectly suited for wading through the "
+      "thick of battle, it bestows its wearer with an aura of confidence and "
+      "authority that can only be found in those that have stared death in the "
+      "face countless times and never failed to bash its ugly skull in."
+
+   dHelm_use_rsc = \
+      "As you don the helmet, visions of blood and slaughter cloud your mind "
+      "and a chilling smile creeps onto your lips.  You shall cut them down "
+      "where they stand and there is no escaping your wrath..."
+
+   dHelm_unuse_rsc = \
+      "The bloody visions fade and the world appears in its normal colors "
+      "once more.  You can't help feeling a little disappointed."
+
+   dHelm_use_wav_rsc = bezerker_ring.ogg
+
+classvars:
+
+   vrName = dHelm_name_rsc
+   vrDesc = dHelm_desc_rsc
+   vrIcon = dhelm_icon_male_rsc
+
+   viHits_init_min = 250
+   viHits_init_max = 275
+
+   viValue_average = 100
+   viWeight = 100
+   viBulk = 50
+
+   viUse_type = ITEM_USE_HEAD
+   viUse_amount = 1
+
+   viGround_group = 3
+   viInventory_group = 2
+   viBroken_group = 4
+
+   viDefense_base = 20
+   viDamage_base = 1
+
+properties:
+
+messages:
+
+   // Called by player, for normal 3rd-person overlays on user.
+   GetOverlay(animation = $)
+   {
+      if Send(poOwner,@GetGender) = GENDER_FEMALE
+      {
+         return dhelm_icon_female_rsc;
+      }
+
+      return dhelm_icon_male_rsc;
+   }
+
+   NewUsed()
+   {
+      Send(poOwner,@RemoveHair,#what=self);
+      Send(poOwner,@MsgSendUser,#message_rsc=dHelm_use_rsc);
+
+      Send(poOwner,@SetFlickerFlag);
+      Send(poOwner,@LoseLight,#amount=DAEMON_LIGHT);
+      Send(poOwner,@SomethingChanged,#what=self);
+
+      Send(poOwner,@AddAttackModifier,#what=self);
+
+      propagate;
+   }
+
+   NewUnused()
+   {
+      Send(poOwner,@ResetHair,#what=self);
+      Send(poOwner,@MsgSendUser,#message_rsc=dHelm_unuse_rsc);
+
+      Send(poOwner,@RecalcFlickerFlag);
+      Send(poOwner,@GainLight,#amount=DAEMON_LIGHT);
+      Send(poOwner,@SomethingChanged,#what=self);
+
+      Send(poOwner,@RemoveAttackModifier,#what=self);
+
+      propagate;
+   }
+
+   ModifyDamage(who = $, what = $, damage = $)
+   {
+      local oWeapon;
+
+      oWeapon = Send(who,@GetWeapon);
+
+      if oWeapon = $
+         OR NOT IsClass(oWeapon,&RangedWeapon)
+      {
+         return damage + Random(2,4);
+      }
+
+      return damage;
+   }
+
+   WeaponHitTarget()
+   {
+      return;
+   }
+
+   ModifyHitRoll(who = $,what = $,hit_roll = $)
+   {
+      return hit_roll;
+   }
+
+   GetBaseSpellModifier(oSpell=$)
+   {
+      local iSchool;
+
+      iSchool = Send(oSpell,@GetSchool);
+
+      if (iSchool = SS_KRAANAN)
+      {
+         return 10;
+      }
+
+      if (iSchool = SS_QOR
+         OR iSchool = SS_SHALILLE
+         OR iSchool = SS_FAREN
+         OR iSchool = SS_RIIJA
+         OR iSchool = SS_JALA)
+      {
+         return -20;
+      }
+
+      return 0;
+   }
+
+   GetHeatDamage()
+   {
+      return 2;
+   }
+
+   // From the Random(2,4) call above.
+   GetMinMeleeDamageBonus()
+   {
+      return 2;
+   }
+
+   GetMaxMeleeDamageBonus()
+   {
+      return 4;
+   }
+
+   GetLightEffect()
+   {
+      return DAEMON_LIGHT;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

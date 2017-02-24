@@ -30,19 +30,19 @@ resources:
    Spellbane_cast = \
       "You begin to play a song full of clicks and layered mechanical sounds."
    Spellbane_starts = \
-      "%s begins to play a song full of clicks and layered mechanical sounds."
+      "%s%s begins to play a song full of clicks and layered mechanical sounds."
    Spellbane_ends = \
-      "The strangely mechanical song played by %s fades away."
+      "The strangely mechanical song played by %s%s fades away."
    Spellbane_caster_ends = \
       "Your strangely mechanical song fades."
    Spellbane_caster_enter = \
       "Your mechanical song creates a maze of magical energies in the "
       "area around you."
    Spellbane_enter = \
-      "The song sung by %s fills the air with strange clicks "
+      "The song sung by %s%s fills the air with strange clicks "
       "and mechanical sounds."
    Spellbane_leave = \
-      "You can no longer hear the strange mechanical noises of %s's song."
+      "You can no longer hear the strange mechanical noises of %s%s's song."
 
    // Resources from spell.kod/lkod for old version of spell
    //spell_spellbane_stopped = \
@@ -55,13 +55,13 @@ resources:
 
 classvars:
 
-   radius_ench_cast = Spellbane_cast
-   radius_ench_starts = Spellbane_starts
-   radius_ench_ends = Spellbane_ends
-   radius_ench_caster_ends = Spellbane_caster_ends
-   radius_ench_caster_enter = Spellbane_caster_enter
-   radius_ench_enter = Spellbane_enter
-   radius_ench_leave = Spellbane_leave
+   vrEnchantmentOn = Spellbane_cast
+   vrEnchantmentOnOther = Spellbane_starts
+   vrEnchantmentOff = Spellbane_caster_ends
+   vrEnchantmentOffOther = Spellbane_ends
+   vrEnterRadiusCaster = Spellbane_caster_enter
+   vrEnterRadius = Spellbane_enter
+   vrLeaveRadius = Spellbane_leave
 
    vrName = Spellbane_name_rsc
    vrIcon = Spellbane_icon_rsc
@@ -101,7 +101,7 @@ messages:
          return chance;
       }
 
-      iSongSpellpower = Nth(lRadiusState,2);
+      iSongSpellpower = Nth(lRadiusState,5);
 
       iAltChance = chance - Random(iSongSpellpower/2,(iSongSpellpower*2)/3);
 

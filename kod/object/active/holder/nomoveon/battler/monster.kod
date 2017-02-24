@@ -829,24 +829,27 @@ messages:
          }
       }
 
-      Debug("Enchantment timer went off with no enchantment",timer);
-
-      return;
+      propagate;
    }
 
-   StartEnchantment(what = $,time = $,state=$, iSpellPower = 0)
+   StartEnchantment(what = $,time = $,state=$, iSpellPower = 0,
+                    lastcall = TRUE, bRadiusEnchant = FALSE)
    "Adds <what> to our enchantments, and creates a timer that will cause it "
    "to end."
    {
       local oTimer, lNew_enchantment;
 
-      if time = $ or time = SPELL_INDEFINITE_DURATION 
+      if time = $ OR time = SPELL_INDEFINITE_DURATION 
       {
          oTimer = $;
       }
-      else 
+      else if lastcall
       {
          oTimer = CreateTimer(self,@EnchantmentTimer,time);
+      }
+      else
+      {
+         oTimer = CreateTimer(self,@PeriodicEnchantmentTimer,time);
       }
 
       if state <> $
@@ -858,7 +861,14 @@ messages:
          lNew_enchantment = [ oTimer, what, iSpellPower ];
       }
 
-      plEnchantments = Cons(lNew_enchantment,plEnchantments);
+      if (bRadiusEnchant)
+      {
+         plRadiusEnchantments = Cons(lNew_enchantment,plRadiusEnchantments);
+      }
+      else
+      {
+         plEnchantments = Cons(lNew_enchantment,plEnchantments);
+      }
 
       return;
    }
@@ -875,9 +885,9 @@ messages:
       
       foreach i in plRadiusEnchantments
       {
-         Send(self,@RemoveRadiusEnchantment,#what=Nth(i,1),#iPower=Nth(i,2),#caster=Nth(i,3));
+         Send(self,@RemoveRadiusEnchantment,#what=Nth(i,2),#state=Nth(i,3));
       }
-      
+
       plRadiusEnchantments = $;
 
       return;
@@ -2013,7 +2023,7 @@ messages:
    //// Combat messages
 
    AllowBattlerAttack(victim=$,stroke_obj=$,report=TRUE,minion=FALSE,
-                      oMinionRoom=$)
+                      oRoomOverride=$)
     "Can this monster attack the victim? "
    {
       local oRoom, bWasBad, lMinions;
@@ -2045,10 +2055,9 @@ messages:
       // allows distance attacks (like wall spells) to work properly.
       if Send(victim,@GetOwner) <> poOwner
       {
-         if (minion
-            AND oMinionRoom <> $)
+         if (oRoomOverride <> $)
          {
-            oRoom = oMinionRoom;
+            oRoom = oRoomOverride;
          }
          else
          {
@@ -3466,7 +3475,8 @@ messages:
    {
       local lAction, iNum, oTarget, i, lActives, oLibrary;
 
-      if (ptRandom <> timer)
+      if (ptRandom <> $
+         AND ptRandom <> timer)
       {
          DeleteTimer(ptRandom);
       }

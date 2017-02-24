@@ -35,7 +35,7 @@ resources:
 
    // Quest description.
    scimprofquest_icon_rsc = scimico.bgf
-   scimprofquest_name_rsc = "scimitar wielding pupil quest"
+   scimprofquest_name_rsc = "Quintor's pupil quest"
 
    // This description is used if there is an error preventing the others
    // from being displayed.

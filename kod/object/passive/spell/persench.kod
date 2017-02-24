@@ -22,7 +22,6 @@ resources:
    PersonalEnchantment_icon_rsc = iheat.bgf
    PersonalEnchantment_desc_rsc = \
       "An enchantment which is attached to a particular player."
-
    PersonalEnchantment_already_enchanted_rsc = "You are already enchanted."
    PersonalEnchantment_On_rsc = "Your body tingles with magical energy."
    PersonalEnchantment_Off_rsc = \
@@ -33,11 +32,8 @@ resources:
    PersonalEnchantment_Other_Already_Enchanted_rsc = \
       "%s%s is already affected by that magic."
    PersonalEnchantment_bad_target = "You cannot enchant %s%s."
-
    PersonalEnchantment_bad_location = \
       "You cannot cast enchantments upon others here."
-
-   spell_blank_template = "%q"
 
 classvars:
 
@@ -283,7 +279,7 @@ messages:
       return damage;
    }
 
-   ModifyDefensePower(who=$,what=$,defense_power=$)
+   ModifyDefensePower(who=$,what=$,defense_power=$,state=$)
    {
       return defense_power;
    }

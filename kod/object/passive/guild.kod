@@ -2718,7 +2718,8 @@ messages:
 
       RecordStat(STAT_GUILDDISBAND, Send(self,@GetName) );
 
-      Send(SYS,@SystemRemoveFromChampionLists,#oldChamp=self);
+      // Remove from arena champion lists if present.
+      Send(Send(SYS,@GetLore),@RemoveFromChampionLists,#who=self);
       Send(SYS,@DefunctGuild,#what=self);
 
       propagate;

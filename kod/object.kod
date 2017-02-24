@@ -78,6 +78,7 @@ resources:
    object_time_blank_rsc = ""
 
 classvars:
+
    vrName = object_name_rsc
    vrIcon = object_icon_rsc
    vrDesc = object_desc_rsc
@@ -115,6 +116,7 @@ messages:
       Send(self,@Constructed);
       // Set any default values
       Send(self,@DefaultValues);
+
       return;
    }
 
@@ -132,7 +134,7 @@ messages:
          Send(poOwner,@LeaveHold,#what=self);
          poOwner = $;
       }
-      
+
       foreach i in plObject_attributes
       {
          Send(i,@Delete);
@@ -352,7 +354,7 @@ messages:
             return Send(poOwner,@GetPos);
          }
       }
-      
+
       return $;
    }
 
@@ -369,7 +371,7 @@ messages:
             return Send(poOwner,@GetAngle);
          }
       }
-      
+
       return 0;
    }
 
@@ -383,7 +385,7 @@ messages:
       {
          return $;
       }
-      
+
       return First(lPos);
    }
 
@@ -397,7 +399,7 @@ messages:
       {
          return $;
       }
-      
+
       return Nth(lPos,2);
    }
 
@@ -411,7 +413,7 @@ messages:
       {
          return $;
       }
-      
+
       return Nth(lPos,3);
    }
 
@@ -425,7 +427,7 @@ messages:
       {
          return $;
       }
-      
+
       return Nth(lPos,4);
    }
 
@@ -439,11 +441,11 @@ messages:
 
    GetHeightFloorAtObjectBSP()
    "Returns the floor height at the object's coordinates in FINENESS from BSP."
-   "If the object is not in a room, this message recursively checks the owner's coordinates "
-   "until one in a room is found."
+   "If the object is not in a room, this message recursively checks the "
+   "owner's coordinates until one in a room is found."
    {
       local iQflags, iRflags, iHeightF, iHeightFWD, iHeightC, iServerID;
-			
+
       if poOwner <> $
       {
          if IsClass(poOwner,&Room)
@@ -458,7 +460,8 @@ messages:
                       Send(self,@GetFineRow), Send(self,@GetFineCol),
                       *iRflags, *iHeightF, *iHeightFWD, *iHeightC, *iServerID)
             {
-               debug("Failed to get location info in ", Send(poOwner,@GetRoomData));
+               Debug("Failed to get location info in ", Send(poOwner,@GetRoomData));
+
                return 0;
             }
 
@@ -473,29 +476,66 @@ messages:
 
       return 0;
    }
-   
-   GetHeightCeilingAtObjectBSP()
-   "Returns the ceiling height at the object's coordinates in FINENESS from BSP."
-   "If the object is not in a room, this message recursively checks the owner's coordinates "
-   "until one in a room is found."
+
+   GetSectorIDAtObject()
+   "Gets the sector tag ID for the room sector the object is currently in.  "
+   "Returns -1 on error, as valid tags are all >= 0."
    {
       local iQflags, iRflags, iHeightF, iHeightFWD, iHeightC, iServerID;
-			
+
       if poOwner <> $
       {
          if IsClass(poOwner,&Room)
          {
             // set query-flags, here we're only interested in the sectorinfo
             iQflags = LIQ_GET_SECTORINFO;
-	  
+
             // query data from bsp in c-function
-            if NOT GetLocationInfoBSP(
-                      Send(poOwner,@GetRoomData), iQflags, 
+            if NOT GetLocationInfoBSP(Send(poOwner,@GetRoomData), iQflags,
                       Send(self,@GetRow), Send(self,@GetCol),
                       Send(self,@GetFineRow), Send(self,@GetFineCol),
                       *iRflags, *iHeightF, *iHeightFWD, *iHeightC, *iServerID)
             {
-               debug("Failed to get location info in ", Send(poOwner,@GetRoomData));
+               Debug("Failed to get location info in ", Send(poOwner,@GetRoomData));
+
+               return -1;
+            }
+
+            // we're only using the floor-height with depth modifier here
+            return iServerID;
+         }
+         else
+         {
+            Send(poOwner,@GetSectorIDAtObject);
+         }
+      }
+
+      return -1;
+   }
+
+   GetHeightCeilingAtObjectBSP()
+   "Returns the ceiling height at the object's coordinates in FINENESS from BSP."
+   "If the object is not in a room, this message recursively checks the owner's coordinates "
+   "until one in a room is found."
+   {
+      local iQflags, iRflags, iHeightF, iHeightFWD, iHeightC, iServerID;
+
+      if poOwner <> $
+      {
+         if IsClass(poOwner,&Room)
+         {
+            // set query-flags, here we're only interested in the sectorinfo
+            iQflags = LIQ_GET_SECTORINFO;
+
+            // query data from bsp in c-function
+            if NOT GetLocationInfoBSP(
+                      Send(poOwner,@GetRoomData), iQflags,
+                      Send(self,@GetRow), Send(self,@GetCol),
+                      Send(self,@GetFineRow), Send(self,@GetFineCol),
+                      *iRflags, *iHeightF, *iHeightFWD, *iHeightC, *iServerID)
+            {
+               Debug("Failed to get location info in ", Send(poOwner,@GetRoomData));
+
                return 0;
             }
 
@@ -510,7 +550,7 @@ messages:
 
       return 0;
    }
-   
+
    GetOwner()
    {
       return poOwner;
@@ -596,7 +636,7 @@ messages:
    {
       return vrName;
    }
-   
+
    GetDef()
    {
       // return resource of definite article
@@ -648,7 +688,7 @@ messages:
          return object_article_some_rsc;
       }
 
-      debug("Invalid article num",article_num);
+      Debug("Invalid article num",article_num);
 
       return object_article_none_rsc;
    }
@@ -704,11 +744,10 @@ messages:
          return object_article_cap_some_rsc;
       }
 
-      debug("Invalid article num",article_num);
+      Debug("Invalid article num",article_num);
 
       return object_article_none_rsc;
    }
-
 
    GetIcon()
    {
@@ -850,19 +889,19 @@ messages:
    {
       return TRUE;
    }
-   
+
    SomethingEntered(where = $,what = $)
    {
       return;
    }
-   
+
    ReqSomethingLeft(where = $,what = $)
-   {      
+   {
       return TRUE;
    }
 
    SomethingLeft(where = $,what = $)
-   {      
+   {
       return;
    }
 
@@ -1126,7 +1165,7 @@ messages:
    {
       local iGender;
 
-      iGender = send(self,@GetGender);
+      iGender = Send(self,@GetGender);
       if cap
       {
          if iGender = GENDER_MALE
@@ -1159,7 +1198,7 @@ messages:
    {
       local iGender;
 
-      iGender = send(self,@GetGender);
+      iGender = Send(self,@GetGender);
       if cap
       {
          if iGender = GENDER_MALE
@@ -1192,7 +1231,7 @@ messages:
    {
       local iGender;
 
-      iGender = send(self,@GetGender);
+      iGender = Send(self,@GetGender);
       if cap
       {
          if iGender = GENDER_MALE
@@ -1225,9 +1264,9 @@ messages:
    {
       local iGender;
 
-      iGender = send(self,@GetGender);
+      iGender = Send(self,@GetGender);
       if cap
-      {     
+      {
          if iGender = GENDER_MALE
          {
             return object_cap_he;
@@ -1239,7 +1278,7 @@ messages:
          }
 
          return object_cap_it;
-      }    
+      }
 
       if iGender = GENDER_MALE
       {
@@ -1259,9 +1298,9 @@ messages:
    {
       local iGender;
 
-      iGender = send(self,@GetGender);
+      iGender = Send(self,@GetGender);
       if cap
-      {     
+      {
          if iGender = GENDER_MALE
          {
             return object_cap_lord;
@@ -1273,7 +1312,7 @@ messages:
          }
 
          return object_cap_lord;
-      }    
+      }
 
       if iGender = GENDER_MALE
       {
@@ -1327,10 +1366,11 @@ messages:
          OR FindListElem(plObject_attributes, attribute) = 0)
       {
          plObject_attributes = Cons(attribute,plObject_attributes);
-         return 1;
+
+         return TRUE;
       }
-      
-      return 0;
+
+      return FALSE;
    }
 
    RemoveObjectAttribute(attribute=$)
@@ -1340,11 +1380,13 @@ messages:
          AND FindListElem(plObject_attributes, attribute) <> 0
       {
          plObject_attributes = DelListElem(plObject_attributes,attribute);
-         return 1;
+
+         return TRUE;
       }
-      return 0;
+
+      return FALSE;
    }
-   
+
    GetObjectAttributes()
    {
       return plObject_attributes;

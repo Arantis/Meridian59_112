@@ -35,7 +35,7 @@ resources:
 
    // Quest description.
    fadepupilquest_icon_rsc = ifade.bgf
-   fadepupilquest_name_rsc = "fade pupil quest"
+   fadepupilquest_name_rsc = "Joguer's pupil quest"
    fadepupilquest_desc_rsc = \
       "Joguer would like you to retrieve a formula for him, and in return "
       "he will teach you the fade spell."
@@ -53,8 +53,8 @@ resources:
       "Return to Joguer with the formula."
 
    fadepupilquest_completed_rsc = \
-      "You have completed the fade pupil quest.  Joguer will now "
-      "teach you the fade spell."
+      "You have completed Joguer's pupil quest.  Joguer will now teach you "
+      "the spells Fade (level two Qor) and Heat (level three Faren)."
 
    // Quest resources.
    fadelearn_trigger = "pupil"

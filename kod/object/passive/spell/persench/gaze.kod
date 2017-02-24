@@ -102,16 +102,14 @@ messages:
       return iSpellPower;
    }
 
-   ModifyDefensePower(who=$,what=$,defense_power=$)
+   ModifyDefensePower(who=$,what=$,defense_power=$,state=$)
    {
-      local iSpellpower, oSpell, iDuration, oWeapon;
+      local oSpell, iDuration, oWeapon;
 
       if what <> $
       {
          oSpell = Send(SYS,@FindSpellByNum,#num=SID_HOLD);
-         iSpellpower = Send(who,@GetEnchantedState,#what=self);
-         iDuration = iSpellpower * Random(20,25);
-         iDuration = Bound(iDuration,500,2500);
+         iDuration = Bound(state * Random(20,25),500,2500);
 
          // TODO: Make chance to paralyze based on if caster is facing opponent?
 

@@ -151,6 +151,72 @@ void codegen_filename(char *filename)
    OutputByte(outfile, 0);    // null terminate
 }
 /************************************************************************/
+/*
+* codegen_conditional_goto: Generates a GOTO_IF_FALSE, GOTO_IF_NULL, or
+*    GOTO_IF_NEQ_NULL opcode depending on the contents of e. Note that
+*    this is set up in a 'falsy' way, so 'var == $' generates a
+*    GOTO_IF_NEQ_NULL opcode to jump the block. Sourceval (local, prop, etc)
+*    is modified to give the value back to the caller, and numlocals
+*    is returned (possibly different due to simplify_expr).
+*    Caller is responsible for adding source and dest data to bof.
+*/
+int codegen_conditional_goto(expr_type e, int numlocals, int *sourceval)
+{
+   opcode_data opcode;
+   memset(&opcode, 0, sizeof(opcode));  /* Set opcode to all zeros */
+
+   // use_expr might change based on contents of s->condition.
+   expr_type use_expr = e;
+   int goto_type = GOTO_IF_FALSE;
+
+   // Use a faster opcode if the condition is a single comparison against null.
+   if (e->type == E_BINARY_OP)
+   {
+      if (e->value.binary_opval.op == NEQ_OP)
+      {
+         // Testing != null, jump block if value is null.
+         if (e->value.binary_opval.left_exp->type == E_CONSTANT
+            && e->value.binary_opval.left_exp->value.constval->type == C_NIL)
+         {
+            // null on left side, use right side expression.
+            use_expr = e->value.binary_opval.right_exp;
+            goto_type = GOTO_IF_NULL;
+         }
+         else if (e->value.binary_opval.right_exp->type == E_CONSTANT
+            && e->value.binary_opval.right_exp->value.constval->type == C_NIL)
+         {
+            // null on right side, generate code for left side.
+            use_expr = e->value.binary_opval.left_exp;
+            goto_type = GOTO_IF_NULL;
+         }
+      }
+      else if (e->value.binary_opval.op == EQ_OP)
+      {
+         // Testing == null, jump block if value is not null.
+         if (e->value.binary_opval.left_exp->type == E_CONSTANT
+            && e->value.binary_opval.left_exp->value.constval->type == C_NIL)
+         {
+            // null on left side, use right side expression.
+            use_expr = e->value.binary_opval.right_exp;
+            goto_type = GOTO_IF_NEQ_NULL;
+         }
+         else if (e->value.binary_opval.right_exp->type == E_CONSTANT
+            && e->value.binary_opval.right_exp->value.constval->type == C_NIL)
+         {
+            // null on right side, generate code for left side.
+            use_expr = e->value.binary_opval.left_exp;
+            goto_type = GOTO_IF_NEQ_NULL;
+         }
+      }
+   }
+
+   numlocals = simplify_expr(use_expr, numlocals);
+   *sourceval = set_source_id(&opcode, SOURCE1, use_expr);
+   OutputGotoOpcode(outfile, goto_type, opcode.source1);
+
+   return numlocals;
+}
+/************************************************************************/
 /* 
  * codegen_call: Generate code for performing a function call and storing
  *   the return value in the given location (must be local or property).
@@ -323,19 +389,13 @@ int codegen_return(expr_type expr, int maxlocal)
  */
 int codegen_if(if_stmt_type s, int numlocals)
 {
-   opcode_data opcode;
    int our_maxlocal = numlocals, numtemps, sourceval;
    long gotopos, thenpos;
    list_type p;
 
-   /* First generate code for condition */
-   our_maxlocal = simplify_expr(s->condition, numlocals);
+   // Outputs a goto opcode, but dest address and source are output here.
+   our_maxlocal = codegen_conditional_goto(s->condition, numlocals, &sourceval);
 
-   /* Jump over then clause if condition is false */
-   memset(&opcode, 0, sizeof(opcode));  /* Set opcode to all zeros */
-   sourceval = set_source_id(&opcode, SOURCE1, s->condition);
-
-   OutputGotoOpcode(outfile, GOTO_IF_FALSE, opcode.source1);
    /* Leave space for destination address */
    gotopos = FileCurPos(outfile);
    OutputInt(outfile, 0);
@@ -624,7 +684,6 @@ void codegen_exit_loop(void)
  */
 int codegen_while(while_stmt_type s, int numlocals)
 {
-   opcode_data opcode;
    int our_maxlocal = numlocals, numtemps, sourceval;
    long toppos;
    list_type p;
@@ -632,14 +691,9 @@ int codegen_while(while_stmt_type s, int numlocals)
    toppos = FileCurPos(outfile);
    codegen_enter_loop();
 
-   /* First generate code for condition */
-   our_maxlocal = simplify_expr(s->condition, numlocals);
-
-   /* Jump over body if condition is false */
-   memset(&opcode, 0, sizeof(opcode));  /* Set opcode to all zeros */
-   sourceval = set_source_id(&opcode, SOURCE1, s->condition);
-   OutputGotoOpcode(outfile, GOTO_IF_FALSE, opcode.source1);
-
+   // Outputs a goto opcode, but dest address and source are output here.
+   our_maxlocal = codegen_conditional_goto(s->condition, numlocals, &sourceval);
+   
    /* Conditional jump to end of loop */
    current_loop->conditional_goto_list =
       list_add_item(current_loop->conditional_goto_list, (void *)FileCurPos(outfile));
@@ -649,9 +703,9 @@ int codegen_while(while_stmt_type s, int numlocals)
    /* Write code for loop body */
    for (p = s->body; p != NULL; p = p->next)
    {
-      numtemps = codegen_statement( (stmt_type) p->data, numlocals);
+      numtemps = codegen_statement((stmt_type)p->data, numlocals);
       if (numtemps > our_maxlocal)
-	 our_maxlocal = numtemps;
+         our_maxlocal = numtemps;
    }
 
    /* Goto top of loop is last statement of while loop */
@@ -670,7 +724,6 @@ int codegen_while(while_stmt_type s, int numlocals)
  */
 int codegen_dowhile(while_stmt_type s, int numlocals)
 {
-   opcode_data opcode;
    int our_maxlocal = numlocals, numtemps, sourceval;
    long toppos;
    list_type p;
@@ -690,13 +743,9 @@ int codegen_dowhile(while_stmt_type s, int numlocals)
    for (p = current_loop->for_continue_list; p != NULL; p = p->next)
       BackpatchGotoUnconditional(outfile, (int)p->data, FileCurPos(outfile));
 
-   /* First generate code for condition */
-   our_maxlocal = simplify_expr(s->condition, numlocals);
-
-   /* Jump over body if condition is false */
-   memset(&opcode, 0, sizeof(opcode));  /* Set opcode to all zeros */
-   sourceval = set_source_id(&opcode, SOURCE1, s->condition);
-   OutputGotoOpcode(outfile, GOTO_IF_FALSE, opcode.source1);
+   numtemps = codegen_conditional_goto(s->condition, numlocals, &sourceval);
+   if (numtemps > our_maxlocal)
+      our_maxlocal = numtemps;
 
    /* Conditional jump to end of loop */
    current_loop->conditional_goto_list =
@@ -724,7 +773,6 @@ int codegen_dowhile(while_stmt_type s, int numlocals)
 */
 int codegen_for(for_stmt_type s, int numlocals)
 {
-   opcode_data opcode;
    int our_maxlocal = numlocals, numtemps = 0, sourceval;
    long toppos;
    list_type p;
@@ -745,13 +793,9 @@ int codegen_for(for_stmt_type s, int numlocals)
 
    /* Step 2: Evaluate condition. */
    /* If no condition is listed, it will be a positive constant. */
-   /* First generate code for condition */
-   our_maxlocal = simplify_expr(s->condition, numlocals);
-
-   /* Jump over body if condition is false */
-   memset(&opcode, 0, sizeof(opcode));  /* Set opcode to all zeros */
-   sourceval = set_source_id(&opcode, SOURCE1, s->condition);
-   OutputGotoOpcode(outfile, GOTO_IF_FALSE, opcode.source1);
+   numtemps = codegen_conditional_goto(s->condition, numlocals, &sourceval);
+   if (numtemps > our_maxlocal)
+      our_maxlocal = numtemps;
 
    /* Conditional jump to end of loop */
    current_loop->conditional_goto_list =
@@ -809,19 +853,18 @@ int codegen_for(for_stmt_type s, int numlocals)
 int codegen_foreach(foreach_stmt_type s, int numlocals)
 {
    int our_maxlocal, numtemps;
-   stmt_type temp_stmt = (stmt_type) SafeMalloc(sizeof(stmt_struct));
-   expr_type temp_expr = (expr_type) SafeMalloc(sizeof(expr_struct));
-   expr_type temp2_expr = (expr_type) SafeMalloc(sizeof(expr_struct));
-   assign_stmt_type assign_stmt = (assign_stmt_type) SafeMalloc(sizeof(assign_stmt_struct));
-   call_stmt_type call_stmt = (call_stmt_type) SafeMalloc(sizeof(call_stmt_struct));
-   arg_type arg = (arg_type) SafeMalloc(sizeof(arg_struct));
-   id_type temp_id, temp2_id;
+   stmt_type temp_stmt = (stmt_type)SafeMalloc(sizeof(stmt_struct));
+   expr_type temp_expr = (expr_type)SafeMalloc(sizeof(expr_struct));
+   assign_stmt_type assign_stmt = (assign_stmt_type)SafeMalloc(sizeof(assign_stmt_struct));
+   call_stmt_type call_stmt = (call_stmt_type)SafeMalloc(sizeof(call_stmt_struct));
+   arg_type arg = (arg_type)SafeMalloc(sizeof(arg_struct));
+   id_type temp_id;
    long toppos;
    list_type p;
 
    /* Make variable "temp" */
    temp_id = make_temp_var(numlocals + 1);
-   
+
    /**** Statement #1:   temp = list ****/
    assign_stmt->lhs = temp_id;
    assign_stmt->rhs = s->condition;
@@ -839,34 +882,14 @@ int codegen_foreach(foreach_stmt_type s, int numlocals)
    codegen_enter_loop();
 
    /**** Statement #2:   if (temp = $) goto end ****/
-   /* First put result of temp = $ into temp2 */
-   temp2_id = make_temp_var(numlocals + 1);
-   if (numlocals + 1 > our_maxlocal)
-      our_maxlocal = numlocals + 1;
-
-   temp2_expr->type = E_IDENTIFIER;
-   temp2_expr->value.idval = temp_id;
-
-   temp_expr->type = E_BINARY_OP;
-   temp_expr->value.binary_opval.op = EQ_OP;
-   temp_expr->value.binary_opval.left_exp = temp2_expr;
-   temp_expr->value.binary_opval.right_exp = make_expr_from_constant(make_nil_constant());
-   
-   assign_stmt->lhs = temp2_id;
-   assign_stmt->rhs = temp_expr;
-   temp_stmt->type = S_ASSIGN;
-   temp_stmt->value.assign_stmt_val = assign_stmt;  /* YECHHH! */
-   temp_stmt->lineno = 0;
-   codegen_statement(temp_stmt, numlocals);  /* Won't require more temps */
-   
-   /* Now perform jump if temp = $ is true */
-   OutputGotoOpcode(outfile, GOTO_IF_TRUE, LOCAL_VAR);
+   /* Perform jump if temp = $ */
+   OutputGotoOpcode(outfile, GOTO_IF_NULL, LOCAL_VAR);
 
    /* Conditional jump to end of loop */
    current_loop->conditional_goto_list =
       list_add_item(current_loop->conditional_goto_list, (void *)FileCurPos(outfile));
    OutputInt(outfile, 0);
-   OutputInt(outfile, temp2_id->idnum);   /* Jump if temp2 = TRUE */ 
+   OutputInt(outfile, temp_id->idnum);
 
    /**** Statement #3:    i = First(temp) ****/
    temp_expr->type = E_IDENTIFIER;
@@ -881,14 +904,14 @@ int codegen_foreach(foreach_stmt_type s, int numlocals)
    /* Write code for loop body */
    for (p = s->body; p != NULL; p = p->next)
    {
-      numtemps = codegen_statement( (stmt_type) p->data, numlocals);
+      numtemps = codegen_statement((stmt_type)p->data, numlocals);
       if (numtemps > our_maxlocal)
-	 our_maxlocal = numtemps;
+         our_maxlocal = numtemps;
    }
 
    /* Backpatch continue statements in loop body */
    for (p = current_loop->for_continue_list; p != NULL; p = p->next)
-      BackpatchGotoUnconditional(outfile,  (int) p->data, FileCurPos(outfile));
+      BackpatchGotoUnconditional(outfile, (int)p->data, FileCurPos(outfile));
 
    /**** Statement #4:    temp = Rest(temp) ****/
    /* Can reuse most of statement #3 above */

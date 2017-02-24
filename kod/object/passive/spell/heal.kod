@@ -49,6 +49,12 @@ messages:
    {
       local oTarget;
 
+      // Skip standard heal code if it's an area effect.
+      if vbIsAreaEffect
+      {
+         propagate;
+      }
+
       // Can cast spell if the 1 target item is a user
       if Length(lTargets) <> 1
       {
@@ -86,6 +92,12 @@ messages:
    CastSpell(who = $, lTargets = $, iSpellPower = 0)
    {
       local iHeal, oTarget;
+
+      // Skip standard heal code if it's an area effect.
+      if vbIsAreaEffect
+      {
+         propagate;
+      }
 
       oTarget = First(lTargets);
 

@@ -1467,21 +1467,18 @@ messages:
 
       if pbLogged_on
       {
-         AddPacket(1,BP_PLAYER_ADD);
-         AddPacket(4,what,4,rName);
-         AddPacket(STRING_RESOURCE,rName);
-         AddPacket(4,Send(what,@GetObjectFlags));
-         AddPacket(1,Send(what,@GetDrawingEffects) & ~DRAWFX_INVISIBLE);
-         AddPacket(4,0); // minimapflags, don't need the value here.
-         AddPacket(4,Send(what,@GetPlayerNameColor));
-         AddPacket(1,Send(what,@GetClientObjectType));
-         AddPacket(1,0); // MoveOn type, don't need it here.
+         AddPacket(1,BP_PLAYER_ADD, 4,what, 4,rName, STRING_RESOURCE,rName,
+                   4,Send(what,@GetObjectFlags),
+                   1,Send(what,@GetDrawingEffects) & ~DRAWFX_INVISIBLE,
+                   4,0, // minimapflags, don't need the value here.
+                   4,Send(what,@GetPlayerNameColor),
+                   1,Send(what,@GetClientObjectType),
+                   1,0); // MoveOn type, don't need it here.
          SendPacket(poSession);
 
          if IsClass(self,&Admin) AND IsClass(what,&Admin)
          {
-            Send(self,@MsgSendUser,#message_rsc=user_someone_logon,#
-                  parm1=rName);
+            Send(self,@MsgSendUser,#message_rsc=user_someone_logon,#parm1=rName);
          }
 
          if what <> self AND poGuild <> $ AND poGuild = Send(what,@GetGuild)
@@ -2720,21 +2717,18 @@ messages:
          return;
       }
 
-      AddPacket(1,BP_USERCOMMAND,1,UC_GUILDINFO);
-      AddPacket(6,Send(poGuild,@GetName));
+      AddPacket(1,BP_USERCOMMAND, 1,UC_GUILDINFO, 6,Send(poGuild,@GetName));
       lHall = Send(poGuild,@GetGuildHall);
       if lHall <> $ AND Send(poGuild,@GetRank,#who=self) = RANK_MASTER
       {
-         AddPacket(1,1);
-         AddPacket(6,Send(poGuild,@GetPassword));
+         AddPacket(1,1, 6,Send(poGuild,@GetPassword));
       }
       else
       {
          AddPacket(1,0);
       }
 
-      AddPacket(4,piGuild_commands);
-      AddPacket(4,poGuild);
+      AddPacket(4,piGuild_commands, 4,poGuild);
 
       lRank_names = Send(poGuild,@GetRankNames);
       foreach i in lRank_names
@@ -2765,10 +2759,8 @@ messages:
       AddPacket(2,Length(lMembers));
       foreach i in lMembers
       {
-         AddPacket(4,First(i));
-         AddPacket(STRING_RESOURCE,Send(First(i),@GetTrueName));
-         AddPacket(1,Nth(i,2));
-         AddPacket(1,Send(First(i),@GetGender));
+         AddPacket(4,First(i), STRING_RESOURCE,Send(First(i),@GetTrueName),
+                   1,Nth(i,2), 1,Send(First(i),@GetGender));
       }
 
       SendPacket(poSession);
@@ -2788,10 +2780,8 @@ messages:
 
       if pbLogged_on
       {
-         AddPacket(1,BP_USERCOMMAND,1,UC_GUILD_LIST);
-
          lGuilds = Send(SYS,@GetGuilds);
-         AddPacket(2,Length(lGuilds));
+         AddPacket(1,BP_USERCOMMAND, 1,UC_GUILD_LIST, 2,Length(lGuilds));
          foreach i in lGuilds
          {
             AddPacket(4,i,6,Send(i,@GetName));
@@ -2840,10 +2830,8 @@ messages:
       {
          if pbLogged_on
          {
-            AddPacket(1,BP_USERCOMMAND,1,UC_GUILD_SHIELDS);
-
             lSamples = Send(SYS,@GetGuildShieldSamples);
-            AddPacket(2,length(lSamples));
+            AddPacket(1,BP_USERCOMMAND, 1,UC_GUILD_SHIELDS, 2,Length(lSamples));
             foreach i in lSamples
             {
                AddPacket(4,i);
@@ -2886,15 +2874,13 @@ messages:
          AddPacket(1,BP_USERCOMMAND,1,UC_GUILD_SHIELD);
          if owner <> $
          {
-            AddPacket(4,owner);
-            AddPacket(6,Send(oGuild,@GetName));
+            AddPacket(4,owner, 6,Send(oGuild,@GetName));
          }
          else
          {
             // Unclaimed guild Sends 0 for guild id but MY guild's name to
             // fulfil protocol
-            AddPacket(4,0);
-            AddPacket(6,Send(oGuild,@GetName));
+            AddPacket(4,0, 6,Send(oGuild,@GetName));
          }
 
          AddPacket(1,color1,1,color2,1,shape);
@@ -3032,8 +3018,7 @@ messages:
 
    UserGameStart(game = $, player_num = 1)
    {
-      AddPacket(1,BP_USERCOMMAND,1,UC_MINIGAME_START);
-      AddPacket(4,game,1,player_num);
+      AddPacket(1,BP_USERCOMMAND, 1,UC_MINIGAME_START, 4,game,1,player_num);
       SendPacket(poSession);
 
       return;
@@ -3066,6 +3051,8 @@ messages:
          piSave_Angle = 3072;
       }
 
+      Send(self,@WipeUnboundEnergy);
+
       return Send(SYS,@GetSuccessRsc);
    }
 
@@ -3079,14 +3066,13 @@ messages:
 
       if IsClass(what,&NumberItem)
       {
-         AddPacket(NUMBER_OBJECT,what, 4,Send(what,@GetNumber));
+         AddPacket(NUMBER_OBJECT,what, 4,Send(what,@GetNumber),
+                   4,Send(what,@GetIcon));
       }
       else
       {
-         AddPacket(4, what);
+         AddPacket(4, what, 4,Send(what,@GetIcon));
       }
-
-      AddPacket(4,Send(what,@GetIcon));
 
       // Used for the reveal spell.  Do we show the true name, or the apparent
       // name?
@@ -3145,12 +3131,10 @@ messages:
          iMinimapFlags = 0;
       }
 
-      AddPacket(4,iFlags);
-      AddPacket(1,iDrawingFlags);
-      AddPacket(4,iMinimapFlags);
-      AddPacket(4,Send(what,@GetPlayerNameColor));
-      AddPacket(1,Send(what,@GetClientObjectType));
-      AddPacket(1,Send(what,@GetMoveOnType));
+      AddPacket(4,iFlags, 1,iDrawingFlags, 4,iMinimapFlags,
+                4,Send(what,@GetPlayerNameColor),
+                1,Send(what,@GetClientObjectType),
+                1,Send(what,@GetMoveOnType));
 
       // Send the lighting information.
       Send(what,@SendLightingInformation);
@@ -3343,12 +3327,10 @@ messages:
    {
       local rMusic, iLight, rBackground;
 
-      AddPacket(1,BP_PLAYER,4,self,4,vrIcon,4,vrName,4,poOwner);
-      AddPacket(4,Send(poOwner,@GetRoomResource),4,Send(poOwner,@GetName));
-      AddPacket(4,Send(poOwner,@GetRoomSecurity));
-
-      AddPacket(1,Send(poOwner,@GetRoomLight));
-      AddPacket(1,bound(piLight,0,255));
+      AddPacket(1,BP_PLAYER, 4,self, 4,vrIcon, 4,vrName, 4,poOwner,
+                4,Send(poOwner,@GetRoomResource), 4,Send(poOwner,@GetName),
+                4,Send(poOwner,@GetRoomSecurity), 1,Send(poOwner,@GetRoomLight),
+                1,Bound(piLight,0,255));
 
       rBackground = Send(poOwner,@GetRoomBackground);
       if rBackground <> $
@@ -3383,10 +3365,10 @@ messages:
    {
       if pbLogged_on
       {
-         AddPacket(1,BP_LIGHT_SHADING);
-         AddPacket(1,Send(poOwner,@GetDirectionalLightIntensity));
-         AddPacket(2,Send(poOwner,@GetDirectionalLightAngle));
-         AddPacket(2,Bound(Send(poOwner,@GetDirectionalLightHeight),0,$));
+         AddPacket(1,BP_LIGHT_SHADING,
+                   1,Send(poOwner,@GetDirectionalLightIntensity),
+                   2,Send(poOwner,@GetDirectionalLightAngle),
+                   2,Bound(Send(poOwner,@GetDirectionalLightHeight),0,$));
          SendPacket(poSession);
       }
 
@@ -3428,13 +3410,13 @@ messages:
       {
          rName = Send(i,@GetTrueName);
 
-         AddPacket(4,i, 4,rName, STRING_RESOURCE,rName);
-         AddPacket(4,Send(i,@GetObjectFlags));
-         AddPacket(1,Send(i,@GetDrawingEffects) & ~DRAWFX_INVISIBLE);
-         AddPacket(4,0); // minimapflags, don't need the value here.
-         AddPacket(4,Send(i,@GetPlayerNameColor));
-         AddPacket(1,Send(i,@GetClientObjectType));
-         AddPacket(1,0); // MoveOn type, don't need it here.
+         AddPacket(4,i, 4,rName, STRING_RESOURCE,rName,
+                   4,Send(i,@GetObjectFlags),
+                   1,Send(i,@GetDrawingEffects) & ~DRAWFX_INVISIBLE,
+                   4,0, // minimapflags, don't need the value here.
+                   4,Send(i,@GetPlayerNameColor),
+                   1,Send(i,@GetClientObjectType),
+                   1,0); // MoveOn type, don't need it here.
       }
 
       SendPacket(poSession);
@@ -3484,8 +3466,8 @@ messages:
          }
 
          Send(self,@ToCliObject,#what=oThing);
-         AddPacket(2,Nth(i,3)*FINENESS+Nth(i,5), 2,Nth(i,4)*FINENESS+Nth(i,6));
-         AddPacket(2,Send(oThing,@GetAngle));
+         AddPacket(2,Nth(i,3)*FINENESS+Nth(i,5), 2,Nth(i,4)*FINENESS+Nth(i,6),
+                   2,Send(oThing,@GetAngle));
          Send(oThing,@SendMoveAnimation);
          Send(oThing,@SendMoveOverlays);
       }
@@ -3494,8 +3476,8 @@ messages:
       {
          oThing = Send(poOwner,@HolderExtractObject,#data=i);
          Send(self,@ToCliObject,#what=oThing);
-         AddPacket(2,Nth(i,3)*FINENESS+Nth(i,5), 2,Nth(i,4)*FINENESS+Nth(i,6));
-         AddPacket(2,Send(oThing,@GetAngle));
+         AddPacket(2,Nth(i,3)*FINENESS+Nth(i,5), 2,Nth(i,4)*FINENESS+Nth(i,6),
+                   2,Send(oThing,@GetAngle));
          Send(oThing,@SendMoveAnimation);
          Send(oThing,@SendMoveOverlays);
       }
@@ -3552,7 +3534,7 @@ messages:
 
    ToCliStats(group = $)
    {
-      local i, oSpell, oSkill, iCount, lCurrentResistances, iQLength;
+      local i, oSpell, oSkill, iCount, lResists, iQLength;
 
       if NOT pbLogged_on
       {
@@ -3589,14 +3571,11 @@ messages:
          Send(self,@SendStatDefense);
          Send(self,@SendStatArmor);
 
-         i = 1;
-         lCurrentResistances = Send(self,@GetCurrentResistances);
+         lResists = Send(self,@GetCurrentResistances);
 
-         while i < 14
+         for (i = 1; i < 14; ++i)
          {
-            Send(self,@SendStatResistances,#num=i,
-                  #lCurrentResistances=lCurrentResistances);
-            ++i;
+            Send(self,@SendStatResistances,#num=i,#lCurrentResistances=lResists);
          }
 
          Send(self,@SendStatUnboundEnergy);
@@ -3794,14 +3773,9 @@ messages:
 
    ToCliStatGroups()
    {
-      AddPacket(1,BP_STAT_GROUPS);
       // 5 stat groups
-      AddPacket(1,5);
-      AddPacket(4,user_group_condition);
-      AddPacket(4,user_group_stats);
-      AddPacket(4,user_group_spells);
-      AddPacket(4,user_group_skills);
-      AddPacket(4,user_group_quests);
+      AddPacket(1,BP_STAT_GROUPS, 1,5, 4,user_group_condition, 4,user_group_stats,
+                4,user_group_spells, 4,user_group_skills, 4,user_group_quests);
       SendPacket(poSession);
 
       return;
@@ -3811,20 +3785,16 @@ messages:
    {
       local num_schools;
 
-      AddPacket(1,BP_USERCOMMAND, 1,UC_SPELL_SCHOOLS);
       num_schools = 6;
       if viDM
       {
          ++num_schools;
       }
 
-      AddPacket(1,num_schools);
-      AddPacket(4,user_school_shallile);
-      AddPacket(4,user_school_qor);
-      AddPacket(4,user_school_kraanan);
-      AddPacket(4,user_school_faren);
-      AddPacket(4,user_school_riija);
-      AddPacket(4,user_school_jala); 
+      AddPacket(1,BP_USERCOMMAND, 1,UC_SPELL_SCHOOLS, 1,num_schools,
+                4,user_school_shallile, 4,user_school_qor,
+                4,user_school_kraanan, 4,user_school_faren,
+                4,user_school_riija, 4,user_school_jala);
 
       if viDM
       {
@@ -3849,8 +3819,8 @@ messages:
             oSpell = Send(SYS,@FindSpellByNum,#num=Send(self,@DecodeSpellNum,
                                                         #compound=i));
             Send(self,@ToCliObject,#what=oSpell);
-            AddPacket(1,Send(oSpell,@GetNumSpellTargets));
-            AddPacket(1,Send(oSpell,@GetSchool));
+            AddPacket(1,Send(oSpell,@GetNumSpellTargets),
+                      1,Send(oSpell,@GetSchool));
          }
 
          SendPacket(poSession);
@@ -3888,8 +3858,8 @@ messages:
          AddPacket(1, BP_SPELL_ADD);
          
          Send(self,@ToCliObject,#what=oSpell);
-         AddPacket(1,Send(oSpell,@GetNumSpellTargets));
-         AddPacket(1,Send(oSpell,@GetSchool));
+         AddPacket(1,Send(oSpell,@GetNumSpellTargets),
+                   1,Send(oSpell,@GetSchool));
          SendPacket(poSession);
 
          Send(self,@ToCliStats,#group=3);
@@ -3903,8 +3873,7 @@ messages:
    {
       if pbLogged_on
       {
-         AddPacket(1, BP_SPELL_REMOVE);
-         AddPacket(4, oSpell);
+         AddPacket(1, BP_SPELL_REMOVE, 4, oSpell);
          SendPacket(poSession);
       }
 
@@ -3955,12 +3924,10 @@ messages:
 
    ToCliBackgroundOverlay(what = $)
    {
-      AddPacket(4,what);
-      AddPacket(4,Send(what,@GetIcon));
-      AddPacket(4,Send(what,@GetName));
+      AddPacket(4,what, 4,Send(what,@GetIcon), 4,Send(what,@GetName));
       Send(what,@SendAnimation);
-      AddPacket(2,Send(what,@GetBackgroundOverlayAngle));
-      AddPacket(2,Send(what,@GetBackgroundOverlayHeight));
+      AddPacket(2,Send(what,@GetBackgroundOverlayAngle),
+                2,Send(what,@GetBackgroundOverlayHeight));
       SendPacket(poSession);
 
       return;
@@ -4633,8 +4600,7 @@ messages:
    {
       if pbLogged_on
       {
-         AddPacket(1,BP_EFFECT);
-         AddPacket(2,EFFECT_XLATOVERRIDE,4,xlat);
+         AddPacket(1,BP_EFFECT, 2,EFFECT_XLATOVERRIDE, 4,xlat);
 
          SendPacket(poSession);
       }
@@ -4646,8 +4612,7 @@ messages:
    {
       if pbLogged_on
       {
-         AddPacket(1,BP_EFFECT,2,effect);
-         AddPacket(4,duration);
+         AddPacket(1,BP_EFFECT, 2,effect, 4,duration);
          SendPacket(poSession);
       }
 
@@ -4697,9 +4662,7 @@ messages:
    {
       if pbLogged_on
       {
-         AddPacket(1,BP_WALL_ANIMATE,2,wall);
-
-         AddPacket(1,animation);
+         AddPacket(1,BP_WALL_ANIMATE, 2,wall, 1,animation);
          if animation = ANIMATE_NONE
          {
             AddPacket(2,first_group);
@@ -4765,8 +4728,7 @@ messages:
    {
       if pbLogged_on
       {
-         AddPacket(1, BP_USERCOMMAND, 1, UC_MINIGAME_MOVE);
-         AddPacket(4, game);
+         AddPacket(1, BP_USERCOMMAND, 1, UC_MINIGAME_MOVE, 4, game);
 
          // Send default state if the game hasn't started yet
          if (state = $)
@@ -5962,9 +5924,8 @@ messages:
             return FALSE;
          }
 
-         AddPacket(1,BP_LOOK_NEWSGROUP);
-         AddPacket(2,Send(what,@GetNewsNum));
-         AddPacket(1,Send(what,@GetNewsPermission,#what=self));
+         AddPacket(1,BP_LOOK_NEWSGROUP, 2,Send(what,@GetNewsNum),
+                   1,Send(what,@GetNewsPermission,#what=self));
 
          Send(self,@ToCliObject,#what=what);
          Send(what,@ShowDesc);
@@ -6075,8 +6036,7 @@ messages:
    UserLookupNames(amount = $,string = $)
    "Sent by client to resolve a string of mail destination into object IDs."
    {
-      AddPacket(1,BP_LOOKUP_NAMES);
-      AddPacket(2,amount);
+      AddPacket(1,BP_LOOKUP_NAMES, 2,amount);
 
       ParseString(string,",",@UserLookupEachName);
       SendPacket(poSession);
@@ -6282,8 +6242,7 @@ messages:
          if Length(lMail_strings) = 1
          {
             // standard string as mail
-            AddPacket(4,user_show_mail);
-            AddPacket(0,First(lMail_strings));
+            AddPacket(4,user_show_mail, 0,First(lMail_strings));
          }
          else
          {
@@ -6295,7 +6254,6 @@ messages:
                AddPacket(Nth(lMail_strings,j),Nth(lMail_strings,j+1));
                j += 2;
             }
-
          }
 
          SendPacket(poSession);
@@ -6929,7 +6887,7 @@ messages:
       if poOffer_who <> $
       {
          Send(who,@MsgSendUser,#message_rsc=user_offer_busy,
-              #parm1=Send(self,@GetCapDef),#parm1=Send(self,@GetName));
+              #parm1=Send(self,@GetCapDef),#parm2=Send(self,@GetName));
 
          return FALSE;
       }
@@ -6980,7 +6938,7 @@ messages:
       if poOffer_who <> $
       {
          Send(what,@MsgSendUser,#message_rsc=user_offer_busy,
-              #parm1=Send(self,@GetCapDef),#parm1=Send(self,@GetName));
+              #parm1=Send(self,@GetCapDef),#parm2=Send(self,@GetName));
 
          return FALSE;
       }
@@ -7003,7 +6961,8 @@ messages:
 
       if poOffer_who <> $
       {
-         Send(what,@MsgSendUser,#message_rsc=user_offer_busy,#parm1=vrName);
+         Send(what,@MsgSendUser,#message_rsc=user_offer_busy,
+               #parm1=Send(self,@GetCapDef),#parm2=Send(self,@GetName));
          Send(what,@OfferCanceled);
 
          return;
@@ -7591,8 +7550,7 @@ messages:
             }
          }
 
-         AddPacket(1,BP_USERCOMMAND, 1,UC_GUILD_HALLS);
-         AddPacket(2,iAvailable);
+         AddPacket(1,BP_USERCOMMAND, 1,UC_GUILD_HALLS, 2,iAvailable);
          foreach i in lHalls
          {
             if Send(i,@GetPurchaseValue,#who=self) <> -1
@@ -8286,8 +8244,7 @@ messages:
             // Make sure projectiles are on and have the dynamic flag set.
             iValue = iValue | LIGHT_FLAG_ON | LIGHT_FLAG_DYNAMIC;
             // Flags, Intensity, color
-            AddPacket(2,iValue,
-                      1,Send(projectile,@GetProjectileLightIntensity),
+            AddPacket(2,iValue, 1,Send(projectile,@GetProjectileLightIntensity),
                       2,Send(projectile,@GetProjectileLightColor));
          }
          else
@@ -9024,242 +8981,207 @@ messages:
 
    SendStatResistances(num=1,lCurrentResistances=$)
    {
-      local i, bWeaponAll, bWeaponThrust, bWeaponBludgeon, bWeaponSlash,
-               bWeaponPierce, bSpellAll, bSpellFire, bSpellShock, bSpellCold,
-               bSpellAcid, bSpellHoly, bSpellUnholy, bSpellQuake;
-
-      bWeaponAll = FALSE;
-      bWeaponThrust = FALSE;
-      bWeaponBludgeon = FALSE;
-      bWeaponSlash = FALSE;
-      bWeaponPierce = FALSE;
-      bSpellAll = FALSE;
-      bSpellFire = FALSE;
-      bSpellShock = FALSE;
-      bSpellCold = FALSE;
-      bSpellAcid = FALSE;
-      bSpellHoly = FALSE;
-      bSpellUnholy = FALSE;
-      bSpellQuake = FALSE;
+      local lRes;
 
       if num = 1
       {
-         foreach i in lCurrentResistances
+         lRes = GetListNode(lCurrentResistances, 1, ATCK_WEAP_ALL);
+         if (lRes <> $)
          {
-            if First(i) = ATCK_WEAP_ALL
-            {
-               AddPacket(1,14, 4,user_resist_weapons, 1,STAT_VALUE, 1,STAT_INTEGER,4,Nth(i,2), 4,-30, 4,100, 4,0);
-               bWeaponAll = TRUE;
-            }
+            AddPacket(1,14, 4,user_resist_weapons, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,Nth(lRes,2), 4,-30, 4,100, 4,0);
          }
-         if NOT bWeaponAll
+         else
          {
-            AddPacket(1,14, 4,user_resist_weapons, 1,STAT_VALUE, 1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
+            AddPacket(1,14, 4,user_resist_weapons, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
          }
       }
       else if num = 2
       {
-         foreach i in lCurrentResistances
+         lRes = GetListNode(lCurrentResistances, 1, ATCK_WEAP_THRUST);
+         if (lRes <> $)
          {
-            if First(i) = ATCK_WEAP_THRUST
-            {
-               AddPacket(1,15, 4,user_resist_thrust, 1,STAT_VALUE, 1,STAT_INTEGER,4,Nth(i,2), 4,-30, 4,100, 4,0);
-               bWeaponThrust = TRUE;
-            }
+            AddPacket(1,15, 4,user_resist_thrust, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,Nth(lRes,2), 4,-30, 4,100, 4,0);
          }
-         if NOT bWeaponThrust
+         else
          {
-            AddPacket(1,15, 4,user_resist_thrust, 1,STAT_VALUE, 1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
+            AddPacket(1,15, 4,user_resist_thrust, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
          }
       }
       else if num = 3
       {
-         foreach i in lCurrentResistances
+         lRes = GetListNode(lCurrentResistances, 1, ATCK_WEAP_BLUDGEON);
+         if (lRes <> $)
          {
-            if First(i) = ATCK_WEAP_BLUDGEON
-            {
-               AddPacket(1,16, 4,user_resist_bludgeon, 1,STAT_VALUE, 1,STAT_INTEGER,4,Nth(i,2), 4,-30, 4,100, 4,0);
-               bWeaponBludgeon = TRUE;
-            }
+            AddPacket(1,16, 4,user_resist_bludgeon, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,Nth(lRes,2), 4,-30, 4,100, 4,0);
          }
-         if NOT bWeaponBludgeon
+         else
          {
-            AddPacket(1,16, 4,user_resist_bludgeon, 1,STAT_VALUE, 1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
+            AddPacket(1,16, 4,user_resist_bludgeon, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
          }
       }
       else if num = 4
       {
-         foreach i in lCurrentResistances
+         lRes = GetListNode(lCurrentResistances, 1, ATCK_WEAP_SLASH);
+         if (lRes <> $)
          {
-            if First(i) = ATCK_WEAP_SLASH
-            {
-               AddPacket(1,17, 4,user_resist_slash, 1,STAT_VALUE, 1,STAT_INTEGER,4,Nth(i,2), 4,-30, 4,100, 4,0);
-               bWeaponSlash = TRUE;
-            }
+            AddPacket(1,17, 4,user_resist_slash, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,Nth(lRes,2), 4,-30, 4,100, 4,0);
          }
-         if NOT bWeaponSlash
+         else
          {
-            AddPacket(1,17, 4,user_resist_slash, 1,STAT_VALUE, 1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
+            AddPacket(1,17, 4,user_resist_slash, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
          }
       }
       else if num = 5
       {
-         foreach i in lCurrentResistances
+         lRes = GetListNode(lCurrentResistances, 1, ATCK_WEAP_PIERCE);
+         if (lRes <> $)
          {
-            if First(i) = ATCK_WEAP_PIERCE
-            {
-               AddPacket(1,18, 4,user_resist_pierce, 1,STAT_VALUE, 1,STAT_INTEGER,4,Nth(i,2), 4,-30, 4,100, 4,0);
-               bWeaponPierce = TRUE;
-            }
+            AddPacket(1,18, 4,user_resist_pierce, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,Nth(lRes,2), 4,-30, 4,100, 4,0);
          }
-         if NOT bWeaponPierce
+         else
          {
-            AddPacket(1,18, 4,user_resist_pierce, 1,STAT_VALUE, 1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
+            AddPacket(1,18, 4,user_resist_pierce, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
          }
       }
       else if num = 6
       {
-         foreach i in lCurrentResistances
+         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_ALL);
+         if (lRes <> $)
          {
-            if First(i) = -ATCK_SPELL_ALL
-            {
-               AddPacket(1,19, 4,user_resist_magic, 1,STAT_VALUE, 1,STAT_INTEGER,4,Nth(i,2), 4,-30, 4,100, 4,0);
-               bSpellAll = TRUE;
-            }
+            AddPacket(1,19, 4,user_resist_magic, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,Nth(lRes,2), 4,-30, 4,100, 4,0);
          }
-         if NOT bSpellAll
+         else
          {
-            AddPacket(1,19, 4,user_resist_magic, 1,STAT_VALUE, 1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
+            AddPacket(1,19, 4,user_resist_magic, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
          }
       }
       else if num = 7
       {
-         foreach i in lCurrentResistances
+         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_FIRE);
+         if (lRes <> $)
          {
-            if First(i) = -ATCK_SPELL_FIRE
-            {
-               AddPacket(1,20, 4,user_resist_fire, 1,STAT_VALUE, 1,STAT_INTEGER,4,Nth(i,2), 4,-30, 4,100, 4,0);
-               bSpellFire = TRUE;
-            }
+            AddPacket(1,20, 4,user_resist_fire, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,Nth(lRes,2), 4,-30, 4,100, 4,0);
          }
-         if NOT bSpellFire
+         else
          {
-            AddPacket(1,20, 4,user_resist_fire, 1,STAT_VALUE, 1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
+            AddPacket(1,20, 4,user_resist_fire, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
          }
       }
       else if num = 8
       {
-         foreach i in lCurrentResistances
+         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_SHOCK);
+         if (lRes <> $)
          {
-            if First(i) = -ATCK_SPELL_SHOCK
-            {
-               AddPacket(1,21, 4,user_resist_shock, 1,STAT_VALUE, 1,STAT_INTEGER,4,Nth(i,2), 4,-30, 4,100, 4,0);
-               bSpellShock = TRUE;
-            }
+            AddPacket(1,21, 4,user_resist_shock, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,Nth(lRes,2), 4,-30, 4,100, 4,0);
          }
-         if NOT bSpellShock
+         else
          {
-            AddPacket(1,21, 4,user_resist_shock, 1,STAT_VALUE, 1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
+            AddPacket(1,21, 4,user_resist_shock, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
          }
       }
       else if num = 9
       {
-         foreach i in lCurrentResistances
+         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_COLD);
+         if (lRes <> $)
          {
-            if First(i) = -ATCK_SPELL_COLD
-            {
-               AddPacket(1,22, 4,user_resist_cold, 1,STAT_VALUE, 1,STAT_INTEGER,4,Nth(i,2), 4,-30, 4,100, 4,0);
-               bSpellCold = TRUE;
-            }
+            AddPacket(1,22, 4,user_resist_cold, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,Nth(lRes,2), 4,-30, 4,100, 4,0);
          }
-         if NOT bSpellCold
+         else
          {
-            AddPacket(1,22, 4,user_resist_cold, 1,STAT_VALUE, 1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
+            AddPacket(1,22, 4,user_resist_cold, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
          }
       }
       else if num = 10
       {
-         foreach i in lCurrentResistances
+         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_ACID);
+         if (lRes <> $)
          {
-            if First(i) = -ATCK_SPELL_ACID
-            {
-               AddPacket(1,23, 4,user_resist_acid, 1,STAT_VALUE, 1,STAT_INTEGER,4,Nth(i,2), 4,-30, 4,100, 4,0);
-               bSpellAcid = TRUE;
-            }
+            AddPacket(1,23, 4,user_resist_acid, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,Nth(lRes,2), 4,-30, 4,100, 4,0);
          }
-         if NOT bSpellAcid
+         else
          {
-            AddPacket(1,23, 4,user_resist_acid, 1,STAT_VALUE, 1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
+            AddPacket(1,23, 4,user_resist_acid, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
          }
       }
       else if num = 11
       {
-         foreach i in lCurrentResistances
+         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_HOLY);
+         if (lRes <> $)
          {
-            if First(i) = -ATCK_SPELL_HOLY
-            {
-               AddPacket(1,24, 4,user_resist_holy, 1,STAT_VALUE, 1,STAT_INTEGER,4,Nth(i,2), 4,-30, 4,100, 4,0);
-               bSpellHoly = TRUE;
-            }
+            AddPacket(1,24, 4,user_resist_holy, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,Nth(lRes,2), 4,-30, 4,100, 4,0);
          }
-         if NOT bSpellHoly
+         else
          {
-            AddPacket(1,24, 4,user_resist_holy, 1,STAT_VALUE, 1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
+            AddPacket(1,24, 4,user_resist_holy, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
          }
       }
       else if num = 12
       {
-         foreach i in lCurrentResistances
+         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_UNHOLY);
+         if (lRes <> $)
          {
-            if First(i) = -ATCK_SPELL_UNHOLY
-            {
-               AddPacket(1,25, 4,user_resist_unholy, 1,STAT_VALUE, 1,STAT_INTEGER,4,Nth(i,2), 4,-30, 4,100, 4,0);
-               bSpellUnholy = TRUE;
-            }
+            AddPacket(1,25, 4,user_resist_unholy, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,Nth(lRes,2), 4,-30, 4,100, 4,0);
          }
-         if NOT bSpellUnholy
+         else
          {
-            AddPacket(1,25, 4,user_resist_unholy, 1,STAT_VALUE, 1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
+            AddPacket(1,25, 4,user_resist_unholy, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
          }
       }
       else if num = 13
       {
-         foreach i in lCurrentResistances
+         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_QUAKE);
+         if (lRes <> $)
          {
-            if First(i) = -ATCK_SPELL_QUAKE
-            {
-               AddPacket(1,26, 4,user_resist_quake, 1,STAT_VALUE, 1,STAT_INTEGER,4,Nth(i,2), 4,-30, 4,100, 4,0);
-               bSpellQuake = TRUE;
-            }
+            AddPacket(1,26, 4,user_resist_quake, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,Nth(lRes,2), 4,-30, 4,100, 4,0);
          }
-         if NOT bSpellQuake
+         else
          {
-            AddPacket(1,26, 4,user_resist_quake, 1,STAT_VALUE, 1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
+            AddPacket(1,26, 4,user_resist_quake, 1,STAT_VALUE,
+                      1,STAT_INTEGER,4,0, 4,-30, 4,100, 4,0);
          }
       }
 
       return;
    }
-   
+
    DrawResistances()
    {
-      local i, lCurrentResistances;
-      
-      i = 1;
-      
-      lCurrentResistances = Send(self,@GetCurrentResistances);
-      
+      local i, lResists;
+
       if pbLogged_on
       {
-         while i < 14
+         lResists = Send(self,@GetCurrentResistances);
+         for (i = 1; i < 14; ++i)
          {
             AddPacket(1,BP_STAT,1,2);
-            Send(self,@SendStatResistances,#num=i,#lCurrentResistances=lCurrentResistances);
+            Send(self,@SendStatResistances,#num=i,#lCurrentResistances=lResists);
             SendPacket(poSession);
-            ++i;
          }
-         
-         return;
       }
 
       return;
@@ -9428,7 +9350,7 @@ messages:
          AddPacket(1,BP_LIGHT_PLAYER,1,bound(piLight,0,255));
          SendPacket(poSession);
       }
-      
+
       return;
    }
 
@@ -9436,11 +9358,10 @@ messages:
    {
       if pbLogged_on
       {
-         AddPacket(1,BP_LIGHT_AMBIENT);
-         AddPacket(1,Send(poOwner,@GetRoomLight));
+         AddPacket(1,BP_LIGHT_AMBIENT, 1,Send(poOwner,@GetRoomLight));
          SendPacket(poSession);
       }
-      
+
       return;
    }
 
@@ -9448,11 +9369,10 @@ messages:
    {
       if pbLogged_on
       {
-         AddPacket(1,BP_BACKGROUND);
-         AddPacket(4,Send(poOwner,@GetRoomBackground));
+         AddPacket(1,BP_BACKGROUND, 4,Send(poOwner,@GetRoomBackground));
          SendPacket(poSession);
       }
-      
+
       return;
    }
 
@@ -9476,8 +9396,7 @@ messages:
          }
 
          // Then send the needed effect.
-         AddPacket(1,BP_EFFECT);
-         AddPacket(2,Send(poOwner,@GetRoomWeather));
+         AddPacket(1,BP_EFFECT, 2,Send(poOwner,@GetRoomWeather));
          SendPacket(poSession);
       }
 
@@ -9490,13 +9409,12 @@ messages:
       {
          if Send(what,@ShowEnchantmentIcon,#type=type)
          {
-            AddPacket(1,BP_ADD_ENCHANTMENT);
-            AddPacket(1,type);
+            AddPacket(1,BP_ADD_ENCHANTMENT, 1,type);
             Send(self,@ToCliObject,#what=what,#show_type=SHOW_ENCHANTMENT);
             SendPacket(poSession);
          }
       }
-      
+
       return;
    }
 
@@ -9506,13 +9424,11 @@ messages:
       {
          if Send(what,@ShowEnchantmentIcon,#type=type)
          {
-            AddPacket(1,BP_REMOVE_ENCHANTMENT);
-            AddPacket(1,type);
-            AddPacket(4,what);
+            AddPacket(1,BP_REMOVE_ENCHANTMENT, 1,type, 4,what);
             SendPacket(poSession);
          }
       }
-      
+
       return;
    }
 
@@ -10086,25 +10002,6 @@ messages:
    PlayerIsImmortal()
    {
       return FALSE;
-   }
-
-   InitialSetBaseMaxHealth()
-   {
-      local i;
-      
-      foreach i in plUsing
-      {
-         if Send(i,@AdjustsMaxHealth)
-         {
-           Send(self,@TryUnuseItem,#what=i);
-           Send(self,@MsgSendUser,#message_rsc=user_fumble,
-                #parm1=Send(i,@GetName));
-         }
-      }
-
-      piBase_Max_health = piMax_health;
-
-      return;
    }
 
    FixMoney(amount = 50000)

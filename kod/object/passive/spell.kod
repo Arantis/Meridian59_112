@@ -562,7 +562,7 @@ messages:
    CanCastHere(who=$,where=$,lTargets=$,iSpellPower=0,bItemCast=FALSE,
                report=TRUE)
    {
-      local oSpell, lState, lRadiusState, oTarget;
+      local oSpell, lState, oTarget;
 
       if IsClass(who,&DM)
       {
@@ -1285,13 +1285,10 @@ messages:
 
       // Modify chance to succeed due to Jala's hinder spells.
       // Hinder spell effects stack.
-      if Send(who,@IsAffectedByRadiusEnchantment,#byClass=&HinderSpell)
+      foreach i in Send(who,@GetRadiusEnchantments)
       {
-         foreach i in Send(who,@GetRadiusEnchantments)
-         {
-            num = Send(First(i),@GetAlteredChance,#chance=num,#what=self,
-                        #lRadiusState=i);
-         }
+         num = Send(Nth(i,2),@GetAlteredChance,#chance=num,#what=self,
+                     #lRadiusState=Nth(i,3));
       }
 
       num = bound(num,5,99);
@@ -1814,9 +1811,8 @@ messages:
 
       oOwner = Send(who,@GetOwner);
 
-      // Can advance in real death arenas
-      if Send(oOwner,@CheckRoomFlag,#flag=ROOM_SAFE_DEATH)
-         OR (Send(oOwner,@IsArena) AND NOT Send(oOwner,@ArenaRealDeath))
+      if (Send(oOwner,@CheckRoomFlag,#flag=ROOM_SAFE_DEATH)
+         OR Send(oOwner,@IsArena))
       {
          return FALSE;
       }
@@ -2154,10 +2150,11 @@ messages:
 
    // Called when enchantment did not go full term
    // Important for trance implementation  Xian 4/13/96
-   RemoveEnchantmentEffects( who = $, state = $, report = TRUE )
+   RemoveEnchantmentEffects(who = $, state = $, report = TRUE, recheck = FALSE)
    {
-      Send(self,@EndEnchantment,#who=who,#state=state,#report=report);
-      
+      Send(self,@EndEnchantment,#who=who,#state=state,#report=report,
+            #recheck=recheck);
+
       return;
    }
 
@@ -2273,7 +2270,7 @@ messages:
    {
       local iSpellPower, i, iTerrain, oRoom, oModifierSpell, iAbilityLoss,
             iAbilityGain, iItemModifier, iBase, iPrimaryBonus, iSecondaryBonus,
-            iPowerBonus, iShrines, lRadiusState;
+            iPowerBonus, iShrines;
 
       oRoom = Send(who,@GetOwner);
 
@@ -2298,7 +2295,7 @@ messages:
       }
 
       // Spell power starts out as half the player's spell ability.
-      iBase = Send(who,@GetSpellAbility,#spell_num=viSpell_num)/2;      
+      iBase = Send(who,@GetSpellAbility,#spell_num=viSpell_num) / 2;
 
       // Check the player's in use items to see if they affect anything.
       // Note that this also checks itematts.
@@ -2319,39 +2316,37 @@ messages:
          //  prefers natural settings.
          iPrimaryBonus = Send(oRoom,@GetShalilleBonus);
          // Secondary bonus based on Karma.
-         iSecondaryBonus = abs(Send(who,@GetKarma)/10);
+         iSecondaryBonus = Abs(Send(who,@GetKarma)/10);
 
          // Forces of Light boosts Shal'ille
          if Send(oRoom,@IsEnchanted,#what=SID_FORCES_OF_LIGHT)
          {
             // Add a function of the spellpower.
-            iAbilityGain = Send(oRoom,@GetEnchantmentState,
-                                 #what=SID_FORCES_OF_LIGHT);
-            iAbilityGain = iAbilityGain/10;
-            iSecondaryBonus = iSecondaryBonus + iAbilityGain;
+            iAbilityGain = First(Send(oRoom,@GetEnchantmentState,
+                                 #what=SID_FORCES_OF_LIGHT));
+            iAbilityGain /= 10;
+            iSecondaryBonus += iAbilityGain;
          }
       }
-      
-      if viSchool = SS_QOR
+      else if viSchool = SS_QOR
       {
          // Qor strength determined by day or night.
          iPrimaryBonus =  (2 + Send(SYS,@GetHour));
          // Secondary bonus comes from Karma.
-         iSecondaryBonus = abs(Send(who,@GetKarma)/10);
+         iSecondaryBonus = Abs(Send(who,@GetKarma)/10);
 
          // Darkness boosts Qor
          if Send(oRoom,@IsEnchanted,#what=SID_DARKNESS)
          {
             // This reconstructs the darkness spellpower.
-            iAbilityGain = Send(oRoom,@GetEnchantmentState,
-                                 #what=SID_DARKNESS);
+            iAbilityGain = First(Send(oRoom,@GetEnchantmentState,
+                                 #what=SID_DARKNESS));
             iAbilityGain = -(iAbilityGain - 25);
-            iAbilityGain = iAbilityGain/10;
-            iSecondaryBonus = iSecondaryBonus + iAbilityGain;
+            iAbilityGain /= 10;
+            iSecondaryBonus += iAbilityGain;
          }
       }
-      
-      if viSchool = SS_RIIJA
+      else if viSchool = SS_RIIJA
       {
          // Riija's bonuses are a bit random seeming.
          // Riija strength determined by moon position - range is -16 to 30
@@ -2366,16 +2361,14 @@ messages:
          // Riija's secondary bonus depends on the number of items you're holding.
          iSecondaryBonus = (Send(who,@GetBulkHold)*10)/Send(who,@GetBulkMax);
       }
-      
-      if viSchool = SS_FAREN
+      else if viSchool = SS_FAREN
       {
          // Faren prefers water and fire.  If he finds water and fire, he gets stronger.
          iPrimaryBonus = Send(oRoom,@GetFarenBonus);
          // Faren also rewards the vigorous warrior.
          iSecondaryBonus = Send(who,@GetVigor)/20;
       }
-      
-      if viSchool = SS_KRAANAN
+      else if viSchool = SS_KRAANAN
       {
          // Kraanan favors adversity and armies.  More people in a room, the better.
          iPrimaryBonus = Length(Send(oRoom,@GetHolderActive));
@@ -2385,11 +2378,10 @@ messages:
          // Kraanan, being a combat school, doesn't take penalties from items as much.
          if iItemModifier < 0
          {
-            iItemModifier = iItemModifier/2;
+            iItemModifier /= 2;
          }
       }
-      
-      if viSchool = SS_JALA
+      else if viSchool = SS_JALA
       {
          // Jala's strength is based on the strength of the instrument
          //  that it's master is wielding.  The bonus is a bit different from
@@ -2407,9 +2399,9 @@ messages:
       // Bind the bonuses to reasonable values.
       if viSchool <> SS_JALA
       {
-         iPrimaryBonus = bound(iPrimaryBonus,0,30);
+         iPrimaryBonus = Bound(iPrimaryBonus,0,30);
       }
-      iSecondaryBonus = bound(iSecondaryBonus,0,10);
+      iSecondaryBonus = Bound(iSecondaryBonus,0,10);
 
       iSpellPower = iPrimaryBonus + iSecondaryBonus + iPowerBonus + iBase;
 
@@ -2421,13 +2413,11 @@ messages:
                               #iSpellPower=iSpellPower);
       }
 
-      lRadiusState = Send(who,@GetMostPowerfulRadiusEnchantmentState,
-                           #byClass=&ManaConvergence);
-      if lRadiusState <> $
+      foreach i in Send(who,@GetRadiusEnchantments)
       {
-         iSpellPower = Send(First(lRadiusState),@ModifySpellpower,#who=who,
-                              #oSpell=self,#state=lRadiusState,
-                              #iSpellPower=iSpellPower);
+         iSpellPower = Send(Nth(i,2),@ModifySpellPower,#who=who,#oRoom=oRoom,
+                              #oSpell=self,#iSpellPower=iSpellPower,
+                              #state=Nth(i,3));
       }
 
       // Bound the lower end so that the stuff that follows is truly a bonus.
@@ -2437,22 +2427,22 @@ messages:
       iShrines = Send(SYS,@GetShrineBonus,#school=viSchool);
 
       // These bonuses (shrine, items) can boost spell power after all other modifiers.
-      iSpellPower = iSpellPower + iShrines + iItemModifier;
+      iSpellPower += iShrines + iItemModifier;
 
       // Then, add bonus from the system object, set by admins
-      iSpellPower = iSpellPower + Send(SYS,@GetBonusSpellpower,#school=viSchool);
+      iSpellPower += Send(SYS,@GetBonusSpellpower,#school=viSchool);
 
       // Affected by the Dement spell?
       oModifierSpell = Send(SYS,@FindSpellByNum,#num=SID_DEMENT);
       if Send(who,@IsEnchanted,#what=oModifierSpell)
       {
-         iAbilityLoss = first(Send(who,@GetEnchantedState,#what=oModifierSpell));
+         iAbilityLoss = First(Send(who,@GetEnchantedState,#what=oModifierSpell));
          iAbilityLoss = Random(iAbilityLoss, iAbilityLoss*2);
-         iSpellpower = iSpellpower - iAbilityLoss;
+         iSpellpower -= iAbilityLoss;
       }
 
       // Bound the result.
-      iSpellPower = bound(iSpellPower,SPELLPOWER_MINIMUM,SPELLPOWER_MAXIMUM);
+      iSpellPower = Bound(iSpellPower,SPELLPOWER_MINIMUM,SPELLPOWER_MAXIMUM);
 
       return iSpellPower;
    }

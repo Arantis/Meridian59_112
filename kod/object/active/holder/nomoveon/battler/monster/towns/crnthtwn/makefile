@@ -5,6 +5,6 @@
 !include $(TOPDIR)\common.mak
 
 DEPEND = ..\crnthtwn.bof
-BOFS  = cnurchin.bof cngrocer.bof cnsarge.bof cninnk.bof cntailor.bof
+BOFS  = cnurchin.bof cngrocer.bof cnsarge.bof cninnk.bof cntailor.bof cnmuseumguard.bof
 
 !include $(KODDIR)\kod.mak

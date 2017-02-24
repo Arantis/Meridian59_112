@@ -24,9 +24,9 @@ resources:
 
    tosbank_sign_name = "Welcome to the Bank of Tos"
    tosbank_sign_desc = \
-      "Use the deposit, withdraw (amount), and balance commands to access "
-      "your bank account.\n\nDeposits made here can also be accessed from "
-      "the Royal Bank of Jasper in West Jasper."
+      "Use the commands \"deposit amount\", \"withdraw amount\", and "
+      "\"balance\" to access your bank account.\n\nDeposits made here can "
+      "also be accessed from the Royal Bank of Jasper in West Jasper."
 
 classvars:
 
@@ -57,7 +57,7 @@ messages:
       plExits = $;
 
       /// TO TOWN
-      plExits = Cons([ 6, 9, RID_EAST_TOS, 13, 3, ROTATE_NONE ],plExits);
+      plExits = Cons([ 6, 9, RID_EAST_TOS, 19, 8, ROTATE_NONE ],plExits);
 
       propagate;
    }

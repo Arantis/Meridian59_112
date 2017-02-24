@@ -18,8 +18,8 @@ constants:
    HUMAN_TRANSLATION_LEGS_MUL = 1
    HUMAN_TRANSLATION_BODY_MASK = 0xff00
    HUMAN_TRANSLATION_BODY_MUL = 0x100
-   HUMAN_TRANSLATION_Skin_MASK = 0xff0000
-   HUMAN_TRANSLATION_Skin_MUL = 0x10000
+   HUMAN_TRANSLATION_SKIN_MASK = 0xff0000
+   HUMAN_TRANSLATION_SKIN_MUL = 0x10000
 
    HUMAN_TRANSLATION2_HAIR_MASK = 0xff
    HUMAN_TRANSLATION2_HAIR_MUL = 1
@@ -124,11 +124,6 @@ resources:
    human_sound_aware = trps1awr.ogg
    human_sound_attack = trpsatk.ogg
 
-   human_rightarm_gauntlet_male = bre.bgf
-   human_rightarm_gauntlet_female = brf.bgf
-   human_leftarm_gauntlet_male = ble.bgf
-   human_leftarm_gauntlet_female = blf.bgf
-
 classvars:
 
    vrName = human_name_rsc
@@ -206,6 +201,8 @@ properties:
    plDefense_modifiers = $
    plAttack_modifiers = $
 
+   piSkin_color_override = 0
+
 messages:
 
    Constructor()
@@ -213,7 +210,14 @@ messages:
       Send(self,@SetGender);
       Send(self,@SetHair);
       Send(self,@SetFace);
-      Send(self,@SetSkinColor,#color=Random(1,4));
+      if (piSkin_color_override)
+      {
+         Send(self,@SetSkinColor,#color=piSkin_color_override);
+      }
+      else
+      {
+         Send(self,@SetSkinColor,#color=Random(1,4));
+      }
 
       // Sets random clothes for humans.
       Send(self,@SetClothes);
@@ -289,6 +293,32 @@ messages:
       return;
    }
 
+   UnuseItem(what = $, Recalibrate = FALSE)
+   {
+      local i;
+
+      foreach i in plUsing
+      {
+         if i = what
+         {
+            plUsing = DelListElem(plUsing,i);
+
+            if Recalibrate
+            {
+               Send(what,@NewUnused,#what=self,#Recalibrate=TRUE);
+            }
+            else
+            {
+               Send(what,@NewUnused,#what=self);
+            }
+
+            return TRUE;
+         }
+      }
+
+      return FALSE;
+   }
+
    LeaveHold(what = $)
    {
       local i;
@@ -331,14 +361,13 @@ messages:
    SetHair()
    // Sets the hairdo, color.
    {
-      local RandomNumber, Translation;
+      local Translation;
 
       // Select a hairdo
       if viGender = GENDER_MALE
       {
-         RandomNumber = Random(0,6);
          // 0 keeps the "default"
-         switch(RandomNumber)
+         switch(Random(0,6))
          {
             case 1: prToupee = human_hair_cd_icon; break;
             case 2: prToupee = human_hair_bald_icon; break;
@@ -351,9 +380,8 @@ messages:
       else
       {
       // female
-         RandomNumber = Random(0,8);
          // 0 keeps the "default"
-         switch(RandomNumber)
+         switch(Random(0,8))
          {
             case 1: prToupee = human_hair_cd_icon; break;
             case 2: prToupee = human_hair_bc_icon; break;
@@ -367,9 +395,8 @@ messages:
       }
 
       // Select a Color
-      RandomNumber = Random(0,8);
       // 0 remains gray
-      switch(RandomNumber)
+      switch(Random(0,8))
       {
          case 1: Translation = PT_GRAY_TO_RED; break;
          case 2: Translation = PT_GRAY_TO_KGRAY; break;
@@ -382,25 +409,22 @@ messages:
          default : Translation = 0; break;
       }
 
-      piBody_translations2 = piBody_translations2 & ~HUMAN_TRANSLATION2_HAIR_MASK;
-      piBody_translations2 = piBody_translations2
-                                 | (Translation * HUMAN_TRANSLATION2_HAIR_MUL);
+      piBody_translations2 &= ~HUMAN_TRANSLATION2_HAIR_MASK;
+      piBody_translations2 |= (Translation * HUMAN_TRANSLATION2_HAIR_MUL);
 
       return;
    }
 
    RemoveHair(what = $)
    {
-      if what = $
+      if what <> $
       {
-         return;
-      }
+         poHair_remove = what;
 
-      poHair_remove = what;
-
-      if poOwner
-      {
-         Send(poOwner,@SomethingChanged,#what=self);
+         if poOwner <> $
+         {
+            Send(poOwner,@SomethingChanged,#what=self);
+         }
       }
 
       return;
@@ -410,7 +434,7 @@ messages:
    {
       poHair_remove = $;
 
-      if poOwner
+      if poOwner <> $
       {
          Send(poOwner,@SomethingChanged,#what=self);
       }
@@ -421,13 +445,11 @@ messages:
    SetFace()
    // Randomly sets (gender-appropriate) face elements.
    {
-      local RandomNumber;
       // NOTE: 0 always keeps the "default" (a) icon.
 
       if viGender = GENDER_MALE
       {
-         RandomNumber = Random(0,3);
-         switch(RandomNumber)
+         switch(Random(0,3))
          {
             case 1: prEyes = human_eyes_bx_icon; break;
             case 2: prEyes = human_eyes_cx_icon; break;
@@ -435,16 +457,14 @@ messages:
             default : prEyes = human_eyes_ax_icon; break;
          }
 
-         RandomNumber = Random(0,2);
-         switch(RandomNumber)
+         switch(Random(0,2))
          {
             case 1: prNose = human_nose_bx_icon; break;
             case 2: prNose = human_nose_cx_icon; break;
             default : prNose = human_nose_ax_icon; break;
          }
 
-         RandomNumber = Random(0,2);
-         switch(RandomNumber)
+         switch(Random(0,2))
          {
             case 1: prMouth = human_mouth_bx_icon; break;
             case 2: prMouth = human_mouth_cx_icon; break;
@@ -454,25 +474,21 @@ messages:
       else
       {
       // female
-
-         RandomNumber = Random(0,2);
-         switch(RandomNumber)
+         switch(Random(0,2))
          {
             case 1: prEyes = human_eyes_lx_icon; break;
             case 2: prEyes = human_eyes_mx_icon; break;
             default : prEyes = human_eyes_kx_icon; break;
          }
 
-         RandomNumber = Random(0,2);
-         switch(RandomNumber)
+         switch(Random(0,2))
          {
             case 1: prNose = human_nose_lx_icon; break;
             case 2: prNose = human_nose_mx_icon; break;
             default : prNose = human_nose_kx_icon; break;
          }
 
-         RandomNumber = Random(0,2);
-         switch(RandomNumber)
+         switch(Random(0,2))
          {
             case 1: prMouth = human_mouth_lx_icon; break;
             case 2: prMouth = human_mouth_mx_icon; break;
@@ -660,25 +676,37 @@ messages:
    }
 
    // Next two messages affect the defense messages.
+   // GetDodgeAbility handled by Monster.
    GetParryAbility(stroke_obj=$)
    {
-      if stroke_obj <> $
-         AND NOT Send(stroke_obj,@CanParry)
+      local oWeapon;
+
+      oWeapon = Send(self,@GetWeapon);
+      if oWeapon = $
+         OR (stroke_obj <> $ AND NOT Send(stroke_obj,@CanParry))
       {
          return 0;
       }
 
+      // Can't ask the weapon for its parry ability since this just asks
+      // us for our parry skill % and human mobs don't have it (i.e. weapons
+      // don't have individual parry abilities).
       return (viDifficulty * 10) / 2;
    }
 
    GetBlockAbility(stroke_obj=$)
    {
-      if stroke_obj <> $
-         AND NOT Send(stroke_obj,@CanBlock)
+      local oShield;
+
+      oShield = Send(self,@LookupPlayerShield);
+      if oShield = $
+         OR ((stroke_obj <> $) AND NOT Send(stroke_obj,@CanBlock))
       {
          return 0;
       }
 
+      // Shields query the player for their block ability, so can't request
+      // the shields block ability.
       return (viDifficulty * 10);
    }
 
@@ -708,11 +736,28 @@ messages:
    // Returns wielded Melee/Ranged weapon.
    LookupPlayerWeapon()
    {
+      return GetListElemByClass(plUsing,&Weapon);
+   }
+
+   LookupPlayerShield()
+   {
       local i;
 
+      // Can be using two shields at once - soldier shield on back and normal
+      // shield in the shield position. Skip over the soldier shield if it
+      // is in the back position.
       foreach i in plUsing
       {
-         if IsClass(i,&Weapon)
+         if (IsClass(i,&SoldierShield))
+         {
+            if (NOT Send(i,@IsOnBack)
+               AND Send(i,@GetBlockAbility,#who=self) > 0)
+            {
+               return i;
+            }
+         }
+         else if (IsClass(i,&Shield)
+            AND Send(i,@GetBlockAbility,#who=self) > 0)
          {
             return i;
          }
@@ -724,39 +769,14 @@ messages:
    GetArmor()
    "If plUsing holds any armor, return that object."
    {
-      local i;
-
-      foreach i in plUsing
-      {
-         if IsClass(i,&Armor)
-         {
-            return i;
-         }
-      }
-
-      return $;
+      return GetListElemByClass(plUsing,&Armor);
    }
 
    FindUsing(class=$)
    "Find the first instance of 'class' that the human has equipped. "
    "Returns $ if nothing is found."
    {
-      local i;
-
-      if class = $
-      {
-         return $;
-      }
-
-      foreach i in plUsing
-      {
-         if IsClass(i,class)
-         {
-            return i;
-         }
-      }
-
-      return $;
+      return GetListElemByClass(plUsing,class);
    }
 
    GetDamageType(what = $, use_weapon = $)
@@ -1032,7 +1052,7 @@ messages:
 
       AddPacket(1,ANIMATE_CYCLE,4,100,2,2,2,5);
 
-      iSkin_xlat = (piBody_translations & HUMAN_TRANSLATION_Skin_MASK)
+      iSkin_xlat = (piBody_translations & HUMAN_TRANSLATION_SKIN_MASK)
                         / HUMAN_TRANSLATION_SKIN_MUL;
 
       AddPacket(4,prHead,1,HS_HEAD,1,ANIMATE_TRANSLATION,1,iSkin_xlat);
@@ -1065,12 +1085,13 @@ messages:
 
       // Send overlay bitmap info to user.  
 
-      // Player has 7 standard overlays: right arm, left arm, legs, head, eyes, mouth, nose
+      // Player has 7 standard overlays: right arm, left arm, legs,
+      // head, eyes, mouth, nose
       iOverlays = 7;
 
       if poHair_remove = $
       {
-         iOverlays = iOverlays + 1;
+         iOverlays += 1;
       }
 
       // Overlay info -- display correct group for animation & action
@@ -1080,7 +1101,8 @@ messages:
 
       foreach i in plOverlays
       {
-         iOverlays = iOverlays + Send(i,@GetNumberOverlays,#iAnimation=piAnimation);  //bows can have more than 1.
+         // bows can have more than 1.
+         iOverlays += Send(i,@GetNumberOverlays,#iAnimation=piAnimation);  
          hotspot = Send(i,@GetOverlayHotspot);
          if hotspot = HS_RIGHT_WEAPON
          {
@@ -1196,14 +1218,16 @@ messages:
          AddPacket(1,ANIMATE_NONE, 2,1);
       }
 
-      iSkin_xlat = (piBody_translations & HUMAN_TRANSLATION_Skin_MASK)
-                        / HUMAN_TRANSLATION_Skin_MUL;
-      AddPacket(4,prHead,1,HS_HEAD,1,ANIMATE_TRANSLATION,1,iSkin_xlat);
-      Addpacket(1,ANIMATE_NONE,2,1); 
+      iSkin_xlat = (piBody_translations & HUMAN_TRANSLATION_SKIN_MASK)
+                        / HUMAN_TRANSLATION_SKIN_MUL;
+      AddPacket(4,prHead,1,HS_HEAD,1,ANIMATE_TRANSLATION,1,iSkin_xlat,
+                1,ANIMATE_NONE,2,1);
 
-      AddPacket(4,prMouth,1,HS_MOUTH,1,ANIMATE_TRANSLATION,1,iSkin_xlat,1,ANIMATE_NONE,2,piAction);
-      AddPacket(4,prEyes,1,HS_EYES,1,ANIMATE_TRANSLATION,1,iSkin_xlat,1,ANIMATE_NONE,2,piAction);
-      AddPacket(4,prNose,1,HS_NOSE,1,ANIMATE_TRANSLATION,1,iSkin_xlat,1,ANIMATE_NONE,2,1);
+      AddPacket(4,prMouth,1,HS_MOUTH,1,ANIMATE_TRANSLATION,1,iSkin_xlat,
+                1,ANIMATE_NONE,2,piAction, 4,prEyes,1,HS_EYES,1,
+                ANIMATE_TRANSLATION,1,iSkin_xlat,1,ANIMATE_NONE,2,piAction,
+                4,prNose,1,HS_NOSE,1,ANIMATE_TRANSLATION,1,iSkin_xlat,
+                1,ANIMATE_NONE,2,1);
 
       if poHair_remove = $
       {
@@ -1221,6 +1245,115 @@ messages:
       return;
    }
 
+   SetFlickerFlag()
+   {
+      piDrawEffectFlag |= OF_FLICKERING;
+
+      return;
+   }
+
+   RecalcFlickerFlag()
+   "Called by anything that sets the flag when it wants to unset it. "
+   "Checks if we still have anything that still requires the flag."
+   {
+      local i;
+
+      // Unset flag.
+      piDrawEffectFlag &= ~OF_FLICKERING;
+
+      // Check torches and glow enchantment.
+      foreach i in plUsing
+      {
+         if IsClass(i,&Torch)
+            OR IsClass(i,&DaemonHelm)
+            OR (IsClass(i,&Weapon)
+               AND Send(i,@HasAttribute,#ItemAtt=WA_GLOWING))
+         {
+            piDrawEffectFlag |= OF_FLICKERING;
+
+            return;
+         }
+      }
+
+      // Check radius enchantments.
+      foreach i in plRadiusEnchantments
+      {
+         if (Send(Nth(i,2),@GetSource,#state=Nth(i,3)) = self)
+         {
+            piDrawEffectFlag |= OF_FLICKERING;
+
+            return;
+         }
+      }
+
+      if (poOwner <> $)
+      {
+         Send(poOwner,@SomethingChanged,#what=self);
+      }
+
+      return;
+   }
+
+   SendLightingInformation()
+   {
+      local i, oLightObject, iColor, iIntensity;
+
+      // Bitflag check, don't need to check anything if not set.
+      if NOT (piDrawEffectFlag & OF_FLICKERING)
+      {
+         propagate;
+      }
+
+      iIntensity = 0;
+      iColor = 0;
+      // Check each lighting effect, strongest one wins.
+      // TODO: these should be additive, and the client should produce
+      // a combined lighting effect. Also, if more lighting effects are added
+      // this should probably query everything, just in case.
+
+      // Check torches and glow enchantment only here, hardcoded color/intensity.
+      foreach i in plUsing
+      {
+         if IsClass(i,&Torch)
+            OR (IsClass(i,&Weapon)
+               AND Send(i,@HasAttribute,#ItemAtt=WA_GLOWING))
+         {
+            iIntensity = 60;
+            iColor = LIGHT_FIRE;
+
+            break;
+         }
+      }
+
+      // Overrides torch/glow weapons.
+      if (GetListElemByClass(plUsing,&DaemonHelm))
+      {
+         iIntensity = 200;
+         iColor = LIGHT_BLOOD;
+      }
+
+      foreach i in plRadiusEnchantments
+      {
+         oLightObject = Nth(i,2);
+         if (Send(oLightObject,@GetSource,#state=Nth(i,3)) = self
+            AND Send(oLightObject,@GetLightIntensity) >= iIntensity)
+         {
+            iIntensity = Send(oLightObject,@GetLightIntensity);
+            iColor = Send(oLightObject,@GetLightColor);
+         }
+      }
+
+      if iIntensity > 0
+      {
+         AddPacket(2,(LIGHT_FLAG_ON | LIGHT_FLAG_DYNAMIC),
+                   1,iIntensity, 2,iColor);
+
+         return;
+      }
+
+      propagate;
+   }
+
    SetPlayerIcon(what = $,new_icon = $,translation = $, alldone = TRUE)
    "Sets our icon to <new_icon>, and keeps track of <what> to undo "
    "when necessary. Tells everyone we changed."
@@ -1228,9 +1361,8 @@ messages:
       poIcon_set = what;
       vrIcon = new_icon;
 
-      piBody_translations = piBody_translations & ~HUMAN_TRANSLATION_BODY_MASK;
-      piBody_translations = piBody_translations |
-                  (translation * HUMAN_TRANSLATION_BODY_MUL);
+      piBody_translations &= ~HUMAN_TRANSLATION_BODY_MASK;
+      piBody_translations |= (translation * HUMAN_TRANSLATION_BODY_MUL);
 
       if poOwner <> $ AND alldone
       {
@@ -1269,9 +1401,9 @@ messages:
          vrIcon = human_female_icon_rsc;
       }
 
-      piBody_translations = piBody_translations & ~HUMAN_TRANSLATION_BODY_MASK;
-      piBody_translations = piBody_translations |
-            (Send(self,@GetDefaultShirtTranslation)*HUMAN_TRANSLATION_BODY_MUL);
+      piBody_translations &= ~HUMAN_TRANSLATION_BODY_MASK;
+      piBody_translations |= (Send(self,@GetDefaultShirtTranslation)
+                              * HUMAN_TRANSLATION_BODY_MUL);
 
       if poOwner <> $ AND alldone
       {
@@ -1288,9 +1420,8 @@ messages:
       prLegs = new_legs;
       poLegs_set = what;
 
-      piBody_translations = piBody_translations & ~HUMAN_TRANSLATION_LEGS_MASK;
-      piBody_translations = piBody_translations
-                              | (translation * HUMAN_TRANSLATION_LEGS_MUL);
+      piBody_translations &= ~HUMAN_TRANSLATION_LEGS_MASK;
+      piBody_translations |= (translation * HUMAN_TRANSLATION_LEGS_MUL);
 
       if poOwner <> $
       {
@@ -1314,9 +1445,9 @@ messages:
          prLegs = human_legs_b_rsc;
       }
 
-      piBody_translations = piBody_translations & ~HUMAN_TRANSLATION_LEGS_MASK;
-      piBody_translations = piBody_translations |
-            (Send(self,@GetDefaultPantsTranslation) * HUMAN_TRANSLATION_LEGS_MUL);
+      piBody_translations &= ~HUMAN_TRANSLATION_LEGS_MASK;
+      piBody_translations |= (Send(self,@GetDefaultPantsTranslation)
+                              * HUMAN_TRANSLATION_LEGS_MUL);
 
       if poOwner <> $
       {
@@ -1334,7 +1465,8 @@ messages:
    {
       local iPantsXlat, iSkinColor;
 
-      iSkinColor = (piBody_translations & HUMAN_TRANSLATION_SKIN_MASK)/HUMAN_TRANSLATION_SKIN_MUL;
+      iSkinColor = (piBody_translations & HUMAN_TRANSLATION_SKIN_MASK)
+                     /HUMAN_TRANSLATION_SKIN_MUL;
       iSkinColor = Send(self,@ConvertSkinColorToXLAT,#Skin_color=iSkinColor);
 
       // A hack for non-standard skin colors with the "special" pants colors.
@@ -1344,11 +1476,16 @@ messages:
       {
          iSkinColor = XLAT_TO_SKIN4;
       }
-      
-      iPantsXlat = Send(SYS,@EncodeTwoColorXLAT,#color1=translation,#color2=iSkinColor);
 
-      piBody_translations = piBody_translations & ~HUMAN_TRANSLATION_LEGS_MASK;
-      piBody_translations = piBody_translations | (iPantsXlat * HUMAN_TRANSLATION_LEGS_MUL);
+      iPantsXlat = Send(SYS,@EncodeTwoColorXLAT,#color1=translation,
+                        #color2=iSkinColor);
+
+      piBody_translations &= ~HUMAN_TRANSLATION_LEGS_MASK;
+      piBody_translations |= (iPantsXlat * HUMAN_TRANSLATION_LEGS_MUL);
+
+      // Set default pants.
+      piDefault_Clothes &= ~PANTS_MASK;
+      piDefault_Clothes |= iPantsXlat * PANTS_MUL;
 
       if poOwner <> $
       {
@@ -1366,9 +1503,8 @@ messages:
       prRight_Arm = new_right_arm;
       poArms_set = what;
 
-      piBody_translations2 = piBody_translations2 & ~HUMAN_TRANSLATION2_ARMS_MASK;
-      piBody_translations2 = piBody_translations2 |
-            (translation * HUMAN_TRANSLATION2_ARMS_MUL);
+      piBody_translations2 &= ~HUMAN_TRANSLATION2_ARMS_MASK;
+      piBody_translations2 |= (translation * HUMAN_TRANSLATION2_ARMS_MUL);
 
       if poOwner <> $ AND alldone
       {
@@ -1411,9 +1547,8 @@ messages:
       }
 
       iShirt_xlat = Send(self,@GetDefaultShirtTranslation);
-      piBody_translations2 = piBody_translations2 & ~HUMAN_TRANSLATION2_ARMS_MASK;
-      piBody_translations2 = piBody_translations2 |
-            (iShirt_xlat * HUMAN_TRANSLATION2_ARMS_MUL);
+      piBody_translations2 &= ~HUMAN_TRANSLATION2_ARMS_MASK;
+      piBody_translations2 |= (iShirt_xlat * HUMAN_TRANSLATION2_ARMS_MUL);
 
       if poOwner <> $ AND alldone
       {
@@ -1490,12 +1625,21 @@ messages:
    // Override from monster superclass
    CreateDeadBody(killer=$)
    {
-      return Create(&DeadBody,
-         #victim=self,
-         #killer=killer,
-         #PlayerBodyOverlay=vrDead_Legs,
-         #BodyTranslation=(piBody_translations & HUMAN_TRANSLATION_BODY_MASK)/HUMAN_TRANSLATION_BODY_MUL,
-         #LegsTranslation=(piBody_translations & HUMAN_TRANSLATION_LEGS_MASK)/HUMAN_TRANSLATION_LEGS_MUL);
+      // Send current pant/shirt color to body only if they both use
+      // the new two-color xlats. Otherwise, Send default colors.
+      if Send(SYS,@IsTwoColorXLAT,#xlat=Send(self,@GetBodyTranslation))
+         AND Send(SYS,@IsTwoColorXLAT,#xlat=Send(self,@GetLegsTranslation))
+      {
+         return Create(&DeadBody,#victim=self,#killer=killer,
+                     #PlayerBodyOverlay=vrDead_Legs,
+                     #BodyTranslation=Send(self,@GetBodyTranslation),
+                     #LegsTranslation=Send(self,@GetLegsTranslation));
+      }
+
+      return Create(&DeadBody,#victim=self,#killer=killer,
+                  #PlayerBodyOverlay=vrDead_Legs,
+                  #BodyTranslation=Send(self,@GetDefaultShirtTranslation),
+                  #LegsTranslation=Send(self,@GetDefaultPantsTranslation));
    }
 
    ConvertskincolortoXLAT(Skin_color = 0)
@@ -1531,7 +1675,7 @@ messages:
 
       foreach oUsedItem in plUsing
       {
-         Send(oUsedItem,@delete);
+         Send(oUsedItem,@Delete);
       }
 
       if poArrow <> $
@@ -1597,14 +1741,9 @@ messages:
    "Adds <what> to plOverlays, so we can keep track of whom to "
    "call about overlays"
    {
-      local i;
-
-      foreach i in plOverlays
+      if (FindListElem(plOverlays,what))
       {
-         if i = what
-         {
-            return;
-         }
+         return;
       }
 
       plOverlays = Cons(what,plOverlays);
@@ -1615,16 +1754,11 @@ messages:
    RemoveOverlayObject(what = $)
    "Removes <what> from plOverlays if it's in there."
    {
-      local i;
-
-      foreach i in plOverlays
+      if (FindListElem(plOverlays,what))
       {
-         if i = what
-         {
-            plOverlays = DelListElem(plOverlays,what);
+         plOverlays = DelListElem(plOverlays,what);
 
-            return;
-         }
+         return;
       }
 
       return;
@@ -1642,21 +1776,12 @@ messages:
    RemoveAttackModifier(what = $)
    "Removes <what> from plAttack_modifiers."
    {
-      local i;
-
-      foreach i in plAttack_modifiers
+      if (FindListElem(plAttack_modifiers,what))
       {
-         if i = what
-         {
-            plAttack_modifiers = DelListElem(plAttack_modifiers,i);
+         plAttack_modifiers = DelListElem(plAttack_modifiers,what);
 
-            return;
-         }
+         return;
       }
-
-      // Karahol's Curse can get here, because it has to remove itself when
-      // done, because it doesn't know if it was a normal ending or a
-      // user-quit ending.
 
       return;
    }
@@ -1673,16 +1798,11 @@ messages:
    RemoveDefenseModifier(what = $)
    "Removes <what> from plDefense_modifiers."
    {
-      local i;
-
-      foreach i in plDefense_modifiers
+      if (FindListElem(plDefense_modifiers,what))
       {
-         if i = what
-         {
-            plDefense_modifiers = DelListElem(plDefense_modifiers,i);
+         plDefense_modifiers = DelListElem(plDefense_modifiers,what);
 
-            return;
-         }
+         return;
       }
 
       Debug(self,"Tried to remove defense modifier",what,"but not in list",
@@ -1715,8 +1835,8 @@ messages:
 
    GetSkinColor()
    {
-      return (piBody_translations & HUMAN_TRANSLATION_Skin_MASK)
-                  /HUMAN_TRANSLATION_Skin_MUL;
+      return (piBody_translations & HUMAN_TRANSLATION_SKIN_MASK)
+                  /HUMAN_TRANSLATION_SKIN_MUL;
    }
 
    GetHairColor()
@@ -1795,9 +1915,8 @@ messages:
 
    SetSkinTranslation(translation = $)
    {
-      piBody_translations = piBody_translations & ~HUMAN_TRANSLATION_Skin_MASK;
-      piBody_translations = piBody_translations
-                              | (translation * HUMAN_TRANSLATION_SKIN_MUL);
+      piBody_translations &= ~HUMAN_TRANSLATION_SKIN_MASK;
+      piBody_translations |= (translation * HUMAN_TRANSLATION_SKIN_MUL);
 
       if poOwner <> $
       {
@@ -1809,9 +1928,8 @@ messages:
 
    SetHairTranslation(translation = $)
    {
-      piBody_translations2 = piBody_translations2 & ~HUMAN_TRANSLATION2_HAIR_MASK;
-      piBody_translations2 = piBody_translations2
-                              | (translation * HUMAN_TRANSLATION2_HAIR_MUL);
+      piBody_translations2 &= ~HUMAN_TRANSLATION2_HAIR_MASK;
+      piBody_translations2 |= (translation * HUMAN_TRANSLATION2_HAIR_MUL);
 
       if poOwner <> $
       {
@@ -1847,48 +1965,40 @@ messages:
 
    SetHead(head=$)
    {
-      if head = $
+      if head <> $
       {
-         return;
+         prHead = head;
       }
-
-      prHead = head;
 
       return;
    }
 
    SetEyes(eyes=$)
    {
-      if eyes = $
+      if eyes <> $
       {
-         return;
+         prEyes = eyes;
       }
-
-      prEyes = eyes;
 
       return;
    }
 
    SetNose(Nose=$)
    {
-      if Nose = $
+      if Nose <> $
       {
-         return;
+         prNose = Nose;
       }
-
-      prNose = Nose;
 
       return;
    }
 
    SetMouth(Mouth=$)
    {
-      if Mouth = $
+      if Mouth <> $
       {
-         return;
+         prMouth = Mouth;
       }
-
-      prMouth = Mouth;
 
       return;
    }

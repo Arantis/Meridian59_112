@@ -27,21 +27,23 @@ properties:
    piFine_col = 0
 
    // List of enchantments applied by radius spells.
-   // Each element is [song object, spellpower, caster]
-   // Support for players, monsters, and items
+   // Each element is [timer, spell object, state, spellpower]
    plRadiusEnchantments = $
 
 messages:
 
    NewOwner(what = $)
    {
+      local lPos;
+
       if what <> $
       {
-         piRow = First(Send(what,@GetRoomPos,#what=self));
-         piCol = Nth(Send(what,@GetRoomPos,#what=self),2);
+         lPos = Send(what,@GetRoomPos,#what=self);
+         piRow = First(lPos);
+         piCol = Nth(lPos,2);
 
-         piFine_row = Nth(Send(what,@GetRoomPos,#what=self),3);
-         piFine_col = Nth(Send(what,@GetRoomPos,#what=self),4);
+         piFine_row = Nth(lPos,3);
+         piFine_col = Nth(lPos,4);
       }
 
       propagate;
@@ -67,6 +69,20 @@ messages:
       return piFine_col;
    }
 
+   ChangeCoords(new_row = $,new_col = $,fine_row = $,fine_col = $)
+   {
+      /// posted so we know it happens last, and that new_row is going to be
+      /// the pre-coords, and piRow is going to be the post.  This was crucial
+      /// to making the spam protection on the walls work.
+
+      piRow = new_row;
+      piCol = new_col;
+      piFine_row = fine_row;
+      piFine_col = fine_col;
+
+      return;
+   }
+
    ReqSomethingMoved(what = $,new_row = $,new_col = $,new_finerow = $,
                      new_finecol = $)
    {
@@ -83,76 +99,239 @@ messages:
 
          Post(self,@ChangeCoords,#new_row=new_row,#new_col=new_col,
                #fine_row=fine_row,#fine_col = fine_col);
+
+         Send(self,@NoMoveOnRadiusEnchCheckAll);
       }
 
       propagate;
    }
 
-   ChangeCoords(new_row = $,new_col = $,fine_row = $,fine_col = $)
+   SomethingEntered(what=$)
    {
-      /// posted so we know it happens last, and that new_row is going to be
-      /// the pre-coords, and piRow is going to be the post.  This was crucial
-      /// to making the spam protection on the walls work.
-
-      piRow = new_row;
-      piCol = new_col;
-      piFine_row = fine_row;
-      piFine_col = fine_col;
-
-      return;
-   }
-
-   AddRadiusEnchantment(what=$,iPower=0,source=$)
-   {
-      local i;
-
-      foreach i in plRadiusEnchantments
+      if (what <> self)
       {
-         if First(i) = what
-            AND Nth(i,2) = iPower
-            AND Nth(i,3) = source
-         {
-            return;
-         }
+         Send(self,@NoMoveOnRadiusEnchCheckOne,#who=what);
       }
 
-      plRadiusEnchantments = Cons([what,iPower,source],plRadiusEnchantments);
-
-      if IsClass(self,&User)
-      {
-         Send(self,@ShowAddEnchantment,#what=what,#type=2);
-
-         if source = self
-         {
-            Send(self,@ShowAddEnchantment,#what=what,#type=1);
-         }
-      }
-
-      return;
+      propagate;
    }
 
-   RemoveRadiusEnchantment(what=$,iPower=0,source=$)
+   SomethingLeft(what=$)
    {
-      local i;
+      local i, each_obj, oSource, state;
 
-      foreach i in plRadiusEnchantments
+      if (what <> self)
       {
-         if First(i) = what
-            AND Nth(i,2) = iPower
-            AND Nth(i,3) = source
+         if (IsClass(what,&NoMoveOn))
          {
-            if IsClass(self,&User)
+            foreach i in plRadiusEnchantments
             {
-               Send(self,@ShowRemoveEnchantment,#what=First(i),#type=2);
-
-               if source = self
+               each_obj = Nth(i,2);
+               state = Nth(i,3);
+               oSource = Send(each_obj,@GetSource,#state=state);
+               if (oSource = what)
                {
-                  Send(self,@ShowRemoveEnchantment,#what=First(i),#type=1);
+                  Send(self,@RemoveRadiusEnchantment,#what=each_obj,#state=state);
+               }
+               else if (oSource = self)
+               {
+                  Send(what,@RemoveRadiusEnchantment,#what=each_obj,#state=state);
                }
             }
-
-            plRadiusEnchantments = DelListElem(plRadiusEnchantments,i);
          }
+      }
+
+      propagate;
+   }
+
+   SomethingPhasedIn(what=$)
+   {
+      if (what <> self)
+      {
+         Send(self,@NoMoveOnRadiusEnchCheckOne,#who=what);
+      }
+
+      propagate;
+   }
+
+   SomethingPhasedOut(what=$)
+   "Cancel our radius enchantments."
+   {
+      if (what = self)
+      {
+         Send(self,@RemoveAllRadiusEnchantments);
+      }
+
+      propagate;
+   }
+
+   SomethingSpectatedIn(what=$)
+   {
+      if (what <> self)
+      {
+         Send(self,@NoMoveOnRadiusEnchCheckOne,#who=what);
+      }
+
+      propagate;
+   }
+
+   SomethingSpectatedOut(what=$)
+   "Cancel our radius enchantments."
+   {
+      if (what = self)
+      {
+         Send(self,@RemoveAllRadiusEnchantments);
+      }
+
+      propagate;
+   }
+
+   #region Radius Enchantments
+   NoMoveOnRadiusEnchCheckAll()
+   "Checks whether any active object in our room should be affected "
+   "by any radius enchantments for which we are the source."
+   {
+      local i, j, each_obj, lState, oSpell, lActive, iSpellPower;
+
+      lActive = Send(poOwner,@GetHolderActive);
+
+      foreach i in plRadiusEnchantments
+      {
+         oSpell = Nth(i,2);
+         lState = Nth(i,3);
+         iSpellPower = Nth(i,4);
+         if (Send(oSpell,@GetSource,#state=lState) = self)
+         {
+            foreach j in lActive
+            {
+               each_obj = First(j);
+               if (each_obj <> self)
+               {
+                  Send(oSpell,@CheckRadiusEnchantment,#who=each_obj,
+                        #state=lState,#iRow=piRow,#iCol=piCol,
+                        #iFineRow=piFine_row,#iFineCol=piFine_col,
+                        #iSpellPower=iSpellPower);
+               }
+            }
+         }
+      }
+
+      return;
+   }
+
+   NoMoveOnRadiusEnchCheckOne(who=$)
+   "Checks whether 'who' should be affected by radius enchantments "
+   "for which we are the source."
+   {
+      local i, lState, oSpell;
+
+      if (who = $)
+      {
+         Debug("Bad param sent to NoMoveOnRadiusEnchCheckOne");
+
+         return;
+      }
+
+      if (who = self)
+      {
+         return;
+      }
+
+      foreach i in plRadiusEnchantments
+      {
+         oSpell = Nth(i,2);
+         lState = Nth(i,3);
+         if (Send(oSpell,@GetSource,#state=lState) = self)
+         {
+            Send(oSpell,@CheckRadiusEnchantment,#who=who,#state=lState,
+                  #iRow=piRow,#iCol=piCol,#iFineRow=piFine_row,
+                  #iFineCol=piFine_col,#iSpellPower=Nth(i,4));
+         }
+      }
+
+      return;
+   }
+
+   IsEnchantedRadius(what = $, state = $)
+   {
+      local i, lState;
+
+      if (what = $)
+      {
+         return FALSE;
+      }
+
+      if (state = $)
+      {
+         return GetListNode(plRadiusEnchantments,2,what) <> $;
+      }
+
+      foreach i in plRadiusEnchantments
+      {
+         if (what = Nth(i,2))
+         {
+            lState = Nth(i,3);
+            if (First(state) = First(lState)
+               AND Nth(state,2) = Nth(lState,2))
+            {
+               return TRUE;
+            }
+         }
+      }
+
+      return FALSE;
+   }
+
+   RemoveRadiusEnchantment(what=$,state=$,report=TRUE,recheck=FALSE)
+   "Handles all non-players."
+   {
+      local i, lState;
+
+      foreach i in plRadiusEnchantments
+      {
+         if (what = Nth(i,2))
+         {
+            lState = Nth(i,3);
+            if (First(state) = First(lState)
+               AND Nth(state,2) = Nth(lState,2))
+            {
+               if First(i) <> $
+               {
+                  if IsTimer(First(i))
+                  {
+                     DeleteTimer(First(i));
+                  }
+                  SetFirst(i,$);
+               }
+
+               plRadiusEnchantments = DelListElem(plRadiusEnchantments,i);
+
+               Send(what,@RemoveEnchantmentEffects,#who=self,#state=state,
+                     #report=report,#recheck=recheck);
+
+            }
+         }
+      }
+
+      // If logged on, see if we should get enchanted by another radius
+      // enchantment.
+      if (recheck AND poOwner <> $)
+      {
+         SendListByClass(Send(poOwner,@GetHolderActive),1,&NoMoveOn,
+               @NoMoveOnRadiusEnchCheckOne,#who=self);
+      }
+
+      return;
+   }
+
+   RemoveAllRadiusEnchantments(report=TRUE)
+   {
+      local i;
+
+      foreach i in plRadiusEnchantments
+      {
+         Send(self,@RemoveRadiusEnchantment,#what=Nth(i,2),#state=Nth(i,3),
+               #report=report);
       }
 
       return;
@@ -172,8 +351,8 @@ messages:
       {
          foreach i in plRadiusEnchantments
          {
-            if IsClass(First(i),byClass)
-               AND (caster = $ OR Nth(i,3) = caster)
+            if IsClass(Nth(i,2),byClass)
+               AND (caster = $ OR First(Nth(i,3)) = caster)
             {
                return TRUE;
             }
@@ -183,8 +362,8 @@ messages:
       {
          foreach i in plRadiusEnchantments
          {
-            if First(i) = what
-               AND (caster = $ OR Nth(i,3) = caster)
+            if Nth(i,2) = what
+               AND (caster = $ OR First(Nth(i,3)) = caster)
             {
                return TRUE;
             }
@@ -194,25 +373,140 @@ messages:
       return FALSE;
    }
 
-   GetMostPowerfulRadiusEnchantmentState(byClass=&RadiusEnchantment)
+   GetRECastPower(what=$)
+   "Returns the spellpower a given radius enchantment was cast at."
    {
-      local i, oHighest;
+      local lEnch;
 
-      foreach i in plRadiusEnchantments
+      if (what = $)
       {
-         if IsClass(First(i), byClass)
-            AND (oHighest = $ OR Nth(i,2) > Nth(oHighest,2))
+         Debug("GetRECastPower called with $ spell!");
+
+         return 0;
+      }
+
+      lEnch = GetListNode(plRadiusEnchantments,2,what);
+      if (lEnch <> $)
+      {
+         return Nth(lEnch,4);
+      }
+
+      return 0;
+   }
+
+   GetRadiusEnchantmentState(what=$,byClass=&RadiusEnchantment)
+   "Assumes only one enchantment of each type is allowed.  Enforced "
+   "by RadiusEnchantment class."
+   {
+      local i;
+
+      if what = $
+      {
+         foreach i in plRadiusEnchantments
          {
-            oHighest = i;
+            if IsClass(Nth(i,2),byClass)
+            {
+               return Nth(i,3);
+            }
+         }
+      }
+      else
+      {
+         foreach i in plRadiusEnchantments
+         {
+            if Nth(i,2) = what
+            {
+               return Nth(i,3);
+            }
          }
       }
 
-      return oHighest;
+      return $;
+   }
+
+   PeriodicEnchantmentTimer(timer = $)
+   "Handles all non-players."
+   {
+      local i;
+
+      foreach i in plRadiusEnchantments
+      {
+         if First(i) = timer
+         {
+            plRadiusEnchantments = DelListElem(plRadiusEnchantments,i);
+
+            Send(Nth(i,2),@StartPeriodicEnchantment,#who=self,#state=Nth(i,3));
+
+            return;
+         }
+      }
+
+      Debug("Enchantment timer went off with no enchantment",timer);
+
+      return;
+   }
+
+   EnchantmentTimer(timer = $)
+   "Monster propagates here to handle radius enchantments, player does not."
+   {
+      local i;
+
+      foreach i in plRadiusEnchantments
+      {
+         if First(i) = timer
+         {
+            Send(Nth(i,2),@EndEnchantment,#who=self,#state=Nth(i,3));
+
+            plRadiusEnchantments = DelListElem(plRadiusEnchantments,i);
+
+            return;
+         }
+      }
+
+      Debug("Enchantment timer went off with no enchantment",timer);
+
+      return;
    }
 
    GetRadiusEnchantments()
    {
       return plRadiusEnchantments;
+   }
+
+   GetSpellAbility()
+   "Stub to handle calls on monsters from radius enchantment code."
+   {
+      return 0;
+   }
+   #endregion Radius Enchantments
+
+   SendLightingInformation()
+   {
+      local i, oLightObject, iColor, iIntensity;
+
+      iIntensity = 0;
+      iColor = 0;
+
+      foreach i in plRadiusEnchantments
+      {
+         oLightObject = Nth(i,2);
+         if (Send(oLightObject,@GetSource,#state=Nth(i,3)) = self
+            AND Send(oLightObject,@GetLightIntensity) >= iIntensity)
+         {
+            iIntensity = Send(oLightObject,@GetLightIntensity);
+            iColor = Send(oLightObject,@GetLightColor);
+         }
+      }
+
+      if iIntensity > 0
+      {
+         AddPacket(2,(LIGHT_FLAG_ON | LIGHT_FLAG_DYNAMIC),
+                   1,iIntensity, 2,iColor);
+
+         return;
+      }
+
+      propagate;
    }
 
    IsInSameRoom(what = $)
@@ -404,10 +698,10 @@ messages:
          iHeight_diff = 0;
       }
       else
-	  {
+      {
          iHeight_diff = Send(self,@GetHeightFloorAtObjectBSP) - iHeightFWD;
-	  }
-      	
+      }
+
       // Deltas.
       iRow_diff = iRow - iWhatRow;
       iCol_diff = iCol - iWhatCol;

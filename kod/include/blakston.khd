@@ -170,6 +170,7 @@
    PROJ_FLAG_NONE = 0x00
    PROJ_FLAG_FOLLOW_GROUND = 0x01
    PROJ_FLAG_LIGHT_SOURCE = 0x02
+   PROJ_FLAG_TRANSPARENT50 = 0x04
 
    // Flags for dynamic lights
    LIGHT_FLAG_NONE = 0x0000
@@ -481,6 +482,7 @@
    RID_TOS_OLD_TAVERN = 76
    RID_TOS_STORAGE = 77
    RID_TOS_SMUGGLERS_WAY = 78
+   RID_TOS_DEATH_ARENA = 79
 
    // Barloque 100-149
    RID_BAR_NORTH = 101
@@ -510,7 +512,9 @@
    RID_COR_WEAPONSMASTER = 154
    RID_COR_MASTER = 154
    RID_COR_TAILOR = 155
-   RID_COR_UNIV = 156
+   RID_COR_GEN_HALL = 156
+   RID_COR_UNIV = 157
+   RID_COR_MUSEUM = 158
 
    // Marion 200-249
    RID_MARION = 200
@@ -612,6 +616,8 @@
    RID_D7 = 547
    RID_D8 = 548
    RID_D9 = 549
+   RID_D6E6 = 550
+   RID_D6E6ULAKE = 551
 
    RID_E2 = 552
    RID_E4 = 554
@@ -770,7 +776,9 @@
    RID_NECROAREA3B = 832
    RID_BRAX_BUILDING2 = 832
    RID_BRAX_ARENA = 833
-   RID_BRAX_END = 833
+   RID_NECHALLWAY = 834
+   RID_NECROAREA6 = 835
+   RID_BRAX_END = 835
 
    RID_BOURGEOIS = 850
    RID_CASTLE2A = 850
@@ -906,7 +914,14 @@
    RID_OLD_MARION = 9001
    RID_OLD_BAR_NORTH = 9002
    RID_OLD_BAR_SOUTH = 9003
-  
+   RID_OLD_CORNOTH = 9004
+   RID_OLD_COR_UNIV = 9005
+   RID_OLD_TOS = 9006
+   RID_OLD_TOS_EAST = 9007
+   RID_OLD_TOS_INN = 9008
+   RID_OLD_TOS_APOTH = 9009
+   RID_OLD_TOS_SMITH = 9010
+
    // Survival Rooms 9500 - 9999
    RID_SURVIVAL_START = 9500
    RID_SURVIVAL_END = 9999
@@ -1327,11 +1342,23 @@
    KVERY_EVIL = 5
 
    // Arena combat styles
+   // Keep min/max equal to lowest/highest valid styles.
    STYLE_NO_FIGHT = 0
+   ARENA_STYLE_MIN = 1
    STYLE_ONE_ON_ONE = 1
    STYLE_LAST_MAN_STANDING = 2
    STYLE_GUILD_VS_GUILD = 3
    STYLE_LAST_GUILD_STANDING = 4
+   ARENA_STYLE_MAX = 4
+
+   // Watcher IDs.
+   // Keep min/max equal to lowest/highest valid IDs.
+   WATCHER_NONE        = 0
+   WATCHER_ID_MIN      = 1
+   WATCHER_TOS_ARENA   = 1
+   WATCHER_BRAX_ARENA  = 2
+   WATCHER_DEATH_ARENA = 3
+   WATCHER_ID_MAX      = 3
 
    // Level of ground each end of the Riija bridge.
    BRIDGE_OF_FAITH_LEVEL = 384
@@ -1612,14 +1639,8 @@
 
    // brain identification numbers
    BRAIN_ORIGINAL          = 1
-   BRAIN_REVENANT          = 2
-   BRAIN_BLIND             = 3
-   BRAIN_PARALYZED         = 4
-   BRAIN_GUARD             = 5
-   BRAIN_NONAGGRESSIVE     = 6
-   BRAIN_KARMA_AGGRESSIVE  = 7
-   BRAIN_SWARM             = 8
-   BRAIN_MAX_NUM           = 8
+   BRAIN_SWARM             = 2
+   BRAIN_MAX_NUM           = 2
 
    // AI Behaviors
    // Mob cannot be attacked.
@@ -1777,6 +1798,9 @@
    TID_XEO_HOLY      = 71
    TID_XEO_NERU      = 72
    TID_XEO_ILL       = 73
+
+   TID_SKELETON5     = 74
+   TID_NECROMANCER   = 75
 
    // English articles
 
@@ -2120,6 +2144,10 @@
    SID_SUPER_ROOM_HOLD = 90
    SID_DELIVERANCE_TOUCH = 91
    SID_DM_ITEMATT = 92
+   SID_HOLY_BLAZE = 93
+   SID_MARTYRS_GRACE = 94
+   SID_SPIRIT_BLAST = 95
+
    SID_REFLECTION = 99
    SID_SPIRITUAL_HAMMER = 100
    SID_APPARITION = 101
@@ -2380,7 +2408,7 @@
 
    // Second set of player flags (in piFlags2)
    // A mask of flags that are unaffected by ResetPlayerFlagList
-   PFLAG2_MASK             = 0x001E80
+   PFLAG2_MASK             = 0x011F80
 
    PFLAG2_HASTED           = 0x000001
    PFLAG2_DANCING          = 0x000002
@@ -2401,6 +2429,8 @@
    PFLAG2_SQUELCHED_APPEAL = 0x004000
    // Sum of the other squelched flags.
    PFLAG2_SQUELCHED_ALL    = 0x003E00
+   // Keep 0x8000 free for future squelch flag.
+   PFLAG2_DARENA_DEATH     = 0x010000
 
    // Third set of player flags (in piFlags3)
    // piFlags3 can now be used as a proper bitfield, and no longer
@@ -2838,7 +2868,7 @@
    OO_BLOCK = 55
    OO_BLUEJUG = 56
    OO_TALLURN = 57
-   OO_BUCkET = 58
+   OO_BUCKET = 58
    OO_BUNNY = 59
    OO_CORN = 60
    OO_DRESS1B = 61
@@ -2948,7 +2978,34 @@
    OO_MUMMY = 164
    OO_MUSEUM_PORTAL = 165
    OO_MUSEUM_TELEPORT = 166
+   OO_POTPLANT = 167
+   OO_RSHRUB = 168
+   OO_BUCKET2 = 169
 
+   // Hist Museum CN
+   OO_HIST_CENTIPEDE = 170
+   OO_HIST_BANKER = 171
+   OO_HIST_BSMITH = 172
+   OO_HIST_SCIMITAR = 173
+   OO_HIST_DUKE = 174   
+   OO_HIST_EVPRSTT = 175
+   OO_HIST_FUNGBST = 176
+   OO_HIST_GAUNTLET = 177
+   OO_HIST_GSWORD = 178
+   OO_HIST_KING1 = 179
+   OO_HIST_PLATE = 180
+   OO_HIST_LEATHAMR = 181
+   OO_HIST_ROUNDSHLD = 182
+   OO_HIST_KSHIELD = 183
+   OO_HIST_ORC = 184
+   OO_HIST_ORNHELMA = 185
+   OO_HIST_PRIESTESS = 186
+   OO_HIST_RAT = 187
+   OO_HIST_GOLDSHIELD = 188
+   OO_HIST_PRINCESS = 189
+   OO_HIST_HERMIT = 190
+
+   
    // Shrines
 
    // These IDs don't need to be bitvectors, just unique.

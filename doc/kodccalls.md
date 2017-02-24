@@ -95,7 +95,7 @@ present in the current codebase.
   * [GetTime](#gettime)
   * [GetTickCount](#gettickcount)
   * [GetInactiveTime](#getinactivetime)
-  * [GetTimeZoneOffset](#gettimezoneoffset)
+  * [GetDateAndTime](#getdateandtime)
 * [Miscellaneous](#miscellaneous)
   * [Random](#random)
   * [Abs](#abs)
@@ -1716,19 +1716,22 @@ given session.
    }
 ```
 
-#### GetTimeZoneOffset
-`GetTimeZoneOffset( )`
+#### GetDateAndTime
+`GetDateAndTime(*year, *month, *day, *hour, *minute, *second)`
 
-Returns the time zone offset from UTC for the location of the server.
-Subtracting the return value of GetTimeZoneOffset from UTC gives local time.
+Places the current date values into the appropriate local variables passed as
+arguments in the call (using the * operator). Any of the arguments can be $,
+e.g. if only the day is needed. Uses the local time of the server, accounts for
+daylight savings time.
 
 ```
-   Constructor()
+   GetDay()
    {
-      ptTick = CreateTimer(self,@TimeTick,60000);
-      piTimeZoneOffset = GetTimeZoneOffset();
+      local iDay;
 
-      return;
+      GetDateAndTime($, $, *iDay, $, $, $);
+
+      return iDay;
    }
 ```
 

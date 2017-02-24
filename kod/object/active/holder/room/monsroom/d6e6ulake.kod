@@ -1,0 +1,87 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+UlakeD6E6 is ObjectRoom
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include d6e6ulake.lkod
+
+   room_d6e6ulake = d6e6ulake.roo
+   room_name_d6e6ulake = "Underground Lake - Home of the Mollusk"
+
+   d6e6ulake_music = song.ogg
+
+classvars:
+
+   vrName = room_name_d6e6ulake
+
+   viTeleport_row = 15
+   viTeleport_col = 24
+
+   viTerrain_type = TERRAIN_CAVES | TERRAIN_TEMPLE
+
+properties:
+
+   prRoom = room_d6e6ulake
+   piRoom_num = RID_D6E6ULAKE
+
+   prMusic = d6e6ulake_music
+
+   piBaseLight = LIGHT_DARK
+ 
+   piDirectional_percent = DIRECTIONAL_PERCENT_OUTDOORS
+
+   piOutside_factor = OUTDOORS_2
+
+   piGen_percent = 80
+
+   piInit_count_min = 4
+   piInit_count_max = 8
+
+   piMonster_count_max = 12
+   
+
+messages:
+
+   CreateStandardExits()
+   {
+      plEdge_Exits = $;
+      
+      plEdge_Exits = Cons([LEAVE_EAST, RID_D6E6, 15, 53, ROTATE_180], plEdge_exits);
+  
+      propagate;
+   }
+   
+   Constructed()
+   {
+      plMonsters = [ [&MolluskMonster, 100] ];
+
+      plGenerators = [ [17, 10], [22, 12], [17, 18], [22, 25], [13, 22],
+              [16, 29], [11, 30], [12, 36], [6, 29], [5, 23], 
+              [8, 20], [9, 11] ];
+      propagate;
+   }
+
+   CreateStandardObjects()
+   {
+      Send(self,@NewHold,#what=Create(&Tree),
+          #new_row=20,#new_col=20,#fine_row=0,#fine_col=60,#new_angle=ANGLE_EAST); 
+      Send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_FIRE,#iIntensity=40),
+          #new_row=20,#new_col=20,#fine_row=0,#fine_col=60);
+      propagate;
+   }
+   
+end
+////////////////////////////////////////////////////////////////////////////////

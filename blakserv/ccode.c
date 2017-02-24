@@ -4167,23 +4167,6 @@ int C_ListCopy(int object_id,local_var_type *local_vars,
    return ret_val.int_val;
 }
 
-/*
- * C_GetTimeZoneOffset: returns the amount of seconds that must be added
- *                      to local time to equal UTC. Conversely, subtracting
- *                      this number from UTC (GetTime()) equals local time.
- */
-int C_GetTimeZoneOffset(int object_id,local_var_type *local_vars,
-            int num_normal_parms,parm_node normal_parm_array[],
-            int num_name_parms,parm_node name_parm_array[])
-{
-   val_type ret_val;
-
-   ret_val.v.tag = TAG_INT;
-   ret_val.v.data = GetTimeZoneOffset();
-
-   return ret_val.int_val;
-}
-
 int C_GetTime(int object_id,local_var_type *local_vars,
 			  int num_normal_parms,parm_node normal_parm_array[],
 			  int num_name_parms,parm_node name_parm_array[])
@@ -4237,6 +4220,73 @@ int C_GetTickCount(int object_id,local_var_type *local_vars,
 	return ret_val.int_val;
 }
 
+/*
+ * C_GetDateAndTime: Gets the date and time, places them into passed local vars.
+ * 
+ */
+int C_GetDateAndTime(int object_id,local_var_type *local_vars,
+            int num_normal_parms,parm_node normal_parm_array[],
+            int num_name_parms,parm_node name_parm_array[])
+{
+   val_type year_val, month_val, day_val, hour_val, minute_val, second_val;
+
+   year_val = RetrieveValue(object_id, local_vars, normal_parm_array[0].type,
+      normal_parm_array[0].value);
+   month_val = RetrieveValue(object_id, local_vars, normal_parm_array[1].type,
+      normal_parm_array[1].value);
+   day_val = RetrieveValue(object_id, local_vars, normal_parm_array[2].type,
+      normal_parm_array[2].value);
+   hour_val = RetrieveValue(object_id, local_vars, normal_parm_array[3].type,
+      normal_parm_array[3].value);
+   minute_val = RetrieveValue(object_id, local_vars, normal_parm_array[4].type,
+      normal_parm_array[4].value);
+   second_val = RetrieveValue(object_id, local_vars, normal_parm_array[5].type,
+      normal_parm_array[5].value);
+
+   time_t t = time(NULL);
+   struct tm tm_time = *localtime(&t);
+
+   // Only set the local vars if we're passed an integer - allow leaving
+   // these as null in the function call.
+   if (year_val.v.tag == TAG_INT)
+   {
+      // tm_year is number of years after 1900.
+      local_vars->locals[year_val.v.data].v.data = tm_time.tm_year + 1900;
+      local_vars->locals[year_val.v.data].v.tag = TAG_INT;
+   }
+   if (month_val.v.tag == TAG_INT)
+   {
+      // tm_mon ranges from 0-11, 0 is Jan.
+      local_vars->locals[month_val.v.data].v.data = tm_time.tm_mon + 1;
+      local_vars->locals[month_val.v.data].v.tag = TAG_INT;
+   }
+   if (day_val.v.tag == TAG_INT)
+   {
+      // tm_mday ranges from 1-31.
+      local_vars->locals[day_val.v.data].v.data = tm_time.tm_mday;
+      local_vars->locals[day_val.v.data].v.tag = TAG_INT;
+   }
+   if (hour_val.v.tag == TAG_INT)
+   {
+      // tm_hour ranges from 0-23
+      local_vars->locals[hour_val.v.data].v.data = tm_time.tm_hour;
+      local_vars->locals[hour_val.v.data].v.tag = TAG_INT;
+   }
+   if (minute_val.v.tag == TAG_INT)
+   {
+      // tm_min ranges from 0-59.
+      local_vars->locals[minute_val.v.data].v.data = tm_time.tm_min;
+      local_vars->locals[minute_val.v.data].v.tag = TAG_INT;
+   }
+   if (second_val.v.tag == TAG_INT)
+   {
+      // tm_sec ranges from 0-60, due to leap seconds.
+      local_vars->locals[second_val.v.data].v.data = tm_time.tm_sec;
+      local_vars->locals[second_val.v.data].v.tag = TAG_INT;
+   }
+
+   return NIL;
+}
 
 int C_Random(int object_id,local_var_type *local_vars,
 			 int num_normal_parms,parm_node normal_parm_array[],

@@ -24,9 +24,9 @@ resources:
 
    jasbank_sign_name = "Welcome to the Bank of Jasper"
    jasbank_sign_desc = \
-      "Use the deposit, withdraw (amount), and balance commands to access "
-      "your bank account.\n\nDeposits made here can also be accessed from "
-      "the First Royal Bank of Tos in East Tos."
+      "Use the commands \"deposit amount\", \"withdraw amount\", and "
+      "\"balance\" to access your bank account.\n\nDeposits made here can "
+      "also be accessed from the First Royal Bank of Tos in East Tos."
 
 classvars:
 

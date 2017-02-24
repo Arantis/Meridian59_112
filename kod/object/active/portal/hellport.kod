@@ -33,6 +33,7 @@ resources:
    hellportal_barloque = "the fine Brownstone Inn in a bustling Barloque"
    hellportal_raza = "the rustic charm of the Raza Inn"
    hellportal_kocatan = "the sturdy, island fortress of Ko'catan"
+   hellport_darena = "the blood-stained floor of the Death Arena"
 
 classvars:
 
@@ -108,6 +109,10 @@ messages:
       {
          rLocation = hellportal_kocatan;
       }
+      else if (Send(who,@CheckPlayerFlag,#flag=PFLAG2_DARENA_DEATH,#flagset=2))
+      {
+         rLocation = hellport_darena;
+      }
       else if (Send(who,@CheckPlayerFlag,#flag=PFLAG_DEATH_RIFTING)
          AND Send(who,@GetBoundLocationName) <> $)
       {
@@ -149,11 +154,15 @@ messages:
    {
       local oRoom;
 
+      if (poOwner = $
+         OR NOT IsClass(poOwner,&Underworld)
+         OR NOT IsClass(what,&User))
+      {
+         propagate;
+      }
+
       // Check for Death Rifters.
-      if poOwner <> $
-         AND IsClass(poOwner,&Underworld)
-         AND IsClass(what,&User)
-         AND Send(what,@CheckPlayerFlag,#flag=PFLAG_DEATH_RIFTING)
+      if Send(what,@CheckPlayerFlag,#flag=PFLAG_DEATH_RIFTING)
          AND Send(what,@GetBoundLocationName) <> $
       {
          Send(what,@SendPlayerToBoundLocation);
@@ -162,14 +171,22 @@ messages:
       }
 
       // Check for Ko'catanites.
-      if poOwner <> $
-         AND IsClass(poOwner,&Underworld)
-         AND IsClass(what,&User)
-         AND Send(what,@CheckPlayerFlag,#flag=PFLAG2_KOCATAN_DEATH,#flagset=2)
+      if Send(what,@CheckPlayerFlag,#flag=PFLAG2_KOCATAN_DEATH,#flagset=2)
       {
          // Allow them to head to the island.
-         Send(what,@SetPlayerFlag,#flag=PFLAG2_KOCATAN_DEATH,#value=FALSE,#flagset=2);
+         Send(what,@SetPlayerFlag,#flag=PFLAG2_KOCATAN_DEATH,#value=FALSE,
+               #flagset=2);
          oRoom = Send(SYS,@FindRoomByNum,#num=RID_KOC_INN);
+         Send(oRoom,@Teleport,#what=what);
+
+         return;
+      }
+
+      if Send(what,@CheckPlayerFlag,#flag=PFLAG2_DARENA_DEATH,#flagset=2)
+      {
+         Send(what,@SetPlayerFlag,#flag=PFLAG2_DARENA_DEATH,#value=FALSE,
+               #flagset=2);
+         oRoom = Send(SYS,@FindRoomByNum,#num=RID_TOS_DEATH_ARENA);
          Send(oRoom,@Teleport,#what=what);
 
          return;

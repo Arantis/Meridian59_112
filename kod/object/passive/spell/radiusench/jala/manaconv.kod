@@ -21,31 +21,31 @@ resources:
    ManaConvergence_name_rsc = "mana convergence"
    ManaConvergence_icon_rsc = imanacon.bgf
    ManaConvergence_desc_rsc = \
-      "The words of this song form an enchantment which increases the effectiveness "
-      "of magical attack spells.  Requires one perfect polished seraphym."
+      "The words of this song form an enchantment which increases the "
+      "effectiveness of magical attack spells.  Requires one perfect polished "
+      "seraphym."
 
    ManaConvergence_song = jala5.ogg
 
-   ManaConvergence_on = "The flow of magic in this place suddenly becomes stronger."
-   ManaConvergence_new_occupant = "You can feel a strong flow of magic in this place."
-
    Mana_Convergence_cast = "You begin to play a charged song of empowerment."
-   Mana_Convergence_starts = "%s begins to play a charged song of empowerment."
-   Mana_Convergence_ends = "The charged song played by %s fades away."
+   Mana_Convergence_starts = \
+      "%s%s begins to play a charged song of empowerment."
+   Mana_Convergence_ends = "The charged song played by %s%s fades away."
    Mana_Convergence_caster_ends = "Your song of empowerment fades."
-   Mana_Convergence_caster_enter = "The flow of magic in this place suddenly becomes stronger."
-   Mana_Convergence_enter = "The flow of magic in this place suddenly becomes stronger."
-   Mana_Convergence_leave = "The empowered crackling of energy in the air around you fades."
+   Mana_Convergence_enter = \
+      "The flow of magic in this place suddenly becomes stronger."
+   Mana_Convergence_leave = \
+      "The empowered crackling of energy in the air around you fades."
 
 classvars:
 
-   radius_ench_cast = Mana_Convergence_cast
-   radius_ench_starts = Mana_Convergence_starts
-   radius_ench_ends = Mana_Convergence_ends
-   radius_ench_caster_ends = Mana_Convergence_caster_ends
-   radius_ench_caster_enter = Mana_Convergence_caster_enter
-   radius_ench_enter = Mana_Convergence_enter
-   radius_ench_leave = Mana_Convergence_leave
+   vrEnchantmentOn = Mana_Convergence_cast
+   vrEnchantmentOnOther = Mana_Convergence_starts
+   vrEnchantmentOff = Mana_Convergence_caster_ends
+   vrEnchantmentOffOther = Mana_Convergence_ends
+   vrEnterRadiusCaster = Mana_Convergence_enter
+   vrEnterRadius = Mana_Convergence_enter
+   vrLeaveRadius = Mana_Convergence_leave
 
    vrName = ManaConvergence_name_rsc
    vrIcon = ManaConvergence_icon_rsc
@@ -82,12 +82,11 @@ messages:
       if state <> $
          AND IsClass(oSpell,&AttackSpell)
       {
-         return iSpellPower + Nth(state,2);
+         return iSpellPower + Nth(state,5);
       }
 
       return iSpellPower;
    }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

@@ -51,11 +51,11 @@ BlackDagger_glows = de \
    "~IEiner der Edelsteine im Griff Deiner Klinge flackert und erwacht wieder "
    "zum Leben."
 BlackDagger_mail_logoff = de \
-   "Betreff: Nur Feiglinge ignorieren ihre Edelsteine.Du hast die Verbindung "
+   "Betreff: Nur Feiglinge ignorieren ihre Edelsteine.\nDu hast die Verbindung "
    "gelöst, während mindestens einer Deiner Edelsteine nicht leuchtete. Deswegen "
    "wirst Du aus dem Spiel der Meuchelmörder verbannt.-- Roq"
 BlackDagger_mail_warning = de \
-   "Betreff: Ich beobachte Dich, Unwürdiger.Du warst nicht lange genug online, "
+   "Betreff: Ich beobachte Dich, Unwürdiger.\nDu warst nicht lange genug online, "
    "um am Spiel der Meuchelmörder teilzunehmen. Sofern ich das nochmals feststellen "
    "muss, werde ich Dich ohne Vorwarnung aus dem Spiel verbannen. -- Roq"
 BlackDagger_roq = de "Roq, die dunkle Klinge"

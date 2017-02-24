@@ -1,0 +1,606 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+//////////////////////////////////////////////////////////////////////////////////
+TosDeathArena is TosRoom
+
+constants:
+
+   include blakston.khd
+
+   ENTRANCE_DOOR = 1
+   ENTRANCE_DOOR_TIME = 10000
+
+   // Where fighting can take place.
+   SECTOR_ID_FIGHT = 2
+   // Smaller cage bars.
+   SECTOR_ID_BARS = 3
+   // Inside smaller cage.
+   SECTOR_ID_SMALL_CAGE = 4
+
+resources:
+
+   include tosdeatharena.lkod
+
+   room_tosdeatharena = tosarena_death.roo
+   room_name_tosdeatharena = "The Arena of Death"
+   tosdeatharena_music = nec02.ogg
+
+   Death_Arena_door_open_sound = doordown.ogg
+   Death_Arena_door_close_sound = doorrsup.ogg
+   deatharena_beginfight_sound = arena1.ogg
+   deatharena_endfight_sound = huzzah.ogg
+   deatharena_tourney_sound = fanfare1.ogg
+
+   deatharena_no_offer = \
+      "Johlan Tulca says, \"Spectators and combatants may not exchange "
+      "goods during matches."
+   deatharena_start_tournament = \
+      "Banners unfurl and bugles warble to signify the beginning of the "
+      "Royal Tournament!"
+   deatharena_end_tournament = "The Royal Tournament has come to an end."
+
+   deatharena_sign_name = "The Arena of Death"
+   deatharena_sign_desc = \
+      "Welcome to the Arena of Death!\n\n"
+      "The rules and commands for this arena are the same as those of the "
+      "Arena of Kraanan - players can choose a style of combat by its name, "
+      "if no champion or combatants are in the cage:\n"
+      " * traditional (one on one combat)\n"
+      " * last man standing\n"
+      " * guild vs guild\n"
+      " * battle royale (more than two guilds)\n\n"
+      "Say 'champion', 'challenge' or 'renege' to enter or exit the cage.\n\n"
+      "This arena has one significant difference - dying here has the same "
+      "outcome as being killed in the rest of the game world.  You will be "
+      "sent to The Underworld where you can use the main portal (in the lava) "
+      "to travel back here.  You will keep your items, but lose ability points "
+      "and XP."
+
+   // Name displayed in trophy descriptions.
+   deatharena_trophy_name = "Dealers of Death"
+
+classvars:
+
+   vrName = room_name_tosdeatharena
+
+   viTeleport_Row = 15
+   viTeleport_Col = 24
+
+   viTerrain_type = TERRAIN_CITY
+
+properties:
+
+   prRoom = room_tosdeatharena
+   piRoom_num = RID_TOS_DEATH_ARENA
+   prMusic = tosdeatharena_music
+
+   piBaseLight = LIGHT_NICE
+   piOutside_factor = 0
+
+   ptDoorTimer = $
+   poWatcher = $
+   pbRealdeath = TRUE
+   pbDropLoot = FALSE
+
+messages:
+
+#region Create and Delete
+   CreateStandardObjects()
+   {
+      local lObjCoords1, oObj;
+
+      if poWatcher = $
+      {
+         poWatcher = Create(&DeathArenaWatcher);
+         Send(self,@NewHold,#what=poWatcher,#new_row=23,#new_col=12,
+               #fine_row=46,#fine_col=6,#new_angle=ANGLE_NORTH);
+      }
+
+      Send(self,@NewHold,#what=Create(&Sign,#name=deatharena_sign_name,
+            #desc=deatharena_sign_desc),#new_row=22,#new_col=4,
+            #fine_row=16,#fine_col=6);
+
+      lObjCoords1 = [ [8,23,17,11,OO_ALTAR], [24,16,60,50,OO_BIG_BAG],
+                      [24,8,60,34,OO_BASKET], [24,9,60,42,OO_BAG_OF_BEANS],
+                      [24,10,60,47,OO_APPLE], [24,13,60,57,OO_BROWN_URN],
+                      [22,7,50,21,OO_BLUE_BOTTLE], [22,9,50,17,OO_BLUE_BOTTLE],
+                      [22,12,50,13,OO_BLUE_BOTTLE], [22,15,50,14,OO_BLUE_BOTTLE],
+                      [22,6,50,57,OO_GREY_JUG], [22,17,50,0,OO_GREY_JUG],
+                      [22,11,50,9,OO_SPICES], [22,15,50,51,OO_SPICES],
+                      [22,17,50,15,OO_MUGS], [24,11,60,16,OO_BROWN_URN],
+                      [17,21,40,57,OO_SKULL5], [14,21,25,60,OO_SKULL5],
+                      [7,2,61,26,OO_SKULL5], [10,2,25,25,OO_SKULL3],
+                      [16,2,52,25,OO_SKULL3], [23,4,0,23,OO_SKULL3],
+                      [12,21,13,60,OO_SKULL3], [8,21,39,60,OO_SKULL3],
+                      [19,25,26,26,OO_SKULL3]
+                    ];
+
+      Send(self,@CreateOrnObjFromList,#lObjlist=lObjCoords1);
+
+      // Trophies
+      oObj = Create(&ArenaSign2,#style=STYLE_ONE_ON_ONE,
+                  #RID=RID_TOS_DEATH_ARENA,#name=deatharena_trophy_name);
+      Send(self,@NewHold,#what=oObj,#new_row=14,#new_col=1,
+            #fine_row=52,#fine_col=34);
+      oObj = Create(&ArenaSign2,#style=STYLE_LAST_MAN_STANDING,
+                  #RID=RID_TOS_DEATH_ARENA,#name=deatharena_trophy_name);
+      Send(self,@NewHold,#what=oObj,#new_row=14,#new_col=1,
+            #fine_row=0,#fine_col=24);
+      oObj = Create(&ArenaSign2,#style=STYLE_GUILD_VS_GUILD,
+                  #RID=RID_TOS_DEATH_ARENA,#name=deatharena_trophy_name);
+      Send(self,@NewHold,#what=oObj,#new_row=13,#new_col=1,
+            #fine_row=20,#fine_col=24);
+      oObj = Create(&ArenaSign2,#style=STYLE_LAST_GUILD_STANDING,
+                  #RID=RID_TOS_DEATH_ARENA,#name=deatharena_trophy_name);
+      Send(self,@NewHold,#what=oObj,#new_row=12,#new_col=1,
+            #fine_row=37,#fine_col=34);
+
+      Send(self,@NewHold,#what=Create(&KocatanLamp),#new_row=17,#new_col=24,
+            #fine_row=35,#fine_col=0);
+      Send(self,@NewHold,#what=Create(&OrcTorch),#new_row=21,#new_col=21,
+            #fine_row=46,#fine_col=15);
+      Send(self,@NewHold,#what=Create(&OrcTorch),#new_row=23,#new_col=19,
+            #fine_row=3,#fine_col=56);
+      Send(self,@NewHold,#what=Create(&Tombstone),#new_row=20,#new_col=20,
+            #fine_row=27,#fine_col=16,#new_angle=ANGLE_NORTH);
+      Send(self,@NewHold,#what=Create(&Tombstone),#new_row=21,#new_col=19,
+            #fine_row=29,#fine_col=16,#new_angle=ANGLE_NORTH);
+      Send(self,@NewHold,#what=Create(&Quillpen),#new_row=17,#new_col=24,
+            #fine_row=35,#fine_col=47);
+
+      Send(self,@NewHold,#what=Create(&SkullBrazier),#new_row=6,#new_col=23,
+            #fine_row=57,#fine_col=9);
+      Send(self,@NewHold,#what=Create(&SkullBrazier),#new_row=9,#new_col=23,
+            #fine_row=42,#fine_col=9);
+      Send(self,@NewHold,#what=Create(&SkullBrazier),#new_row=16,#new_col=25,
+            #fine_row=58,#fine_col=58);
+      Send(self,@NewHold,#what=Create(&SkullBrazier),#new_row=19,#new_col=21,
+            #fine_row=42,#fine_col=58);
+      Send(self,@NewHold,#what=Create(&SkullBrazier),#new_row=24,#new_col=17,
+            #fine_row=58,#fine_col=47);
+      Send(self,@NewHold,#what=Create(&SkullBrazier),#new_row=6,#new_col=21,
+            #fine_row=15,#fine_col=57);
+      Send(self,@NewHold,#what=Create(&SkullBrazier),#new_row=21,#new_col=2,
+            #fine_row=4,#fine_col=26);
+      Send(self,@NewHold,#what=Create(&SkullBrazier),#new_row=6,#new_col=2,
+            #fine_row=18,#fine_col=25);
+
+      Send(self,@NewHold,#what=Create(&BarStool),
+           #new_row=22,#new_col=7,#fine_row=20,#fine_col=35);
+      Send(self,@NewHold,#what=Create(&BarStool),
+           #new_row=22,#new_col=8,#fine_row=20,#fine_col=61);
+      Send(self,@NewHold,#what=Create(&BarStool),
+           #new_row=22,#new_col=10,#fine_row=20,#fine_col=20);
+      Send(self,@NewHold,#what=Create(&BarStool),
+           #new_row=22,#new_col=11,#fine_row=20,#fine_col=37);
+      Send(self,@NewHold,#what=Create(&BarStool),
+           #new_row=22,#new_col=13,#fine_row=20,#fine_col=8);
+      Send(self,@NewHold,#what=Create(&BarStool),
+           #new_row=22,#new_col=14,#fine_row=20,#fine_col=30);
+      Send(self,@NewHold,#what=Create(&BarStool),
+           #new_row=22,#new_col=15,#fine_row=20,#fine_col=53);
+
+      propagate;
+   }
+
+   CreateStandardExits()
+   {
+      plExits = $;
+
+      // exits back to tos
+      plExits = Cons([  7, 26, RID_EAST_TOS,  29, 52, ROTATE_NONE ],plExits);
+      plExits = Cons([  8, 26, RID_EAST_TOS,  29, 52, ROTATE_NONE ],plExits);
+
+      propagate;
+   }
+
+   Delete()
+   {
+      if (ptDoorTimer <> $)
+      {
+         DeleteTimer(ptDoorTimer);
+         ptDoorTimer = $;
+      }
+
+      propagate;
+   }
+#endregion Create and Delete
+
+   CanOffer(who = $, target = $)
+   {
+      if who = $ or target = $
+      {
+         return FALSE;
+      }
+
+      if (poWatcher = $
+         OR NOT Send(poWatcher,@FightInSession)
+         OR (Send(poWatcher,@IsCombatant,#who=who)
+            = Send(poWatcher,@IsCombatant,#who=target)))
+      {
+         return TRUE;
+      }
+
+      Send(who,@MsgSendUser,#message_rsc=deatharena_no_offer);
+
+      return FALSE;
+   }
+
+   CheckWatcher(what=$)
+   {
+      if poWatcher = $
+      {
+         poWatcher = what;
+         Send(self,@NewHold,#what=what,#new_row=23,#new_col=12,
+               #fine_row=46,#fine_col=6,#new_angle=ANGLE_NORTH);
+      }
+
+      return;
+   }
+
+   SafePlayerAttack()
+   "No penalty for attacking/killing here."
+   {
+      return TRUE;
+   }
+
+   NewHold(what = $,new_row = 22, new_col = 12)
+   "Move anyone who enters in the playing field into the stands.  "
+   "This should only be necessary for people who drop link."
+   {
+      local oOwner;
+
+      if IsClass(what,&User)
+      {
+         oOwner = Send(what,@GetOwner);
+         if ((oOwner = $
+               OR Send(oOwner,@GetRoomNum) = RID_UNDERWORLD)
+            AND NOT Send(poWatcher,@IsCombatant,#who=what))
+         {
+            Post(self,@Teleport,#what=what,#outofplay=TRUE);
+         }
+      }
+
+      propagate;
+   }
+
+   InPlay(what=$, bNonPlayerOkay = FALSE)
+   "Returns true if player is on playing field, false if not."
+   "Can check either by row and column or by object."
+   "Returns false if not a player, unless the nonPlayerOkay flag is marked"
+   {
+      local iSectorID;
+
+      if what = $
+      {
+         return FALSE;
+      }
+
+      if IsClass(what,&Player) OR bNonPlayerOkay
+      {
+         iSectorID = Send(what,@GetSectorIDAtObject);
+
+         return iSectorID = SECTOR_ID_FIGHT
+                  OR iSectorID = SECTOR_ID_SMALL_CAGE
+                  OR iSectorID = SECTOR_ID_BARS;
+      }
+
+      return FALSE;
+   }
+
+   IsArena()
+   {
+      return TRUE;
+   }
+
+   IsValidTarget(who=$)
+   {
+      if NOT Send(self,@CheckRoomFlag,#flag=ROOM_SAFE_DEATH)
+      {
+         return FALSE;
+      }
+
+      if poWatcher = $
+      {
+         Debug("IsValidTarget called with no watcher in existence!");
+
+         return;
+      }
+
+      return (Send(poWatcher,@IsCombatant,#who=who)
+         AND Send(poWatcher,@FightInSession));
+   }
+
+   GetWatcher()
+   {
+      return poWatcher;
+   }
+
+   Teleport(what=$,goinplay=FALSE,outofplay=FALSE)
+   {
+      // Don't teleport players if logged off.
+      if (what = $
+         OR (IsClass(what,&User)
+            AND NOT Send(what,@IsLoggedOn)))
+      {
+         return;
+      }
+
+      // Check goinplay and outofplay first. If we don't have
+      // a parameter set, teleport combatants in and anyone else out.
+      if goinplay
+      {
+         Send(self,@TeleportIntoPlay,#who=what);
+      }
+      else if outofplay
+      {
+         Send(self,@TeleportOutOfPlay,#who=what);
+      }
+      else if Send(poWatcher,@IsCombatant,#who=what)
+      {
+         Send(self,@TeleportIntoPlay,#who=what);
+      }
+      else
+      {
+         Send(self,@TeleportOutOfPlay,#who=what);
+      }
+
+      return;
+   }
+
+   TeleportIntoPlay(who=$)
+   {
+      local i, iRow, iCol;
+
+      // Teleport to the playing field
+      iRow = Random(5,15);
+      iCol = Random(7,16);
+      Send(SYS,@UtilGoNearSquare,#what=who,#where=self,
+            #new_row=iRow,#new_col=iCol,#mob_override=TRUE);
+
+      // Teleport minions too.
+      foreach i in Send(who,@GetControlledMinions)
+      {
+         if (Send(i,@GetOwner) = self)
+         {
+            Send(self,@TeleportIntoPlay,#who=i);
+         }
+      }
+
+      return;
+   }
+
+   TeleportOutOfPlay(who=$, iNum=0)
+   {
+      local i, iRow, iCol, iAngle;
+
+      if (iNum = 0)
+      {
+         iNum = Random(1,3);
+      }
+
+      if iNum = 1
+      {
+         iRow = 18;
+         iCol = 11;
+         iAngle = ANGLE_NORTH;
+      }
+      else if iNum = 2
+      {
+         iRow = 10;
+         iCol = 19;
+         iAngle = ANGLE_WEST;
+      }
+      else
+      {
+         iRow = 12;
+         iCol = 4;
+         iAngle = ANGLE_EAST;
+      }
+
+      Send(SYS,@UtilGoNearSquare,#what=who,#where=self,#new_row=iRow,
+            #new_col=iCol,#new_angle=iAngle,#mob_override=TRUE);
+
+      // Teleport minions too.
+      foreach i in Send(who,@GetControlledMinions)
+      {
+         if (Send(i,@GetOwner) = self)
+         {
+            Send(self,@TeleportOutOfPlay,#who=i,#iNum=iNum);
+         }
+      }
+
+      return;
+   }
+
+   ArenaBeginFight(lCombatants=$)
+   {
+      if Length(lCombatants) = 2
+      {
+         // Teleport to boxes
+         Send(SYS,@UtilGoNearSquare,#what=First(lCombatants),#where=self,
+               #new_row=3,#new_col=7,#fine_row=34,#fine_col=45,
+               #new_angle=ANGLE_SOUTH);
+         Send(SYS,@UtilGoNearSquare,#what=Nth(lCombatants,2),#where=self,
+               #new_row=3,#new_col=16,#fine_row=34,#fine_col=38,
+               #new_angle=ANGLE_SOUTH);
+      }
+
+      Send(self,@SomethingWaveRoom,#wave_rsc=deatharena_beginfight_sound);
+
+      return;
+   }
+
+   ArenaCommenceFight()
+   {
+      Send(self,@SetSector,#sector=SECTOR_ID_BARS,
+            #animation=ANIMATE_CEILING_LIFT,#height=238,#speed=32);
+
+      return;
+   }
+
+   ArenaEndFight(lCombatants = $)
+   {
+      local i, j, k;
+
+      // Remove radius enchantments
+      foreach i in plActive
+      {
+         j = First(i);
+         if IsClass(j,&Player)
+            OR (IsClass(j,&Monster) AND NOT ((Send(j,@GetBehavior) & AI_NPC)))
+         {
+            foreach k in Send(j,@GetRadiusEnchantments)
+            {
+               Send(Nth(k,2),@RemoveEnchantment,#who=j,#state=Nth(k,3));
+            }
+         }
+      }
+
+      // Remove room enchantments
+      Send(self,@RemoveAllEnchantments);
+
+      Send(self,@SomethingWaveRoom,#wave_rsc=deatharena_endfight_sound);
+
+      Send(self,@SetSector,#sector=SECTOR_ID_BARS,
+            #animation=ANIMATE_CEILING_LIFT,#height=116,#speed=32);
+      Send(self,@CheckBehindBars);
+
+      return;
+   }
+
+   ArenaCombatantReneges(who = $, died = FALSE, kill = FALSE)
+   {
+      local i, each_obj;
+
+      if (who = $)
+      {
+         return;
+      }
+
+      // Kill players who reneged in a way that tries to circumvent the
+      // real death arena, e.g. logging off.
+      if (kill
+         AND pbRealDeath
+         AND NOT died)
+      {
+         // Remove victim's logoff ghost.
+         foreach i in plActive
+         {
+            each_obj = First(i);
+            if (IsClass(each_obj,&LogoffGhost)
+               AND Send(each_obj,@GetGhostedPlayer) = who)
+            {
+               Send(each_obj,@Delete);
+
+               break;
+            }
+         }
+
+         Send(self,@SomethingKilled,#what=poWatcher,#victim=who);
+         Send(who,@Killed,#what=poWatcher);
+      }
+
+      return;
+   }
+
+   ArenaStartTournament(marshal = $)
+   {
+      Send(self,@SomeoneSaid,#string=deatharena_start_tournament,
+            #type=SAY_MESSAGE,#what=self);
+      Send(self,@SomethingWaveRoom,#wave_rsc=deatharena_tourney_sound);
+      pbNoReagents = FALSE;
+
+      return;
+   }
+
+   ArenaEndTournament(marshal = $)
+   {
+      Send(self,@SomeoneSaid,#string=deatharena_end_tournament,
+            #type=SAY_MESSAGE,#what=self);
+      Send(self,@SomethingWaveRoom,#wave_rsc=deatharena_tourney_sound);
+      pbNoReagents = TRUE;
+
+      return;
+   }
+
+   CheckBehindBars()
+   {
+      local i, iSectorID;
+
+      foreach i in Send(poWatcher,@GetCombatantList)
+      {
+         iSectorID = Send(i,@GetSectorIDAtObject);
+         if (iSectorID = SECTOR_ID_SMALL_CAGE
+            OR iSectorID = SECTOR_ID_BARS)
+         {
+            Send(self,@Teleport,#what=i,#goinplay=TRUE);
+         }
+      }
+
+      return;
+   }
+
+   ArenaRealDeath()
+   "Admins can activate real death in the Arena."
+   {
+      return pbRealdeath;
+   }
+
+   ToggleRealDeath()
+   {
+      if (Send(self,@CheckRoomFlag,#flag=ROOM_SAFE_DEATH))
+      {
+         pbRealDeath = FALSE;
+         Send(self,@SetRoomFlag,#flag=ROOM_SAFE_DEATH,#value=FALSE);
+      }
+      else
+      {
+         pbRealDeath = TRUE;
+         Send(self,@SetRoomFlag,#flag=ROOM_SAFE_DEATH,#value=TRUE);
+      }
+
+      return;
+   }
+
+   ArenaDropItems()
+   {
+      return pbRealDeath AND pbDropLoot;
+   }
+
+#region Entry Door
+   SomethingTryGo(what = $,row = $,col = $)
+   {
+      // Entrance Door to the Death Arena (cosmetic)
+      if row >= 9 AND row <= 11 AND col >= 23 AND col <= 26
+      {
+         Send(self,@SetSector,#sector=ENTRANCE_DOOR,#animation=ANIMATE_FLOOR_LIFT,
+              #height=120,#speed=16);
+         Send(self,@SomethingWaveRoom,#wave_rsc=Death_Arena_door_open_sound);
+         ptDoorTimer = CreateTimer(self,@ResetDoorTimer,ENTRANCE_DOOR_TIME);
+
+         return TRUE;
+      }
+
+      propagate;
+   }
+
+   ResetDoorTimer()
+   {
+      ptDoorTimer = $;
+
+      Send(self,@SetSector,#sector=ENTRANCE_DOOR,#animation=ANIMATE_FLOOR_LIFT,
+           #height=200,#speed=16);
+      Send(self,@SomethingWaveRoom,#wave_rsc=Death_Arena_door_close_sound);
+
+      return;
+   }
+#endregion Entry Door
+
+end
+////////////////////////////////////////////////////////////////////////////////

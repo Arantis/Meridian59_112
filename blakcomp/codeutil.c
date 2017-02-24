@@ -122,6 +122,52 @@ void OutputGotoOpcode(int outfile, int goto_type, int id_type)
             id_type);
          return;
       }
+   case GOTO_IF_NULL:
+      switch (id_type)
+      {
+      case LOCAL_VAR:
+         OutputByte(outfile, (BYTE)OP_GOTO_IF_NULL_L);
+         return;
+      case CONSTANT:
+         // This shouldn't be possible, but is included to handle
+         // all data types.
+         OutputByte(outfile, (BYTE)OP_GOTO_IF_NULL_C);
+         simple_warning("Found a constant == $ check\n");
+         return;
+      case PROPERTY:
+         OutputByte(outfile, (BYTE)OP_GOTO_IF_NULL_P);
+         return;
+      case CLASS_VAR:
+         OutputByte(outfile, (BYTE)OP_GOTO_IF_NULL_V);
+         return;
+      default:
+         codegen_error("Invalid ID type %d encountered in OutputGotoOpcode",
+            id_type);
+         return;
+      }
+   case GOTO_IF_NEQ_NULL:
+      switch (id_type)
+      {
+      case LOCAL_VAR:
+         OutputByte(outfile, (BYTE)OP_GOTO_IF_NEQ_NULL_L);
+         return;
+      case CONSTANT:
+         // This shouldn't be possible, but is included to handle
+         // all data types.
+         OutputByte(outfile, (BYTE)OP_GOTO_IF_NEQ_NULL_C);
+         simple_warning("Found a constant <> $ check\n");
+         return;
+      case PROPERTY:
+         OutputByte(outfile, (BYTE)OP_GOTO_IF_NEQ_NULL_P);
+         return;
+      case CLASS_VAR:
+         OutputByte(outfile, (BYTE)OP_GOTO_IF_NEQ_NULL_V);
+         return;
+      default:
+         codegen_error("Invalid ID type %d encountered in OutputGotoOpcode",
+            id_type);
+         return;
+      }
    default:
       codegen_error("Unknown goto type %d encountered in OutputGotoOpcode!",
          goto_type);

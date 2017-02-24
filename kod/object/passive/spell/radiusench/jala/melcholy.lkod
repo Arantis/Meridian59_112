@@ -5,14 +5,15 @@ Melancholy_desc_rsc = de \
    "nicht selten zu depressiven Stimmungen führen. Ein Lied, welches zu Beerdigungen "
    "und dem Kampf gegen gute Mächte passt. Um ihre Wirkung zu entfalten, "
    "wird ein Saphir benötigt. "
-Melancholy_on = de \
-   "%s%ss Lied der Traurigkeit lässt dich dein Herz schwerer fühlen."
 Melancholy_cast = de "Du fängst an ein Trauriges Lied zu spielen."
-Melancholy_starts = de "%s beginnt einen Trauriges Lied zu spielen."
-Melancholy_ends = de "Das Lied der Traurigkeit, gespielt von %s verstummt."
+Melancholy_starts = de "%s%s beginnt einen Trauriges Lied zu spielen."
+Melancholy_ends = de "Das Lied der Traurigkeit, gespielt von %s%s verstummt."
 Melancholy_caster_ends = de "Das Lied der Traurigkeit verstummt."
-Melancholy_caster_enter = de "Dein Herz fühlt sich schwer an, du fühlst dich bereit für den Kampf gegen die guten Mächte."
+Melancholy_caster_enter = de \
+   "Dein Herz fühlt sich schwer an, du fühlst dich bereit für den Kampf gegen "
+   "die guten Mächte."
 Melancholy_enter = de \
-   "%s's Lied der Traurigkeit lässt dich dein Herz schwerer anfühlen, du fühlst dich bereit für den Kampf gegen das Gute."
+   "%s%s's Lied der Traurigkeit lässt dich dein Herz schwerer anfühlen, du "
+   "fühlst dich bereit für den Kampf gegen das Gute."
 Melancholy_leave = de \
-   "Du kannst das Lied der Traurigkeit, gesungen von %s, nicht mehr hören."
+   "Du kannst das Lied der Traurigkeit, gesungen von %s%s, nicht mehr hören."

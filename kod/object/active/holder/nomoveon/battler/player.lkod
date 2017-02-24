@@ -108,10 +108,15 @@ player_logon_bonus = de \
    "Komm morgen wieder, um mehr davon zu bekommen!"
 player_experience_gained = de "Du hast ~B~s%i~v~B XP erhalten."
 player_experience_lost = de "Du hast ~B~r%i~B~v XP verloren!"
+player_unbound_energy_wiped = de "Die instabile Energie, die dich umgibt, verflüchtigt "
+      "sich in den Weiten des wirbelnden Äthers."
 player_unbound_energy_gained = de "Du absorbierst ~B~t%i~v~B ungebundene Energie "
       "von Deinem gefallenen Gegner."
 player_unbound_energy_lost = de "Du kanalisierst ~B~t%i~v~B ungebundene Energie "
       "um deinen Zauberspruch zu formen."
+player_unbound_energy_wasted = de "Deine Gedanken sind zu sehr mit den jüngsten "
+      "Ereignissen beschäftigt, als dass du irgendeinen Nutzen aus der sich vor "
+      "deinen Augen verflüchtigenden Energie ziehen könntest."
 player_health_gain_maxed = de \
    "Deine Lebensenergie kann sich nicht weiter erhöhen."
 player_cant_hit_optout = de \
@@ -404,7 +409,7 @@ player_first_mail = de \
    "nicht vollständig verlassen konnte, als Du ausgeloggt bist.\nWir hoffen, "
    "dass Du den kleinen Abstecher in unser Land genießt.\n -- Dein Schutzengel"
 player_death_mail = de \
-   "Betreff: Der Tod\n\nEs betrübt mich dass Du im Kampfe in die Unterwelt "
+   "Betreff: Der Tod\nEs betrübt mich dass Du im Kampfe in die Unterwelt "
    "gefallen bist. Das Leben als Abenteurer ist gefährlich, wie Du nun hast "
    "erfahren müssen.\n\nDa Du so jung bist, habe ich bei den Göttern erfleht, "
    "dass Dir einige der Strafen des Todes erspart bleiben. Normalerweise "

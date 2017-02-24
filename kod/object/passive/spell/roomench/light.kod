@@ -67,20 +67,28 @@ messages:
    {
       local oRoom;
 
-      oRoom = Send(who,@GetOwner);
+      if (IsClass(who,&Room))
+      {
+         oRoom = who;
+      }
+      else
+      {
+         oRoom = Send(who,@GetOwner);
+      }
+
       if Send(oRoom,@IsEnchanted,#what=self)
       {
         Send(who,@MsgSendUser,#message_rsc=light_unnecessary);
+
         return;
       }
 
       // global effects of the enchantment
       Send(oRoom,@SomeoneSaid,#type=SAY_MESSAGE,#string=light_on,#what=self);
-      Send(oRoom,@RoomStartEnchantment,#what=self,#state=(iSpellPower+25),
-	        #time=send(self,@GetDuration,#iSpellPower = iSpellPower));
+      Send(oRoom,@RoomStartEnchantment,#what=self,#state=[(iSpellPower+25),who],
+            #time=Send(self,@GetDuration,#iSpellPower = iSpellPower));
       Send(oRoom,@AddBaseLight,#amount=(25+iSpellpower));
-           
-      
+
       propagate;
    }
 
@@ -105,7 +113,7 @@ messages:
    "Called when spell expires."
    {
       Send(where,@SomeoneSaid,#type=SAY_MESSAGE,#string=light_off,#what=self);
-      Send(where,@AddBaseLight,#amount=(-1)*state);
+      Send(where,@AddBaseLight,#amount=(-1)*First(state));
       return;
    }
 
@@ -115,11 +123,11 @@ messages:
 
       iState = Send(Send(who,@GetOwner),@GetEnchantedState,#what=self);
 
-      AddPacket(4, light_enchantment_rsc, 4, Send(self,@GetName), 4,iState);
+      AddPacket(4, light_enchantment_rsc, 4, Send(self,@GetName),
+                4,First(iState));
 
       return;
    }
 
 end
-
 ////////////////////////////////////////////////////////////////////////////////

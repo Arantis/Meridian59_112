@@ -21,12 +21,12 @@ RentableRoom_picture_options = de \
    "der eine Kampfszene darstellt, oder ein Portrait in Kohle. Alternativ "
    "könntest Du Dich auch dafür entscheiden, gar nichts an die Wand zu hängen. "
 RentableRoom_expiry_warning = de \
-   "Betreff: Erinnerung zum Zimmer verlassenDiese höfliche Notiz erinnert "
+   "Betreff: Erinnerung zum Zimmer verlassen\nDiese höfliche Notiz erinnert "
    "Dich daran, dass die Zimmermiete in %q Tagen ausläuft. Bitte versichere "
    "Dich, dass alle persönlichen Dinge vorher ausgeräumt werden. Ich hoffe, "
    "Du geniesst Deinen Aufenthalt."
 RentableRoom_expiry = de \
-   "Betreff: Bestätigung zum Zimmer verlassenDeine Zimmerbuchung ist abgelaufen "
+   "Betreff: Bestätigung zum Zimmer verlassen\nDeine Zimmerbuchung ist abgelaufen "
    "und das Zimmer wurde gereinigt. Danke, dass Du unser Gast warst, und "
    "ich hoffe, dass Du den Aufenthalt genossen hast."
 RentableRoom_teleport = de \

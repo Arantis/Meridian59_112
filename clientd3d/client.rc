@@ -649,7 +649,7 @@ BEGIN
     9                       "Seit Deinem letzten Einloggen wurde das Spiel aktualisiert.\n Mit Bestätigen werden die neuen Dateien automatisch auf Deinen Rechner kopiert.\n Mit Abbrechen wird versucht, das Spiel mit der \nalten Version fortzusetzen. Jetzt Aktualisieren?\n"
     10                      "Die Datei  %s ist vermutlich defekt.\nVersuche als erstes durch eine Neuinstallation des Spiels das Problem zu beheben. Funktioniert dies nicht, wende Dich bitte an unseren Kundenservice."
     12                      "Doppelt vorhanden: #%d in Datei %s."
-    13                      "Ich kann den Kommunikationsport nicht ansteuern!"
+    13                      "Verbindung zum Server nicht möglich (Port #%d an %s).\n\nDer Server könnte heruntergefahren sein; Bitte prüfe den Status auf http://www.Meridian59.de."
     14                      "Verbindung wurde unterbrochen!"
     15                      "Unerwartetes Socket-Problem."
 END

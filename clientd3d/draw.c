@@ -274,6 +274,32 @@ void DrawChangeColor(void)
 }
 /************************************************************************/
 /*
+ * CreateMemBitmap: Creates a new memory DC containing HBITMAP and palette.
+ *   Does not require setting bitmap bits later, contains bitmap from
+ *   gNewBitmap. Puts old bitmap into gOldBitmap.
+ *   Returns NULL on failure.
+ */
+HDC CreateMemBitmapFromBmp(HBITMAP gNewBitmap, HBITMAP *gOldBitmap, HPALETTE palette)
+{
+   HDC gDC;
+
+   gDC = CreateCompatibleDC(NULL);
+   if (gDC == 0)
+   {
+      debug(("CreateMemBitmapFromBmp Couldn't create DC!\n"));
+      return NULL;
+   }
+   
+   // Select bitmap into DC.
+   *gOldBitmap = (HBITMAP)SelectObject(gDC, gNewBitmap);
+   // Set palette into DC.
+   SelectPalette(gDC, palette, FALSE);
+   //RealizePalette(gDC);
+
+   return gDC;
+}
+/************************************************************************/
+/*
  * CreateMemBitmap:  Create a bitmap, select it into a new memory DC,
  *   and return the DC.  Also set the palette of the bitmap.
  *   gOldBitmap is set to the bitmap originally in the DC.

@@ -63,9 +63,9 @@ messages:
       plMonsters = [ [&Spider, 70], [&Ent, 30] ];
 
       plGenerators = [ [5, 7], [10, 27], [14, 46], [17, 11], [22, 17], 
-		      [27, 25], [33, 30], [26, 29], [30, 47], [36, 38],
-		      [44, 27], [40, 17], [27, 13], [30, 5], [35, 8],
-		      [44, 5] ];
+              [27, 25], [33, 30], [26, 29], [30, 47], [36, 38],
+              [44, 27], [40, 17], [27, 13], [30, 5], [35, 8],
+              [44, 5] ];
       propagate;
    }
 
@@ -77,7 +77,7 @@ messages:
       plExits = Cons([ 3, 17, RID_GUILDH7, 2, 21, ROTATE_NONE ],plExits);
 
       plEdge_Exits = $;
-      plEdge_Exits = Cons([LEAVE_EAST, RID_D6, 8, 4, ROTATE_NONE], plEdge_exits);
+      plEdge_Exits = Cons([LEAVE_EAST, RID_D6E6, 7, 3, ROTATE_NONE], plEdge_exits);
       plEdge_Exits = Cons([LEAVE_SOUTH, RID_C7, 4, 34, ROTATE_NONE], plEdge_exits);
       plEdge_Exits = Cons([LEAVE_NORTH, RID_C5, 55, 24, ROTATE_NONE], plEdge_exits);
       plEdge_Exits = Cons([LEAVE_WEST, RID_FAROL_WEST, 20, 54, ROTATE_NONE], plEdge_exits);

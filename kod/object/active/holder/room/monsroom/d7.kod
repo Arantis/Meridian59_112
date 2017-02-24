@@ -70,7 +70,7 @@ messages:
    {
       plEdge_Exits = $;
       plEdge_Exits = Cons([LEAVE_WEST, RID_C7, 41, 47, ROTATE_NONE], plEdge_exits);
-      plEdge_Exits = Cons([LEAVE_NORTH, RID_D6, 47, 23, ROTATE_NONE], plEdge_exits);
+      plEdge_Exits = Cons([LEAVE_NORTH, RID_D6E6, 44, 25, ROTATE_NONE], plEdge_exits);
       plEdge_Exits = Cons([LEAVE_EAST, RID_E7, 5, 2, ROTATE_NONE, ROW_IS_LESS_THAN,20], plEdge_exits);
       plEdge_Exits = Cons([LEAVE_EAST, RID_JASWEST, 55, 1, ROTATE_NONE, NO_OTHER_CONDITIONS], plEdge_exits);
 

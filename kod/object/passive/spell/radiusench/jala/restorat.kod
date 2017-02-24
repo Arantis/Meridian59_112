@@ -21,28 +21,28 @@ resources:
    Restorate_name_rsc = "restorate"
    Restorate_icon_rsc = irestor.bgf
    Restorate_desc_rsc = \
-      "This song allows all listeners to regain health at an accelerated rate.  "
-      "Requires one diamond and several herbs to cast."
+      "This song allows all listeners to regain health at an accelerated "
+      "rate.  Requires one diamond and several herbs to cast."
 
    Restorate_song = song05.ogg
 
    Restorate_cast = "You begin to play a soothing song."
-   Restorate_starts = "%s begins to play a soothing song."
-   Restorate_ends = "The soothing song played by %s fades away."
+   Restorate_starts = "%s%s begins to play a soothing song."
+   Restorate_ends = "The soothing song played by %s%s fades away."
    Restorate_caster_ends = "Your soothing song fades."
    Restorate_caster_enter = "You feel the ache of your wounds diminish."
-   Restorate_enter = "%s's soothing song eases the pain of your wounds."
-   Restorate_leave = "You can no longer hear the soothing notes of %s's song."
+   Restorate_enter = "%s%s's soothing song eases the pain of your wounds."
+   Restorate_leave = "You can no longer hear the soothing notes of %s%s's song."
 
 classvars:
 
-   radius_ench_cast = Restorate_cast
-   radius_ench_starts = Restorate_starts
-   radius_ench_ends = Restorate_ends
-   radius_ench_caster_ends = Restorate_caster_ends
-   radius_ench_caster_enter = Restorate_caster_enter
-   radius_ench_enter = Restorate_enter
-   radius_ench_leave = Restorate_leave
+   vrEnchantmentOn = Restorate_cast
+   vrEnchantmentOnOther = Restorate_starts
+   vrEnchantmentOff = Restorate_caster_ends
+   vrEnchantmentOffOther = Restorate_ends
+   vrEnterRadiusCaster = Restorate_caster_enter
+   vrEnterRadius = Restorate_enter
+   vrLeaveRadius = Restorate_leave
 
    vrName = Restorate_name_rsc
    vrIcon = Restorate_icon_rsc
@@ -56,11 +56,9 @@ classvars:
    viManaDrain = 3      // Drain is amount used every viDrainTime milliseconds
    viDrainTime = 5000   // Drain some mana every viDrainTime milliseconds
 
-   viPeriodicEffect = TRUE
-
    viSpellExertion = 3
    viChance_To_Increase = 20
-   viMeditate_ratio = 20
+   viMeditate_ratio = 30
 
    viAffectsEveryone = TRUE
 
@@ -79,29 +77,18 @@ messages:
       return;
    }
 
-   CalculatePeriodicEffectTime(iPower=0)
+   GetDuration(iSpellPower=0)
    {
-      return 100000 / (iPower+1);
+      return 100000 / (iSpellPower+1);
    }
 
-   PeriodicEffect(lEnchanted=$,iPower=0,iRange=0,source=$)
+   PeriodicEffect(who = $)
    {
-      local oUser, lState;
-      
-      foreach oUser in lEnchanted
+      if (who <> $)
       {
-         if IsClass(oUser,&User)
-         {
-            lState = Send(oUser,@GetMostPowerfulRadiusEnchantmentState,#byClass=&Restorate);
-            
-            if Nth(lState,3) = source
-               AND Nth(lState,2) = iPower
-            {
-               Send(oUser,@GainHealthNormal,#amount=1);
-            }
-         }
+         Send(who,@GainHealthNormal,#amount=1);
       }
-      
+
       return;
    }
 

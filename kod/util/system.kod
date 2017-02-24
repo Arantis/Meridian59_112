@@ -58,6 +58,8 @@ resources:
       "~B~U~k[###]~n ~B~v%q just hurled %sself from the cliffs of Riija to find a watery "
       "grave."
    system_user_killed_token = "~B~U~k[###]~n ~B~v%q lost a token to %s%q."
+   system_user_killed_arena = \
+      "~B~U~k[###]~n ~B~v%q was bested in combat by %s%q."
    system_user_killed_shield = "~B~U~k[###]~n ~B~v%q was bested by faction rival %s%q."
    system_user_killed_guild = \
       "~B~U~k[###]~n ~B~v%q of %s%q has been slaughtered by %s%q of %s%q in guild combat."
@@ -490,9 +492,6 @@ properties:
    //  Take Nth of this list
    vlLevelPoints = $
 
-   // A master list of all spell-casting active objects
-   plSpellTotems = $
-
    // A master list of all object attributes, for maintenance, control, & statistics purposes
    plObject_attributes_master = $
 
@@ -505,6 +504,8 @@ properties:
    // Used for testing game time.
    ptTestTimer = $
 
+   plAttackTypes = $
+   plSpellTypes = $
 messages:
 
    GetName()
@@ -516,6 +517,8 @@ messages:
    {
       // This shouldn't be changed!
       vlLevelPoints = [1,2,4,6,8,10];
+
+      Send(self,@RecreateDamageTypeLists);
 
       // Reset the list of naughty words
       Send(self,@ResetNaughtyWords);
@@ -605,6 +608,8 @@ messages:
       // Reset our level points.
       vlLevelPoints = [1,2,4,6,8,10];
 
+      Send(self,@RecreateDamageTypeLists);
+
       // Recreate settings.
       Send(SETTINGS_OBJECT,@Recreate);
       Send(REALTIME_OBJECT,@Recreate);
@@ -629,9 +634,6 @@ messages:
 
       lSavedFlagStates = ListCopy(Send(poTerritoryGame,@SaveFlagStates));
       lSavedSenate = ListCopy(Send(poTokenGame,@GetSenate));
-
-      // Don't leave any active spellcasting objects
-      Send(self,@DeleteAllSpellTotems);
 
       Send(self,@CreateUserTable);
 
@@ -1721,8 +1723,6 @@ messages:
          return;
       }
 
-      oKillingBlow = $;
-
       if stroke_obj <> $ AND Send(stroke_obj,@GetName) <> $
       {
          oKillingBlow = Send(stroke_obj,@GetName);
@@ -1801,6 +1801,10 @@ messages:
       {
          // Notify of a token death.
          rMessage = system_user_killed_token;
+      }
+      else if (Send(oRoom,@IsArena) AND Send(oRoom,@ArenaRealDeath))
+      {
+         rMessage = system_user_killed_arena;
       }
       else
       {
@@ -2301,6 +2305,7 @@ messages:
       Send(self,@CreateOneRoomIfNew,#num=RID_TOS_HALL,#class=&TosHall);
       Send(self,@CreateOneRoomIfNew,#num=RID_TOS_STORAGE,#class=&TosStorage);
       Send(self,@CreateOneRoomIfNew,#num=RID_TOS_SMUGGLERS_WAY,#class=&TosSecret);
+      Send(self,@CreateOneRoomIfNew,#num=RID_TOS_DEATH_ARENA,#class=&TosDeathArena);
 
       // Marion stuff
       Send(self,@CreateOneRoomIfNew,#num=RID_MARION,#class=&Marion);
@@ -2317,7 +2322,9 @@ messages:
       Send(self,@CreateOneRoomIfNew,#num=RID_COR_INN,#class=&CorInn);
       Send(self,@CreateOneRoomIfNew,#num=RID_COR_WEAPONSMASTER,#class=&CorWeaponsMaster);
       Send(self,@CreateOneRoomIfNew,#num=RID_COR_TAILOR,#class=&CorTailor);
-      Send(self,@CreateOneRoomIfNew,#num=RID_COR_UNIV,#class=&CornothUniversity);
+      Send(self,@CreateOneRoomIfNew,#num=RID_COR_UNIV,#class=&CorNothUniversity);
+      Send(self,@CreateOneRoomIfNew,#num=RID_COR_GEN_HALL,#class=&CorNothGenHall);
+      Send(self,@CreateOneRoomIfNew,#num=RID_COR_MUSEUM,#class=&CorNothMuseum);
       Send(self,@CreateOneRoomIfNew,#num=RID_FORGOTTEN_TOO,#class=&ForgottenToo);
 
       // Jasper stuff
@@ -2430,6 +2437,8 @@ messages:
       Send(self,@CreateOneRoomIfNew,#num=RID_D4,#class=&OutdoorsD4);
       Send(self,@CreateOneRoomIfNew,#num=RID_D5,#class=&OutdoorsD5);
       Send(self,@CreateOneRoomIfNew,#num=RID_D6,#class=&OutdoorsD6);
+      Send(self,@CreateOneRoomIfNew,#num=RID_D6E6,#class=&OutdoorsD6E6);
+      Send(self,@CreateOneRoomIfNew,#num=RID_D6E6ULAKE,#class=&UlakeD6E6);
       Send(self,@CreateOneRoomIfNew,#num=RID_D7,#class=&OutdoorsD7);
       Send(self,@CreateOneRoomIfNew,#num=RID_E2,#class=&OutdoorsE2);
       Send(self,@CreateOneRoomIfNew,#num=RID_E4,#class=&OutdoorsE4);
@@ -2561,6 +2570,8 @@ messages:
       Send(self,@CreateOneRoomIfNew,#num=RID_NECROAREA3B,#class=&Necropolis3b);
       Send(self,@CreateOneRoomIfNew,#num=RID_NECROAREA4,#class=&Necropolis4);
       Send(self,@CreateOneRoomIfNew,#num=RID_NECROAREA5,#class=&Necropolis5);
+      Send(self,@CreateOneRoomIfNew,#num=RID_NECHALLWAY,#class=&NecropolisHallway);
+      Send(self,@CreateOneRoomIfNew,#num=RID_NECROAREA6,#class=&Necropolis6);
       Send(self,@CreateOneRoomIfNew,#num=RID_LICH_MAZE,#class=&LichMaze);
       Send(self,@CreateOneRoomIfNew,#num=RID_BRAX_ARENA,#class=&NecArena);
       Send(self,@CreateOneRoomIfNew,#num=RID_KA0,#class=&OutdoorsKA0);
@@ -2573,7 +2584,14 @@ messages:
       Send(self,@CreateOneRoomIfNew,#num=RID_OLD_MARION,#class=&OldMarion);
       Send(self,@CreateOneRoomIfNew,#num=RID_OLD_BAR_NORTH,#class=&OldBarloqueNorth);
       Send(self,@CreateOneRoomIfNew,#num=RID_OLD_BAR_SOUTH,#class=&OldBarloqueSouth);
-      
+      Send(self,@CreateOneRoomIfNew,#num=RID_OLD_CORNOTH,#class=&OldCorNoth);
+      Send(self,@CreateOneRoomIfNew,#num=RID_OLD_COR_UNIV,#class=&OldCorNothUniversity);
+      Send(self,@CreateOneRoomIfNew,#num=RID_OLD_TOS,#class=&OldTos);
+      Send(self,@CreateOneRoomIfNew,#num=RID_OLD_TOS_EAST,#class=&OldEastTos);
+      Send(self,@CreateOneRoomIfNew,#num=RID_OLD_TOS_INN,#class=&OldTosInn);
+      Send(self,@CreateOneRoomIfNew,#num=RID_OLD_TOS_APOTH,#class=&OldTosApoth);
+      Send(self,@CreateOneRoomIfNew,#num=RID_OLD_TOS_SMITH,#class=&OldTosSmith);
+
       Send(self,@CreateOneRoomIfNew,#num=RID_DESERTPATH1,#class=&DesertPath1);
       Send(self,@CreateOneRoomIfNew,#num=RID_DESERTCLIFFACCESS,#class=&DesertCliffAccess);
       Send(self,@CreateOneRoomIfNew,#num=RID_DESERTCLIFFNOACCESS1,#class=&DesertCliffNoAccess1);
@@ -2709,10 +2727,13 @@ messages:
 
       if plUsers_logged_on <> $
       {
-         return False;
+         return FALSE;
       }
 
-      if poParliament<>$ {Send(poParliament,@SetDeleting,#value=True);}
+      if poParliament <> $
+      {
+         Send(poParliament,@SetDeleting,#value=TRUE);
+      }
 
       foreach i in plRooms
       {
@@ -2721,14 +2742,13 @@ messages:
 
       plRooms = $;
 
-      if poParliament
+      if poParliament <> $
       {
-         Send(poParliament,@SetDeleting,#value=False);
+         Send(poParliament,@SetDeleting,#value=FALSE);
       }
 
       return TRUE;
    }
-
 
    RecreateAllNonUserRooms()
    "Admin supported\n"
@@ -2743,9 +2763,9 @@ messages:
 
       foreach i in plRooms
       {
-         if not Send(i,@IsUserInRoom)
+         if NOT Send(i,@IsUserInRoom)
          {
-            if not isClass(i,&RentableRoom)
+            if NOT isClass(i,&RentableRoom)
             {
                Send(i,@Delete);
             }
@@ -2807,7 +2827,7 @@ messages:
       {
          if (i <> $)
          {
-            send(i,@Delete);
+            Send(i,@Delete);
          }
       }
 
@@ -2816,8 +2836,9 @@ messages:
 
    RecreateRoomIcons()
    {
-      send(self,@DeleteRoomIcons);
-      send(self,@CreateRoomIcons);
+      Send(self,@DeleteRoomIcons);
+      Send(self,@CreateRoomIcons);
+
       return;
    }
 
@@ -3262,6 +3283,7 @@ messages:
       Send(self,@CreateOneSpellIfNew,#num=SID_DETECT_EVIL,#class=&DetectEvil);
       Send(self,@CreateOneSpellIfNew,#num=SID_ICE_NOVA,#class=&IceNova);
       Send(self,@CreateOneSpellIfNew,#num=SID_FIRE_STORM,#class=&FireStorm);
+      Send(self,@CreateOneSpellIfNew,#num=SID_SPIRIT_BLAST,#class=&SpiritBlast);
 
       Send(self,@CreateOneSpellIfNew,#num=SID_NODEBURST,#class=&Nodeburst);
       Send(self,@CreateOneSpellIfNew,#num=SID_PURIFY,#class=&Purify);
@@ -3364,6 +3386,8 @@ messages:
       Send(self,@CreateOneSpellIfNew,#num=SID_BLAST_OF_FIRE,#class=&BlastOfFire);
       Send(self,@CreateOneSpellIfNew,#num=SID_EXPLOSIVE_FROST,#class=&ExplosiveFrost);
       Send(self,@CreateOneSpellIfNew,#num=SID_SPLASH_OF_ACID,#class=&SplashOfAcid);
+      Send(self,@CreateOneSpellIfNew,#num=SID_HOLY_BLAZE,#class=&HolyBlaze);
+      Send(self,@CreateOneSpellIfNew,#num=SID_MARTYRS_GRACE,#class=&MartyrsGrace);
       Send(self,@CreateOneSpellIfNew,#num=SID_PURGE,#class=&Purge);
       Send(self,@CreateOneSpellIfNew,#num=SID_ELUSION,#class=&Elusion);
       Send(self,@CreateOneSpellIfNew,#num=SID_CIVILITY,#class=&Civility);
@@ -3744,7 +3768,6 @@ messages:
       foreach i in plUsers
       {
          Send(i,@RemoveAllEnchantments,#report=FALSE);
-         Send(i,@RemoveAllRadiusEnchantments,#report=FALSE);
       }
 
       foreach i in plSpells
@@ -3814,7 +3837,6 @@ messages:
       return;
    }
 
-
    RecreateAllItemAttributes()
    "Admin Supported.\n"
    "Deletes all Item Attributes, and then recreates them."
@@ -3822,11 +3844,11 @@ messages:
       local i;
 
       Send(self,@InitializeItemAttTreasureTable);
-      
+
       foreach i in plItem_Attributes
       {
-         Send(i,@delete);
-      }   
+         Send(i,@Delete);
+      }
 
       if plItem_Attributes <> $
       {
@@ -3838,7 +3860,7 @@ messages:
 
       Send(self,@CreateAllItemAttsIfNew);
 
-      return True;
+      return TRUE;
    }
 
    DeleteItemAttribute(oItematt = $)
@@ -3857,6 +3879,7 @@ messages:
          if (oItematt = i)
          {
             plItem_Attributes = DelListElem(plItem_Attributes, i);
+
             return;
          }
       }
@@ -3914,6 +3937,8 @@ messages:
       Create(&Skeleton2Treasure);
       Create(&Skeleton3Treasure);
       Create(&Skeleton4Treasure);
+      Create(&Skeleton5Treasure);
+      Create(&NecromancerTreasure);
 
       Create(&WormLarvaTreasure);
       Create(&WormQueenTreasure);
@@ -4003,15 +4028,15 @@ messages:
       // Remember that GetTime() returns the UDT time in seconds since
       //  January 1, 1996.  Assume we're 5 hours behind that.
 
-      iTime = GetTime() - 5*HOUR;
+      iTime = GetTime() - 5 * HOUR;
 
-      iDay = (iTime/(24*HOUR)) % 365;
+      iDay = (iTime / (24 * HOUR)) % 365;
 
       // Our day is 2 hours long now, so get minutes into the four hours
-      iMinutes = (iTime % (2*HOUR))/60;
+      iMinutes = (iTime % (2 * HOUR)) / 60;
 
       // That number ranges from 0 to 119, so div by 5 is our game hour
-      piHour = iMinutes/5;
+      piHour = iMinutes / 5;
 
       Send(self,@SysRecalcLightAndDayPhase);
 
@@ -4030,7 +4055,7 @@ messages:
 
       if (plWeatherConditions = $)
       {
-         for(i=1;i<=WEATHER_ZONE_MAX;++i)
+         for (i = 1; i <= WEATHER_ZONE_MAX; ++i)
          {
             plWeatherConditions = Cons(WEATHER_PATTERN_CLEAR,
                                     plWeatherConditions);
@@ -4039,12 +4064,12 @@ messages:
 
       lLastWeatherConditions = ListCopy(plWeatherConditions);
 
-      for(i=1;i<=WEATHER_ZONE_MAX;++i)
+      for (i = 1; i <= WEATHER_ZONE_MAX; ++i)
       {
          iRand = Random(1,100);
-         if  (iRand <= Send(SETTINGS_OBJECT,@GetStormChance))
+         if (iRand <= Send(SETTINGS_OBJECT,@GetStormChance))
          {
-            if(Nth(plWeatherConditions,i) <> WEATHER_PATTERN_STORM)
+            if (Nth(plWeatherConditions,i) <> WEATHER_PATTERN_STORM)
             {
                SetNth(plWeatherConditions,i,WEATHER_PATTERN_STORM);
             }
@@ -4083,7 +4108,7 @@ messages:
    SysRecalcLightAndDayPhase()
    "Recalculates the light and day phase, based on piHour"
    {
-      local i,iLight_hour;
+      local iLight_hour;
 
       if piHour < 6 or piHour > 20
       {
@@ -4114,25 +4139,10 @@ messages:
          piBrightness = (24-iLight_hour)*100/(12);
       }
 
-      if piBrightness < 15
-      {
-         piBrightness = 15;
-      }
+      piBrightness = Bound(piBrightness,15,75);
 
-      if piBrightness > 75
-      {
-         piBrightness = 75;
-      }
-
-      foreach i in plBackground_objects
-      {
-         Send(i,@NewGameHour);
-      }
-
-      foreach i in plRooms
-      {
-         Send(i,@RecalcLightAndWeather);
-      }
+      SendList(plBackground_objects,0,@NewGameHour);
+      SendList(plRooms,0,@RecalcLightAndWeather);
 
       return;
    }
@@ -4485,18 +4495,9 @@ messages:
    RecreatedUser(what = $)
    "When a user starts over, clear out general system information."
    {
-      local i;
-
       Send(what,@EraseAllMail);
-
-      foreach i in plBanks
-      {
-         Send(i,@WithdrawAccount,#what=what,#amount=$);
-      }
-      foreach i in plVaults
-      {
-         Send(i,@DestroyPlayersVault,#who=what);
-      }
+      SendList(plBanks,0,@WithdrawAccount,#what=what,#amount=$);
+      SendList(plVaults,0,@DestroyPlayersVault,#who=what);
 
       return;
    }
@@ -4529,12 +4530,7 @@ messages:
 
    SetLoginTime()
    {
-      local i;
-
-      foreach i in plUsers
-      {
-         Send(i,@SetLoginTime);
-      }
+      SendList(plUsers,0,@SetLoginTime);
 
       return;
    }
@@ -4571,12 +4567,7 @@ messages:
    DeleteAllUserSpells()
    "Remove all spells from all users."
    {
-      local i;
-
-      foreach i in plUsers
-      {
-         Send(i,@RemoveAllSpells);
-      }
+      SendList(plUsers,0,@RemoveAllSpells);
 
       return;
    }
@@ -4584,60 +4575,35 @@ messages:
    DeleteAllUserSkills()
    "Remove all skills from all users."
    {
-      local i;
-
-      foreach i in plUsers
-      {
-         Send(i,@RemoveAllSkills);
-      }
+      SendList(plUsers,0,@RemoveAllSkills);
 
       return;
    }
 
    ClearLoginTime()
    {
-      local i;
-
-      foreach i in plUsers
-      {
-         Send(i,@ClearLoginTime);
-      }
+      SendList(plUsers,0,@ClearLoginTime);
 
       return;
    }
 
    RecalcBulkAndWeight()
    {
-      local i;
-
-      foreach i in plUsers
-      {
-         Send(i,@RecalcBulkAndWeight);
-      }
+      SendList(plUsers,0,@RecalcBulkAndWeight);
 
       return;
    }
 
    RecalcPlayerLight()
    {
-      local i;
-
-      foreach i in plUsers
-      {
-         Send(i,@RecalcLight);
-      }
+      SendList(plUsers,0,@RecalcLight);
 
       return;
    }
 
    RecalibratePlayers()
    {
-      local i;
-
-      foreach i in plUsers
-      {
-         Send(i,@RecalibratePlayer);
-      }
+      SendList(plUsers,0,@RecalibratePlayer);
 
       return;
    }
@@ -4687,7 +4653,7 @@ messages:
          }
       }
    
-      plGuilds = cons(what,plGuilds);
+      plGuilds = Cons(what,plGuilds);
 
       return TRUE;
    }
@@ -4717,9 +4683,7 @@ messages:
    "Removes the guild in question from the guild list but first Sends a message "
    "to all other guilds to remove the guild from their ally/enemy lists."
    {
-      local i, Found_elem;
-
-      found_elem = $;
+      local i, oGuild;
 
       foreach i in plGuilds
       {
@@ -4729,13 +4693,13 @@ messages:
          }
          else
          {
-            Found_elem = i;
+            oGuild = i;
          }
       }
 
-      if found_elem <> $
+      if oGuild <> $
       {
-         plGuilds = DelListElem(plGuilds,found_elem);
+         plGuilds = DelListElem(plGuilds,oGuild);
       }
       else
       {
@@ -4744,7 +4708,7 @@ messages:
 
       foreach i in plGuild_halls
       {
-         Send(i,@defunctguild,#what=what);
+         Send(i,@DefunctGuild,#what=what);
       }
 
       return;
@@ -4757,21 +4721,16 @@ messages:
 
    SetSafety()
    {
-      local i;
-
-      foreach i in plUsers
-      {
-         Send(i,@SetSafety);
-      }
+      SendList(plUsers,0,@SetSafety);
 
       return;
    }
 
    NewGuildHallToList(hall=$)
    {
-      if hall <> $ AND isClass(hall,&GuildHall)
+      if hall <> $ AND IsClass(hall,&GuildHall)
       {
-         plGuild_halls = cons(hall,plGuild_halls);
+         plGuild_halls = Cons(hall,plGuild_halls);
 
          return TRUE;
       }
@@ -4789,7 +4748,8 @@ messages:
       {
          if i = hall
          {
-            plGuild_halls = dellistelem(plGuild_halls,i);
+            plGuild_halls = DelListElem(plGuild_halls,i);
+
             return TRUE;
          }
       }
@@ -4820,48 +4780,32 @@ messages:
       return piMaintenance_delay;
    }
 
-   InitialSetBaseMaxHealth()
-   {
-      local i;
-
-      foreach i in plUsers
-      {
-         Send(i,@InitialSetBaseMaxHealth);
-      }
-
-      return;
-   }
-
    EraseAllMail()
    {
-      local i;
+      SendList(plUsers,0,@EraseAllMail);
 
-      foreach i in plUsers
+      return;
+   }
+
+   FixMoney(amount = 50000, bAreYouSure = 0)
+   {
+      if (bAreYouSure = 701583)
       {
-         Send(i,@EraseAllMail);
+         Send(&Money,@FixMoney,#amount=amount);
       }
 
       return;
    }
 
-   FixMoney(amount = 50000)
+   FixBanks(amount = 50000, bAreYouSure = 0)
    {
-      Send(&Money,@FixMoney,#amount=amount);
-
-      return;
-   }
-
-   FixBanks(amount = 50000)
-   {
-      local i;
-
-      foreach i in plBanks
+      // Destructive, so must have this check.
+      if (bAreYouSure = 701583)
       {
-         Send(i,@FixMoney,#amount=amount);
+         SendList(plBanks,0,@FixMoney,#amount=amount);
       }
 
       return;
-
    }
 
    GetDay()
@@ -5074,12 +5018,12 @@ messages:
    {
       return poRentableRoomMaintenance;
    }
-   
+
    GetSurvivalRoomMaintenance()
    {
       return poSurvivalRoomMaintenance;
    }
-   
+
    GetSurvivalReport()
    {
       if poSurvivalRoomMaintenance <> $
@@ -5121,7 +5065,6 @@ messages:
       return TRUE;
    }
 
-
    RecreateNodeAttack()
    {
       if poNodeAttack <> $
@@ -5149,7 +5092,7 @@ messages:
 
       return TRUE;
    }
-   
+
    RecreateSurvivalRoomMaintenance()
    {
       if poSurvivalRoomMaintenance <> $
@@ -5160,18 +5103,13 @@ messages:
       {
          poSurvivalRoomMaintenance = Create(&SurvivalRoomMaintenance);
       }
-      
+
       return TRUE;
    }
 
    ChangeRentDue(amount=-20000)
    {
-      local i;
-
-      foreach i in plGuilds
-      {
-         Send(i,@ChangeRentDue,#amount=amount);
-      }
+      SendList(plGuilds,0,@ChangeRentDue,#amount=amount);
 
       return;
    }
@@ -5179,27 +5117,26 @@ messages:
    StartEvent(event_type=$)
    "event_type should be the class type of an event"
    {
-      if (event_type=$)
+      if (event_type = $)
       {
          return;
       }
-      
+
       return Send(EVENTENGINE_OBJECT,@EventStart,#parm1=event_type);
    }
-   
+
    EndEvent(event_obj=$)
    {
-      if (event_obj=$)
+      if (event_obj = $)
       {
          return;
       }
-      
+
       return Send(EVENTENGINE_OBJECT,@EventEnd,#parm1=event_obj);
    }
-   
+
    SaveGame_K(IKnowThisIsDangerous=$)
    {
-   
       // psSaveGame keeps track of the system save before frenzy starts.
       // If this already exists, don't start the frenzy.
       if psSaveGame <> $
@@ -5209,15 +5146,16 @@ messages:
 
          return system_failure_rsc;
       }
-      
+
       if (IKnowThisIsDangerous = 820965)
       {
          // Save the game.
          psSaveGame = SaveGame();
       }
+
       return;
    }
-   
+
    LoadGame_K(IKnowThisIsDangerous=$)
    {
       if (IKnowThisIsDangerous=730527)
@@ -5236,10 +5174,10 @@ messages:
          LoadGame(psSaveGame);
          psSaveGame = $;
       }
-      
+
       return;
    }
-   
+
    GetChaosNight()
    "Return true if there's a chaos night (\"frenzy\") running."
    {
@@ -5260,10 +5198,10 @@ messages:
          #iMinute=iMinute,
          #parm2=duration,
          #parm3=duration_scale);
-         
+
       return;
    }
-   
+
    StartChaosNight(duration=60,duration_scale=GAMEEVENT_SCALE_MINUTES)
    {
       if (NOT Send(self,@GetChaosNight))
@@ -5287,44 +5225,27 @@ messages:
                            @FindEventOfType,#event_type=&ChaosNight);
          Send(EVENTENGINE_OBJECT,@EventEnd,#parm1=oChaosNight);
       }
-   
+
       return;
    }
 
    EnableRoomIllusions()
    {
-      local i;
-
-      if pbRoomIllusionsEnabled = TRUE
+      if NOT pbRoomIllusionsEnabled
       {
-         return;
-      }
-
-      pbRoomIllusionsEnabled = TRUE;
-
-      foreach i in plRooms
-      {
-         Send(i,@EnableIllusions);
+         pbRoomIllusionsEnabled = TRUE;
+         SendList(plRooms,0,@EnableIllusions);
       }
 
       return;
    }
 
-
    DisableRoomIllusions()
    {
-      local i;
-
-      if pbRoomIllusionsEnabled = FALSE
+      if pbRoomIllusionsEnabled
       {
-         return;
-      }
-
-      pbRoomIllusionsEnabled = FALSE;
-
-      foreach i in plRooms
-      {
-         Send(i,@DisableIllusions);
+         pbRoomIllusionsEnabled = FALSE;
+         SendList(plRooms,0,@DisableIllusions);
       }
 
       return;
@@ -5333,14 +5254,6 @@ messages:
    AreRoomIllusionsEnabled()
    {
       return pbRoomIllusionsEnabled;
-   }
-
-   SystemRemoveFromChampionLists(oldChamp=$)
-   {
-      // Should send to all Watchers, but unfortuantely there is no Watcher class.
-      // The "Goad" watcher was poorly written and doesn't even handle this method.
-      Send(&TosWatcher, @removefromchampionlists, #oldChamp = oldChamp);
-      return;
    }
 
    RecreateMonsterTemplates()
@@ -5354,14 +5267,16 @@ messages:
 
       plMonsterTemplates = $;
       plMonsterTemplates = cons(create(&ant),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&centipede),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Centipede),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&OldCentipede),plMonsterTemplates);
       plMonsterTemplates = cons(create(&cow),plMonsterTemplates);
       plMonsterTemplates = cons(create(&guard),plMonsterTemplates);
       plMonsterTemplates = cons(create(&ent),plMonsterTemplates);
       plMonsterTemplates = cons(create(&frogman),plMonsterTemplates);
       plMonsterTemplates = cons(create(&fungusbeast),plMonsterTemplates);
       plMonsterTemplates = cons(create(&ghost),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&giantrat),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&GiantRat),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&OldRat),plMonsterTemplates);
       plMonsterTemplates = cons(create(&GiantRatKing),plMonsterTemplates);
       plMonsterTemplates = cons(create(&GiantRatSoldier),plMonsterTemplates);
       plMonsterTemplates = cons(create(&SmallRat),plMonsterTemplates);
@@ -5371,6 +5286,7 @@ messages:
       plMonsterTemplates = cons(create(&lupogg),plMonsterTemplates);
       plMonsterTemplates = cons(create(&lupoggking),plMonsterTemplates);
       plMonsterTemplates = cons(create(&orc),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&OldOrc),plMonsterTemplates);
       plMonsterTemplates = cons(create(&skeleton),plMonsterTemplates);
       plMonsterTemplates = cons(create(&redant),plMonsterTemplates);
       plMonsterTemplates = cons(create(&scorpion),plMonsterTemplates);
@@ -5408,6 +5324,7 @@ messages:
       plMonsterTemplates = cons(create(&BatteredSkeleton),plMonsterTemplates);
       plMonsterTemplates = cons(create(&TuskedSkeleton),plMonsterTemplates);
       plMonsterTemplates = cons(create(&DaemonSkeleton),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&GiantDaemonSkeleton),plMonsterTemplates);
       plMonsterTemplates = cons(create(&NarthylWorm),plMonsterTemplates);
       plMonsterTemplates = cons(create(&DeathSpider),plMonsterTemplates);
 
@@ -5421,6 +5338,7 @@ messages:
       plMonsterTemplates = cons(create(&PrincessTroop),plMonsterTemplates);
       plMonsterTemplates = cons(create(&PrincessMage),plMonsterTemplates);
       plMonsterTemplates = cons(create(&NecromancerTroop),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Necromancer),plMonsterTemplates);
 
       plMonsterTemplates = cons(create(&XeoFire),plMonsterTemplates);
       plMonsterTemplates = cons(create(&XeoWater),plMonsterTemplates);
@@ -5527,6 +5445,7 @@ messages:
 
       plItemTemplates = cons(create(&ManaCrystal),plItemTemplates);
       plItemTemplates = cons(create(&Chalice),plItemTemplates);
+      plItemTemplates = cons(create(&MuseumScroll),plItemTemplates);
       plItemTemplates = cons(create(&Prism),plItemTemplates);
       plItemTemplates = cons(create(&JewelOfFroz),plItemTemplates);
       plItemTemplates = cons(create(&Gauntlet),plItemTemplates);
@@ -5762,6 +5681,7 @@ messages:
       plItemTemplates = cons(create(&QormasHelm),plItemTemplates);
       plItemTemplates = cons(create(&IvyCirclet),plItemTemplates);
       plItemTemplates = cons(create(&Circlet),plItemTemplates);
+	  plItemTemplates = cons(create(&DaemonHelm),plItemTemplates);
 
       // Shields
       plItemTemplates = cons(create(&GuildShield),plItemTemplates);
@@ -5769,6 +5689,7 @@ messages:
       plItemTemplates = cons(create(&KnightShield),plItemTemplates);
       plItemTemplates = cons(create(&GoldShield),plItemTemplates);
       plItemTemplates = cons(create(&MetalShield),plItemTemplates);
+      plItemTemplates = cons(create(&WoodenShield),plItemTemplates);
 
       // Armor
       plItemTemplates = cons(create(&NeruditeArmor),plItemTemplates);
@@ -5833,7 +5754,7 @@ messages:
    RecreateMoneyTemplates()
    {
       plMoneyTemplates = $;
-      plMoneyTemplates = cons(create(&Money),plMoneyTemplates);
+      plMoneyTemplates = Cons(create(&Money),plMoneyTemplates);
 
       return;
    }
@@ -5854,7 +5775,7 @@ messages:
       {
          if (node_num & Send(i,@GetNodeList)) = node_num
          {
-            Send(oNode,@unmeld,#who=i);
+            Send(oNode,@UnMeld,#who=i);
             Send(i,@RemoveNodeFromList,#node_num=node_num);
          }
       }
@@ -5882,7 +5803,7 @@ messages:
             oExample = Create(classtype,#number=number);
          }
 
-         if NOT isClass(oExample,&item)
+         if NOT IsClass(oExample,&Item)
          {
             Debug("Tried to GlobalGive something that was not an item!");
 
@@ -5902,18 +5823,18 @@ messages:
          {
             if number <> -1
             {
-               Send(i,@newhold,#what=Create(Classtype,#number=number));
+               Send(i,@NewHold,#what=Create(Classtype,#number=number));
             }
             else
             {
-               Send(i,@newhold,#what=Create(Classtype));
+               Send(i,@NewHold,#what=Create(Classtype));
             }
 
             if Send(i,@IsLoggedOn)
             {
                Send(i,@MsgSendUser,#Message_rsc=system_gift,
-                    #parm1=Send(oExample,@GetIndef),
-                    #parm2=Send(oExample,@GetName));
+                     #parm1=Send(oExample,@GetIndef),
+                     #parm2=Send(oExample,@GetName));
             }
          }
       }
@@ -5949,7 +5870,7 @@ messages:
             oExample = Create(classtype,#number=number);
          }
 
-         if NOT isClass(oExample,&item)
+         if NOT IsClass(oExample,&Item)
          {
             Debug("Tried to RoomGive something that was not an item!");
 
@@ -5960,23 +5881,23 @@ messages:
 
          foreach i in lGiveList
          {
-            each_obj = send(oRoom,@HolderExtractObject,#data=i);
+            each_obj = Send(oRoom,@HolderExtractObject,#data=i);
             if IsClass(each_obj,&User)
                AND NOT IsClass(each_obj,&DM)
                AND Send(each_obj,@CanPlayerPvP)
             {
                if number <> -1
                {
-                  Send(each_obj,@newhold,#what=Create(Classtype,#number=number));
+                  Send(each_obj,@NewHold,#what=Create(Classtype,#number=number));
                }
                else
                {
-                  Send(each_obj,@newhold,#what=Create(Classtype));
+                  Send(each_obj,@NewHold,#what=Create(Classtype));
                }
                Send(each_obj,@MsgSendUser,#Message_rsc=system_gift,
-                    #parm1=Send(oExample,@GetIndef),
-                    #parm2=Send(oExample,@GetName));
-               num_rewarded = num_rewarded + 1;
+                     #parm1=Send(oExample,@GetIndef),
+                     #parm2=Send(oExample,@GetName));
+               ++num_rewarded;
             }
          }
       }
@@ -5991,13 +5912,14 @@ messages:
 
       if oChest <> $
       {
-         iRoom = Send(Send(oChest,@GetOwner),@getroomnum);
+         iRoom = Send(Send(oChest,@GetOwner),@GetRoomNum);
          iRow = Send(oChest,@GetRow);
          iCol = Send(oChest,@GetCol);
          iFineRow = Send(oChest,@GetFineRow);
          iFineCol = Send(oChest,@GetFineCol);
       }
-      plChests = cons([oChest,iRoom,iRow,iCol,iFineRow,iFineCol],plChests);
+
+      plChests = Cons([oChest,iRoom,iRow,iCol,iFineRow,iFineCol],plChests);
 
       return;
    }
@@ -6006,11 +5928,11 @@ messages:
    "This is always considered optional, just in case the admin doesn't want "
    "to recreate the chests."
    {
-      local iRoom, oRoom, iRow, iCol, iFineRow, iFineCol, oChest, i, j;
+      local iRoom, oRoom, iRow, iCol, iFineRow, iFineCol, oChest, i, j, oObj;
 
       foreach i in plChests
       {
-         oChest = first(i);
+         oChest = First(i);
          iRoom = Nth(i,2);
          iRow = Nth(i,3);
          iCol = Nth(i,4);
@@ -6020,21 +5942,22 @@ messages:
          oRoom = Send(self,@FindRoomByNum,#num=iRoom);
          if oRoom = $
          {
-            debug("Chest",oChest,"in non-existent room num",iRoom);
+            Debug("Chest",oChest,"in non-existent room num",iRoom);
          }
          else
          {
             foreach j in Send(oRoom,@GetHolderActive)
             {
-               if GetClass(first(j)) = GetClass(oChest)
-                  AND iRow = Send(first(j),@GetRow)
-                  AND iCol = Send(first(j),@GetCol)
-                  AND iFineRow = Send(first(j),@GetFineRow)
-                  AND iFineCol = Send(first(j),@GetFineCol)
+               oObj = First(j);
+               if GetClass(oObj) = GetClass(oChest)
+                  AND iRow = Send(oObj,@GetRow)
+                  AND iCol = Send(oObj,@GetCol)
+                  AND iFineRow = Send(oObj,@GetFineRow)
+                  AND iFineCol = Send(oObj,@GetFineCol)
                {
-                  Send(first(j),@Delete);
+                  Send(oObj,@Delete);
                   Send(oRoom,@NewHold,#what=oChest,#new_row=iRow,#new_col=iCol,
-                     #fine_row=iFineRow,#fine_col=iFineCol);
+                        #fine_row=iFineRow,#fine_col=iFineCol);
                }
             }
          }
@@ -6122,7 +6045,7 @@ messages:
 
       foreach i in plSpells
       {
-         if isClass(i,&Spell)
+         if IsClass(i,&Spell)
          {
             Send(i,@SetServerAccessibility,#iServer=server_type);
          }
@@ -6130,7 +6053,7 @@ messages:
 
       if piServer_type = SERVER_NORMAL and server_type <> SERVER_NORMAL
       {
-          Send(self,@recreateallItemAttributes);
+         Send(self,@RecreateAllItemAttributes);
       }
 
       foreach i in plItem_attributes
@@ -6188,7 +6111,7 @@ messages:
    AddToItemAttTreasureTable(diff=$,percent=$, iItemAtt = $)
    {
       local i, j, lData;
-      
+
       if diff = $ OR percent = $ OR iItemAtt = $
       {
          Debug("Bad data!");
@@ -6197,22 +6120,22 @@ messages:
       }
 
       foreach i in plItemAttTreasure
-      {         
-         if first(i) = diff
-         {            
+      {
+         if First(i) = diff
+         {
             lData = Nth(i,2);
-            
-            // Quickly check to be sure it's already there
+
+            // Quickly check to be sure it's not already there.
             foreach j in lData
             {
-               if first(j) = iItemAtt
+               if First(j) = iItemAtt
                {
                   return FALSE;
                }
             }
 
             // Okay, it's not there.  Add it.
-            SetNth(i,2,Cons([iItemAtt, percent],Nth(i,2)));
+            SetNth(i,2,Cons([iItemAtt, percent],lData));
 
             return TRUE;
          }
@@ -6233,28 +6156,28 @@ messages:
       {
          foreach j in Nth(i,2)
          {
-            if first(j) = iItemAtt
+            if First(j) = iItemAtt
             {
-               setNth(i,2,DelListElem(Nth(i,2),j));
+               SetNth(i,2,DelListElem(Nth(i,2),j));
             }
          }
       }
+
       return;
    }
 
    GetItemAttTreasureList(diff_seed=0)
    {
-      local i;
-   
-      foreach i in plItemAttTreasure
+      local lTreasure;
+
+      lTreasure = GetListNode(plItemAttTreasure,1,diff_seed);
+
+      if (lTreasure <> $)
       {
-         if first(i) = diff_seed
-         {
-            return Nth(i,2);
-         }
+         return Nth(lTreasure,2);
       }
 
-      return $;
+      return;
    }
 
    GetItemAttributes()
@@ -6265,13 +6188,9 @@ messages:
    ClearPlayerSpellLists()
    "Admin supported.  Clear all players' spell lists."
    {
-      local i;
-      foreach i in plUsers
-      {
-         Send(i,@ClearSpellList);
-      }
+      SendList(plUsers,0,@ClearSpellList);
 
-      return $;
+      return;
    }
 
    FindGuildByShield(color1=$, color2=$, shape=$)
@@ -6331,7 +6250,7 @@ messages:
       }
 
       // Make sure School is set and within proper bounds
-      if school = $ OR school <> bound(school,SS_SHALILLE,SS_JALA)
+      if school = $ OR school <> Bound(school,SS_SHALILLE,SS_JALA)
       {
          return 0;
       }
@@ -6395,10 +6314,10 @@ messages:
 
       if what = $ AND classtype <> $
       {
-         what = create(classtype, #type=type);
+         what = Create(classtype,#type=type);
       }
 
-      if not isObject(what)
+      if NOT IsObject(what)
       {
          return FALSE;
       }
@@ -6420,7 +6339,8 @@ messages:
          col = Send(oRoom,@GetTeleportCol);
       }
 
-      Send(oRoom,@NewHold,#what=what,#new_row=row,#new_col=col,#fine_row=fine_row,#fine_col=fine_col,#new_angle=angle);
+      Send(oRoom,@NewHold,#what=what,#new_row=row,#new_col=col,
+            #fine_row=fine_row,#fine_col=fine_col,#new_angle=angle);
 
       return TRUE;
    }
@@ -6446,29 +6366,13 @@ messages:
 
    GetTotem(num=$)
    {
-      if num = 1
+      switch (num)
       {
-         return poTotemOne;
-      }
-
-      if num = 2
-      {
-         return poTotemTwo;
-      }
-
-      if num = 3
-      {
-         return poTotemThree;
-      }
-
-      if num = 4
-      {
-         return poTotemFour;
-      }
-
-      if num = 5
-      {
-         return poTotemFive;
+         case 1: return poTotemOne;
+         case 2: return poTotemTwo;
+         case 3: return poTotemThree;
+         case 4: return poTotemFour;
+         case 5: return poTotemFive;
       }
 
       return poTotem;
@@ -6776,19 +6680,14 @@ messages:
    }
 
    // notify all rooms of faction change, so they can tell NPCs
-   FactionChanged( new_faction = $ )
+   FactionChanged(new_faction = $)
    {
-      local i;
-
       if new_faction = $
       {
          return;
       }
 
-      foreach i in plRooms
-      {
-         Send( i, @FactionChanged, #new_fact = new_faction );
-      }
+      SendList(plRooms,0,@FactionChanged,#new_fact=new_faction);
 
       return;
    }
@@ -7729,7 +7628,7 @@ messages:
 
       foreach i in plUsers
       {
-         iCount = iCount + Send(i,@RemoveOldMail,#iDays=iDays);
+         iCount += Send(i,@RemoveOldMail,#iDays=iDays);
          if (iCount > max)
          {
             break;
@@ -7741,223 +7640,116 @@ messages:
 
    CleanBadMail()
    {
-      local i,total;
+      local i, total;
+
       total = 0;
       foreach i in plUsers
       {
-         total = total + Send(i,@CleanBadMail);
+         total += Send(i,@CleanBadMail);
       }
+
       return total;
    }
-   
+
    GetBanks()
    {
       return plBanks;
    }
 
-    AddSpellTotemToServerList(oTotem=$)
-    {
-       if oTotem <> $
-          AND IsClass(oTotem,&RadiusEnchantmentTotem)
-       {
-          plSpellTotems = Cons(oTotem,plSpellTotems);
-       }
-       return;
-    }
-    
-    DeleteSpellTotemFromMasterList(oTotem=$)
-    {
-       if oTotem <> $
-          AND IsClass(oTotem,&RadiusEnchantmentTotem)
-          AND plSpellTotems <> $
-          AND FindListElem(plSpellTotems,oTotem) <> 0
-       {
-          plSpellTotems = DelListElem(plSpellTotems,oTotem);
-       }
-       return;
-    }
-    
-    DeleteAllSpellTotems()
-    {
-       local i;
- 
-       foreach i in plSpellTotems
-       {
-          Send(i,@Delete);
-       }
- 
-       return;
-    }
+   GetResistanceName(type=ATCK_WEAP_ALL)
+   {
+      switch (type)
+      {
+      case ATCK_WEAP_ALL: return weapon_resistance_name;
+      case ATCK_WEAP_PIERCE: return pierce_resistance_name;
+      case ATCK_WEAP_SLASH: return slash_resistance_name;
+      case ATCK_WEAP_THRUST: return thrust_resistance_name;
+      case ATCK_WEAP_BLUDGEON: return bludgeon_resistance_name;
+      case -ATCK_SPELL_ALL: return magic_resistance_name;
+      case -ATCK_SPELL_FIRE: return fire_resistance_name;
+      case -ATCK_SPELL_COLD: return cold_resistance_name;
+      case -ATCK_SPELL_SHOCK: return shock_resistance_name;
+      case -ATCK_SPELL_ACID: return acid_resistance_name;
+      case -ATCK_SPELL_HOLY: return holy_resistance_name;
+      case -ATCK_SPELL_UNHOLY: return unholy_resistance_name;
+      case -ATCK_SPELL_QUAKE: return quake_resistance_name;
+      }
 
-    GetResistanceName(type=ATCK_WEAP_ALL)
-    {
-       if type = ATCK_WEAP_ALL
-       {
-          return weapon_resistance_name;
-       }
-       if type = ATCK_WEAP_PIERCE
-       {
-          return pierce_resistance_name;
-       }
-       if type = ATCK_WEAP_SLASH
-       {
-          return slash_resistance_name;
-       }
-       if type = ATCK_WEAP_THRUST
-       {
-          return thrust_resistance_name;
-       }
-       if type = ATCK_WEAP_BLUDGEON
-       {
-          return bludgeon_resistance_name;
-       }
-       if type = -ATCK_SPELL_ALL
-       {
-          return magic_resistance_name;
-       }
-       if type = -ATCK_SPELL_FIRE
-       {
-          return fire_resistance_name;
-       }
-       if type = -ATCK_SPELL_COLD
-       {
-          return cold_resistance_name;
-       }
-       if type = -ATCK_SPELL_SHOCK
-       {
-          return shock_resistance_name;
-       }
-       if type = -ATCK_SPELL_ACID
-       {
-          return acid_resistance_name;
-       }
-       if type = -ATCK_SPELL_HOLY
-       {
-          return holy_resistance_name;
-       }
-       if type = -ATCK_SPELL_UNHOLY
-       {
-          return unholy_resistance_name;
-       }
-       if type = -ATCK_SPELL_QUAKE
-       {
-          return quake_resistance_name;
-       }
-       
-       return unknown_resistance_name;
-    }
-    
-    GetAttackDamageTypeName(type=ATCK_WEAP_ALL)
-    {
-       if type = ATCK_WEAP_ALL
-       {
-          return weapon_damage_name;
-       }
-       if type = ATCK_WEAP_NERUDITE
-       {
-          return nerudite_damage_name;
-       }
-       if type = ATCK_WEAP_SILVER
-       {
-          return silver_damage_name;
-       }
-       if type = ATCK_WEAP_MAGIC
-       {
-          return enchanted_damage_name;
-       }
-       if type = ATCK_WEAP_NONMAGIC
-       {
-          return nonmagic_damage_name;
-       }
-       if type = ATCK_WEAP_PIERCE
-       {
-          return pierce_damage_name;
-       }
-       if type = ATCK_WEAP_SLASH
-       {
-          return slash_damage_name;
-       }
-       if type = ATCK_WEAP_THRUST
-       {
-          return thrust_damage_name;
-       }
-       if type = ATCK_WEAP_BLUDGEON
-       {
-          return bludgeon_damage_name;
-       }
-       
-       return unknown_damage_name;
-    }
-    
-    GetSpellDamageTypeName(type=ATCK_SPELL_ALL)
-    {
-       if type = ATCK_SPELL_ALL
-       {
-          return magic_damage_name;
-       }
-       if type = ATCK_SPELL_FIRE
-       {
-          return fire_damage_name;
-       }
-       if type = ATCK_SPELL_COLD
-       {
-          return cold_damage_name;
-       }
-       if type = ATCK_SPELL_SHOCK
-       {
-          return shock_damage_name;
-       }
-       if type = ATCK_SPELL_ACID
-       {
-          return acid_damage_name;
-       }
-       if type = ATCK_SPELL_HOLY
-       {
-          return holy_damage_name;
-       }
-       if type = ATCK_SPELL_UNHOLY
-       {
-          return unholy_damage_name;
-       }
-       if type = ATCK_SPELL_QUAKE
-       {
-          return quake_damage_name;
-       }
-       
-       return unknown_damage_name;
-    }
-   
+      return unknown_resistance_name;
+   }
+
+   GetAttackDamageTypeName(type=ATCK_WEAP_ALL)
+   {
+      switch (type)
+      {
+      case ATCK_WEAP_ALL: return weapon_damage_name;
+      case ATCK_WEAP_NERUDITE: return nerudite_damage_name;
+      case ATCK_WEAP_SILVER: return silver_damage_name;
+      case ATCK_WEAP_MAGIC: return enchanted_damage_name;
+      case ATCK_WEAP_NONMAGIC: return nonmagic_damage_name;
+      case ATCK_WEAP_PIERCE: return pierce_damage_name;
+      case ATCK_WEAP_SLASH: return slash_damage_name;
+      case ATCK_WEAP_THRUST: return thrust_damage_name;
+      case ATCK_WEAP_BLUDGEON: return bludgeon_damage_name;
+      }
+
+      return unknown_damage_name;
+   }
+
+   GetSpellDamageTypeName(type=ATCK_SPELL_ALL)
+   {
+      switch (type)
+      {
+      case ATCK_SPELL_ALL: return magic_damage_name;
+      case ATCK_SPELL_FIRE: return fire_damage_name;
+      case ATCK_SPELL_COLD: return cold_damage_name;
+      case ATCK_SPELL_SHOCK: return shock_damage_name;
+      case ATCK_SPELL_ACID: return acid_damage_name;
+      case ATCK_SPELL_HOLY: return holy_damage_name;
+      case ATCK_SPELL_UNHOLY: return unholy_damage_name;
+      case ATCK_SPELL_QUAKE: return quake_damage_name;
+      }
+
+      return unknown_damage_name;
+   }
+
     GetAttackTypeList()
     "Returns a list of weapon damage types for functions to loop through."
-    {
-       local lDamageTypes;
-       lDamageTypes = [ATCK_WEAP_PIERCE];
-       lDamageTypes = Cons(ATCK_WEAP_SLASH,lDamageTypes);
-       lDamageTypes = Cons(ATCK_WEAP_BLUDGEON,lDamageTypes);
-       lDamageTypes = Cons(ATCK_WEAP_THRUST,lDamageTypes);
-       lDamageTypes = Cons(ATCK_WEAP_NONMAGIC,lDamageTypes);
-       lDamageTypes = Cons(ATCK_WEAP_MAGIC,lDamageTypes);
-       lDamageTypes = Cons(ATCK_WEAP_NERUDITE,lDamageTypes);
-       lDamageTypes = Cons(ATCK_WEAP_SILVER,lDamageTypes);
-       lDamageTypes = Cons(ATCK_WEAP_ALL,lDamageTypes);
-       
-       return lDamageTypes;
-    }
-    
-    GetSpellTypeList()
-    {
-       local lDamageTypes;
-       lDamageTypes = [ATCK_SPELL_QUAKE];
-       lDamageTypes = Cons(ATCK_SPELL_UNHOLY,lDamageTypes);
-       lDamageTypes = Cons(ATCK_SPELL_HOLY,lDamageTypes);
-       lDamageTypes = Cons(ATCK_SPELL_ACID,lDamageTypes);
-       lDamageTypes = Cons(ATCK_SPELL_SHOCK,lDamageTypes);
-       lDamageTypes = Cons(ATCK_SPELL_COLD,lDamageTypes);
-       lDamageTypes = Cons(ATCK_SPELL_FIRE,lDamageTypes);
-       lDamageTypes = Cons(ATCK_SPELL_ALL,lDamageTypes);
-       
-       return lDamageTypes;
-    }
+   {
+      return plAttackTypes;
+   }
+
+   GetSpellTypeList()
+   "Returns a list of spell damage types for functions to loop through."
+   {
+      return plSpellTypes;
+   }
+
+   RecreateDamageTypeLists()
+   {
+      plSpellTypes = [ ATCK_SPELL_QUAKE,
+                       ATCK_SPELL_UNHOLY,
+                       ATCK_SPELL_HOLY,
+                       ATCK_SPELL_ACID,
+                       ATCK_SPELL_SHOCK,
+                       ATCK_SPELL_COLD,
+                       ATCK_SPELL_FIRE,
+                       ATCK_SPELL_ALL
+                     ];
+
+      plAttackTypes = [ ATCK_WEAP_PIERCE,
+                        ATCK_WEAP_SLASH,
+                        ATCK_WEAP_BLUDGEON,
+                        ATCK_WEAP_THRUST,
+                        ATCK_WEAP_NONMAGIC,
+                        ATCK_WEAP_MAGIC,
+                        ATCK_WEAP_NERUDITE,
+                        ATCK_WEAP_SILVER,
+                        ATCK_WEAP_ALL
+                      ];
+
+      return;
+   }
 
    AddObjectAttributeToMasterList(attribute=$)
    {
@@ -7969,7 +7761,7 @@ messages:
       }
       return;
    }
-    
+
    RemoveObjectAttributeFromMasterList(attribute=$)
    {
       if attribute <> $
@@ -8177,8 +7969,6 @@ messages:
    {
       local i, j, lUserIPList, lIP, bFound;
 
-      lUserIPList = $;
-
       foreach i in plUsers_logged_on
       {
          bFound = FALSE;
@@ -8197,6 +7987,8 @@ messages:
             if IsListMatch(lIP,j)
             {
                bFound = TRUE;
+
+               break;
             }
          }
          if NOT bFound
@@ -8212,12 +8004,12 @@ messages:
    {
       local lBaseList, lSortedItems, oItem, lSuperClass, cClass,
             lTempClassOrder;
-      
+
       if lItems = $
       {
          return $;
       }
-      
+
       if lClassOrder = $
       {
          lTempClassOrder = [&Weapon,
@@ -8230,10 +8022,9 @@ messages:
       {
          lTempClassOrder = lClassOrder;
       }
-      
+
       lBaseList = ListCopy(lItems);
-      
-      lSortedItems = $;
+
       foreach cClass in lTempClassOrder
       {
          foreach oItem in lBaseList
@@ -8252,20 +8043,21 @@ messages:
          lSortedItems = Cons(oItem,lSortedItems);
          lBaseList = DelListElem(lBaseList,oItem);
       }
-      
+
       if lBaseList <> $
       {
-         return lItems;
          Debug("SortItemsByType attempted without handling all items.");
+
+         return lItems;
       }
-      
+
       return lSortedItems;
    }
-   
+
    GetSortInfo()
    {
       local lSortInfo;
-      
+
       lSortInfo = [[inventory_weapon_class_name,&Weapon],
                    [inventory_armor_class_name,&Armor],
                    [inventory_shield_class_name,&Shield],
@@ -8281,11 +8073,11 @@ messages:
       
       return lSortInfo;
    }
-   
+
    FindItemClassByName(string=$)
    {
       local i;
-      
+
       foreach i in plItemTemplates
       {
          if StringEqual(string,Send(i,@GetName))
@@ -8293,7 +8085,7 @@ messages:
             return GetClass(i);
          }
       }
-      
+
       foreach i in plMoneyTemplates
       {
          if StringEqual(string,Send(i,@GetName))
@@ -8301,10 +8093,10 @@ messages:
             return GetClass(i);
          }
       }
-      
+
       return $;
    }
-   
+
    FindTemplateItemByName(string=$)
    {
       local i;
@@ -8316,7 +8108,7 @@ messages:
             return i;
          }
       }
-      
+
       foreach i in plMoneyTemplates
       {
          if StringEqual(string,Send(i,@GetName))
@@ -8324,10 +8116,10 @@ messages:
             return i;
          }
       }
-      
+
       return $;
    }
-   
+
    FindTemplateItemByClass(cClass=$)
    {
       local i;
@@ -8339,7 +8131,7 @@ messages:
             return i;
          }
       }
-      
+
       foreach i in plMoneyTemplates
       {
          if GetClass(i) = cClass
@@ -8347,10 +8139,9 @@ messages:
             return i;
          }
       }
-      
+
       return $;
    }
 
 end
 ////////////////////////////////////////////////////////////////////////////////
-

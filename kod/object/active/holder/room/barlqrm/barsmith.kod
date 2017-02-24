@@ -47,7 +47,6 @@ properties:
 
 messages:
 
-
    CreateStandardExits()
    {
       plExits = $;
@@ -62,17 +61,18 @@ messages:
    {
 
       Send(self,@NewHold,#what=Create(&BarloqueBlacksmith),
-	 #new_row=4,#new_col=7,#fine_col=32,#fine_col=32);
+         #new_row=4,#new_col=7,#fine_row=32,#fine_col=32);
       Send(self,@NewHold,#what=Create(&Firepit),
          #new_row=4,#new_col=12,#fine_row=32,#fine_col=32);
- 
+
       propagate;
    }
 
    Constructed()
    {
-   //  each sound is [wave_file, row, col, cutoff radius, maximum volume]
+      // each sound is [wave_file, row, col, cutoff radius, maximum volume]
       plLooping_sounds = [[ fire_sound_barsmith, 4, 11, 10, 100 ]];
+
       propagate;
    }
 

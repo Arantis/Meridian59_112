@@ -1,0 +1,2444 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+//////////////////////////////////////////////////////////////////////////////
+Watcher is Towns
+
+constants:
+
+   include blakston.khd
+
+   ACCEPT_DELAY = 15000
+   ADVERT_DELAY_MIN = 60000
+   ADVERT_DELAY_MAX = 120000
+   COMMENCE_DELAY_MIN = 6000
+   COMMENCE_DELAY_MAX = 12000
+   FIGHT_DELAY_ONE_ON_ONE = 480000
+   FIGHT_DELAY_LAST_MAN_STANDING = 720000
+
+   LAST_MINUTE = 60000
+
+   RECONNECT_TIME = 30000
+
+resources:
+
+   include watcher.lkod
+
+   watcher_ad_need_champion = \
+      "Have we no warrior who would be our champion?"
+   watcher_ad_need_challenger = "Would no warrior dare to challenge %s%s?"
+   watcher_ad_good_fight = "Let's see some blood!"
+
+   watcher_no_need = "We have no need of new combatants at this time."
+   watcher_need_champion = \
+      "We do not yet have a Champion!  Would you be that brave soul?"
+   watcher_dont_need_challenger = \
+      "We have no need of challengers at this time."
+   watcher_fight_in_progress = \
+      "A match is currently in progress.  Try again after this battle is over."
+
+   watcher_already_combatant = "But you are already a combatant!"
+   watcher_already_champion = "But, you are already our champion!"
+   watcher_already_have_champion = \
+      "We already have a champion:  %s%s.  Would you dare to challenge %s?"
+
+   watcher_challenge_offered = \
+      "%s%s has challenged you.  Will you trade blows with %s?"
+   watcher_must_accept = \
+      "You only have %i seconds left to accept %s%s's challenge."
+
+   watcher_cant_renege = "You cannot renege unless you are a combatant!"
+   watcher_commence_fight = "Fight!!!!"
+   watcher_last_minute = "There is only one minute left in this match."
+   watcher_draw = "This match is a draw.  No one wins."
+
+   watcher_victor = "~BWe have a victor!~B"
+   watcher_new_champion = "~BAll hail %s%s, the new Champion of Kraanan!~B"
+   watcher_killed_champion = "%s%s has slain the Champion of Kraanan, %s%s!"
+   watcher_retain_title = \
+      "%s%s, Champion of Kraanan, has valiantly defended %s title!"
+   watcher_champion_killed = "The Champion has slain %s%s!"
+   watcher_someone_killed = "%s%s has slain %s%s!"
+
+   watcher_champ_reneges = \
+      "%s%s, Champion of Kraanan, has surrendered %s title."
+   watcher_ready_to_fight = "%s%s vs %s%s.  Prepare to fight on my mark."
+   watcher_combatant_reneges = "%s%s has chosen to fight no longer."
+
+   watcher_cant_leave = \
+      "Combatants can't just leave in the middle of a match!"
+   watcher_pitifully_fled = \
+      "%s%s has pitifully fled from the field of battle."
+   watcher_fled_reconnect = \
+      "%s%s has pitifully fled from the field of battle.  I'll give %s%s 30 "
+      "seconds to change their mind."
+   watcher_wont_fight = \
+      "Apparently, %s%s won't be fighting for us today after all."
+   watcher_only_combatants = "Only combatants may trade blows here!"
+   watcher_no_fighting_yet = "Stay your hand; the battle has yet to begin!"
+   watcher_only_combatants_cast = "Only combatants may cast spells here!"
+   watcher_only_target_combatants = \
+      "You may only target other combatants with your mystical attacks!"
+
+   watcher_spell_banned = \
+      "The %s spell has been banned from the Arena of Kraanan; it is the "
+      "tactic of a coward."
+
+   watcher_must_choose_style = \
+      "A style of combat must be chosen before we may choose combatants."
+   watcher_cant_switch = \
+      "You cannot change combat styles until all current combatants have been "
+      "defeated or reneged."
+   watcher_new_combat_style = \
+      "The name of the game is: %s.  Now, would any warrior be our champion?"
+
+   // Fight styles.
+   watcher_style_one_on_one = "traditional"
+   watcher_style_last_man_standing = "last man standing"
+   watcher_style_guild_vs_guild = "guild vs guild"
+   watcher_style_battle_royale = "battle royale"
+
+   watcher_new_combatant = "%s%s will also be a combatant in this match!"
+   watcher_more_combatants = \
+      "Additional combatants only have %i seconds to join into this match."
+   watcher_ready_last_man = \
+      "The game is last man standing.  Combat will begin on my mark."
+   watcher_ready_guild_vs_guild = "%s%q vs %s%q:  combat begins on my mark."
+   watcher_ready_battle_royale = \
+      "Battle Royale:  Kill anyone in any guild but yours.  Combat begins on "
+      "my mark."
+
+   watcher_welcome = \
+      "~kThe Watcher tells you, \"Welcome to the Arena of Kraanan.  Read the "
+      "banners for help.\""
+   watcher_worship_admin = \
+      "All hail the mighty %s, and pray that %s chooses not to smite us for "
+      "our impudence!"
+   watcher_worship_dm = "Bow down before %s %s of Meridian!"
+   watcher_welcome_champion = "All hail %s%s, a Champion of Kraanan!"
+   watcher_welcome_champion_guild = \
+      "All hail %s%s, member of %s%q, favored guild of Kraanan!"
+
+   watcher_new_champion_guild = \
+      "%s%s has registered %s%q as the new Champions of Kraanan!"
+   watcher_new_guild_combatant = \
+      "%s%s has registered %s%q as challengers in the upcoming fray."
+   watcher_need_guild = \
+      "You cannot engage in guild vs. guild combat unless you join a guild!"
+   watcher_only_two = \
+      "Only two guilds may face each other in guild v guild combat."
+   watcher_not_more_members_yet = \
+      "Other members of %s%q may not enter the fray until a second guild has "
+      "committed to combat."
+   watcher_new_champion_guild_win = "%s%q are the new Champions of Kraanan!"
+   watcher_defended_guild_title = "%s%q remain the Champions of Kraanan!"
+
+   watcher_invalid_fight = \
+      "This fight was invalid for certain reasons, and therefore it has been "
+      "cancelled."
+
+   watcher_cant_start_end = \
+      "You can't end a tournament while any combatants exist!"
+
+   watcher_tournament_win = "%s%s has claimed victory in this bout!"
+   watcher_tournament_win_guild = "%s%q has claimed victory in this bout!"
+   watcher_tournament_style = \
+      "%s%s has decreed that the style of combat will be %s."
+   watcher_tournament_combatant = "%s%s will be a combatant in this bout."
+   watcher_tournament_cancelled = \
+      "With a wave of %s hand, %s%s dismisses the current proceedings and "
+      "starts anew."
+
+   watcher_only_grand_marshal = \
+      "~kThe Watcher tells you, \"Only the Tourney Judge can give commands "
+      "during a tournament.  If you wish to be included in the proceedings, "
+      "you must let the Tourney Judge know.\""
+   watcher_not_during_fight = \
+      "~kThe Watcher tells you, \"You cannot offer me commands while a fight "
+      "is still going on.\""
+
+   watcher_speed_up = "Let's see if we can't speed this up a little bit."
+   watcher_quit_guild = \
+      "Due to a change in guild status, %s%s has forfeited %s role in the "
+      "upcoming battle."
+   watcher_no_guild_tourny = \
+      "%s%s may not participate in a guild scenario because %s is a member "
+      "of no guild."
+   watcher_wrong_guild_tourny = \
+      "%s%s is not a member of either guild registered for this match."
+   watcher_already_tourny_combatant = \
+      "%s%s is already a combatant in this match!"
+   watcher_tournament_over_guild_limit = \
+      "%s%s was not added to the proceedings, because %s%q already have too "
+      "many members on the floor.  A guild may only have %i members in a "
+      "fight of this style at a time."
+   watcher_over_guild_limit = \
+      "You may not join your comrades on the floor because there are already "
+      "%i set to fight in this match.  Read the banners for more details."
+   watcher_not_more = \
+      "There may not be more than %i combatants in a single fight."
+   watcher_tourny_invalid = \
+      "This fight is not yet valid.  You may want to cancel the fight by "
+      "saying 'Clear all', or add combatants to ensure a valid fight."
+   watcher_killed_by_spell = "%s%s was just killed by the %s spell!"
+
+   watcher_arena_help = \
+      "Proceed all subcommands with the DM command.  'Start Tournament' "
+      "begins the tournament. 'End tournament' ends the tournament.  'Fight' "
+      "starts a bout (although traditional bouts start on their own).  "
+      "'Clear All' resets the tournament and starts anew.  DM followed by a "
+      "person's name will attempt to make him a combatant in the next round."
+      "The name of the combat style chooses the style the players will have "
+      "to use.  'Booth' teleports you to the watcher's booth."
+
+   watcher_no_assgame = \
+      "I'll have none of these shenanigans during an officially sanctioned "
+      "tournament!"
+   watcher_unwanted_give = "~k%s%s ignores your bribe.~n~k"
+
+   #region Speech Command Classvars
+   watcher_arena_help_command = "arena help"
+   watcher_start_tournament_command = "start tournament"
+   watcher_end_tournament_command  = "end tournament"
+   watcher_champion_command  = "champion"
+   watcher_challenge_command  = "challenge"
+   watcher_accept_command  = "accept"
+   watcher_renege_command  = "renege"
+   watcher_traditional_command  = "traditional"
+   watcher_last_man_standing_command  = "last man standing"
+   watcher_guild_vs_guild_command  = "guild vs guild"
+   watcher_battle_royale_command  = "battle royale"
+   watcher_fight_command  = "fight"
+   watcher_clear_all_command  = "clear all"
+   #endregion Speech Command Classvars
+
+  watcher_battle_midi_rsc = pk_sb16.ogg
+
+classvars:
+
+   // Arena operation resources. Watchers for different arenas
+   // can customise these speech resources.
+   vrChallengerAd = watcher_ad_need_challenger
+   vrAlreadyChampion = watcher_already_champion
+   vrAlreadyCombatant = watcher_already_combatant
+   vrArenaFull = watcher_not_more
+   vrChallengeOffered = watcher_challenge_offered
+   vrAddedCombatant = watcher_new_combatant
+   vrAddedGuildCombatant = watcher_new_guild_combatant
+   vrJoinTimeRemaining = watcher_more_combatants
+   vrCommenceFight = watcher_commence_fight
+   vrFightIsDraw = watcher_draw
+   vrMustAcceptChallenge = watcher_must_accept
+   vrChampionSurrenders = watcher_champ_reneges
+   vrMustChooseStyle = watcher_must_choose_style
+   vrFightInProgress = watcher_fight_in_progress
+   vrNeedChampion = watcher_need_champion
+   vrNotAcceptingChallengers = watcher_dont_need_challenger
+   vrStyleOneOnOne = watcher_style_one_on_one
+   vrStyleLastManStanding = watcher_style_last_man_standing
+   vrStyleGuildVsGuild = watcher_style_guild_vs_guild
+   vrStyleLastGuildStanding = watcher_style_battle_royale
+   vrKilledBySpell = watcher_killed_by_spell
+   vrKilledChamp = watcher_killed_champion
+   vrKilledByChamp = watcher_champion_killed
+   vrKilledBySomeone = watcher_someone_killed
+   vrCannotLeave = watcher_cant_leave
+   vrOnlyCombatantsCast = watcher_only_combatants_cast
+   vrOnlyCastCombatants = watcher_only_target_combatants
+   vrNoFightingYet = watcher_no_fighting_yet
+   vrSpellBanned = watcher_spell_banned
+   vrOnlyCombatantsAttack = watcher_only_combatants
+   vrPlayerFled = watcher_pitifully_fled
+   vrPlayerFledReconnect = watcher_fled_reconnect
+   vrPlayerWontFight = watcher_wont_fight
+   vrWorshipAdmin = watcher_worship_admin
+   vrWorshipDM = watcher_worship_dm
+   vrWorshipChamp = watcher_welcome_champion
+   vrWorshipChampGuild = watcher_welcome_champion_guild
+   vrWelcome = watcher_welcome
+   vrCantSwitch = watcher_cant_switch
+   vrNewStyle = watcher_new_combat_style
+   vrNewStyleTournament = watcher_tournament_style
+   vrAlreadyHaveChamp = watcher_already_have_champion
+   vrNoNeedCombatant = watcher_no_need
+   vrCombatantNotGuilded = watcher_need_guild
+   vrNewChampGuild = watcher_new_champion_guild
+   vrNewChampion = watcher_new_champion
+   vrTournamentCombatant = watcher_tournament_combatant
+   vrInvalidFight = watcher_invalid_fight
+   vrBattleReadySound = watcher_battle_midi_rsc
+   vrReadyOneOnOne = watcher_ready_to_fight
+   vrReadyLastMan = watcher_ready_last_man
+   vrReadyGvsG = watcher_ready_guild_vs_guild
+   vrReadyBattleRoyale = watcher_ready_battle_royale
+   vrLastMinuteFight = watcher_last_minute
+   vrSpeedUpFight = watcher_speed_up
+   vrRetainTitle = watcher_retain_title
+   vrVictor = watcher_victor
+   vrTournamentWin = watcher_tournament_win
+   vrTournWinGuild = watcher_tournament_win_guild
+   vrNewGuildWin = watcher_new_champion_guild_win
+   vrOldGuildWin = watcher_defended_guild_title
+   vrNoCmdsDuringFight = watcher_not_during_fight
+
+   vrCmdOneOnOne = watcher_traditional_command
+   vrCmdLastManStanding = watcher_last_man_standing_command
+   vrCmdGuildVsGuild = watcher_guild_vs_guild_command
+   vrCmdBattleRoyale = watcher_battle_royale_command
+
+   viDefinite = ARTICLE_THE
+   viIndefinite = ARTICLE_THE
+
+   vrUnwanted_give = watcher_unwanted_give
+
+   viAttributes = MOB_NOMOVE | MOB_FULL_TALK | MOB_LISTEN | MOB_NOFIGHT \
+                  | MOB_NOQUEST
+   viOccupation = MOB_ROLE_WATCHER
+   viWatcherID = WATCHER_NONE
+
+properties:
+
+   #region Properties
+   piCombat_style = STYLE_NO_FIGHT
+
+   // Every now and then, the Watcher sends off a blurb, asking people to fight
+   //  for him.
+   ptAdvert = $
+
+   // In PvP combat, champ has a chance to accept a proffered challenge.
+   ptAccept = $
+
+   // 10 second head start before a fight.
+   ptCommence = $
+
+   // The actual length of the fight.
+   ptFight = $
+
+   // The time until a logged player is 'killed'.
+   ptReconnect = $
+
+   // This is a list of player objects.
+   plCombatants = $
+
+   // This is a list of two-element lists.
+   plKill_list = $
+
+   // poChampion points to whoever won last time out.  poChampion is always a
+   //  player object.
+   poChampion = $
+
+   // poChampion_guild points to the guild object of the current champion.
+   poChampion_Guild = $
+
+   // Has the player been told he only has 15 more seconds to accept a challenge?
+   pbAccept = FALSE
+
+   // Has the Watcher given the one minute warning?
+   pbLastMinute = FALSE
+
+   // How many victories the current champ has.
+   piKill_counter = 0
+
+   // If an actor has activated the tournament status, this is set to true and
+   //  only an actor can activate or deactivate the commands.
+   pbTournament = FALSE
+
+   // If an actor is not here for 5 turns in a row, reset the game.
+   piMissing_Actor = 0
+
+   // If max_lock is equal to true, there are additional limitations on the
+   //  number of people who can fight (to keep load down).
+   pbMax_Lock = TRUE
+
+   // Stores values for the players' HP, mana, and vigor upon entring the
+   //  battle area, which are restored upon leaving the area.
+   plUserStats = $
+
+   // The actor running a tournament.
+   poMarshal = $
+   #endregion Properties
+
+   // Whether we end a 1 vs 1 match immediately on logoff or wait a short
+   // time for the combatant to return.
+   pbCrashProtection = FALSE
+
+messages:
+
+   NewOwner(what=$)
+   {
+      local iDelay;
+
+      if poOwner <> $
+      {
+         Send(poOwner,@SetRoomFlagToDefault,#flag=ROOM_SAFE_DEATH);
+      }
+
+      Send(what,@SetRoomFlag,#flag=ROOM_SAFE_DEATH,#value=TRUE);
+      if ptAdvert = $
+      {
+         iDelay = Random(ADVERT_DELAY_MIN,ADVERT_DELAY_MAX);
+         ptAdvert = CreateTimer(self,@AdvertTimer,iDelay);
+      }
+
+      propagate;
+   }
+
+   //// Advertising
+
+   // These messages are spat out at users every now and then, just
+   // for atmosphere, and to tell players what game is going on, etc.
+
+   GetNeedChampionRsc()
+   {
+      return watcher_ad_need_champion;
+   }
+
+   GetGoodFightRsc()
+   {
+      return watcher_ad_good_fight;
+   }
+
+   SayDMWelcome(who = $)
+   {
+      Post(self,@Say,#message_rsc=vrWorshipDM,
+            #parm1=Send(who,@GetLordLady),#parm2=Send(who,@GetName));
+
+      return;
+   }
+
+   SayVictor()
+   {
+      Send(self,@Say,#message_rsc=vrVictor);
+
+      return;
+   }
+
+   SayChallenge(who=$)
+   {
+      Send(self,@Say,#message_rsc=vrChallengeOffered,
+            #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName),
+            #parm3=Send(who,@GetHimHer));
+
+      return;
+   }
+
+   AdvertTimer()
+   {
+      local iDelay, oChamp;
+
+      ptAdvert = $;
+
+      if pbTournament
+      {
+         if Send(self,@GetActor) = $
+         {
+            if ++piMissing_actor >= 8
+            {
+               Send(self,@ClearCombatants);
+               pbTournament = FALSE;
+               Send(poOwner,@ArenaEndTournament,#Marshal=$);
+               if Send(poOwner,@GetRoomNum) = RID_TOS_ARENA
+               {
+                  Send(poOwner,@UnlockArena);
+               }
+            }
+         }
+         else
+         {
+            piMissing_actor = 0;
+         }
+
+         iDelay = Random(ADVERT_DELAY_MIN,ADVERT_DELAY_MAX);
+         ptAdvert = CreateTimer(self,@AdvertTimer,iDelay);
+
+         return;
+      }
+
+      if plCombatants = $
+      {
+         Send(self,@Say,#message_rsc=Send(self,@GetNeedChampionRsc));
+      }
+      else if NOT Send(self,@ValidateFight)
+      {
+         oChamp = First(plCombatants);
+         Send(self,@Say,#message_rsc=vrChallengerAd,
+               #parm1=Send(oChamp,@GetDef),#parm2=Send(oChamp,@GetName));
+      }
+      else
+      {
+         Send(self,@Say,#message_rsc=Send(self,@GetGoodFightRsc));
+      }
+
+      iDelay = Random(ADVERT_DELAY_MIN,ADVERT_DELAY_MAX);
+      ptAdvert = CreateTimer(self,@AdvertTimer,iDelay);
+
+      return;
+   }
+
+   //// Per fight code
+
+   // Made a conscious decision to move as much of the actual arena code here,
+   //  so that these procedures would be the only ones that need to change,
+   //  if we ever add a new arena type.
+
+   SetChampion(who=$)
+   {
+      if (poChampion <> who
+         AND (piCombat_style = STYLE_ONE_ON_ONE
+              OR piCombat_style = STYLE_LAST_MAN_STANDING))
+         OR Send(who,@GetGuild) <> poChampion_guild
+      {
+         poChampion = who;
+         poChampion_guild = Send(who,@GetGuild);
+         piKill_counter = 0;
+      }
+
+      return;
+   }
+
+   ResetChampion()
+   {
+      local i;
+
+      poChampion = $;
+
+      if piCombat_Style = STYLE_GUILD_VS_GUILD
+         OR piCOmbat_style = STYLE_LAST_GUILD_STANDING
+      {
+         foreach i in plCombatants
+         {
+            if Send(i,@GetGuild) = poChampion_guild
+            {
+               // This combatant is the 'acting' champion
+               poChampion = i;
+
+               return;
+            }
+         }
+      }
+
+      piKill_counter = 0;
+      poChampion_guild = $;
+
+      return;
+   }
+
+   ValidateFight()
+   {
+      local oGuild, i;
+
+      if (NOT Send(poOwner,@ArenaCanStartFight))
+      {
+         return FALSE;
+      }
+
+      if ((piCombat_Style = STYLE_ONE_ON_ONE
+            OR piCombat_Style = STYLE_LAST_MAN_STANDING)
+         AND Length(plCombatants) > 1)
+      {
+         return TRUE;
+      }
+
+      if piCombat_Style = STYLE_GUILD_VS_GUILD
+         OR piCombat_Style = STYLE_LAST_GUILD_STANDING
+      {
+         foreach i in plCombatants
+         {
+            if oGuild = $
+            {
+               oGuild = Send(i,@GetGuild);
+            }
+            else if oGuild <> Send(i,@GetGuild)
+            {
+               // There are at least two guilds.
+               return TRUE;
+            }
+         }
+      }
+
+      return FALSE;
+   }
+
+   AcceptingChampions()
+   {
+      return (Length(plCombatants) < 1);
+   }
+
+   AcceptingChallengers()
+   {
+      if piCombat_Style = STYLE_ONE_ON_ONE
+      {
+         return (Length(plCombatants) < 2);
+      }
+
+      if piCombat_Style = STYLE_LAST_MAN_STANDING
+      {
+         return Send(poOwner,@ArenaCanAddCombatants,#lCombatants=plCombatants);
+      }
+
+      // Assume no restrictions for other combat styles.
+      return TRUE;
+   }
+
+   NewCombatant(who=$)
+   {
+      Send(self,@Teleport,#what=who,#goinplay=TRUE);
+      if plCombatants = $
+      {
+         Send(self,@SetChampion,#who=who);
+      }
+
+      plCombatants = Cons(who,plCombatants);
+
+      return;
+   }
+
+   FightInSession()
+   {
+      return (ptFight <> $);
+   }
+
+   Challenge(who=$)
+   {
+      local i, bFound;
+
+      if who = poChampion
+      {
+         Send(self,@SayToOne,#target=who,#message_rsc=vrAlreadyChampion);
+
+         return;
+      }
+
+      if Send(self,@IsCombatant,#who=who)
+      {
+         Send(self,@SayToOne,#target=who,#message_rsc=vrAlreadyCombatant);
+
+         return;
+      }
+
+      if (piCombat_style = STYLE_LAST_GUILD_STANDING
+            OR piCombat_style = STYLE_GUILD_VS_GUILD)
+         AND NOT Send(self,@ChallengeGuildCheck,#Who=who)
+      {
+         return FALSE;
+      }
+
+      if NOT Send(self,@MaxCombatantCheck,#who=who)
+      {
+         return FALSE;
+      }
+
+      if piCombat_style = STYLE_ONE_ON_ONE
+      {
+         // Check for tournament.
+         if (pbTournament)
+         {
+            Send(self,@Say,#message_rsc=vrTournamentCombatant,
+                  #parm1=Send(who,@GetDef),#parm2=Send(who,@GetName));
+            Send(self,@NewCombatant,#who=who);
+            Send(self,@ReadyFight);
+
+            return;
+         }
+
+         Send(self,@SayChallenge,#who=who);
+
+         pbAccept = FALSE;
+         ptAccept = CreateTimer(self,@AcceptTimer,ACCEPT_DELAY);
+      }
+      else
+      {
+         if piCombat_style = STYLE_GUILD_VS_GUILD
+            OR piCombat_style = STYLE_LAST_GUILD_STANDING
+         {
+            bFound = FALSE;
+            foreach i in plCombatants
+            {
+               if Send(i,@GetGuild) = Send(who,@GetGuild) AND NOT bFound
+               {
+                  Send(self,@Say,#message_rsc=vrAddedCombatant,
+                       #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName));
+                  bFound = TRUE;
+
+                  break;
+               }
+            }
+
+            if NOT bFound
+            {
+               Send(self,@Say,#message_rsc=vrAddedGuildCombatant,
+                     #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName),
+                     #parm3=Send(Send(who,@GetGuild),@GetDef),
+                     #parm4=Send(Send(who,@GetGuild),@GetName));
+            }
+         }
+         else
+         {
+            Send(self,@Say,#message_rsc=vrAddedCombatant,
+                 #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName));
+         }
+
+         if ptAccept = $ AND NOT pbTournament
+         {
+            pbAccept = FALSE;
+            Send(self,@Say,#message_rsc=vrJoinTimeRemaining,#parm1=30);
+            ptAccept = CreateTimer(self,@AcceptTimer,ACCEPT_DELAY);
+         }
+      }
+
+      Send(self,@NewCombatant,#who=who);
+
+      return;
+   }
+
+   ChallengeGuildCheck(who=$)
+   {
+      local aGuild, bGuild, oGuild, i;
+
+      oGuild = Send(who,@GetGuild);
+      if oGuild = $
+      {
+         if pbTournament
+         {
+            Send(self,@TellActors,#message_rsc=watcher_no_guild_tourny,
+                  #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName),
+                  #parm3=Send(who,@GetHeShe));
+         }
+         else
+         {
+            Send(self,@SayToOne,#target=who,#message_rsc=vrCombatantNotGuilded);
+         }
+
+         return FALSE;
+      }
+
+      if piCombat_Style = STYLE_GUILD_VS_GUILD
+      {
+         foreach i in plCombatants
+         {
+            if aGuild = $
+            {
+               aGuild = Send(i,@GetGuild);
+            }
+            else if bGuild = $ AND aGuild <> Send(i,@GetGuild)
+            {
+               bGuild = Send(i,@GetGuild);
+            }
+         }
+
+         if oGuild <> aGuild
+            AND oGuild <> bGuild
+            AND aGuild <> $
+            AND bGuild <> $
+         {
+            if pbTournament
+            {
+               Send(self,@TellActors,#message_rsc=watcher_wrong_guild_tourny,
+                     #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName));
+            }
+            else
+            {
+               Send(self,@SayToOne,#target=who,#message_rsc=watcher_only_two);
+            }
+
+            return FALSE;
+         }
+      }
+
+      if (ptAccept = $ AND NOT pbTournament)
+         AND oGuild = Send(First(plCombatants),@GetGuild)
+      {
+         if pbTournament
+         {
+            Send(self,@TellActors,#message_rsc=watcher_not_more_members_yet,
+                 #parm1=Send(oGuild,@GetDef),#parm2=Send(oGuild,@GetName));
+         }
+         else
+         {
+            Send(self,@SayToOne,#target=who,
+                 #message_rsc=watcher_not_more_members_yet,
+                 #parm1=Send(oGuild,@GetDef),#parm2=Send(oGuild,@GetName));
+         }
+
+         return FALSE;
+      }
+
+      return TRUE;
+   }
+
+   MaxCombatantCheck(who=$)
+   {
+      local iMax, iGuild_max, iGuild_num, i, oGuild;
+
+      if NOT pbMax_lock
+      {
+         // Ignore this whole procedure if the Admin wants to damn the
+         // torpedoes.
+         return TRUE;
+      }
+
+      iMax = Send(poOwner,@ArenaGetMaxCombatants);
+      if Length(plCombatants) > iMax
+      {
+         if pbTournament
+         {
+            Send(self,@TellActors,#message_rsc=vrArenaFull,#parm1=iMax);
+         }
+         else
+         {
+            Send(self,@SayToOne,#target=who,#message_rsc=vrArenaFull,#parm1=iMax);
+         }
+
+         return FALSE;
+      }
+
+      if piCombat_Style = STYLE_GUILD_VS_GUILD
+      {
+         iGuild_max = 10;
+      }
+      else if piCOmbat_style = STYLE_LAST_GUILD_STANDING
+      {
+         iGuild_max = 5;
+      }
+      else
+      {
+         // Non-guild combat, allowed.
+         return TRUE;
+      }
+
+      iGuild_num = iGuild_max;
+
+      oGuild = Send(who,@GetGuild);
+
+      foreach i in plCombatants
+      {
+         if Send(i,@GetGuild) = oGuild AND oGuild <> $
+         {
+            --iGuild_num;
+         }
+      }
+
+      if iGuild_num <= 0
+      {
+         if pbTournament
+         {
+            Send(self,@TellActors,#message_rsc=watcher_tournament_over_guild_limit,
+                  #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName),
+                  #parm3=Send(oGuild,@GetDef),#parm4=Send(oGuild,@GetName),
+                  #parm5=iGuild_max);
+         }
+         else
+         {
+            Send(self,@SayToOne,#target=who,#message_rsc=watcher_over_guild_limit,
+                  #parm1=iGuild_max);
+         }
+
+         return FALSE;
+      }
+
+      return TRUE;
+   }
+
+   Accept(who=$)
+   {
+      if who = poChampion
+         AND ptAccept <> $
+      {
+         DeleteTimer(ptAccept);
+         ptAccept = $;
+      }
+
+      Send(self,@ReadyFight,#who=who);
+
+      return;
+   }
+
+   ReadyFight()
+   {
+      local i, each_obj, oGuild, iDelay;
+
+      if NOT Send(self,@ValidateFight)
+      {
+         if pbTournament
+         {
+            Send(self,@TellActors,#message_rsc=watcher_tourny_invalid);
+
+            return FALSE;
+         }
+
+         Debug("INVALID FIGHT!  Something went wrong!");
+         Send(self,@Say,#message_rsc=vrInvalidFight);
+         Send(self,@ClearCombatants);
+
+         return FALSE;
+      }
+
+      if piCombat_style = STYLE_ONE_ON_ONE
+      {
+         Send(self,@Say,#message_rsc=vrReadyOneOnOne,
+              #parm1=Send(First(plCombatants),@GetCapDef),
+              #parm2=Send(First(plCombatants),@GetName),
+              #parm3=Send(Nth(plCombatants,2),@GetDef),
+              #parm4=Send(Nth(plCombatants,2),@GetName));
+      }
+
+      if piCombat_style = STYLE_LAST_MAN_STANDING
+      {
+         Send(self,@Say,#message_rsc=vrReadyLastMan);
+      }
+
+      if piCombat_style = STYLE_GUILD_VS_GUILD
+      {
+         oGuild = $;
+         foreach i in plCombatants
+         {
+
+            if Send(i,@GetGuild) <> poChampion_guild
+            {
+               oGuild = Send(i,@GetGuild);
+
+               break;
+            }
+         }
+
+         Send(self,@Say,#message_rsc=vrReadyGvsG,
+              #parm1=Send(poChampion_guild,@GetCapDef),
+              #parm2=Send(poChampion_guild,@GetName),
+              #parm3=Send(oGuild,@GetDef),#parm4=Send(oGuild,@GetName));
+      }
+
+      if piCombat_style = STYLE_LAST_GUILD_STANDING
+      {
+         Send(self,@Say,#message_rsc=vrReadyBattleRoyale);
+      }
+
+      iDelay = Random(COMMENCE_DELAY_MIN,COMMENCE_DELAY_MAX);
+      ptCommence = CreateTimer(self,@CommenceTimer,iDelay);
+
+      foreach i in Send(poOwner,@GetHolderActive)
+      {
+         each_obj = First(i);
+         if Send(self,@IsCombatant,#who=each_obj)
+         {
+            Send(self,@Teleport,#what=each_obj,#goinplay=TRUE);
+         }
+
+         Send(each_obj,@MidiSendUser,#midi_rsc=vrBattleReadySound);
+      }
+
+      Send(poOwner,@ArenaBeginFight,#lCombatants=plCombatants);
+
+      return;
+   }
+
+   Commence()
+   "Called by CommenceTimer."
+   {
+      Send(self,@Say,#message_rsc=vrCommenceFight);
+
+      // Any room specific stuff, e.g. raising cage bars.
+      Send(poOwner,@ArenaCommenceFight);
+      pbLastMinute = FALSE;
+
+      if piCombat_style = STYLE_ONE_ON_ONE
+      {
+         ptFight = CreateTimer(self,@FightTimer,FIGHT_DELAY_ONE_ON_ONE);
+      }
+      else
+      {
+         ptFight = CreateTimer(self,@FightTimer,FIGHT_DELAY_LAST_MAN_STANDING);
+      }
+
+      return;
+   }
+
+   FightIsDraw()
+   "Called by FightTimer."
+   {
+      Send(self,@Say,#message_rsc=vrFightIsDraw);
+      Send(self,@ClearCombatants);
+
+      return;
+   }
+
+   CombatantReneges(who = $, died = TRUE, kill = FALSE)
+   "'died' is TRUE if we took a death, 'kill' is TRUE if this player reneged "
+   "in a way that avoided death, i.e. a real death arena should kill them."
+   {
+      local i, iRoomNum;
+
+      // Must still be a combatant.
+      if (NOT FindListElem(plCombatants,who))
+      {
+         return;
+      }
+
+      foreach i in plCombatants
+      {
+         if i = who
+         {
+            plCombatants = DelListElem(plCombatants,i);
+         }
+      }
+
+      // Don't teleport monsters out
+      if IsClass(who,&Player)
+         AND ((NOT Send(poOwner,@ArenaRealDeath))
+            OR (died = FALSE AND kill = FALSE))
+      {
+         Send(self,@Teleport,#what=who,#outofplay=TRUE);
+      }
+
+      // Any room specific stuff that has to be handled when reneging.
+      Send(poOwner,@ArenaCombatantReneges,#who=who,#died=died,#kill=kill);
+
+      if who = poChampion
+      {
+         Send(self,@ResetChampion);
+      }
+
+      if ptAccept <> $ AND NOT Send(self,@ValidateFight)
+      {
+         DeleteTimer(ptAccept);
+         ptAccept = $;
+
+         iRoomNum = Send(poOwner,@GetRoomNum);
+         if (iRoomNum = RID_TOS_ARENA
+            OR iRoomNum = RID_TOS_DEATH_ARENA)
+         {
+            Send(poOwner,@CheckBehindBars);
+         }
+
+         Send(self,@Say,#message_rsc=vrInvalidFight);
+      }
+
+      if ptCommence <> $ AND NOT Send(self,@ValidateFight)
+      {
+         DeleteTimer(ptCommence);
+         ptCommence = $;
+         Send(self,@Say,#message_rsc=vrInvalidFight);
+
+         if pbTournament
+         {
+            Post(self,@ClearCombatants);
+         }
+         else
+         {
+            Send(poOwner,@ArenaEndFight);
+         }
+      }
+
+      Send(self,@CheckForWinner);
+
+      // Scenario:  champion quits during signup for last man standing.
+      if poChampion = $ AND Length(plCombatants) >= 2
+      {
+         if piCombat_Style = STYLE_LAST_MAN_STANDING
+         {
+            // Choose another champion - First player in line will do.
+            poChampion = First(plCombatants);
+         }
+      }
+
+      return;
+   }
+
+   SomethingKilled(what=$,victim=$)
+   {
+      // We handle all death messages here, but not 'win fight' messages.
+      // Those are handled after the renege messages.
+
+      if IsClass(what,&Spell) AND Send(self,@IsCombatant,#who=victim)
+      {
+         Send(self,@Say,#message_rsc=vrKilledBySpell,
+               #parm1=Send(victim,@GetCapDef),#parm2=Send(victim,@GetName),
+               #parm3=Send(what,@GetName));
+      }
+      else if victim = poChampion
+      {
+         Send(self,@Say,#message_rsc=vrKilledChamp,
+               #parm1=Send(what,@GetCapDef),#parm2=Send(what,@GetName),
+               #parm3=Send(victim,@GetDef),#parm4=Send(victim,@GetName));
+      }
+      else if what = poChampion
+      {
+         Send(self,@Say,#message_rsc=vrKilledByChamp,
+               #parm1=Send(victim,@GetDef),#parm2=Send(victim,@GetName));
+      }
+      else
+      {
+         Send(self,@Say,#message_rsc=vrKilledBySomeone,
+               #parm1=Send(what,@GetCapDef),#parm2=Send(what,@GetName),
+               #parm3=Send(victim,@GetDef),#parm4=Send(victim,@GetName));
+      }
+
+      Send(self,@CombatantReneges,#who=victim,#died=TRUE);
+
+      propagate;
+   }
+
+   CheckForWinner()
+   "Checks to see if there is only one combatant left.  If so, then "
+   "declare him the winner."
+   {
+      local oldChamp, i, j, oPlayer;
+
+      if plCombatants = $
+      {
+         return;
+      }
+
+      if piCombat_style = STYLE_GUILD_VS_GUILD
+         OR piCombat_style = STYLE_LAST_GUILD_STANDING
+      {
+         Send(self,@CheckForWinnerGuild);
+
+         return;
+      }
+
+      if Length(plCombatants) <> 1
+      {
+         return;
+      }
+      else
+      {
+         oPlayer = First(plCombatants);
+
+         // If they aren't logged on, no champ.
+         if (IsClass(oPlayer,&User)
+            AND NOT Send(oPlayer,@IsLoggedOn))
+         {
+            Send(self,@FightIsDraw);
+
+            return;
+         }
+
+         oldChamp = poChampion;
+         poChampion = oPlayer;
+
+         // A fight was on!  This guy won!
+         if ptFight <> $
+         {
+            Send(self,@SayVictor,#who=poChampion);
+            DeleteTimer(ptFight);
+            ptFight = $;
+
+            // Add to wincounter.
+            Send(self,@RewardWinner);
+
+            if pbTournament
+            {
+               Send(self,@Say,#message_rsc=vrTournamentWin,
+                    #parm1=Send(poChampion,@GetCapDef),
+                    #parm2=Send(poChampion,@GetName));
+               Send(self,@ClearCombatants);
+
+               return;
+            }
+            else
+            {
+               if Send(poOwner,@CheckDefaultRoomFlag,#flag=ROOM_SAFE_DEATH)
+               {
+                  foreach i in Send(poOwner,@GetHolderActive)
+                  {
+                     j = First(i);
+                     if IsClass(j,&Monster)
+                        AND NOT (Send(j,@GetBehavior) & AI_NPC)
+                        AND NOT (Send(j,@GetMaster) = poChampion)
+                     {
+                        Post(j,@Delete);
+                     }
+                  }
+               }
+            }
+
+            if oldChamp <> poChampion
+            {
+               Send(self,@Say,#message_rsc=vrNewChampion,
+                     #parm1=Send(poChampion,@GetDef),
+                     #parm2=Send(poChampion,@GetName));
+            }
+            else
+            {
+               Send(self,@Say,#message_rsc=vrRetainTitle,
+                    #parm1=Send(poChampion,@GetCapDef),
+                    #parm2=Send(poChampion,@GetName),
+                    #parm3=Send(poChampion,@GetHisHer));
+            }
+
+            return;
+         }
+
+         if oldChamp <> poChampion
+         {
+            Send(self,@Say,#message_rsc=vrNewChampion,
+                 #parm1=Send(poChampion,@GetDef),
+                 #parm2=Send(poChampion,@GetName));
+         }
+         else
+         {
+            Send(self,@Say,#message_rsc=vrRetainTitle,
+                 #parm1=Send(poChampion,@GetCapDef),
+                 #parm2=Send(poChampion,@GetName),
+                 #parm3=Send(poChampion,@GetHisHer));
+         }
+      }
+
+      return;
+   }
+
+   CheckForWinnerGuild()
+   {
+      local oGuild, oldChamp, oldGuild, i;
+
+      foreach i in plCombatants
+      {
+         // If there are more than two guilds then don't cancel.
+         if oGuild = $
+         {
+            oGuild = Send(i,@GetGuild);
+         }
+
+         if oGuild <> $ AND oGuild <> Send(i,@GetGuild)
+         {
+            return;
+         }
+      }
+
+      oldChamp = poChampion;
+      oldGuild = poChampion_guild;
+
+      Send(self,@SetChampion,#who=First(plCombatants));
+
+      // A fight was on!  This guy won!
+      if ptFight <> $
+      {
+         Send(self,@SayVictor,#who=poChampion);
+         DeleteTimer(ptFight);
+         ptFight = $;
+
+         // Add to wincounter.
+         Send(self,@RewardWinner);
+         if pbTournament
+         {
+            Send(self,@Say,#message_rsc=vrTournWinGuild,
+                  #parm1=Send(poChampion_guild,@GetCapDef),
+                  #parm2=Send(poChampion_guild,@GetName));
+            Send(self,@ClearCombatants);
+
+            return;
+         }
+
+         if oldGuild <> poChampion_guild
+         {
+            Send(self,@Say,#message_rsc=vrNewGuildWin,
+                  #parm1=Send(poChampion_guild,@GetCapDef),
+                  #parm2=Send(poChampion_guild,@GetName));
+         }
+         else
+         {
+            Send(self,@Say,#message_rsc=vrOldGuildWin,
+                  #parm1=Send(poChampion_guild,@GetCapDef),
+                  #parm2=Send(poChampion_guild,@GetName));
+         }
+
+         return;
+      }
+
+      if oldChamp <> poChampion
+      {
+         Send(self,@Say,#message_rsc=vrNewGuildWin,
+               #parm1=Send(poChampion_guild,@GetCapDef),
+               #parm2=Send(poChampion_guild,@GetName));
+      }
+      else
+      {
+         Send(self,@Say,#message_rsc = vrOldGuildWin,
+               #parm1=Send(poChampion_guild,@GetDef),
+               #parm2=Send(poChampion_guild,@GetName));
+      }
+
+      return;
+   }
+
+   RewardWinner()
+   {
+      local index, i, oChamp;
+
+      // Increment kill counter and update champ lists.
+      // Tell self to update standings.
+      ++piKill_counter;
+      if piCombat_style = STYLE_ONE_ON_ONE
+         OR piCombat_style = STYLE_LAST_MAN_STANDING
+      {
+         oChamp = poChampion;
+      }
+      else
+      {
+         oChamp = poChampion_guild;
+      }
+
+      if oChamp <> $
+      {
+         Send(Send(SYS,@GetLore),@AddChampionToChampList,#what=oChamp,
+               #iNum=piKill_counter,#style=piCombat_style,
+               #iWatcherID=viWatcherID);
+      }
+
+      // Tell room to lower maze or get rid of pests, whatever.
+      Send(poOwner,@ArenaEndFight,#lCombatants=plCombatants);
+
+      // Assume that everyone left in plCombatant is a winner.
+      foreach i in plCombatants
+      {
+         if (IsClass(i,&User))
+         {
+            index = (Send(i,@GetMaxHealth)+15) - Send(i,@GetHealth);
+            Send(i,@GainHealth,#amount=Bound(index,0,15));
+            index = (Send(i,@GetMaxMana)+25) - Send(i,@GetMana);
+            Send(i,@GainMana,#amount=Bound(index,0,25));
+         }
+
+         // Teleport any and all combatants out of the ring.
+         if ptFight <> $
+         {
+            DeleteTimer(ptFight);
+            ptFight = $;
+         }
+      }
+
+      return;
+   }
+
+   //// Timer Triggers
+
+   AcceptTimer()
+   "Runs through twice.  The First time, it says 'accept or lose your"
+   "crown.  The second time, it reneges the champ."
+   {
+      ptAccept = $;
+
+      if piCombat_style = STYLE_ONE_ON_ONE
+      {
+         Send(self,@AcceptTimerOneOnOne);
+
+         return;
+      }
+
+      if NOT pbAccept
+      {
+         Send(self,@Say,#message_rsc=vrJoinTimeRemaining,
+               #parm1=(ACCEPT_DELAY/1000));
+         ptAccept = CreateTimer(self,@AcceptTimer,ACCEPT_DELAY);
+         pbAccept = TRUE;
+      }
+      else
+      {
+         Send(self,@ReadyFight);
+      }
+
+      return;
+   }
+
+   AcceptTimerOneOnOne()
+   {
+      if NOT pbAccept
+      {
+         Send(self,@Say,#message_rsc=vrMustAcceptChallenge,
+              #parm1=(ACCEPT_DELAY/1000),
+              #parm2=Send(First(plCombatants),@GetDef),
+              #parm3=Send(First(plCombatants),@GetName));
+         ptAccept = CreateTimer(self,@AcceptTimer,ACCEPT_DELAY);
+         pbAccept = TRUE;
+      }
+      else
+      {
+         Send(self,@Say,#message_rsc=vrChampionSurrenders,
+              #parm1=Send(poChampion,@GetCapDef),
+              #parm2=Send(poChampion,@GetName),
+              #parm3=Send(poChampion,@GetHisHer));
+         Send(self,@CombatantReneges,#who=poChampion,#died=FALSE);
+      }
+
+      return;
+   }
+
+   CommenceTimer()
+   "Starts the fight."
+   {
+      ptCommence = $;
+      Send(self,@Commence);
+
+      return;
+   }
+
+   FightTimer()
+   {
+     local i;
+
+     ptFight = $;
+
+      if NOT pbLastMinute
+      {
+         pbLastMinute = TRUE;
+         Send(self,@Say,#message_rsc=vrLastMinuteFight);
+         ptFight = CreateTimer(self,@FightTimer,LAST_MINUTE);
+      }
+      else if NOT pbTournament
+      {
+         Send(self,@FightIsDraw);
+      }
+      else
+      {
+         Send(self,@Say,#message_rsc=vrSpeedUpFight);
+         foreach i in plCombatants
+         {
+            Send(poOwner,@SomethingShot,#who=self,#target=i,
+                  #projectile=Send(SYS,@FindSpellByNum,#num=SID_FIREBALL));
+            Send(i,@AssessDamage,#damage=Send(i,@GetHealth)/3,#what=self,
+                  #report=FALSE,#report_resistance=FALSE,#absolute=TRUE);
+         }
+
+         ptFight = CreateTimer(self,@FightTimer,LAST_MINUTE/3);
+      }
+
+      return;
+   }
+
+   //// Speech Triggers
+
+   // Barring a better interface coming along, speech triggers
+   //  will continue to be used to activate a battle, to choose
+   //  the type of battle, and to renege a battle, among other
+   //  things.
+
+   SomeoneSaid(what=$, type = $, string = $)
+   "Checks for keywords which activate commands."
+   {
+      local i, oActor;
+
+      if (NOT IsClass(what,&Player))
+      {
+         propagate;
+      }
+
+      // DM commands that can be used at any time.
+      if (type = SAY_DM
+         AND Send(what,@CheckDMFlag,#flag=DMFLAG_ALLOW_ARENA_CMDS))
+      {
+         if StringEqual(string,watcher_arena_help_command)
+         {
+            Send(what,@MsgSendUser,#message_rsc=watcher_arena_help);
+
+            propagate;
+         }
+
+         if (NOT pbTournament
+            AND StringEqual(string,watcher_start_tournament_command))
+         {
+            Send(self,@ClearCombatants);
+            pbTournament = TRUE;
+            Send(poOwner,@ArenaStartTournament,#marshal=what);
+            poMarshal = what;
+
+            propagate;
+         }
+      }
+
+      // Commands that can be used when a fight is not occurring.
+      if (NOT Send(self,@FightInSession))
+         AND ptCommence = $
+      {
+         if NOT pbTournament
+         {
+            if StringEqual(string,watcher_champion_command)
+            {
+               Post(self,@TrigChampion,#what=what);
+
+               return FALSE;
+            }
+
+            if StringEqual(string,watcher_challenge_command)
+            {
+               Post(self,@TrigChallenge,#what=what);
+
+               return FALSE;
+            }
+
+            if StringEqual(string,watcher_accept_command)
+            {
+               Post(self,@TrigAccept,#what=what);
+
+               return FALSE;
+            }
+
+            if StringEqual(string,watcher_renege_command)
+            {
+               Post(self,@TrigRenege,#what=what);
+
+               return FALSE;
+            }
+         }
+         else if NOT Send(what,@CheckDMFlag,#flag=DMFLAG_ALLOW_ARENA_CMDS)
+         {
+            if StringEqual(string,watcher_renege_command)
+               OR StringEqual(string,watcher_accept_command)
+               OR StringEqual(string,watcher_champion_command)
+               OR StringEqual(string,watcher_challenge_command)
+               OR StringEqual(string,vrCmdOneOnOne)
+               OR StringEqual(string,vrCmdLastManStanding)
+               OR StringEqual(string,vrCmdGuildVsGuild)
+               OR StringEqual(string,vrCmdBattleRoyale)
+            {
+               oActor = Send(self,@GetActor);
+               if oActor <> $
+               {
+                  Send(what,@MsgSendUser,#message_rsc=watcher_only_grand_marshal);
+               }
+
+               return FALSE;
+            }
+         }
+
+         if StringEqual(string,vrCmdOneOnOne)
+         {
+            if (Send(self,@ReqChangeArenaStyle,#what=what,#type=type))
+            {
+               Post(self,@ChooseCombat,#style=STYLE_ONE_ON_ONE,#actor=what);
+            }
+
+            return FALSE;
+         }
+
+         if StringEqual(string,vrCmdLastManStanding)
+         {
+            if (Send(self,@ReqChangeArenaStyle,#what=what,#type=type))
+            {
+               Post(self,@ChooseCombat,#style=STYLE_LAST_MAN_STANDING,
+                    #actor=what);
+            }
+
+            return FALSE;
+         }
+
+         if StringEqual(string,vrCmdGuildVsGuild)
+         {
+            if (Send(self,@ReqChangeArenaStyle,#what=what,#type=type))
+            {
+               Post(self,@ChooseCombat,#style=STYLE_GUILD_VS_GUILD,
+                    #actor=what);
+            }
+
+            return FALSE;
+         }
+
+         if StringEqual(string,vrCmdBattleRoyale)
+         {
+            if (Send(self,@ReqChangeArenaStyle,#what=what,#type=type))
+            {
+               Post(self,@ChooseCombat,#style=STYLE_LAST_GUILD_STANDING,
+                    #actor=what);
+            }
+
+            return FALSE;
+         }
+
+         if type = SAY_DM
+            AND pbTournament
+            AND Send(what,@CheckDMFlag,#flag=DMFLAG_ALLOW_ARENA_CMDS)
+         {
+            if StringEqual(string,watcher_end_tournament_command)
+            {
+               if plCombatants <> $
+               {
+                  Send(what,@MsgSendUser,
+                       #message_rsc=watcher_cant_start_end);
+               }
+               else
+               {
+                  pbTournament = FALSE;
+                  Send(poOwner,@ArenaEndTournament,#Marshal=what);
+                  poMarshal = $;
+               }
+
+               propagate;
+            }
+
+            if StringEqual(string,watcher_clear_all_command)
+            {
+               Send(poOwner,@SomeoneSaid,#string=watcher_tournament_cancelled,
+                     #parm1=Send(what,@GetHisHer),#parm2=Send(what,@GetDef),
+                     #parm3=Send(what,@GetName),#type=SAY_MESSAGE,#what=self);
+
+                Send(self,@ClearCombatants);
+
+                return FALSE;
+            }
+
+            if StringEqual(string,watcher_fight_command)
+            {
+               if ptCommence = $ AND ptFight = $
+               {
+                  Send(self,@ReadyFight);
+               }
+
+               return FALSE;
+            }
+
+            foreach i in Send(poOwner,@GetHolderActive)
+            {
+               if IsClass(First(i),&Player)
+                  AND StringEqual(string,Send(First(i),@GetName))
+               {
+                  if plCombatants = $
+                  {
+                     Send(self,@TrigChampion,#what=First(i));
+
+                     return FALSE;
+                  }
+                  else
+                  {
+                     if Send(self,@IsCombatant,#who=First(i))
+                     {
+                        Send(what,@MsgSendUser,
+                              #message_rsc=watcher_already_tourny_combatant,
+                              #parm1=Send(First(i),@GetCapDef),
+                              #parm2=Send(First(i),@GetName));
+
+                        return;
+                     }
+
+                     Send(self,@TrigChallenge,#what=First(i));
+
+                     return FALSE;
+                  }
+               }
+            }
+         }
+      }
+
+      // Handling commands during a fight.
+      if Send(self,@FightInSession)
+      {
+         if StringEqual(string,watcher_champion_command)
+            OR StringEqual(string,watcher_challenge_command)
+            OR StringEqual(string,vrCmdOneOnOne)
+            OR StringEqual(string,vrCmdLastManStanding)
+            OR StringEqual(string,vrCmdGuildVsGuild)
+            OR StringEqual(string,vrCmdBattleRoyale)
+         {
+            if NOT pbTournament
+               OR (Send(what,@CheckDMFlag,#flag=DMFLAG_ALLOW_ARENA_CMDS))
+            {
+               Send(what,@MsgSendUser,#message_rsc=vrNoCmdsDuringFight);
+
+               return FALSE;
+            }
+
+            oActor = Send(self,@GetActor);
+            if oActor <> $
+            {
+               Send(what,@MsgSendUser,#message_rsc=watcher_only_grand_marshal,
+                     #parm1=Send(oActor,@GetName));
+            }
+
+            return FALSE;
+         }
+
+         if type = SAY_DM
+            AND StringEqual(string,watcher_clear_all_command)
+            AND pbTournament
+            AND Send(what,@CheckDMFlag,#flag=DMFLAG_ALLOW_ARENA_CMDS)
+         {
+            Send(poOwner,@SomeoneSaid,#string=watcher_tournament_cancelled,
+                  #parm1=Send(what,@GetHisHer),#parm2=Send(what,@GetDef),
+                  #parm3=Send(what,@GetName),#type=SAY_MESSAGE,#what=self);
+            Send(self,@ClearCombatants);
+
+            return FALSE;
+         }
+      }
+
+      propagate;
+   }
+
+   ReqChangeArenaStyle(what = $, type = $)
+   {
+      return (NOT pbTournament)
+         OR (type = SAY_DM
+            AND Send(what,@CheckDMFlag,#flag=DMFLAG_ALLOW_ARENA_CMDS));
+   }
+
+   TrigChampion(what = $)
+   "Someone in the room said 'champion'.  Net effect, if there is no "
+   "champion, then make the talker the new champion."
+   {
+      if piCombat_style = STYLE_NO_FIGHT
+      {
+         Send(self,@Say,#message_rsc=vrMustChooseStyle);
+
+         return;
+      }
+
+      if NOT Send(self,@AcceptingChampions)
+      {
+         if Send(self,@AcceptingChallengers)
+         {
+            if poChampion = what
+            {
+               Send(self,@SayToOne,#target=what,#message_rsc=vrAlreadyChampion);
+            }
+            else
+            {
+               Send(self,@SayToOne,#target=what,#message_rsc=vrAlreadyHaveChamp,
+                     #parm1=Send(poChampion,@GetDef),
+                     #parm2=Send(poChampion,@GetName),
+                     #parm3=Send(poChampion,@GetHimHer));
+            }
+         }
+         else
+         {
+            Send(self,@SayToOne,#target=what,#message_rsc=vrNoNeedCombatant);
+         }
+      }
+      else
+      {
+         // Accept the champion here
+         if piCombat_Style = STYLE_GUILD_VS_GUILD
+            OR piCombat_style = STYLE_LAST_GUILD_STANDING
+         {
+            if Send(what,@GetGuild) = $
+            {
+               if pbTournament
+               {
+                  Send(self,@TellActors,#message_rsc=watcher_no_guild_tourny,
+                       #parm1=Send(what,@GetCapDef),#parm2=Send(what,@GetName),
+                       #parm3=Send(what,@GetHeShe));
+               }
+               else
+               {
+                  Send(self,@SayToOne,#target=what,
+                        #message_rsc=vrCombatantNotGuilded);
+               }
+            }
+            else
+            {
+               Send(self,@NewCombatant,#who=what);
+               Send(self,@Say,#message_rsc=vrNewChampGuild,
+                    #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName),
+                    #parm3=Send(poChampion_guild,@GetDef),
+                    #parm4=Send(poChampion_guild,@GetName));
+            }
+         }
+         else
+         {
+            Send(self,@NewCombatant,#who=what);
+            if pbTournament
+            {
+               Send(self,@Say,#message_rsc=vrTournamentCombatant,
+                    #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName));
+            }
+            else
+            {
+               Send(self,@Say,#message_rsc=vrNewChampion,
+                    #parm1=Send(poChampion,@GetDef),
+                    #parm2=Send(poChampion,@GetName));
+            }
+         }
+      }
+
+      return;
+   }
+
+   TrigChallenge(what=$)
+   "Catches when someone says the word 'challenge'.  What happens depends on "
+   "the match, but in general, this will fail if there is no champion, and "
+   "will succeed only if there is a challenger spot open."
+   {
+      if piCombat_style = STYLE_NO_FIGHT
+      {
+         Send(self,@SaytoOne,#target=what,#message_rsc=vrMustChooseStyle);
+
+         return;
+      }
+
+      if Send(self,@FightInSession)
+      {
+         Send(self,@SayToOne,#target=what,#message_rsc=vrFightInProgress);
+
+         return;
+      }
+
+      if Send(self,@AcceptingChampions)
+      {
+         Send(self,@SayToOne,#target=what,#message_rsc=vrNeedChampion);
+
+         return;
+      }
+
+      if NOT Send(self,@AcceptingChallengers)
+      {
+         Send(self,@SayToOne,#target=what,#message_rsc=vrNotAcceptingChallengers);
+
+         return;
+      }
+
+      Send(self,@Challenge,#who=what);
+
+      return;
+   }
+
+   TrigAccept(what=$)
+   {
+      if piCombat_style <> STYLE_ONE_ON_ONE
+      {
+         // You can only accept fights in traditional 2 man fights.
+         return FALSE;
+      }
+
+      if what <> poChampion
+      {
+         // Only the champion can accept a fight from a challenger
+         return FALSE;
+      }
+
+      if Send(self,@FightInSession)
+      {
+         return FALSE;
+      }
+
+      if (ptAccept <> $)
+      {
+         Send(self,@Accept,#who=what);
+      }
+
+      return;
+   }
+
+   TrigRenege(what=$)
+   "Call this when someone says 'renege'.  This now works for anyone,"
+   "and does not need to be said twice."
+   {
+      if Send(self,@IsCombatant,#who=what)
+      {
+         Send(self,@Say,#message_rsc=watcher_combatant_reneges,
+               #parm1=Send(what,@GetCapDef),#parm2=Send(what,@GetName));
+         Send(self,@CombatantReneges,#who=what,#died=FALSE);
+      }
+      else
+      {
+         Send(self,@SayToOne,#target=what,#message_rsc=watcher_cant_renege);
+      }
+
+      return;
+   }
+
+   ChooseCombat(style = STYLE_NO_FIGHT, actor = $)
+   {
+      if piCombat_style <> STYLE_NO_FIGHT
+         AND plCombatants <> $
+      {
+         Send(self,@Say,#message_rsc=vrCantSwitch);
+
+         return;
+      }
+
+      piCombat_style = style;
+      if piCombat_style = STYLE_NO_FIGHT
+      {
+         return;
+      }
+
+      if pbTournament
+      {
+         Send(self,@Say,#message_rsc=vrNewStyleTournament,
+               #parm1=Send(actor,@GetCapDef),#parm2=Send(actor,@GetName),
+               #parm3=Send(self,@GetCombatName));
+      }
+      else
+      {
+         Send(self,@Say,#message_rsc=vrNewStyle,#parm1=Send(self,@GetCombatName));
+      }
+
+      return;
+   }
+
+   ////  Maintenance functions
+
+   Delete()
+   {
+      if ptAdvert <> $
+      {
+         DeleteTimer(ptAdvert);
+         ptAdvert = $;
+      }
+
+      if ptCommence <> $
+      {
+         DeleteTimer(ptCommence);
+         ptCommence = $;
+      }
+
+      if ptAccept <> $
+      {
+         DeleteTimer(ptAccept);
+         ptAccept = $;
+      }
+
+      if ptFight <> $
+      {
+         DeleteTimer(ptFight);
+         ptFight = $;
+      }
+
+      if ptReconnect <> $
+      {
+         DeleteTimer(ptReconnect);
+         ptReconnect = $;
+      }
+
+      propagate;
+   }
+
+   DestroyDisposable()
+   {
+      // Don't delete it on random passthroughs.
+      return FALSE;
+   }
+
+   IsCombatant(who=$)
+   {
+      local i, count, oMaster;
+
+      count = 1;
+      foreach i in plCombatants
+      {
+         if i = who
+         {
+            return count;
+         }
+
+         count = count + 1;
+      }
+
+      if IsClass(who,&Monster)
+         AND NOT IsClass(who,&Watcher)
+      {
+         oMaster = Send(who,@GetMaster);
+         if (oMaster <> $)
+         {
+            return Send(self,@IsCombatant,#who=oMaster);
+         }
+      }
+
+      return FALSE;
+   }
+
+   ReqSomethingLeft(what=$)
+   {
+      if Send(self,@IsCombatant,#who=what) AND (ptFight <> $ OR ptAccept <> $)
+      {
+         Send(self,@SayToOne,#target=what,#message_rsc=vrCannotLeave);
+
+         return FALSE;
+      }
+
+      return TRUE;
+   }
+
+   Teleport(what=$, goinplay=FALSE, outofplay=FALSE)
+   {
+      local i, bInList, iAmount;
+
+      if IsClass(what,&Player)
+      {
+         if goinplay OR Send(self,@IsCombatant,#who=what)
+         {
+            // Teleporting to the playing field.
+            bInList = FALSE;
+            foreach i in plUserStats
+            {
+               if First(i) = what
+               {
+                  bInList = TRUE;
+               }
+            }
+
+            if NOT bInList
+            {
+               plUserStats = Cons([ what,Send(what,@GetHealth),
+                                    Send(what,@GetMana),Send(what,@GetVigor)
+                                  ],plUserStats);
+            }
+
+            if Send(what,@GetHealth) < Send(what,@GetMaxHealth)
+            {
+               Send(what,@GainHealthNormal,#amount=200);
+            }
+
+            if Send(what,@GetMana) < Send(what,@GetMaxMana)
+            {
+               iAmount = Send(what,@GetMaxMana) - Send(what,@GetMana);
+               Send(what,@GainMana,#amount=iAmount);
+            }
+
+            Send(what,@AddExertion,#amount=-2000000);
+         }
+         else
+         {
+            // Teleport out of play.
+            foreach i in plUserStats
+            {
+               if First(i) = what
+               {
+                  Send(what,@LoseHealth,#amount=Send(what,@GetHealth)-Nth(i,2));
+                  Send(what,@GainMana,#amount=Nth(i,3)-Send(what,@GetMana));
+                  iAmount = -10000*(Nth(i,2)-Send(what,@GetVigor));
+                  Send(what,@AddExertion,#amount=iAmount);
+                  plUserStats = DelListElem(plUserStats,i);
+               }
+            }
+         }
+      }
+
+      Send(poOwner,@Teleport,#what=what,#goinplay=goinplay,
+            #outofplay=outofplay);
+
+      return;
+   }
+
+   ClearCombatants()
+   {
+      local i, j;
+
+      foreach i in plCombatants
+      {
+         Send(self,@Teleport,#what=i,#outofplay=TRUE);
+      }
+
+      plCombatants = $;
+      Send(self,@ResetChampion);
+      Send(poOwner,@ArenaEndFight,#lCombatants=plCombatants);
+      pbAccept = FALSE;
+
+      if pbTournament
+         OR Send(poOwner,@CheckDefaultRoomFlag,#flag=ROOM_SAFE_DEATH)
+      {
+         foreach i in Send(poOwner,@GetHolderActive)
+         {
+            j = First(i);
+
+            if IsClass(j,&Monster)
+               AND (NOT (Send(j,@GetBehavior) & AI_NPC))
+            {
+               Post(j,@Delete);
+            }
+
+            // Yuckily, this is the easiest way to deal with this.
+            //  Get rid of all wall element spells.
+            if IsClass(j,&ActiveWallElement)
+               OR IsClass(j,&PassiveWallOfFire)
+               OR IsClass(j,&PassiveWallOfLightning)
+               OR IsClass(j,&SporeCloud)
+               OR IsClass(j,&FogCloud)
+               OR IsClass(j,&Brambles)
+            {
+               Send(j,@Delete);
+            }
+         }
+      }
+
+      if ptFight <> $
+      {
+         DeleteTimer(ptFight);
+         ptFight = $;
+      }
+
+      if ptAccept <> $
+      {
+         DeleteTimer(ptAccept);
+         ptAccept = $;
+      }
+
+      if ptCommence <> $
+      {
+         DeleteTimer(ptCommence);
+         ptCommence = $;
+      }
+
+      if ptReconnect <> $
+      {
+         DeleteTimer(ptReconnect);
+         ptReconnect = $;
+      }
+
+      return;
+   }
+
+   SomethingLeft(what=$)
+   {
+      local oPlayer;
+
+      if Send(self,@IsCombatant,#who=what)
+      {
+         if NOT IsClass(what,&Monster)
+         {
+            if ptFight <> $
+            {
+               // If crash protection is enabled and we have two combatants
+               // left, give the one who logs 30 sec to return.
+               if (pbCrashProtection
+                  AND ptReconnect = $
+                  AND Length(plCombatants) = 2)
+               {
+                  ptReconnect = CreateTimer(self,@KillLogged,RECONNECT_TIME);
+                  Send(self,@Say,#message_rsc=vrPlayerFledReconnect,
+                        #parm1=Send(what,@GetCapDef),#parm2=Send(what,@GetName),
+                        #parm3=Send(what,@GetCapDef),#parm4=Send(what,@GetName));
+               }
+               else
+               {
+                  Send(self,@Say,#message_rsc=vrPlayerFled,
+                        #parm1=Send(what,@GetCapDef),#parm2=Send(what,@GetName));
+                  Send(self,@CombatantReneges,#who=what,#died=FALSE,#kill=TRUE);
+               }
+            }
+            else
+            {
+               Send(self,@Say,#message_rsc=vrPlayerWontFight,
+                     #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName));
+               Send(self,@CombatantReneges,#who=what,#died=FALSE);
+            }
+         }
+
+         if pbTournament AND NOT Send(self,@ValidateFight)
+         {
+            Send(self,@ClearCombatants);
+         }
+      }
+
+      propagate;
+   }
+
+   KillLogged()
+   "We gave the logged player 30 sec to get back on, now we end the fight."
+   {
+      local i;
+
+      ptReconnect = $;
+
+      foreach i in plCombatants
+      {
+         if IsClass(i,&User)
+            AND NOT Send(i,@IsLoggedOn)
+         {
+            // This is the player we need.
+            Send(self,@CombatantReneges,#who=i,#died=FALSE,#kill=TRUE);
+
+            return;
+         }
+      }
+
+      return;
+   }
+
+   ReqSomethingAttack(what=$,victim=$)
+   {
+      // Targetless spells
+      if victim = $
+      {
+         if NOT Send(self,@IsCombatant,#who=what)
+         {
+            if IsClass(what,&Player)
+            {
+               Send(self,@SayToOne,#target=what,#message_rsc=vrOnlyCombatantsAttack);
+            }
+
+            return FALSE;
+         }
+
+         if ptFight = $
+         {
+            if IsClass(what,&Player)
+            {
+               Send(self,@SayToOne,#target=what,#message_rsc=vrNoFightingYet);
+            }
+
+            return FALSE;
+         }
+
+         return TRUE;
+      }
+
+      // Monsters attacking players
+      if IsClass(what,&Monster)
+         AND Send(self,@IsCombatant,#who=victim)
+         AND Send(self,@FightInSession)
+      {
+         propagate;
+      }
+
+      // Spells with targets = all the rest of them
+      if NOT Send(self,@IsCombatant,#who=what)
+         OR NOT (Send(self,@IsCombatant,#who=victim)
+            AND IsClass(victim,&Player))
+      {
+         if IsClass(what,&Player)
+         {
+            Send(self,@SayToOne,#target=what,#message_rsc=vrOnlyCombatantsAttack);
+         }
+
+         return FALSE;
+      }
+
+      if ptFight = $
+      {
+         if IsClass(what,&Player)
+         {
+            Send(self,@SayToOne,#target=what,#message_rsc=vrNoFightingYet);
+         }
+
+         return FALSE;
+      }
+
+      propagate;
+   }
+
+   ReqSpellCast(who=$,oSpell=$,lItems=$)
+   {
+      // Spells cast by immortal DMs are not blocked by the watcher
+      if IsClass(who,&DM) AND Send(who,@PlayerIsImmortal)
+      {
+         propagate;
+      }
+
+      // Only combatants may cast spells on each other.
+
+      // If the caster is not a combatant, don't let him cast.
+      if (NOT Send(self,@IsCombatant,#who=who) AND IsClass(who,&Player))
+      {
+         Send(self,@SayToOne,#target=who,#message_rsc=vrOnlyCombatantsCast);
+
+         return FALSE;
+      }
+
+      // If the caster's single target is not a combatant, don't let him cast.
+      if Length(lItems) = 1
+      {
+         if NOT Send(self,@IsCombatant,#who=First(lItems))
+         {
+            Send(self,@SayToOne,#target=who,#message_rsc=vrOnlyCastCombatants);
+
+            return FALSE;
+         }
+      }
+
+      // Can't cast spells unless a fight is in session
+      if ptFight = $
+      {
+         if IsClass(who,&Player)
+         {
+            Send(self,@SayToOne,#target=who,#message_rsc=vrNoFightingYet);
+         }
+
+         return FALSE;
+      }
+
+      // Certain spells are banned outright
+      if Send(oSpell,@SpellBannedInArena)
+      {
+         Send(self,@SayToOne,#target=who,#message_rsc=vrSpellBanned,
+               #parm1=Send(oSpell,@GetName));
+
+         return FALSE;
+      }
+
+      propagate;
+   }
+
+   GetCombatName(style = $)
+   {
+      local iStyle;
+
+      iStyle = style;
+      if iStyle = $
+      {
+         // If no style is passed in, used the currently defined combat style.
+         iStyle = piCombat_style;
+      }
+
+      switch (iStyle)
+      {
+         case STYLE_ONE_ON_ONE: return vrStyleOneOnOne;
+         case STYLE_LAST_MAN_STANDING: return vrStyleLastManStanding;
+         case STYLE_GUILD_VS_GUILD: return vrStyleGuildVsGuild;
+         case STYLE_LAST_GUILD_STANDING: return vrStyleLastGuildStanding;
+      }
+
+      return;
+   }
+
+   SomethingEntered(what=$)
+   {
+      local i, lChampions, lSublist, lTemp;
+
+      if (pbCrashProtection)
+      {
+         foreach i in plCombatants
+         {
+            if what = i
+               AND ptReconnect <> $
+            {
+               DeleteTimer(ptReconnect);
+               ptReconnect = $;
+            }
+         }
+      }
+
+      // If a combatant logs off and is being 'saved' by crash protection,
+      // we need to make sure the ghost doesn't expire in the reconnect time.
+      if (IsClass(what,&LogoffGhost)
+         AND Send(self,@IsCombatant,#who=Send(what,@GetGhostedPlayer)))
+      {
+         Send(what,@AddPenaltyTime,#amount=RECONNECT_TIME + 5000);
+      }
+
+      if IsClass(what,&Admin)
+         AND NOT Send(what,@IsDMStealthed)
+         AND NOT Send(what,@CheckPlayerFlag,#flag=PFLAG_MORPHED)
+         AND NOT Send(what,@CheckPlayerFlag,#flag=PFLAG_ANONYMOUS)
+      {
+         Post(self,@Say,#message_rsc=vrWorshipAdmin,
+               #parm1=Send(what,@GetTrueName),#parm2=Send(what,@GetHeShe));
+         if NOT pbTournament
+         {
+            Post(poOwner,@SpecialGreeting);
+         }
+
+         propagate;
+      }
+
+      if IsClass(what,&DM)
+         AND NOT Send(what,@IsDMStealthed)
+         AND NOT Send(what,@CheckPlayerFlag,#flag=PFLAG_MORPHED)
+         AND NOT Send(what,@CheckPlayerFlag,#flag=PFLAG_ANONYMOUS)
+      {
+         Send(self,@SayDMWelcome,#who=what);
+         if NOT pbTournament
+         {
+            Post(poOwner,@SpecialGreeting);
+         }
+
+         propagate;
+      }
+
+      if IsClass(what,&Player)
+      {
+         lChampions = Send(Send(SYS,@GetLore),@GetChampionsList,
+                           #iWatcherID=viWatcherID);
+         foreach lSublist in lChampions
+         {
+            lTemp = Nth(lSublist,2);
+            foreach i in lTemp
+            {
+               if First(i) = what
+               {
+                  Send(self,@Say,#message_rsc=vrWorshipChamp,
+                       #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName));
+                  if NOT pbTournament
+                  {
+                     Post(poOwner,@SpecialGreeting);
+                  }
+
+                  propagate;
+               }
+
+               if Send(what,@GetGuild) <> $ AND Send(what,@GetGuild) = First(i)
+               {
+                  Send(self,@Say,#message_rsc=vrWorshipChampGuild,
+                        #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName),
+                        #parm3=Send(First(i),@GetDef),
+                        #parm4=Send(First(i),@GetName));
+                  Post(poOwner,@SpecialGreeting);
+
+                  propagate;
+               }
+            }
+         }
+
+         Send(what,@MsgSendUser,#message_rsc=vrWelcome);
+      }
+
+      propagate;
+   }
+
+   GetCombatantList()
+   {
+      return plCombatants;
+   }
+
+   GetActor()
+   {
+      return poMarshal;
+   }
+
+   PlayerQuitGuild(who=$)
+   {
+      if (piCombat_Style = STYLE_GUILD_VS_GUILD
+         OR piCombat_style = STYLE_LAST_GUILD_STANDING)
+         AND Send(self,@IsCombatant,#who=who)
+      {
+         Send(self,@Say,#message_rsc=watcher_quit_guild,
+               #parm1=Send(who,@GetDef),#parm2=Send(who,@GetName),
+               #parm3=Send(who,@GetHisHer));
+         Send(self,@CombatantReneges,#who=who,#died=FALSE);
+      }
+
+      return;
+   }
+
+   TellActors(message_rsc=$, parm1=$, parm2=$, parm3=$, parm4=$, parm5=$,
+              parm6=$, parm7=$, parm8=$)
+   {
+      local i, each_obj;
+
+      foreach i in Send(poOwner,@GetHolderActive)
+      {
+         each_obj = First(i);
+         if IsClass(each_obj,&DM)
+            AND Send(each_obj,@CheckDMFlag,#flag=DMFLAG_ALLOW_ARENA_CMDS)
+         {
+            Send(each_obj,@MsgSendUser,#Message_rsc=message_rsc,
+                 #parm1=parm1,#parm2=parm2,#parm3=parm3,#parm4=parm4,
+                 #parm5=parm5,#parm6=parm6,#parm7=parm7,#parm8=parm8);
+         }
+      }
+
+      return;
+   }
+
+   ReqAssassinGameAttack(what=$)
+   {
+      if pbTournament
+      {
+         Send(self,@SayToOne,#target=what,#message_rsc=watcher_no_assgame);
+
+         return FALSE;
+      }
+
+      return TRUE;
+   }
+
+   GetWatcherID()
+   {
+      return viWatcherID;
+   }
+
+end
+//////////////////////////////////////////////////////////////////////////////

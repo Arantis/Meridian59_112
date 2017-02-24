@@ -74,10 +74,12 @@ messages:
 
       oRoom = Send(who,@GetOwner);
 
-      // global effects of the enchantment
-      Send(oRoom,@SomeoneSaid,#type=SAY_MESSAGE,#string=forcesoflight_on,#what=self);
+      // Global effects of the enchantment.
+      Send(oRoom,@SomeoneSaid,#type=SAY_MESSAGE,#string=forcesoflight_on,
+            #what=self);
 
-      Send(oRoom,@RoomStartEnchantment,#what=self,#state=iSpellpower,#time=send(self,@GetDuration,#iSpellpower=iSpellpower),#state=$);
+      Send(oRoom,@RoomStartEnchantment,#what=self,#state=[iSpellpower,who],
+            #time=Send(self,@GetDuration,#iSpellpower=iSpellpower));
       Send(oRoom,@EnchantAllOccupants,#what=self);
 
       propagate;
@@ -125,14 +127,14 @@ messages:
 
    ModifyHitRoll(who = $, what = $, hit_roll = $)
    {
-      local iSpellpower,iHitMod;
+      local iSpellpower, iHitMod;
 
-      iSpellpower = send(send(who,@GetOwner),@GetEnchantmentState,#what=self);
+      iSpellpower = First(Send(Send(who,@GetOwner),@GetEnchantmentState,#what=self));
       iHitMod = iSpellpower + 50;  /// 50 - 150
-      
+
       return hit_roll + iHitMod;
    }
-   
+
    ModifyDamage(who = $, what = $, damage = $)
    {
       return damage;
@@ -145,7 +147,7 @@ messages:
       // Up to ~3 minutes.
       iDuration = 6 * (iSpellpower/3 + 1); /// 1 - 33
       // Convert to milliseconds
-      iDuration = iDuration * 1000;  
+      iDuration *= 1000;
 
       return iDuration;
    }
@@ -154,7 +156,7 @@ messages:
    {
       local iState;
 
-      iState = Send(Send(who,@GetOwner),@GetEnchantedState,#what=self);
+      iState = First(Send(Send(who,@GetOwner),@GetEnchantedState,#what=self));
 
       AddPacket(4, forcesoflight_enchantment_rsc, 4, Send(self,@GetName),
                 4, iState + 50, 4, iState / 10);

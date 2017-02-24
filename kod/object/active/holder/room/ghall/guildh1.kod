@@ -85,7 +85,7 @@ messages:
       plExits = $;
 
       // TO TOWN
-      plExits = Cons([ 21, 13, RID_CORNOTH, 38, 31, ROTATE_90 ],plExits);
+      plExits = Cons([ 21, 13, RID_CORNOTH, 38, 47, ROTATE_90 ],plExits);
 
       propagate;
    }

@@ -171,24 +171,14 @@ messages:
 
    IsInMainRoom(who=$)
    {
-      local bAreaOne, bAreaTwo;
-
       if who = $
          OR Send(who,@GetOwner) <> self
       {
          return FALSE;
       }
 
-      bAreaOne = Send(self,@IsUserInArea,#who=who,#lArea=plMainAreaOne);
-      bAreaTwo = Send(self,@IsUserInArea,#who=who,#lArea=plMainAreaTwo);
-
-      if bAreaOne
-         OR bAreaTwo
-      {
-         return TRUE;
-      }
-
-      return FALSE;
+      return (Send(self,@IsUserInArea,#who=who,#lArea=plMainAreaOne)
+         OR Send(self,@IsUserInArea,#who=who,#lArea=plMainAreaTwo));
    }
 
    ReqSomethingAttack(what = $,victim = $,use_weapon = $,stroke_obj = $)

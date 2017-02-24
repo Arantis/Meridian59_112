@@ -22,33 +22,36 @@ resources:
    WarpTime_icon_rsc = iwarptim.bgf
    WarpTime_desc_rsc = \
       "The words of this song form an enchantment which increases the time "
-      "that a spellcaster must hold trance to cast a spell."
+      "that a spellcaster must hold trance to cast a spell.  Requires two "
+      "diamonds to cast."
    WarpTime_StartEnchantment = \
-      "A woozy feeling passes through your head, slowing your mental spell preparations, "
-      "your thoughts dripping like honey through your brain."
+      "A woozy feeling passes through your head, slowing your mental spell "
+      "preparations, your thoughts dripping like honey through your brain."
    WarpTime_RemoveEnchantment = \
-      "A rushing sensation passes through your head, speeding your mental spell preparations "
-      "back to normal."
+      "A rushing sensation passes through your head, speeding your mental "
+      "spell preparations back to normal."
 
    Warptime_song = jala4.ogg
 
    Warp_Time_cast = "You begin to play a woozy, drawn out song."
-   Warp_Time_starts = "%s begins to play a woozy, drawn out song."
-   Warp_Time_ends = "The woozy, drawn out song played by %s fades away."
+   Warp_Time_starts = "%s%s begins to play a woozy, drawn out song."
+   Warp_Time_ends = "The woozy, drawn out song played by %s%s fades away."
    Warp_Time_caster_ends = "Your woozy, drawn out song fades."
    Warp_Time_caster_enter = "Your woozy song seems to slow time around you."
-   Warp_Time_enter = "The song sung by %s fills your head with a woozy feeling."
-   Warp_Time_leave = "You can no longer hear the eerily slow notes of %s's song."
+   Warp_Time_enter = \
+      "The song sung by %s%s fills your head with a woozy feeling."
+   Warp_Time_leave = \
+      "You can no longer hear the eerily slow notes of %s%s's song."
 
 classvars:
 
-   radius_ench_cast = Warp_Time_cast
-   radius_ench_starts = Warp_Time_starts
-   radius_ench_ends = Warp_Time_ends
-   radius_ench_caster_ends = Warp_Time_caster_ends
-   radius_ench_caster_enter = Warp_Time_caster_enter
-   radius_ench_enter = Warp_Time_enter
-   radius_ench_leave = Warp_Time_leave
+   vrEnchantmentOn = Warp_Time_cast
+   vrEnchantmentOnOther = Warp_Time_starts
+   vrEnchantmentOff = Warp_Time_caster_ends
+   vrEnchantmentOffOther = Warp_Time_ends
+   vrEnterRadiusCaster = Warp_Time_caster_enter
+   vrEnterRadius = Warp_Time_enter
+   vrLeaveRadius = Warp_Time_leave
 
    vrName = WarpTime_name_rsc
    vrIcon = WarpTime_icon_rsc
@@ -62,19 +65,23 @@ classvars:
 
    viSchool = SS_JALA
    viSpell_level = 2
-   viMeditate_ratio = 10
+   viMeditate_ratio = 35
 
-   viAffectsEveryone = TRUE
+   viHarmful = TRUE
+
+   viAffectsGuildmates = TRUE
+   viAffectsEnemies = TRUE
 
 properties:
 
-   prMusic= warptime_song
+   prMusic = warptime_song
 
 messages:
 
    ResetReagents()
    {
       plReagents = $;
+      plReagents = Cons([&Diamond,2],plReagents);
 
       return;
    }

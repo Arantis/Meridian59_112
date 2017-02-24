@@ -3,7 +3,7 @@ DukeShield_desc_rsc = de \
    "Dieser Schild weist Dich als Elitesoldat der Armee des Herzogs aus."
 DukeShield_ArmyName = de "der herzoglichen Armee"
 DukeShield_welcome_mail = de \
-   "Betreff: Du bist nun ein Elitesoldat. \n Willkommen in der Armee "
+   "Betreff: Du bist nun ein Elitesoldat.\nWillkommen in der Armee "
    "der wahren Führer des Landes. Deine Ambitionen stehen dir wahrlich gut\n\n"
    "Es gibt Regeln, die du als ein Soldat wissen solltest. \n\n SOLDATENSCHILD: "
    "Dein Schild ist ein Zeichen, dass du ein offizieller Teil der herzöglichen Armee bist. "

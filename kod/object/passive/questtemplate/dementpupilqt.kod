@@ -34,20 +34,19 @@ resources:
 
    // Quest description.
    dementpupilquest_icon_rsc = idement.bgf
-   dementpupilquest_name_rsc = "dement pupil quest"
+   dementpupilquest_name_rsc = "Afiera D'xor's pupil quest"
    dementpupilquest_desc_rsc = \
       "Afiera D'xor has asked you to deliver some cargo.  Do so, and return "
       "to him when you are done."
-
    dementpupilquest_nodetwo_rsc = \
       "Afiera D'xor has asked you to deliver %s%s to %s."
    dementpupilquest_return_rsc = \
       "Return to Afiera D'xor and let him know the task has been "
       "completed."
-
    dementpupilquest_completed = \
-      "You have completed the dement pupil quest.  Afiera D'xor will now "
-      "teach you how to cast the dement spell."
+      "You have completed Afiera D'xor's pupil quest.  Afiera D'xor will now "
+      "teach you the spells Dement (level four Riija) and Lightning Bolt "
+      "(level five Faren)."
 
    // Quest resources.
    dementlearn_trigger = "pupil"

@@ -126,7 +126,7 @@ messages:
 
       // Global effects of the enchantment
       Send(oRoom,@SomeoneSaid,#type=SAY_MESSAGE,#string=truce_on,#what=self);
-      Send(oRoom,@RoomStartEnchantment,#what=self,#state=$,
+      Send(oRoom,@RoomStartEnchantment,#what=self,#state=[iSpellPower,who],
            #time=Send(self,@GetDuration,#iSpellPower=iSpellPower));
       Send(oRoom,@SetRoomFlag,#flag=ROOM_NO_MOB_COMBAT,#value=TRUE);
 

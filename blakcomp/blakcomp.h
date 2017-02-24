@@ -48,7 +48,12 @@
 //    - IsClass call converted to 4 opcodes, 15-25% faster and allows for
 //      more type/argument checking in compiler. Syntax remains the same,
 //      but can be later modified to more resemble other OOP languages.
-#define BOF_VERSION 8
+// BOF_VERSION 9 (24-1-2017) added:
+//    - 8 new GOTO opcodes for branching on <> or == null ($). Opcodes are
+//      called when a if/while/do-while/for-condition statement has a single
+//      expression containing the null check. Also replaces the list $ check
+//      assignment and test in foreach loops.
+#define BOF_VERSION 9
 
 #define IDBASE        10000      /* Lowest # of user-defined id.  Builtin ids have lower #s */
 #define RESOURCEBASE  20000      /* Lowest # of user-defined resource. */
@@ -74,6 +79,8 @@ enum
    GOTO_UNCONDITIONAL = 0,
    GOTO_IF_TRUE = 1,
    GOTO_IF_FALSE = 2,
+   GOTO_IF_NULL = 3,
+   GOTO_IF_NEQ_NULL = 4,
 };
 
 // enum for built-in class IDs. These appear in blakserv.h also.

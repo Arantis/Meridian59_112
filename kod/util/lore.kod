@@ -81,6 +81,12 @@ properties:
    poInvestigator = $
    plSuspects = $
 
+   // Arena champion lists. One list element for each watcher, and each
+   // watcher's list contains one list for each style. Watchers will use
+   // their watcher ID to access their particular list (which are otherwise
+   // identical to start off with).
+   plArenaChampions = $
+
 messages:
 
    Constructor()
@@ -96,6 +102,18 @@ messages:
       // Lore is meant to persist information across RecreateAll, so
       // there's nothing to do here.  Historically this has been used
       // to put code that needs to run after an update.
+
+      // Create the new arena lists if they aren't present yet.
+      if (plArenaChampions = $)
+      {
+         Send(self,@LoreCreateArenaLists);
+      }
+      else
+      {
+         // Make sure all styles are present.
+         Send(self,@LoreVerifyArenaLists);
+      }
+
       return;
    }
 
@@ -133,6 +151,69 @@ messages:
 
       plCurrentBest = [ $,$,$,$,$,$,$,$,$,$,$,$,$,$,$ ];
 
+      // Create the arena lists.
+      Send(self,@LoreCreateArenaLists);
+
+      return;
+   }
+
+   LoreCreateArenaLists()
+   {
+      local i, j, lTemp;
+
+      plArenaChampions = $;
+
+      // Arena champion lists. Each watcher needs their own list.
+      for (i = WATCHER_ID_MAX; i >= WATCHER_ID_MIN; --i)
+      {
+         lTemp = $;
+         for (j = ARENA_STYLE_MAX; j >= ARENA_STYLE_MIN; --j)
+         {
+            lTemp = Cons([j,[[$,0],[$,0],[$,0],[$,0],[$,0]]],lTemp);
+         }
+         plArenaChampions = Cons(lTemp,plArenaChampions);
+      }
+
+      return;
+   }
+
+   LoreVerifyArenaLists()
+   "Future proofing - check if we need to add a fight style list."
+   {
+      local bFound, i, lWList, lSubList;
+
+      // Check if we just need to create the whole lists.
+      if (plArenaChampions = $)
+      {
+         Send(self,@LoreCreateArenaLists);
+
+         return;
+      }
+
+      for (i = ARENA_STYLE_MIN; i <= ARENA_STYLE_MAX; ++i)
+      {
+         foreach lWList in plArenaChampions
+         {
+            bFound = FALSE;
+
+            foreach lSubList in lWList
+            {
+               if (First(lSubList) = i)
+               {
+                  bFound = TRUE;
+
+                  break;
+               }
+            }
+            if (NOT bFound)
+            {
+               // Append to try keep the lists looking like the created ones.
+               lWList = AppendListElem([i,[[$,0],[$,0],[$,0],[$,0],[$,0]]],
+                           lWList);
+            }
+         }
+      }
+
       return;
    }
 
@@ -157,6 +238,9 @@ messages:
       Send(self,@RemovePlayerIfFirstElem,#lList=plQorFaren,#who=who);
       Send(self,@RemovePlayerIfFirstElem,#lList=plQorKraanan,#who=who);
       Send(self,@RemovePlayerIfFirstElem,#lList=plQorFarenKraanan,#who=who);
+
+      // Arena champ lists.
+      Send(self,@RemoveFromChampionLists,#who=who);
 
       piSomethingChanged = 1;
       Send(self,@ChooseCurrentBests);
@@ -636,6 +720,122 @@ messages:
       plQorKraanan = $;
       plQorFarenKraanan = $;
       plCurrentBest = $;
+
+      return;
+   }
+
+   // Arena stuff
+   GetChampionsList(style=STYLE_NO_FIGHT, iWatcherID=WATCHER_NONE)
+   {
+      local i;
+
+      if (iWatcherID = WATCHER_NONE)
+      {
+         return;
+      }
+
+      if style = STYLE_NO_FIGHT
+      {
+         return Nth(plArenaChampions,iWatcherID);
+      }
+
+      foreach i in Nth(plArenaChampions,iWatcherID)
+      {
+         if First(i) = style
+         {
+            return Nth(i,2);
+         }
+      }
+
+      Debug("GetChampionsList requested a combat style that doesn't exist!");
+
+      return $;
+   }
+
+   AddChampiontoChampList(what = $, iNum = 0, style = STYLE_ONE_ON_ONE,
+                          iWatcherID=WATCHER_NONE)
+   "This is called whenever a winner of a fight is declared.  Note that it "
+   "is not called when a match is a draw, or when the last challenger leaves "
+   "by logging off. 'what' can be either a player or a guild."
+   {
+      local i, lChampList, bFound;
+
+      if (what = $
+         OR iNum = 0
+         OR iWatcherID = 0
+         OR style = STYLE_NO_FIGHT)
+      {
+         Debug("Invalid parameters to AddChampiontoChampList!");
+
+         return;
+      }
+
+      bFound = FALSE;
+
+      lChampList = Send(self,@GetChampionsList,#style=style,
+                        #iWatcherID=iWatcherID);
+
+      // If player is already in the champ list, then check their victories.
+      // If their old record is smaller, replace it.
+      foreach i in lChampList
+      {
+         if First(i) = what
+         {
+            bFound = TRUE;
+            if Nth(i,2) < iNum
+            {
+               SetFirst(i,what);
+               SetNth(i,2,iNum);
+            }
+            else
+            {
+               return;
+            }
+         }
+      }
+
+      // If the guy wasn't in the list, see if the current counter is lower
+      // than anyone on the list.  If so, then replace that guy.  
+
+      if NOT bFound
+      {
+         foreach i in lChamplist
+         {
+            if Nth(i,2) < iNum
+            {
+                SetFirst(i,what);
+                SetNth(i,2,iNum);
+
+                break;
+            }
+         }
+      }
+
+      Send(self,@SortHeroList,#lList=lChamplist,#who=what);
+
+      return;
+   }
+
+   RemoveFromChampionLists(who = $)
+   {
+      local i, lSublist, lTemp, lWatcherList;
+
+      foreach lWatcherList in plArenaChampions
+      {
+         foreach lSubList in lWatcherList
+         {
+            lTemp = Nth(lSublist,2);
+            foreach i in lTemp
+            {
+               if First(i) = who
+               {
+                  SetFirst(i,$);
+                  SetNth(i,2,0);
+               }
+            }
+            Send(self,@SortHeroList,#lList=lTemp);
+         }
+      }
 
       return;
    }

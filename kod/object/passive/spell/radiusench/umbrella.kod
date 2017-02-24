@@ -9,10 +9,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 Umbrella is RadiusEnchantment
-// Termination conditions
-//  caster breaks trance 
-//  enchantee moves out of range
-//  total spell time elapses
 
 constants:
 
@@ -25,29 +21,32 @@ resources:
    Umbrella_name_rsc = "umbrella"
    Umbrella_icon_rsc = iumbrela.bgf
    Umbrella_desc_rsc = \
-      "Creates a dome of magical energy that protects those "
-      "near the caster for several minutes.  Requires emeralds to cast."
+      "Creates a dome of magical energy that protects those near the caster "
+      "for several minutes.  Requires two emeralds to cast."
 
-   Umbrella_cast = "You extend a mystic, shimmering dome of light out from your fingertips."
-   Umbrella_starts = "A mystic, shimmering dome of light emerges from %s's fingertips."
-   Umbrella_ends = "The dome of magical energy maintained by %s dissipates."
+   Umbrella_cast = \
+      "You extend a mystic, shimmering dome of light out from your fingertips."
+   Umbrella_starts = \
+      "A mystic, shimmering dome of light emerges from %s%s's fingertips."
+   Umbrella_ends = "The dome of magical energy maintained by %s%s dissipates."
    Umbrella_caster_ends = "Your dome of magical energy dissipates."
    Umbrella_caster_enter = "You feel your umbrella's magic protecting you."
-   Umbrella_enter = "You are encompassed by a dome of magical energy emanating from %s."
-   Umbrella_leave = "You have passed outside the dome of magical energy emanating from %s."
-
-   Umbrella_deflected = "%s's umbrella dampens the force of your attack."
+   Umbrella_enter = \
+      "You are encompassed by a dome of magical energy emanating from %s%s."
+   Umbrella_leave = \
+      "You have passed outside the dome of magical energy emanating from %s%s."
+   Umbrella_deflected = "%s%s's umbrella dampens the force of your attack."
 
 classvars:
 
-   radius_ench_cast = Umbrella_cast
-   radius_ench_starts = Umbrella_starts
-   radius_ench_ends = Umbrella_ends
-   radius_ench_caster_ends = Umbrella_caster_ends
-   radius_ench_caster_enter = Umbrella_caster_enter
-   radius_ench_enter = Umbrella_enter
-   radius_ench_leave = Umbrella_leave
-   
+   vrEnchantmentOn = Umbrella_cast
+   vrEnchantmentOnOther = Umbrella_starts
+   vrEnchantmentOff = Umbrella_caster_ends
+   vrEnchantmentOffOther = Umbrella_ends
+   vrEnterRadiusCaster = Umbrella_caster_enter
+   vrEnterRadius = Umbrella_enter
+   vrLeaveRadius = Umbrella_leave
+
    vrName = Umbrella_name_rsc
    vrIcon = Umbrella_icon_rsc
    vrDesc = Umbrella_desc_rsc
@@ -61,15 +60,15 @@ classvars:
 
    viIndefinite = ARTICLE_AN
    viChance_To_Increase = 35
-   viMeditate_ratio = 30
-   viBaseRange = 3
+   viMeditate_ratio = 45
+   viBaseRange = 3 * FINENESS
    viCast_Time = 2000
 
    viAffectsGuildmates = TRUE
    viAffectsEnemies = TRUE
 
 properties:
-   
+
 messages:
 
    ResetReagents()
@@ -80,49 +79,51 @@ messages:
       return;
    }
 
-   ModifyDefensePower(attacker=$,iPower=0,caster=$,defense_power=0)
+   EndEnchantment(who=$)
    {
-      if attacker <> $
+      if IsClass(who,&User)
       {
-         if Send(attacker,@IsAffectedByRadiusEnchantment,#what=self,#caster=caster)
+         Post(who,@DrawResistances);
+      }
+
+      propagate;
+   }
+
+   ModifyDefensePower(who=$,what=$,defense_power=0,state=$)
+   {
+      if (state = $)
+      {
+         return defense_power;
+      }
+
+      if what <> $
+      {
+         if Send(what,@IsAffectedByRadiusEnchantment,#what=self,#state=state)
          {
             // Umbrella can't help if the attacker is within its limits
             return defense_power;
          }
+         Post(what,@MsgSendUser,#message_rsc=Umbrella_deflected,
+               #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName));
       }
 
       // Adds up to 198 defense against attacks from outside the umbrella
-      return defense_power + iPower*2;
+      return defense_power + Nth(state,5) * 2;
    }
 
-   ModifyResistance(attacker=$,atype=-ATCK_SPELL_ALL,iPower=0,caster=$,resistance=$)
+   ModifyResistance(resistance_list=$,iState=0)
    {
-      if attacker <> $
-      {
-         if Send(attacker,@IsAffectedByRadiusEnchantment,#what=self,#caster=caster)
-         {
-            // Umbrella can't help if the attacker is within its limits
-            return resistance;
-         }
-         else
-         {
-            if caster <> $
-            {
-               Post(attacker,@MsgSendUser,#message_rsc=Umbrella_deflected,#parm1=Send(caster,@GetName));
-            }
-         }
-      }
+      local iResist;
 
-      // Resists up to 20// of all attacks from outside the umbrella.
-      if resistance > 20
-      {
-         return resistance;
-      }
-      else
-      {
-         return bound(resistance + iPower/5,$,20);
-      }
-      return resistance;
+      // 0-10% resist all from any attack to make the spell worth using.
+      iResist = iState / 5;
+
+      resistance_list = Send(SYS,@AddResistance,#what=-ATCK_SPELL_ALL,
+                              #value=iResist,#resistance_list=resistance_list);
+      resistance_list = Send(SYS,@AddResistance,#what=ATCK_WEAP_ALL,
+                              #value=iResist,#resistance_list=resistance_list);
+
+      return resistance_list;
    }
 
 end

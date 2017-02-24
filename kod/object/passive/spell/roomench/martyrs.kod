@@ -75,7 +75,14 @@ messages:
    {
       local oRoom;
 
-      oRoom = Send(who,@GetOwner);
+      if (IsClass(who,&Room))
+      {
+         oRoom = who;
+      }
+      else
+      {
+         oRoom = Send(who,@GetOwner);
+      }
 
       if Send(oRoom,@IsEnchanted,#what=self)
       {
@@ -86,7 +93,7 @@ messages:
 
       // global effects of the enchantment
       Send(oRoom,@SomeoneSaid,#type=SAY_MESSAGE,#string=martyrsbg_on,#what=self);
-      Send(oRoom,@RoomStartEnchantment,#what=self,#state=iSpellPower+50,
+      Send(oRoom,@RoomStartEnchantment,#what=self,#state=[iSpellPower+50, who],
            #time=send(self,@GetDuration,#iSpellPower=iSpellPower));
       
       propagate;
@@ -117,7 +124,6 @@ messages:
 
       return;
    }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

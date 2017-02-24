@@ -513,6 +513,12 @@ messages:
       return;
    }
 
+   IsOnBack()
+   "Is this shield being worn on the back?"
+   {
+      return piOverlayHotspot = HS_SHIELD_BACK;
+   }
+
    GetWindowOverlayHotspot()
    {
       // turns off the window overlay if unused or on our back

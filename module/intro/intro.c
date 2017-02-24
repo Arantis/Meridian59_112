@@ -25,7 +25,7 @@ static HWND hwndDialButton = NULL;
 static HDC      hTitleDC;
 static HBITMAP  hOldTitleBitmap;
 static BYTE *gTitleBits;        // Pointer to actual bits of offscreen bitmap
-
+static HPALETTE splashPalette = NULL;
 static RawBitmap logo;          // Logo bitmap
 
 static int bm_width, bm_height;  /* Size of intro bitmap */
@@ -113,6 +113,12 @@ void WINAPI ModuleExit(void)
       DeleteDC(hTitleDC);
    }
 
+   if (splashPalette != NULL)
+   {
+      DeleteObject(splashPalette);
+      splashPalette = NULL;
+   }
+
    if (hwndDialButton != NULL)
      DestroyWindow(hwndDialButton);
    hwndDialButton = NULL;
@@ -136,7 +142,11 @@ Bool WINAPI EventRedraw(HDC main_hdc)
    hdc = BeginPaint(cinfo->hMain, &ps);
    FillRect(hdc, &ps.rcPaint, GetBrush(COLOR_BGD));
 
-   SelectPalette(hdc, cinfo->hPal, FALSE);
+   // Use custom palette if we have it.
+   if (splashPalette)
+      SelectPalette(hdc, splashPalette, FALSE);
+   else
+      SelectPalette(hdc, cinfo->hPal, FALSE);
 
    /* Draw bitmap */   
    GetClientRect(cinfo->hMain, &r);
@@ -307,6 +317,8 @@ void IntroShowSplash(void)
    int i;
    Bitmaps b;
    PDIB pdib;
+   HBITMAP hSplash;
+   BITMAP bm;
 
    if (cinfo->config->quickstart)
    {
@@ -327,35 +339,45 @@ void IntroShowSplash(void)
    /* Subclass button */
    lpfnDefButtonProc = SubclassWindow(hwndDialButton, MainButtonProc);
 
-   /* Get bits of bitmap from bgf file */   
-   if (DibOpenFile(splash_filename, &b))
+   // Default values.
+   hTitleDC = NULL;
+   bm_width = BUTTON_XSIZE;
+
+   if (DibOpenBitmapResource(hInst, IDB_SPLASH, &hSplash, &splashPalette))
    {
-      pdib = BitmapsGetPdibByIndex(b, 0);
+      hTitleDC = CreateMemBitmapFromBmp(hSplash, &hOldTitleBitmap, splashPalette);
 
-      /* Get bitmap's size */
-      bm_width  = DibWidth(pdib);
-      bm_height = DibHeight(pdib);
-
-      /* Create bitmap */
-      hTitleDC = CreateMemBitmap(bm_width, bm_height, &hOldTitleBitmap, &gTitleBits);
-      if (hTitleDC == NULL)
-      {
-	 debug(("IntroShowSplash couldn't create bitmap!\n"));
-	 BitmapsFree(&b);
-	 return;
-      }
-      
-      /* Copy bits into bitmap */
-      for (i=0; i < bm_height; i++)
-	 memcpy(gTitleBits + i * DIBWIDTH(bm_width), DibPtr(pdib) + i * bm_width, bm_width);
-
-      BitmapsFree(&b);
-
+      // Set height/width now.
+      GetObject(hSplash, sizeof(BITMAP), &bm);
+      bm_width = bm.bmWidth;
+      bm_height = bm.bmHeight;
    }
-   else 
+   else
    {
-      hTitleDC = NULL;
-      bm_width = BUTTON_XSIZE;
+      /* Get bits of bitmap from bgf file */
+      if (DibOpenFile(splash_filename, &b))
+      {
+         pdib = BitmapsGetPdibByIndex(b, 0);
+
+         /* Get bitmap's size */
+         bm_width = DibWidth(pdib);
+         bm_height = DibHeight(pdib);
+
+         /* Create bitmap */
+         hTitleDC = CreateMemBitmap(bm_width, bm_height, &hOldTitleBitmap, &gTitleBits);
+         if (hTitleDC == NULL)
+         {
+            debug(("IntroShowSplash couldn't create bitmap!\n"));
+            BitmapsFree(&b);
+            return;
+         }
+
+         /* Copy bits into bitmap */
+         for (i = 0; i < bm_height; i++)
+            memcpy(gTitleBits + i * DIBWIDTH(bm_width), DibPtr(pdib) + i * bm_width, bm_width);
+
+         BitmapsFree(&b);
+      }
    }
 
    button_width = bm_width;

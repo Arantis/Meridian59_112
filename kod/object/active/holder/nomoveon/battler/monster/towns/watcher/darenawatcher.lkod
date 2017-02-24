@@ -1,0 +1,74 @@
+   DeathArenaWatcher_name_rsc = de "Johlan Tulca"
+   DeathArenaWatcher_desc_rsc = de \
+      "Johlan ist der Sohn von Kochtal ko'Tulca. Er war einst ein stolzer Soldat "
+      "der Insel Ko'Catan. Doch... er wurde von der Insel Ko'catan verbannt! Du "
+      "wirst es nicht glauben, was man über die grausamen Dinge sagt, die er "
+      "angestellt haben soll. Nun lebt er seine Träume als Meister der Arena des Todes. "   
+   DeathArenaWatcher_ad_need_champion1 = de "Kommt meine Schönen, habt keine Angst . . . "
+   DeathArenaWatcher_ad_need_champion2 = de \
+      "Ich kann eure Leidenschaft riechen... gibt sie mir, es gibt so viel Blut zu vergießen. " 
+   DeathArenaWatcher_ad_need_champion3 = de \
+      "Es ist so einfach, jemanden zu töten. Willst Du nicht für mich tanzen? "
+   DeathArenaWatcher_ad_need_champion4 = de "Ich will Leichen sehen! "
+   DeathArenaWatcher_ad_need_challenger = de "Komm schon.. willst du nicht mit %s%s tanzen?"
+      DeathArenaWatcher_ad_good_fight1 = de "JA!! Oh Gott ja!!!  Sterbt ihr Narren !!!"
+   DeathArenaWatcher_ad_good_fight2 = de "Ich kann deine Seele schmecken."
+   DeathArenaWatcher_ad_good_fight3 = de "Blut, überall auf dem Boden verteilt! Jaaa.. ich sehe Blut! "
+   DeathArenaWatcher_no_need = de "Sei ruhig Kleines, Deine Zeit zu sterben wird kommen. "
+   DeathArenaWatcher_need_champion = de \
+      "Wir brauchen zuerst einen Champion. Opfere dich!"
+   DeathArenaWatcher_dont_need_challenger = de \
+      "Später mein Süßer, später! Durch die Adern dieser Narren fließt genug Blut, auf Deines kann ich warten."
+   DeathArenaWatcher_fight_in_progress = de \
+      "Ja! Sobald ich mich an diesen Narren gütlich getan habe, wirst Du ihnen folgen!"
+   DeathArenaWatcher_already_combatant = de "Du bist bereits auf meiner Liste, warte einfach darauf!"
+   DeathArenaWatcher_already_champion = de "Du bist bereits auf meiner Liste, warte einfach darauf!"
+   DeathArenaWatcher_already_have_champion = de \
+      "Du willst also unser Champion sein, mh? Aber wir haben doch bereits einen Champion. "
+      "Wenn du unser neuer Champion sein willst, musst du %s%s herausfordern und ihn Töten! "
+      "Bist du mutig genug, %s herauszufordern? "
+   DeathArenaWatcher_must_accept = de \
+      "Komm schon!! Du hast nur noch %i Sekunden Zeit, um %s%s's Herausforderung anzunehmen."
+   DeathArenaWatcher_commence_fight = de "KÄMPFT UND STERBT !!!"
+   DeathArenaWatcher_last_minute = de "Du hast eine Minute... Dann werde ich in den Käfig kommen "
+      "und bringen das ganze zu einem Ende! "
+   DeathArenaWatcher_victor = de "~BVerflucht sollst Du sein, %s%s! Heute wirst Du leben, aber nicht für immer!~B"
+   DeathArenaWatcher_new_champion = de "~BSeht: %s%s ist der neue Champion. Bereit zu sterben?~B"
+   DeathArenaWatcher_killed_champion = de \
+      "%s%s hat den Champion %s%s besiegt! ... frisches Blut!"
+   DeathArenaWatcher_retain_title = de \
+      "%s%s behält die Meisterschaft, will mir nicht jemand %s Blut geben? "
+   DeathArenaWatcher_ready_to_fight = de "%s%s gegen %s%s. Seid bereit zu sterben... "
+   DeathArenaWatcher_cant_leave = de "Du Narr, es gibt kein Entkommen."
+   DeathArenaWatcher_pitifully_fled = de \
+      "%s%s ist erbärmlich geflohen! Ich glaube ich muss ihn töten, oder? "
+   DeathArenaWatcher_fled_reconnect = de \
+      "%s%s ist erbärmlich geflohen! Wenn %s%s in 30 Sekunden nicht zurück ist, "
+      "muss ich den Tod vorbereiten, oder?"
+   DeathArenaWatcher_only_combatants = de \
+      "Du musst schon in meinen Käfig kommen, um hier zu Töten!"
+   DeathArenaWatcher_no_fighting_yet = de "Noch nicht meine süßen, noch nicht."
+   DeathArenaWatcher_only_combatants_cast = de \
+      "Du musst schon in meinen Käfig kommen, um hier deine Zaubersprüche loszulassen!"
+   DeathArenaWatcher_only_target_combatants = de \
+      "Du kannst niemanden angreifen, der nicht im Käfig steht!"
+   DeathArenaWatcher_spell_banned = de \
+      "Oh, das tut mir leid. Du kannst %s hier nicht benutzen. Warum? Weil ich es sage!"
+   DeathArenaWatcher_must_choose_style = de \
+      "Zuerst musst du wählen, welchen Kampf-Modus du willst. "
+   DeathArenaWatcher_cant_switch = de "Du kannst das jetzt nicht ändern. Narr!"
+   DeathArenaWatcher_new_combat_style = de \
+      "%s? Sehr gut. Ausgezeichnete Wahl! Danach sehne ich mich schon sehr lange. "
+      "Wer sagt das Zauberwort, \"Champion\"? "
+   DeathArenaWatcher_welcome = de "~kJohlan Tulca teilt dir mit, \"Willkommen in der wahren Arena des Todes.\""
+   DeathArenaWatcher_worship_admin = de \
+      "Oh wie aufregend.. es ist %s. %s ist sooo wichtig. "
+   DeathArenaWatcher_worship_dm = de \
+      "Erwartet nicht, dass ich vor %s am Boden krieche, mich beeindruckt Ihr nicht!%s$0"
+   DeathArenaWatcher_welcome_champion = de "Hail %s%s, den blutigen Metzler."
+   DeathArenaWatcher_not_during_fight = de \
+      "Johlan Tulca teilt dir mit, \"Du kannst mir keine Kommandos mitteilen, "
+      "währendem bereits gekämpft wird. \""
+   DeathArenaWatcher_wont_fight = de \
+      "`kAnscheinend ist %s%s zu feige um zu kämpfen. Feiglinge sollten "
+      "sterben... Qualvoll! "

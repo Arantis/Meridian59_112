@@ -14,8 +14,6 @@ constants:
 
    include blakston.khd
 
-   HS_LAMP = 1
-
 resources:
 
    include lamp.lkod

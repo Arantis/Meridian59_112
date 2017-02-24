@@ -65,7 +65,23 @@ messages:
    // Called here, different shields can give different bonuses.
    GetBlockAbility(who = $)
    {
-      return bound(send(who,@GetSkillAbility,#skill_num=SKID_BLOCK) + piDefense_bonus,1,120);
+      local iBonus;
+
+      iBonus = piDefense_bonus;
+
+      if (who <> $)
+      {
+         if (IsClass(who,&User))
+         {
+            iBonus += Send(who,@GetSkillAbility,#skill_num=SKID_BLOCK);
+         }
+         else if (IsClass(who,&Monster))
+         {
+            iBonus += Send(who,@GetDifficulty) * 10;
+         }
+      }
+
+      return Bound(iBonus,1,120);
    }
 
    // Shields use the defense bonus as a bonus to block instead.
@@ -197,6 +213,14 @@ messages:
 
    SendWindowOverlayAnimation()
    {
+      local iFlags;
+
+      iFlags = piItem_flags & ITEM_PALETTE_MASK;
+      if iFlags <> 0
+      {
+         AddPacket(1,ANIMATE_TRANSLATION, 1,iFlags);
+      }
+
       if piUsed = DEFENDING
       { 
          AddPacket(1,ANIMATE_ONCE,4,1000,2,2,2,2,2,1);

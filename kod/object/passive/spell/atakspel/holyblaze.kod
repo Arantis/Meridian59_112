@@ -1,0 +1,201 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+HolyBlaze is AttackSpell
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include holyblaze.lkod
+
+   holyblaze_name_rsc = "holy blaze"
+
+   holyblaze_icon_rsc = iholybl.bgf
+
+   holyblaze_desc_rsc = \
+      "Bathes a target at short range in a blaze of holy energy, healing it "
+      "or harming it, depending on its karma.  Requires emeralds and elderberries to cast."
+
+   holyblaze_sound = sholytch.ogg
+
+   holyblaze_cast_rsc = \
+      "%s%s engulfs you in a blaze of holy energy, restoring ~g~B%i~B~n hitpoints."
+   holyblaze_cast_on_other = "You engulf %s%s in a blaze of holy energy, restoring ~g~B%i~B~n hitpoints."
+   holyblaze_unnecessary_rsc = "%s%s is perfectly healthy."
+
+classvars:
+
+   vrName = holyblaze_name_rsc
+   vrIcon = holyblaze_icon_rsc
+   vrDesc = holyblaze_desc_rsc
+
+   viSpell_num = SID_HOLY_BLAZE
+
+   viAttack_spell = ATCK_SPELL_ALL + ATCK_SPELL_HOLY
+
+   viSchool = SS_SHALILLE
+   viSpell_level = 4
+   viMana = 8
+
+   vrSucceed_wav = holyblaze_sound
+
+   // In seconds, since it works off GetTime().
+   viPostCast_time = 2
+
+   viChance_To_Increase = 15
+
+properties:
+
+   piDamageMin = 14
+   piDamageMax = 21
+   piRange = 4 * FINENESS
+
+   viHarmful = TRUE
+   viOutlaw = TRUE
+
+messages:
+
+   ResetReagents()
+   {
+      // separate message so can change, then set from admin mode
+
+      plReagents = $;
+      plReagents = Cons([&Emerald,2],plReagents);
+      plReagents = Cons([&Elderberry,1],plReagents);
+
+      return;
+   }
+
+   CanPayCosts(who = $, lTargets = $, bItemCast = FALSE)
+   {
+      local oTarget;
+
+      if (Length(lTargets) <> 1)
+      {
+         return FALSE;
+      }
+
+      oTarget = First(lTargets);
+
+      if (IsClass(oTarget,&User)
+         AND Send(oTarget,@GetKarma) >= 0)
+      {
+         if Send(oTarget,@GetHealth) >= Send(oTarget,@GetMaxHealth)
+         {
+            if NOT bItemCast
+            {
+               Send(who,@MsgSendUser,#message_rsc=holyblaze_unnecessary_rsc,
+                     #parm1=Send(oTarget,@GetCapDef),
+                     #parm2=Send(oTarget,@GetName));
+            }
+
+            return FALSE;
+         }
+
+         viHarmful = FALSE;
+         viOutlaw = FALSE;
+         Post(self,@RestoreProperties);
+      }
+      else
+      {
+         viHarmful = TRUE;
+         viOutlaw = TRUE;
+      }
+
+      propagate;
+   }
+
+   CastSpell(who = $, lTargets = $, iSpellpower = 1, bItemCast = FALSE)
+   {
+      local oTarget, iHeal, iCasterKarma, iTargetKarma;
+
+      if (Length(lTargets) <> 1)
+      {
+         return;
+      }
+
+      if (viHarmful OR viOutlaw)
+      {
+         propagate;
+      }
+
+      oTarget = First(lTargets);
+
+      iCasterKarma = Send(who,@GetKarma);
+      iTargetKarma = Send(oTarget,@GetKarma);
+
+      iHeal = Random(piDamageMin*100,piDamageMax*100)*(iSpellpower+101)/100;
+      iHeal = (100 + bound((iCasterKarma+iTargetKarma)/4,0,50))*iHeal/100;
+
+      iHeal = Send(oTarget,@GainHealthNormal,#amount=iHeal,#precision=TRUE);
+
+      Send(who,@MsgSendUser,#message_rsc=holyblaze_cast_on_other,
+            #parm1=Send(oTarget,@GetDef),#parm2=Send(oTarget,@GetName),
+            #parm3=iHeal/100);
+
+      Send(oTarget,@MsgSendUser,#message_rsc=holyblaze_cast_rsc,
+            #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName),
+            #parm3=iHeal/100);
+
+      // Give them a little boost if they help someone of higher Karma.
+      if (iCasterKarma < iTargetKarma)
+      {
+         Send(who,@AddKarma,#amount=Send(who,@CalculateKarmaChangeFromAct,
+               #karma_doer=iCasterKarma,#karma_act=iTargetKarma,
+               #Swing_factor=1));
+      }
+
+      propagate;
+   }
+
+   DamageFactors(damage=0,who=$,lTargets=$)
+   {
+      local oTarget,iCasterKarma,iTargetKarma,bUndead;
+
+      iCasterKarma = Send(who,@GetKarma);
+      iTargetKarma = 0;
+      bUndead = FALSE;
+
+      if lTargets <> $
+      {
+         oTarget = First(lTargets);
+         if IsClass(oTarget,&Battler)
+         {
+            iTargetKarma = Send(oTarget,@GetKarma);
+            bUndead = Send(oTarget,@IsUndead);
+         }
+      }
+
+      if bUndead
+      {
+         return damage + (damage*iCasterKarma/100);
+      }
+
+      if iTargetKarma < 0
+      {
+         return damage + damage*(iCasterKarma - iTargetKarma)/400;
+      }
+      
+      return damage - damage*iTargetKarma/100;
+   }
+
+   RestoreProperties()
+   {
+      viHarmful = TRUE;
+      viOutlaw = TRUE;
+
+      return;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

@@ -12,4 +12,3 @@ PersonalEnchantment_Other_Already_Enchanted_rsc = de \
    "%s%s ist bereits mit dem Zauber verzaubert."
 PersonalEnchantment_bad_target = de "Du kannst %s%s nicht verzaubern."
 PersonalEnchantment_bad_location = de "Du kannst hier nicht auf andere Zaubern."
-spell_blank_template = de "%q"

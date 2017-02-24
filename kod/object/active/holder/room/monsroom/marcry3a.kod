@@ -962,18 +962,17 @@ messages:
 
    CreateStandardObjects()
    {
-
       // Dynamic lights for the vents
 
-      send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_DGREEN,
+      Send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_DGREEN,
            #iIntensity=5),#new_row=37,#new_col=14,#fine_row=0,#fine_col=24);
-      send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_DGREEN,
+      Send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_DGREEN,
            #iIntensity=5),#new_row=25,#new_col=15,#fine_row=0,#fine_col=8);
-      send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_DGREEN,
+      Send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_DGREEN,
            #iIntensity=5),#new_row=9,#new_col=2,#fine_row=24,#fine_col=0);
-      send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_DGREEN,
+      Send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_DGREEN,
            #iIntensity=5),#new_row=32,#new_col=35,#fine_row=0,#fine_col=0);
-      send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_DGREEN,
+      Send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_DGREEN,
            #iIntensity=50),#new_row=1,#new_col=15,#fine_row=32,#fine_col=8);
 
       propagate;
@@ -982,8 +981,8 @@ messages:
    ReqSpellCast(who = $, oSpell = $, lItems = $)
    {
       if oSpell = Send(SYS,@FindSpellByNum,#num=SID_EARTHQUAKE)
-      {  
-         Send(who,@MsgSendUser,#message_rsc=marcrypt3a_no_earthquake);          
+      {
+         Send(who,@MsgSendUser,#message_rsc=marcrypt3a_no_earthquake);
 
          return FALSE; 
       }
@@ -992,71 +991,51 @@ messages:
    }
 
    SomeoneSaid(what = $,type = $,string = $,parm1 = $,parm2 = $,parm3 = $,
-               parm4 = $, parm5 = $,parm6 = $,parm7 = $,parm8 = $)                       
+               parm4 = $, parm5 = $,parm6 = $,parm7 = $,parm8 = $)
    {
       local object;
 
-      if isClass(what,&DM) AND StringEqual(string,"blink")
+      if IsClass(what,&DM)
       {
-         Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
-              #new_row=viBlink1_row,#new_col=viBlink1_col);
-
-         propagate;
-      }
-
-      if isClass(what,&DM) AND StringEqual(string,"trap1")
-      {
-         Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
-              #new_row=viTrap1_row,#new_col=viTrap1_col);
-
-         propagate;
-      }
-
-      if isClass(what,&DM) AND StringEqual(string,"trap2")
-      {
-         Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
-              #new_row=viTrap2_row,#new_col=viTrap2_col);
-
-         propagate;
-      }
-
-      if isClass(what,&DM) AND StringEqual(string,"trap3")
-      {
-         Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
-              #new_row=viTrap3_row,#new_col=viTrap3_col);
-
-         propagate;
-      }
-
-      if isClass(what,&DM) AND StringEqual(string,"blink2")
-      {
-         Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
-              #new_row=viBlink2b_row,#new_col=viBlink2b_col);
-
-         propagate;
-      }
-
-      if isClass(what,&DM) AND StringEqual(string,"blink3")
-      {
-         Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
-              #new_row=viBlink3c_row,#new_col=viBlink3c_col);
-
-         propagate;
-      }
-
-      if isClass(what,&DM) AND StringEqual(string,"blink4")
-      {
-         Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
-              #new_row=viBlink4_row,#new_col=viBlink4_col);
-
-         propagate;
-      }
-
-      if isClass(what,&DM) AND StringEqual(string,"createthrashers")
-      {
-         Send(self,@CreateThrashers);
-
-         propagate;
+         if StringEqual(string,"blink")
+         {
+            Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
+               #new_row=viBlink1_row,#new_col=viBlink1_col);
+         }
+         else if StringEqual(string,"trap1")
+         {
+            Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
+                 #new_row=viTrap1_row,#new_col=viTrap1_col);
+         }
+         else if StringEqual(string,"trap2")
+         {
+            Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
+                 #new_row=viTrap2_row,#new_col=viTrap2_col);
+         }
+         else if StringEqual(string,"trap3")
+         {
+            Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
+                 #new_row=viTrap3_row,#new_col=viTrap3_col);
+         }
+         else if StringEqual(string,"blink2")
+         {
+            Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
+                 #new_row=viBlink2b_row,#new_col=viBlink2b_col);
+         }
+         else if StringEqual(string,"blink3")
+         {
+            Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
+                 #new_row=viBlink3c_row,#new_col=viBlink3c_col);
+         }
+         else if StringEqual(string,"blink4")
+         {
+            Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
+                 #new_row=viBlink4_row,#new_col=viBlink4_col);
+         }
+         else if StringEqual(string,"createthrashers")
+         {
+            Send(self,@CreateThrashers);
+         }
       }
 
       propagate;
@@ -1072,7 +1051,6 @@ messages:
       {
          iNumPlayers = Random(3,5);
       }
-
       else
       {
          iNumPlayers = Random(1,iNumPlayers);
@@ -1163,8 +1141,6 @@ messages:
       return;
    }
 
-   
-
    Delete()
    {
       if ptTrap1 <> $
@@ -1196,7 +1172,7 @@ messages:
    CanHavePlayerPortal()
    {
       // Don't allow portals into this room, bypassing puzzle
-      return false;
+      return FALSE;
    }
 
 end

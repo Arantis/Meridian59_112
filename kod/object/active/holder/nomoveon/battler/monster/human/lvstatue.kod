@@ -1,0 +1,530 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+LivingStatue is Human
+
+constants:
+
+   include blakston.khd
+
+   // What percent of the statues are soldiers?
+   SOLDIER_PERCENT = 20
+
+   // What percent of the time do we wake up when someone is near?
+   WAKEUP_CHANCE = 100
+
+   // How long are we dormant when someone tries to wake us up?
+   DORMANT_DURATION = 2 * 60 * 1000  // 2 minutes (in ms)
+
+resources:
+
+   include lvstatue.lkod
+
+   LivingStatue_name_rsc = "statue"
+   LivingStatue_active_name_rsc = "living statue"
+
+   LivingStatue_desc_rsc = \
+      "This statue is the image of some ancient %s.\n\n%r"
+
+   LivingStatue_dead_name_rsc = "crumbled living statue"
+
+   LivingStatue_mason = "mason"
+   LivingStatue_farmer = "farmer"
+   LivingStatue_merchant = "merchant"
+   LivingStatue_blacksmith = "blacksmith"
+   LivingStatue_elder = "elder"
+   LivingStatue_soldier = "soldier"
+
+   LivingStatue_damage = "~B~r%s%s is noticeably more damaged."
+   LivingStatue_severe_damage = "~B~r%s%s is severely damaged."
+
+   LivingStatue_rose_drop = "My... beloved...!"
+
+   LivingStatue_icon_blank = blank.bgf
+
+   LivingStatue_sound_attack = xeoatk.ogg
+   LivingStatue_sound_aware = xeodie.ogg
+   LivingStatue_sound_death = xeo1awr.ogg
+
+classvars:
+
+   vrDesc = LivingStatue_desc_rsc
+   vrDead_name = LivingStatue_dead_name_rsc
+
+   viTreasure_type = TID_STATUE
+   viAttack_type = ATCK_WEAP_SLASH
+   viDead_drawfx = DRAWFX_SECONDTRANS
+
+   // percentage chance to be female
+   viChanceFemale = 50
+
+   // Our normal speed when active
+   viNormalSpeed = SPEED_AVERAGE
+   viCashmin = 150
+   viCashmax = 500
+
+properties:
+
+   vrName = LivingStatue_name_rsc
+
+   // Can be set by Human parent class.
+   vrSound_death = LivingStatue_sound_death
+   vrSound_hit = LivingStatue_sound_attack
+   vrSound_miss = LivingStatue_sound_attack
+   vrSound_aware = LivingStatue_sound_aware
+
+   viLevel = 75
+   viDifficulty = 5
+   viVisionDistance = 3
+   // Attack range of 192, or 3 row/col.
+   viAttackRange = 192
+   viKarma = -40
+   viGender = GENDER_MALE
+
+   viSpeed = SPEED_NONE
+
+   piAnimation = ANIM_NONE
+
+   // Original data, for replacing when we heal.
+   prOriginalHead = human_head_male_icon
+   prOriginalEyes = human_eyes_ax_icon
+   prOriginalMouth = human_mouth_ax_icon
+   prOriginalNose = human_nose_ax_icon
+   prOriginalLeft_arm = human_leftarm_a_rsc
+   // Save shield as we unequip it if we lose our left arm.
+   poOriginalShield = $
+
+   piDrawFX = DRAWFX_SECONDTRANS
+
+   // Is this a soldier?
+   pbIsSoldier = FALSE
+
+   // What are we an image of?
+   prProfession = LivingStatue_elder
+
+   // How long should we remain dormant, unable to be awoken by players?
+   ptRemainDormant = $
+
+   // Used to lock statue into a dormant state
+   pbLockedDormant = FALSE
+
+messages:
+
+   Constructor(bIsSoldier=FALSE)
+   {
+      // Base 20% chance to be a soldier type statue.
+      if Random(1,100) <= SOLDIER_PERCENT
+         OR bIsSoldier
+      {
+         pbIsSoldier = TRUE;
+         prProfession = LivingStatue_soldier;
+
+         // Give us a little boost to our stats
+         viLevel += 15;
+         viDifficulty += 2;
+
+         // This makes the soliders not have karma
+         pbDontDispose = TRUE;
+      }
+      else
+      {
+         switch(Random(1,5))
+         {
+         case 1: prProfession = LivingStatue_mason; break;
+         case 2: prProfession = LivingStatue_farmer; break;
+         case 3: prProfession = LivingStatue_merchant; break;
+         case 4: prProfession = LivingStatue_blacksmith; break;
+         default: prProfession = LivingStatue_elder; break;
+         }
+      }
+
+      propagate;
+   }
+
+   Constructed()
+   {
+      // Set the original data here, for replacing when we heal from damage.
+      prOriginalHead = prHead;
+      prOriginalEyes = prEyes;
+      prOriginalMouth = prMouth;
+      prOriginalNose = prNose;
+      prOriginalLeft_arm = prLeft_arm;
+
+      // Set this here since Human parent class may unset it.
+      vrSound_death = LivingStatue_sound_death;
+
+      propagate;
+   }
+
+   Delete()
+   {
+      if ptRemainDormant <> $
+      {
+         DeleteTimer(ptRemainDormant);
+         ptRemainDormant = $;
+      }
+
+      poOriginalShield = $;
+
+      propagate;
+   }
+
+   SetEquipment()
+   {
+      local oEquipmentItem, iRandomNumber;
+
+      iRandomNumber = Random(1,10);
+      if iRandomNumber <= 3
+      {
+         oEquipmentItem = Create(&Longsword);
+      }
+      else if iRandomNumber <= 6
+      {
+         oEquipmentItem = Create(&Hammer);
+      }
+      else
+      {
+         oEquipmentItem = Create(&Axe);
+      }
+
+      Send(self,@AddEquipmentObject,#what=oEquipmentItem);
+
+      // Add armor to soldiers.
+      if pbIsSoldier
+      {
+         // Armor
+         iRandomNumber = Random(1,10);
+
+         if iRandomNumber <= 4
+         {
+            oEquipmentItem = Create(&LeatherArmor);
+         }
+         else if iRandomNumber <= 8
+         {
+            oEquipmentItem = Create(&ChainArmor);
+         }
+         else
+         {
+            oEquipmentItem = Create(&ScaleArmor);
+         }
+         Send(self,@AddEquipmentObject,#what=oEquipmentItem);
+
+         // Helmet?
+         if Random(1,10) <= 5
+         {
+            Send(self,@AddEquipmentObject,#what=Create(&SimpleHelm));
+         }
+
+         // Gauntlets?
+         if Random(1,10) <= 5
+         {
+            Send(self,@AddEquipmentObject,#what=Create(&Gauntlet));
+         }
+
+         // Shield?
+         if Random(1,10) <= 8
+         {
+            iRandomNumber = Random(1,100);
+
+            if iRandomNumber <= 40
+            {
+               oEquipmentItem = Create(&MetalShield);
+            }
+            else if iRandomNumber <= 80
+            {
+               oEquipmentItem = Create(&GoldShield);
+            }
+            else
+            {
+               oEquipmentItem = Create(&KnightShield);
+            }
+
+            Send(self,@AddEquipmentObject,#what=oEquipmentItem);
+         }
+      }
+
+      return;
+   }
+
+   //// Infrastructure
+
+   ShowDesc()
+   {
+      // Does not show status information, because it has none.
+      AddPacket(4,vrDesc, 4,prProfession, 4,monster_desc_level,
+                4,Bound(viLevel,20,150));
+
+      return;
+   }
+
+   HitPointThresholdDamage()
+   "Shows physical damage instead of a message."
+   {
+      local i, iThreshold, rDamageReport, each_obj, oShield;
+
+      iThreshold = piHit_points / (piMax_hit_points * 20);
+
+      // General damage report
+      rDamageReport = LivingStatue_damage;
+
+      if iThreshold <= 1
+      {
+         if prHead = LivingStatue_icon_blank
+         {
+            return;
+         }
+
+         prHead = LivingStatue_icon_blank;
+         rDamageReport = LivingStatue_severe_damage;
+      }
+      else
+      {
+         switch (Random(1,4))
+         {
+         case 1:
+            if prEyes = LivingStatue_icon_blank
+            {
+               return;
+            }
+            prEyes = LivingStatue_icon_blank;
+            break;
+         case 2:
+            if prMouth = LivingStatue_icon_blank
+            {
+               return;
+            }
+            prMouth = LivingStatue_icon_blank;
+            break;
+         case 3:
+            if prNose = LivingStatue_icon_blank
+            {
+               return;
+            }
+            prNose = LivingStatue_icon_blank;
+            break;
+         case 4:
+            if prLeft_arm = LivingStatue_icon_blank
+            {
+               return;
+            }
+
+            oShield = Send(self,@LookupPlayerShield);
+            if (oShield <> $)
+            {
+               Send(self,@UnuseItem,#what=oShield);
+               poOriginalShield = oShield;
+            }
+            prLeft_arm = LivingStatue_icon_blank;
+            break;
+         }
+      }
+
+      Send(poOwner,@SomethingChanged,#what=self);
+
+      foreach i in Send(poOwner,@GetHolderActive)
+      {
+         each_obj = First(i);
+         if IsClass(each_obj,&User)
+            AND Send(each_obj,@GetKillTarget) = self
+         {
+            Post(each_obj,@MsgSendUser,#what=self,#message_rsc=rDamageReport,
+                  #parm1=Send(self,@GetCapDef),#parm2=Send(self,@GetName));
+         }
+      }
+
+      return;
+   }
+
+   HitPointThresholdHeal()
+   "Healed a health point, fix one of our broken parts."
+   {
+      if prHead <> prOriginalHead
+      {
+         prHead = prOriginalHead;
+      }
+      else if prLeft_arm <> prOriginalLeft_arm
+      {
+         prLeft_arm = prOriginalLeft_arm;
+         Send(self,@TryUseItem,#what=poOriginalShield);
+         poOriginalShield = $;
+      }
+      else if prEyes <> prOriginalEyes
+      {
+         prEyes = prOriginalEyes;
+      }
+      else if prMouth <> prOriginalMouth
+      {
+         prMouth = prOriginalMouth;
+      }
+      else if prNose <> prOriginalNose
+      {
+         prNose = prOriginalNose;
+      }
+
+      if poOwner <> $
+      {
+         Send(poOwner,@SomethingChanged,#what=self);
+      }
+
+      return;
+   }
+
+   SpellResist(oSpell=$,who=$,iSpellpower=$)
+   {
+      // Ignore sight-based spells and Seduce
+      if IsClass(oSpell,&Blind)
+         OR IsClass(oSpell,&Dazzle)
+         OR IsClass(oSpell,&Seduce)
+      {
+         return TRUE;
+      }
+
+      propagate;
+   }
+
+   SomethingMoved(what = $,new_row = $,new_col = $)
+   {
+      local iDelay;
+
+      // Only care about moving stuff if we're not already moving
+      // Only care about non-immortal players we can see and are "close"
+      if viSpeed = SPEED_NONE
+         AND NOT pbLockedDormant
+         AND what <> $
+         AND IsClass(what,&Player)
+         AND NOT (IsClass(what,&DM) AND Send(what,@PlayerIsImmortal))
+         AND Send(poOwner,@LineOfSight,#obj1=self,#obj2=what)
+         AND Send(self,@CanSee,#what=what)
+      {
+         if Random(1,100) <= WAKEUP_CHANCE
+         {
+            // Set our intruder as our target if we don't have another one.
+            // 25 hatred is pretty low.
+            if Send(self,@GetHatred) <= 25
+            {
+               Send(self,@TargetSwitch,#what=what,#iHatred=25);
+            }
+
+            // Someone walked close enough!  Spring to life!
+            Send(self,@WakeUp);
+         }
+         else
+         {
+            // Don't wake up yet.  Rest a bit longer.
+            pbLockedDormant = TRUE;
+
+            iDelay = DORMANT_DURATION;
+            // Created by an admin?  Probably an invasion.  Don't sleep as long.
+            if pbDontDispose
+            {
+               iDelay = iDelay / 5;
+            }
+
+            ptRemainDormant = CreateTimer(self,@EndDormantTimer,iDelay);
+         }
+      }
+
+      propagate;
+   }
+
+   EndDormantTimer()
+   {
+      ptRemainDormant = $;
+      pbLockedDormant = FALSE;
+
+      return;
+   }
+
+   TweakBehavior()
+   "Our default behavior it not be noticable as a monster."
+   {
+      if viSpeed = SPEED_NONE
+      {
+         piBehavior = AI_NOMOVE | AI_NOFIGHT | AI_NPC;
+      }
+
+      return;
+   }
+
+   //// Dealing with waking up and going dormant
+
+   WakeUp()
+   {
+      // Make ourselves mobile!
+      viSpeed = viNormalSpeed;
+
+      piBehavior = piBehavior & ~(AI_NOMOVE | AI_NOFIGHT | AI_NPC);
+      if poOwner <> $
+      {
+         Send(poOwner,@SomethingChanged,#what=self);
+         Send(self,@EnterStateChase,#target=poTarget,#actnow=TRUE);
+      }
+
+      // Now, fix our name!
+      vrName = LivingStatue_active_name_rsc;
+
+      return;
+   }
+
+   // Override from monster superclass
+   CreateDeadBody(killer=$)
+   {
+      return Create(&DeadBody,
+                     #victim=self,
+                     #killer=killer,
+                     #PlayerBodyOverlay=vrDead_Legs,
+                     #DrawFX=viDead_drawfx);
+   }
+
+   CreateTreasure(who=$,corpse=$)
+   {
+      local oItem;
+
+      // Soldiers have a small chance to drop a rose as treasure.
+      if pbIsSoldier
+         AND Random(0,100) = 59
+         AND NOT pbIllusion
+      {
+         oItem = Create(&Rose,#corpse=corpse);
+
+         if Send(poOwner,@ReqNewHold,#what=oItem,#new_row=piRow,#new_col=piCol)
+         {
+            Send(poOwner,@NewHold,#what=oItem,
+                  #new_row=piRow,#new_col=piCol,
+                  #fine_row=piFine_row,#fine_col=piFine_col);
+            Send(poOwner,@SomeoneSaid,#what=self,#type=SAY_RESOURCE,
+                  #string=LivingStatue_rose_drop);
+         }
+         else
+         {
+            Send(oItem,@Delete);
+         }
+      }
+
+      // Don't drop what we're using.
+      foreach oItem in plUsing
+      {
+         Send(oItem,@Delete);
+      }
+      plUsing = $;
+
+      // Might not be using shield any more, drop it.
+      if (poOriginalShield <> $
+         AND Send(self,@IsHolding,#what=poOriginalShield))
+      {
+         Send(poOriginalShield,@Delete);
+      }
+      poOriginalShield = $;
+
+      propagate;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

@@ -175,13 +175,13 @@ messages:
          Send(self,@SetLogoffGhost,#GhostedPlayer=GhostedPlayer);
          if poGhostedPlayer <> $
          {
+            ptPenaltyTimer = CreateTimer(self,@PenaltyTrigger,iPenaltyTime);
             Send(Send(poGhostedPlayer,@GetOwner),@NewHold,#what=self,
                  #new_row=Send(poGhostedPlayer,@GetRow),
                  #new_col=Send(poGhostedPlayer,@GetCol),
                  #fine_row=(Send(poGhostedPlayer,@GetFineRow)+2),
                  #fine_col=(Send(poGhostedPlayer,@GetFineCol)+2),
                  #new_angle=Send(poGhostedPlayer,@GetAngle));
-            ptPenaltyTimer = CreateTimer(self,@PenaltyTrigger,iPenaltyTime);
          }
       }
 
@@ -213,6 +213,37 @@ messages:
          Addpacket(4,vrDesc);
          AddPacket(STRING_RESOURCE,logoffghost_someone);
          Post(self,@Delete);
+      }
+
+      return;
+   }
+
+   AddPenaltyTime(amount=0)
+   "Allows adding (or removing) time until expiry of the logoff ghost."
+   {
+      local iTime, iBaseTime;
+
+      if (amount <> 0
+         AND ptPenaltyTimer <> $)
+      {
+         iTime = GetTimeRemaining(ptPenaltyTimer);
+         DeleteTimer(ptPenaltyTimer);
+
+         iBaseTime = Send(poGhostedPlayer,@GetBasePhaseTime);
+
+         // If we are given an amount larger than base time, assume it is
+         // wanted and add it with an upper bound of 10 minutes. Otherwise,
+         // bind it at the ghosted player's base time.
+         if (amount > iBaseTime)
+         {
+            iTime = Bound(iTime + amount,1000,600000);
+         }
+         else
+         {
+            iTime = Bound(iTime + amount,1000,iBaseTime);
+         }
+
+         ptPenaltyTimer = CreateTimer(self,@PenaltyTrigger,iTime);
       }
 
       return;

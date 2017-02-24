@@ -618,3 +618,102 @@ oo_modportal_name = de "Miniaturportal"
 oo_modportal_desc = de \
    "Auf einem Schild unter dem Modell steht:\nEin Portal, das diejenigen "
    "teleportiert, die hindurchtreten."
+oo_potplant_name = de "Kübelpflanze"
+oo_potplant_desc = de \
+   "Welche schöne Kübelpflanze, oder? "
+oo_rshrub_name = de "Geformter Busch"
+oo_rshrub_desc = de \
+   "Ein sorgfältig geformter Busch."
+oo_bucket2_name = de "Wassereimer"
+oo_bucket2_desc = de \
+   "Ein alter hölzender Wassereimer. "
+oo_hist_banker_name = de "Miniatur eines Bankier"
+oo_hist_banker_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Einmal verwendet, um die riesigen Mengen an Münze zu "
+    "zählen, die durch die Bank von Tos gefloßen sind. "
+oo_hist_bsmith_name = de "Miniatur eines Schmieds"
+oo_hist_bsmith_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Diente der Stadt Tos als Schmied."
+oo_hist_scimitar_name = de "Miniatursäbel"
+oo_hist_scimitar_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Ein Säbel aus einer längst vergessenen Zeit. "
+oo_hist_duke_name = de "Miniatur Duke"
+oo_hist_duke_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Der imposante Herzog Kalior, der einst über Tos herrschte. "
+    "Nach seinem Mord nahm sein Neffe die Krone an. "
+oo_hist_evprstT_name = de "Miniatur einer Unheiligen Priesterin"
+oo_hist_evprstT_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Eine unheilige Priesterin von vor langer Zeit."
+oo_hist_fungbst_name = de "Miniatur eins Pilzwesen"
+oo_hist_fungbst_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Dieses Biest sieht fast identisch mit seinem Nachkommen aus, "
+    "das heute noch im Wald gefunden werden kann."
+oo_hist_gauntlet_name = de "Miniatur von Panzerhandschuhen"
+oo_hist_gauntlet_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Eine Paar Panzerhandschuhe, aber in einem unbekannten Stil."
+oo_hist_gsword_name = de "Miniatur Goldschwert"
+oo_hist_gsword_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Ein schön verziertes Schwert."
+oo_hist_hermit_name = de "Miniatur eines alten Heilers"
+oo_hist_hermit_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Ein alter Heiler aus der Stadt Marion."
+oo_hist_king1_name = de "Miniatur eins Königs"
+oo_hist_king1_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Vermutlich ist dies König Zarcos, obwohl wir ihn nie "
+    "persönlich gesehen haben."
+oo_hist_plate_name = de "Miniatur eines Plattenpanzer"
+oo_hist_plate_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Die verzierte goldenen Rüstungen, eine begehrte Rüstung "
+    "aus der Vergangenheit."
+oo_hist_leathamr_name = de "Miniatur einer Lederrüstung"
+oo_hist_leathamr_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Ein altes Modell der uns bekannten Lederrüstung."
+oo_hist_roundshld_name = de "Miniatur eines Rundschilds"
+oo_hist_roundshld_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Ein einfaches rundes Metallschild."
+oo_hist_kshld_name = de "Miniatur eines Ritterschilds"
+oo_hist_kshld_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Dieses großes, glänzende Schild sieht aus, als würde es Strom "
+    "und Wärme sehr gut leiten."
+oo_hist_orc_name = de "Miniatur einer Art des Orks"
+oo_hist_orc_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Diese groteske Kreatur war einst die vorherrschende "
+    "Art des Orks."
+oo_hist_ornhelma_name = de "Miniatur eines Magischen Helmes"
+oo_hist_ornhelma_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Du versuchst den Helm abzunehmen, aber leider ist er fest an "
+    "den Tisch geschraubt."
+oo_hist_priestess_name = de "Miniatur einer Priesterin"
+oo_hist_priestess_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Eine heilige Priesterin aus einer längst vergessenen Zeit."
+oo_hist_rat_name = de "Miniatur einer Riesenratte"
+oo_hist_rat_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Eine entfernte Art der Riesenratte."
+oo_hist_goldshld_name = de "Miniatur eines Goldschilds"
+oo_hist_goldshld_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Dieses goldene Schild ist ähnlich wie die von Quintor in der "
+    "heutigen Zeit."
+oo_hist_princess_name = de "Miniatur der Prinzessin"
+oo_hist_princess_desc = de \
+    "Auf einem Schild unter dem Modell steht:\n"
+    "Diese königliche Frau hat eine kleine Ähnlichkeit mit "
+    "Prinzessin Kateriina."

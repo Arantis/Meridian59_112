@@ -15,7 +15,6 @@
 
 void InitTime();
 int GetTime();
-int GetTimeZoneOffset();
 
 const char * TimeStr(time_t time);
 const char * ShortTimeStr(time_t time);

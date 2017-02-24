@@ -3,11 +3,12 @@ Rejuvenate_desc_rsc = de \
    "Dieses Lied ermöglicht es, den Zuhörern schneller ihr Mana zu regenerieren. "
    "Man benötigt einen Diamanten und einen ungeschliffenen Seraphen."
 Rejuvenate_cast = de "Du fängst an, ein motivierendes Lied zu spielen."
-Rejuvenate_starts = de "%s beginnt ein motivierendes Lied zu spielen."
-Rejuvenate_ends = de "Das motivierende Lied, gespielt von %s, verstummt."
+Rejuvenate_starts = de "%s%s beginnt ein motivierendes Lied zu spielen."
+Rejuvenate_ends = de "Das motivierende Lied, gespielt von %s%s, verstummt."
 Rejuvenate_caster_ends = de "Dein motivierendes Lied verstummt."
 Rejuvenate_caster_enter = de "Du spürst, das sich deine Mana schneller regeneriert."
 Rejuvenate_enter = de \
-   "%s's motivierendes Lied lässt dich deine Müdigkeit vergessen, du spürst wie sich deine Mana schneller regeneriert."
+   "%s%s's motivierendes Lied lässt dich deine Müdigkeit vergessen, du spürst "
+   "wie sich deine Mana schneller regeneriert."
 Rejuvenate_leave = de \
-   "Du kannst das motivierende Lied, gespielt von %s, nicht mehr hören."
+   "Du kannst das motivierende Lied, gespielt von %s%s, nicht mehr hören."

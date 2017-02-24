@@ -23,10 +23,10 @@ resources:
    DeathRift_desc_rsc = \
       "By calling upon a pact with the most ancient of dark forces, "
       "the truest disciples of Qor may traverse the fiery pits of the "
-      "Underworld while still retaining life. The interdimensional "
+      "Underworld while still retaining life.  The interdimensional "
       "pathways can lead Qor's favored to many locations, including "
-      "one dedicated destination of their choosing."
-      "Requires four dark angel feathers to cast."
+      "one dedicated destination of their choosing.  Requires four "
+      "dark angel feathers to cast."
 
    DeathRift_sound = qdthdoor.ogg
 
@@ -48,13 +48,14 @@ resources:
       "The evil pact's magic fails. Something seems amiss."
    DeathRift_warning = \
       "~BYou sense a nearby connection forming between dimensions!"
-   
+   deathrift_bound_desc = "\n\nYour soul is bound to %s."
+
 classvars:
 
    vrName = DeathRift_name_rsc
    vrIcon = DeathRift_icon_rsc
    vrDesc = DeathRift_desc_rsc
-   
+
    viSpell_num = SID_DEATH_RIFT
    viSchool = SS_QOR
    viSpell_level = 6
@@ -83,7 +84,7 @@ messages:
 
    CanPayCosts(who = $, lTargets = $, bItemCast = FALSE)
    {
-      local oRoom, iRegion;
+      local oRoom;
 
       if who = $
       {
@@ -100,16 +101,8 @@ messages:
 
       oRoom = Send(who,@GetOwner);
 
-      if (oRoom = $)
-      {
-         Send(who,@MsgSendUser,#message_rsc=DeathRift_generic_fail);
-
-         return FALSE;
-      }
-
-      iRegion = Send(oRoom,@GetRegion);
-
-      if (NOT Send(oRoom,@CanHavePlayerPortal))
+      if (oRoom = $
+         OR NOT Send(oRoom,@CanHavePlayerPortal))
       {
          Send(who,@MsgSendUser,#message_rsc=DeathRift_generic_fail);
 
@@ -151,7 +144,7 @@ messages:
          {
             foreach i in Send(oTargetRoom,@GetHolderActive)
             {
-               each_obj = Send(oTargetRoom,@HolderExtractObject,#data=i);
+               each_obj = First(i);
                if IsClass(each_obj,&User)
                {
                   Send(each_obj,@MsgSendUser,#message_rsc=DeathRift_warning);
@@ -164,7 +157,7 @@ messages:
 
          foreach i in Send(oOwner,@GetHolderActive)
          {
-            each_obj = Send(oOwner,@HolderExtractObject,#data=i);
+            each_obj = First(i);
             if IsClass(each_obj,&User)
                AND each_obj <> who
             {
@@ -197,6 +190,22 @@ messages:
    SuccessChance(who=$)
    {
       return TRUE;
+   }
+
+   SendStatsDesc(who=$)
+   {
+      local rName;
+
+      rName = Send(who,@GetBoundLocationName);
+
+      if (rName = $)
+      {
+         propagate;
+      }
+
+      AddPacket(4,deathrift_bound_desc, 4,rName);
+
+      return;
    }
 
 end

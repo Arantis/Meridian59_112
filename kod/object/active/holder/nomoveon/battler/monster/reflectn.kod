@@ -44,8 +44,9 @@ resources:
 
 classvars:
 
-   viIndefinite = ARTICLE_NONE
-   viDefinite = ARTICLE_NONE
+   // Defaults if we don't have an original.
+   viDefinite = ARTICLE_THE
+   viGender = GENDER_NEUTER
 
    vrDead_icon = reflection_dead_icon_rsc
    vrDead_name = reflection_dead_name_rsc
@@ -108,57 +109,112 @@ messages:
 
    GetApparentName()
    {
-      return Send(poOriginal,@GetApparentName);
+      if (poOriginal <> $)
+      {
+         return Send(poOriginal,@GetApparentName);
+      }
+
+      propagate;
    }
 
    GetName(cap=FALSE)
    {
-      return Send(poOriginal,@GetName,#cap=cap);
+      if (poOriginal <> $)
+      {
+         return Send(poOriginal,@GetName,#cap=cap);
+      }
+
+      propagate;
    }
 
    GetDef()
    {
-      return Send(poOriginal,@GetDef);
+      if (poOriginal <> $)
+      {
+         return Send(poOriginal,@GetDef);
+      }
+
+      propagate;
    }
 
    GetCapDef()
    {
-      return Send(poOriginal,@GetCapDef);
+      if (poOriginal <> $)
+      {
+         return Send(poOriginal,@GetCapDef);
+      }
+
+      propagate;
    }
 
    GetIndef()
    {
-      return Send(poOriginal,@GetIndef);
+      if (poOriginal <> $)
+      {
+         return Send(poOriginal,@GetIndef);
+      }
+
+      propagate;
    }
 
    GetCapIndef()
    {
-      return Send(poOriginal,@GetCapIndef);
+      if (poOriginal <> $)
+      {
+         return Send(poOriginal,@GetCapIndef);
+      }
+
+      propagate;
    }
 
    GetHisHer(cap=FALSE)
    {
-      return Send(poOriginal,@GetHisHer,#cap=cap);
+      if (poOriginal <> $)
+      {
+         return Send(poOriginal,@GetHisHer,#cap=cap);
+      }
+
+      propagate;
    }
 
    GetHeShe(cap=FALSE)
    {
-      return Send(poOriginal,@GetHeShe,#cap=cap);
+      if (poOriginal <> $)
+      {
+         return Send(poOriginal,@GetHeShe,#cap=cap);
+      }
+
+      propagate;
    }
 
    GetLordLady(cap=FALSE)
    {
-      return Send(poOriginal,@GetLordLady,#cap=cap);
+      if (poOriginal <> $)
+      {
+         return Send(poOriginal,@GetLordLady,#cap=cap);
+      }
+
+      propagate;
    }
 
    GetHisHers(cap=FALSE)
    {
-      return Send(poOriginal,@GetHisHers,#cap=cap);
+      if (poOriginal <> $)
+      {
+         return Send(poOriginal,@GetHisHers,#cap=cap);
+      }
+
+      propagate;
    }
 
    GetHimHer(cap=FALSE)
    {
-      return Send(poOriginal,@GetHimHer,#cap=cap);
+      if (poOriginal <> $)
+      {
+         return Send(poOriginal,@GetHimHer,#cap=cap);
+      }
+
+      propagate;
    }
 
    ReqSomethingEntered(what=$)
@@ -364,6 +420,12 @@ messages:
    RemoveOriginal()
    {
       poOriginal = $;
+
+      // Switch to defaults if we lose original.
+      // Can happen if something posts a MsgSendUser call that gets
+      // executed after this message.
+      piGender = GENDER_NEUTER;
+      vrName = reflection_name_rsc;
 
       return;
    }

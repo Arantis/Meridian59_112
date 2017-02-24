@@ -147,7 +147,7 @@ messages:
    {
       local iLight,iShadowbonus;
 
-      iLight = Send(send(who,@GetOwner),@GetRoomLight);
+      iLight = Send(Send(who,@GetOwner),@GetRoomLight);
 
       if what <> $
       {
@@ -155,14 +155,12 @@ messages:
          // enchanted, too.
          if IsClass(what,&Player)
          {
-            iLight =  iLight + Send(what,@GetPlayerLightLevel);
+            iLight += Send(what,@GetPlayerLightLevel);
          }
       }
 
       // Give bonuses if we're in a darker room.
-      iShadowBonus = 30 + (LIGHT_NICE - iLight);
-
-      iShadowBonus = Bound(iShadowBonus,10,150);
+      iShadowBonus = Bound(30 + (LIGHT_NICE - iLight),10,150);
 
       return defense_power + iShadowBonus;
    }

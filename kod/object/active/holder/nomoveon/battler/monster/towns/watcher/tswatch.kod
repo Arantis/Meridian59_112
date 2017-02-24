@@ -1,0 +1,88 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+//////////////////////////////////////////////////////////////////////////////
+TosWatcher is Watcher
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include tswatch.lkod
+
+   TosWatcher_name_rsc = "Watcher"
+   TosWatcher_icon_rsc = tswatch.bgf
+   TosWatcher_desc_rsc = \
+      "The son of Priestess Qerti'nya and General Cylill, young Cort has been "
+      "appointed the Watcher of the Glorious Arena of Kraanan.  A calm smile "
+      "graces his face as he oversees the mock combats held in the name of "
+      "Kraanan the Fist."
+
+   TosWatcher_ad_need_champion1 = \
+      "Have we no warrior who would be our champion?"
+   TosWatcher_ad_need_champion2 = \
+      "Is there no one who dares to wear the mantle of Kraanan?"
+   TosWatcher_ad_need_champion3 = \
+      "Prove yourself before the critical eyes of Kraanan!"
+   TosWatcher_ad_need_champion4 = \
+      "Read my banners for instructions on how to start a match."
+   TosWatcher_ad_need_challenger = "Would no warrior dare to challenge %s%s?"
+   TosWatcher_ad_good_fight1 = \
+      "A vengeful bloodmatch always makes my toes curl!"
+   TosWatcher_ad_good_fight2 = "Hip-hip-Huzzah!"
+   TosWatcher_ad_good_fight3 = "Let's see some blood!"
+
+classvars:
+
+   vrName = TosWatcher_name_rsc
+   vrIcon = TosWatcher_icon_rsc
+   vrDesc = TosWatcher_desc_rsc
+
+   viDefinite = ARTICLE_THE
+   viIndefinite = ARTICLE_THE
+
+   viAttributes = MOB_NOMOVE | MOB_FULL_TALK | MOB_LISTEN | MOB_NOFIGHT \
+                  | MOB_NOQUEST
+   viOccupation = MOB_ROLE_WATCHER
+   viWatcherID = WATCHER_TOS_ARENA
+
+properties:
+
+messages:
+
+   // Speech resources messages.
+   GetNeedChampionRsc()
+   {
+      switch (Random(1,4))
+      {
+         case 1: return TosWatcher_ad_need_champion1;
+         case 2: return TosWatcher_ad_need_champion2;
+         case 3: return TosWatcher_ad_need_champion3;
+         case 4: return TosWatcher_ad_need_champion4;
+      }
+
+      return TosWatcher_ad_need_champion1;
+   }
+
+   GetGoodFightRsc()
+   {
+      switch (Random(1,3))
+      {
+         case 1: return TosWatcher_ad_good_fight1;
+         case 2: return TosWatcher_ad_good_fight2;
+         case 3: return TosWatcher_ad_good_fight3;
+      }
+
+      return TosWatcher_ad_good_fight1;
+   }
+
+end
+//////////////////////////////////////////////////////////////////////////////

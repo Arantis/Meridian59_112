@@ -5,6 +5,6 @@
 !include $(TOPDIR)\common.mak
 
 DEPEND = ..\brain.bof
-BOFS = revbrain.bof blindb.bof paralyze.bof swarmbrain.bof
+BOFS = swarmbrain.bof
 
 !include $(KODDIR)\kod.mak

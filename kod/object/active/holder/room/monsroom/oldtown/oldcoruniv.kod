@@ -1,0 +1,71 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+OldCorNothUniversity is OldTown
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include oldcoruniv.lkod
+
+   room_oldcoruniv = ocoruniv.roo
+   room_name_oldcoruniv = "The Historic Hall of Genealogy"
+   oldcoruniv_music = main.ogg
+
+classvars:
+
+   vrName = room_name_oldcoruniv
+
+   viTeleport_row = 3
+   viTeleport_col = 25
+
+   viTerrain_Type = TERRAIN_CITY | TERRAIN_SHOP
+
+properties:
+
+   viPermanent_flags = ROOM_NO_COMBAT
+
+   prRoom = room_oldcoruniv
+   piRoom_num = RID_OLD_COR_UNIV
+
+   piBaseLight = LIGHT_NICE
+   piOutside_factor = 3
+
+   prMusic = oldcoruniv_music
+
+messages:
+
+   CreateStandardExits()
+   {
+      plExits = $;
+
+      // TO TOWN
+      plExits = Cons([ 11, 25, RID_OLD_CORNOTH, 12, 33, ROTATE_NONE ],plExits);
+
+      propagate;
+   }
+
+   CreateStandardObjects()
+   {
+      Send(self,@NewHold,#what=Create(&Brazier),
+            #new_row=11,#new_col=16,#fine_row=32,#fine_col=0);
+      Send(self,@NewHold,#what=Create(&Brazier),
+            #new_row=2,#new_col=2,#fine_row=32,#fine_col=32);
+      Send(self,@NewHold,#what=Create(&Stool),
+            #new_row=6,#new_col=23,#fine_row=0,#fine_col=0);
+
+      propagate;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

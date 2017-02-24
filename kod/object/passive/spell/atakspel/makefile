@@ -6,6 +6,6 @@
 
 DEPEND = ..\atakspel.bof
 BOFS = boltspel.bof shokfury.bof exfrost.bof blasfire.bof splsacid.bof vampdrn.bof \
-       illwound.bof earthqua.bof radproj.bof
+       illwound.bof earthqua.bof radproj.bof holyblaze.bof
 
 !include $(KODDIR)\kod.mak

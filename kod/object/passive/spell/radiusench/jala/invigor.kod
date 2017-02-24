@@ -21,28 +21,30 @@ resources:
    Invigorate_name_rsc = "invigorate"
    Invigorate_icon_rsc = iinvigor.bgf
    Invigorate_desc_rsc = \
-      "This song allows all listeners to regain vigor at an accelerated rate.  "
-      "Requires nothing but a strong voice."
+      "This song allows all listeners to regain vigor at an accelerated "
+      "rate.  Requires nothing but a strong voice."
 
    Invigorate_song = song11.ogg
 
    Invigorate_cast = "You begin to play an invigorating song."
-   Invigorate_starts = "%s begins to play an invigorating song."
-   Invigorate_ends = "The invigorating song played by %s fades away."
+   Invigorate_starts = "%s%s begins to play an invigorating song."
+   Invigorate_ends = "The invigorating song played by %s%s fades away."
    Invigorate_caster_ends = "Your invigorating song fades."
    Invigorate_caster_enter = "You feel the tiredness of your muscles diminish."
-   Invigorate_enter = "%s's invigorating song eases the tiredness of your muscles."
-   Invigorate_leave = "You can no longer hear the invigorating notes of %s's song."
+   Invigorate_enter = \
+      "%s%s's invigorating song eases the tiredness of your muscles."
+   Invigorate_leave = \
+      "You can no longer hear the invigorating notes of %s%s's song."
 
 classvars:
 
-   radius_ench_cast = Invigorate_cast
-   radius_ench_starts = Invigorate_starts
-   radius_ench_ends = Invigorate_ends
-   radius_ench_caster_ends = Invigorate_caster_ends
-   radius_ench_caster_enter = Invigorate_caster_enter
-   radius_ench_enter = Invigorate_enter
-   radius_ench_leave = Invigorate_leave
+   vrEnchantmentOn = Invigorate_cast
+   vrEnchantmentOnOther = Invigorate_starts
+   vrEnchantmentOff = Invigorate_caster_ends
+   vrEnchantmentOffOther = Invigorate_ends
+   vrEnterRadiusCaster = Invigorate_caster_enter
+   vrEnterRadius = Invigorate_enter
+   vrLeaveRadius = Invigorate_leave
 
    vrName = Invigorate_name_rsc
    vrIcon = Invigorate_icon_rsc
@@ -56,18 +58,16 @@ classvars:
    viManaDrain = 1      // Drain is amount used every viDrainTime milliseconds
    viDrainTime = 5000   // Drain some mana every viDrainTime milliseconds
 
-   viPeriodicEffect = TRUE
-
    viSpellExertion = 1
    viChance_To_Increase = 20
-   viMeditate_ratio = 10
+   viMeditate_ratio = 15
 
    viAffectsEveryone = TRUE
 
 properties:
 
    prMusic = Invigorate_song
-      
+
 messages:
 
    ResetReagents()
@@ -77,32 +77,20 @@ messages:
       return;
    }
 
-   CalculatePeriodicEffectTime(iPower=0)
+   GetDuration(iSpellPower=0)
    {
-      return 100000 / (iPower+1);
+      return 100000 / (iSpellPower+1);
    }
 
-   PeriodicEffect(lEnchanted=$,iPower=0,iRange=0,source=$)
+   PeriodicEffect(who = $)
    {
-      local oUser, lState;
-      
-      foreach oUser in lEnchanted
+      if (who <> $)
       {
-         if IsClass(oUser,&User)
-         {
-            lState = Send(oUser,@GetMostPowerfulRadiusEnchantmentState,#byClass=&Invigorate);
-            
-            if Nth(lState,3) = source
-               AND Nth(lState,2) = iPower
-            {
-               Send(oUser,@RestAddExertion,#amount=-1000);
-            }
-         }
+         Send(who,@RestAddExertion,#amount=-1000);
       }
-      
+
       return;
    }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

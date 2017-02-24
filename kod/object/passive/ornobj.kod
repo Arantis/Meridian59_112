@@ -746,6 +746,153 @@ resources:
    oo_modportal_desc = \
       "A plaque below the model reads:\nA portal, which transports those who "
       "pass through it."
+  
+   oo_potplant_name = "potted plant"
+   oo_potplant_icon = potplant.bgf
+   oo_potplant_desc = \
+      "A leafy potted plant."
+  
+   oo_rshrub_name = "sculpted shrub"
+   oo_rshrub_icon = roundshrub.bgf
+   oo_rshrub_desc = \
+      "A finely sculpted topiary."
+  
+   oo_bucket2_name = "bucket"
+   oo_bucket2_icon = bucket2.bgf
+   oo_bucket2_desc = \
+      "An old wooden bucket, with straw poking through a hole in its base."
+
+   // Historic CN Museum
+
+   // Use existing name/desc
+   oo_hist_centipede_icon = hist_centip.bgf
+
+   oo_hist_banker_name = "miniature banker"
+   oo_hist_banker_icon = hist_banker.bgf
+   oo_hist_banker_desc = \
+      "A plaque below the model reads:\n"
+      "Once used to count the vast amounts of coin flowing through the Bank "
+      "of Tos.  Rumor has it he handed out too much on occasion."
+
+   oo_hist_bsmith_name = "miniature blacksmith"
+   oo_hist_bsmith_icon = hist_bsmith.bgf
+   oo_hist_bsmith_desc = \
+      "A plaque below the model reads:\n"
+      "Served the city of Tos as blacksmith in times past."
+
+   oo_hist_scimitar_name = "miniature scimitar"
+   oo_hist_scimitar_icon = hist_scimitar.bgf
+   oo_hist_scimitar_desc = \
+      "A plaque below the model reads:\n"
+      "This looks much more ornate than the scimitars you are used "
+      "to swinging."
+
+   oo_hist_duke_name = "miniature duke"
+   oo_hist_duke_icon = hist_duke.bgf
+   oo_hist_duke_desc = \
+      "A plaque below the model reads:\n"
+      "The imposing Duke Kalior, who once ruled over Tos.  After his murder, "
+      "his nephew assumed the crown."
+
+   oo_hist_evprstT_name = "miniature evil priestess"
+   oo_hist_evprstT_icon = hist_evprstT.bgf
+   oo_hist_evprstT_desc = \
+      "A plaque below the model reads:\n"
+      "An unholy priestess from a time long ago."
+
+   oo_hist_fungbst_name = "miniature fungus beast"
+   oo_hist_fungbst_icon = hist_fungbst.bgf
+   oo_hist_fungbst_desc = \
+      "A plaque below the model reads:\n"
+      "This beast looks almost identical to its descendant, which can still "
+      "be found roaming in the forest today."
+
+   oo_hist_gauntlet_name = "miniature gauntlets"
+   oo_hist_gauntlet_icon = hist_gauntlet.bgf
+   oo_hist_gauntlet_desc = \
+      "A plaque below the model reads:\n"
+      "A set of common gauntlets, but in an unfamiliar style."
+
+   oo_hist_gsword_name = "miniature gold sword"
+   oo_hist_gsword_icon = hist_gsword.bgf
+   oo_hist_gsword_desc = \
+      "A plaque below the model reads:\n"
+      "A beautifully ornate sword."
+
+   oo_hist_hermit_name = "miniature hermit"
+   oo_hist_hermit_icon = hist_hermit.bgf
+   oo_hist_hermit_desc = \
+      "A plaque below the model reads:\n"
+      "An ancient healer from the town of Marion."
+
+   oo_hist_king1_name = "miniature king"
+   oo_hist_king1_icon = hist_king1.bgf
+   oo_hist_king1_desc = \
+      "A plaque below the model reads:\n"
+      "Presumably this is King Zarcos, though you have never seen him "
+      "in person."
+
+   oo_hist_plate_name = "miniature plate armor"
+   oo_hist_plate_icon = hist_plate.bgf
+   oo_hist_plate_desc = \
+      "A plaque below the model reads:\n"
+      "An ornate set of golden armor, a coveted armor from times past."
+
+   oo_hist_leathamr_name = "miniature leather armor"
+   oo_hist_leathamr_icon = hist_leathamr.bgf
+   oo_hist_leathamr_desc = \
+      "A plaque below the model reads:\n"
+      "An ancient set of studded leather armor."
+  
+   oo_hist_roundshld_name = "miniature round shield"
+   oo_hist_roundshld_icon = hist_rshield.bgf
+   oo_hist_roundshld_desc = \
+      "A plaque below the model reads:\n"
+      "A simple metal round shield."
+  
+   oo_hist_kshld_name = "miniature knight's shield"
+   oo_hist_kshld_icon = hist_kshield.bgf
+   oo_hist_kshld_desc = \
+      "A plaque below the model reads:\n"
+      "This large, shiny shield looks like it would conduct electricity "
+      "and heat very well."
+  
+   oo_hist_orc_name = "miniature orc"
+   oo_hist_orc_icon = hist_orc.bgf
+   oo_hist_orc_desc = \
+      "A plaque below the model reads:\n"
+      "This grotesque creature was once the predominant type of orc."
+  
+   oo_hist_ornhelma_name = "miniature magic spirit helmet"
+   oo_hist_ornhelma_icon = hist_ornhelma.bgf
+   oo_hist_ornhelma_desc = \
+      "A plaque below the model reads:\n"
+      "You try to pick up the helmet, but unfortunately it is firmly bolted "
+      "to the table."
+  
+   oo_hist_priestess_name = "miniature priestess"
+   oo_hist_priestess_icon = hist_priestess.bgf
+   oo_hist_priestess_desc = \
+      "A plaque below the model reads:\n"
+      "A holy priestess from a time long ago."
+  
+   oo_hist_rat_name = "miniature giant rat"
+   oo_hist_rat_icon = hist_rat.bgf
+   oo_hist_rat_desc = \
+      "A plaque below the model reads:\n"
+      "A distant cousin to the common giant rat."
+  
+   oo_hist_goldshld_name = "miniature gold shield"
+   oo_hist_goldshld_icon = hist_gshield.bgf
+   oo_hist_goldshld_desc = \
+      "A plaque below the model reads:\n"
+      "This golden shield is similar to the ones produced by Quintor today."
+  
+   oo_hist_princess_name = "miniature princess"
+   oo_hist_princess_icon = hist_princess.bgf
+   oo_hist_princess_desc = \
+      "A plaque below the model reads:\n"
+      "This regal woman bears a small resemblance to Princess Kateriina."
 
 classvars:
 
@@ -901,482 +1048,980 @@ messages:
       pbNoMoveOn = FALSE;
       pbFlicker = FALSE;
 
-      if type = OO_3_CLOTH_BOLTS
-      {  vrName = oo_3bolts_name;  vrIcon = oo_3bolts_icon;  vrDesc = oo_3bolts_desc;  }
-  
-      if type = OO_APPLE
-      {  vrName = oo_apple4_name;  vrIcon = oo_apple4_icon;  vrDesc = oo_apple4_desc;  }
-
-      if type = OO_BAG_OF_BEANS
-      {  vrName = oo_bagbean4_name;  vrIcon = oo_bagbean4_icon;  vrDesc = oo_bagbean4_desc;  }
-      
-      if type = OO_BASKET
-      {  vrName = oo_basket4_name;  vrIcon = oo_basket4_icon;  vrDesc = oo_basket4_desc;  }
-      
-      if type = OO_BIG_BAG
-      {  vrName = oo_bigbag4_name;  vrIcon = oo_bigbag4_icon;  vrDesc = oo_bigbag4_desc;  }
-      
-      if type = OO_BIRD_CAGE
-      {  vrName = oo_birdbx4_name;  vrIcon = oo_birdbx4_icon;  vrDesc = oo_birdbx4_desc;  }
-      
-      if type = OO_BLUE_BOTTLE
-      {  vrName = oo_blubott4_name;  vrIcon = oo_blubott4_icon;  vrDesc = oo_blubott4_desc;  }
-      
-      if type = OO_CLOTH_BOLT1 
-      {  vrName = oo_bolt1_name;  vrIcon = oo_bolt1_icon;  vrDesc = oo_bolt1_desc;  }
-      
-      if type = OO_CLOTH_BOLT2 
-      {  vrName = oo_bolt2_name;  vrIcon = oo_bolt2_icon;  vrDesc = oo_bolt2_desc;  }
-       
-      if type = OO_CLOTH_BOLT3
-      {  vrName = oo_bolt3_name;  vrIcon = oo_bolt3_icon;  vrDesc = oo_bolt3_desc;  }
-      
-      if type = OO_CLOTH_BOLT4
-      {  vrName = oo_bolt4_name;  vrIcon = oo_bolt4_icon;  vrDesc = oo_bolt4_desc;  }
-      
-      if type = OO_CLOTH_BOLT5 
-      {  vrName = oo_bolt5_name;  vrIcon = oo_bolt5_icon;  vrDesc = oo_bolt5_desc;  }
-      
-      if type = OO_CLOTH_BOLT6 
-      {  vrName = oo_bolt6_name;  vrIcon = oo_bolt6_icon;  vrDesc = oo_bolt6_desc;  }
-      
-      if type = OO_BOX_WITH_SNAKE 
-      {  vrName = oo_boxsnak4_name;  vrIcon = oo_boxsnak4_icon;  vrDesc = oo_boxsnak4_desc;  }
-      
-      if type = OO_BROWN_URN
-      {  vrName = oo_brnurn4_name;  vrIcon = oo_brnurn4_icon;  vrDesc = oo_brnurn4_desc;  }
-      
-      if type = OO_DECORATIVE_POT 
-      {  vrName = oo_decopot4_name;  vrIcon = oo_decopot4_icon;  vrDesc = oo_decopot4_desc;  }
-      
-      if type = OO_DRESS1 
-      {  vrName = oo_dress1_name;  vrIcon = oo_dress1_icon;  vrDesc = oo_dress1_desc;  }
-      
-      if type = OO_DRESS2 
-      {  vrName = oo_dress3_name;  vrIcon = oo_dress3_icon;  vrDesc = oo_dress3_desc;  }
-      
-      if type = OO_DRESS3
-      {  vrName = oo_dress4_name;  vrIcon = oo_dress4_icon;  vrDesc = oo_dress4_desc;  }
-      
-      if type = OO_FIXINS
-      {  vrName = oo_fixins4_name;  vrIcon = oo_fixins4_icon;  vrDesc = oo_fixins4_desc;  }
-      
-      if type = OO_FLOWER1 
-      {  vrName = oo_flower_name;  vrIcon = oo_flower_icon;  vrDesc = oo_flower_desc;  }
-      
-      if type = OO_FLOWER2 
-      {  vrName = oo_flower4_name;  vrIcon = oo_flower4_icon;  vrDesc = oo_flower4_desc; pbHanging = TRUE; }
-      
-      if type = OO_GARLIC 
-      {  vrName = oo_garlic4_name;  vrIcon = oo_garlic4_icon;  vrDesc = oo_garlic4_desc; pbHanging = TRUE; }
-      
-      if type = OO_GOLD_BOTTLE 
-      {  vrName = oo_goldbot4_name;  vrIcon = oo_goldbot4_icon;  vrDesc = oo_goldbot4_desc;  }
-      
-      if type = OO_GREY_JUG 
-      {  vrName = oo_gryjug4_name;  vrIcon = oo_gryjug4_icon;  vrDesc = oo_gryjug4_desc;  }
-      
-      if type = OO_HERBS 
-      {  vrName = oo_herbs4_name;  vrIcon = oo_herbs4_icon;  vrDesc = oo_herbs4_desc; pbHanging = TRUE; }
-      
-      if type = OO_JAR 
-      {  vrName = oo_jar4_name;  vrIcon = oo_jar4_icon;  vrDesc = oo_jar4_desc;  }
-      
-      if type = OO_JALA_BOOK 
-      {  vrName = oo_jbook_name;  vrIcon = oo_jbook_icon;  vrDesc = oo_jbook_desc;  }
-      
-      if type = OO_JUG 
-      {  vrName = oo_jug4_name;  vrIcon = oo_jug4_icon;  vrDesc = oo_jug4_desc;  }
-      
-      if type = OO_PALM 
-      {  vrName = oo_palm_name;  vrIcon = oo_palm_icon;  vrDesc = oo_palm_desc;  }
-      
-      if type = OO_POISON
-      {  vrName = oo_poison4_name;  vrIcon = oo_poison4_icon;  vrDesc = oo_poison4_desc;  }
-      
-      if type = OO_POT 
-      {  vrName = oo_pot4_name;  vrIcon = oo_pot4_icon;  vrDesc = oo_pot4_desc;  }
-      
-      if type = OO_POTION 
-      {  vrName = oo_potion4_name;  vrIcon = oo_potion4_icon;  vrDesc = oo_potion4_desc;  }
-      
-      if type = OO_ROCK1
-      {  vrName = oo_rock_name;  vrIcon = oo_rock_icon;  vrDesc = oo_rock_desc;  }
-      
-      if type = OO_ROCK2 
-      {  vrName = oo_rock1_name;  vrIcon = oo_rock1_icon;  vrDesc = oo_rock1_desc;  }
-
-      if type = OO_ROCK3 
-      {  vrName = oo_rock2_name;  vrIcon = oo_rock2_icon;  vrDesc = oo_rock2_desc;  }
-      
-      if type = OO_SPICES 
-      {  vrName = oo_spices4_name;  vrIcon = oo_spices4_icon;  vrDesc = oo_spices4_desc;  }
-      
-      if type = OO_STALACTITE1 
-      {  vrName = oo_stac1_name;  vrIcon = oo_stac1_icon;  vrDesc = oo_stac1_desc;  }
-      
-      if type = OO_STALACTITE2 
-      {  vrName = oo_stac2_name;  vrIcon = oo_stac2_icon;  vrDesc = oo_stac2_desc;  }
-      
-      if type = OO_STALAGMITE1 
-      {  vrName = oo_stag1_name;  vrIcon = oo_stag1_icon;  vrDesc = oo_stag1_desc; pbHanging = TRUE; }
-      
-      if type = OO_STALAGMITE2 
-      {  vrName = oo_stag2_name;  vrIcon = oo_stag2_icon;  vrDesc = oo_stag2_desc; pbHanging = TRUE; }
-      
-      if type = OO_STICKS 
-      {  vrName = oo_sticks4_name;  vrIcon = oo_sticks4_icon;  vrDesc = oo_sticks4_desc;  }
-      
-      if type = OO_STOOL_KOCATAN 
-      {  vrName = oo_stoolko_name;  vrIcon = oo_stoolko_icon;  vrDesc = oo_stoolko_desc;  }
-      
-      if type = OO_TREE1 
-      {  vrName = oo_tree1_name;  vrIcon = oo_tree1_icon;  vrDesc = oo_tree1_desc;  }
-      
-      if type = OO_TREE2
-      {  vrName = oo_tree2_name;  vrIcon = oo_tree2_icon;  vrDesc = oo_tree2_desc;  }
-      
-      if type = OO_URN 
-      {  vrName = oo_urn4_name;  vrIcon = oo_urn4_icon;  vrDesc = oo_urn4_desc;  }
-      
-      if type = OO_anvil 
-      {  vrName = oo_anvil_name;  vrIcon = oo_anvil_icon;  vrDesc = oo_anvil_desc;  }
-
-      if type = OO_quiver 
-      {  vrName = oo_quiver_name;  vrIcon = oo_quiver_icon;  vrDesc = oo_quiver_desc;  }
-
-      if type = OO_rice 
-      {  vrName = oo_rice_name;  vrIcon = oo_rice_icon;  vrDesc = oo_rice_desc;  }
-
-      if type = OO_barrel 
-      {  vrName = oo_barrel_name;  vrIcon = oo_barrel_icon;  vrDesc = oo_barrel_desc;  }
-
-      if type = OO_barrel2 
-      {  vrName = oo_barrel2_name;  vrIcon = oo_barrel2_icon;  vrDesc = oo_barrel2_desc;  }
-
-      if type = OO_bees 
-      {  vrName = oo_bees_name;  vrIcon = oo_bees_icon;  vrDesc = oo_bees_desc;  }
-
-      if type = OO_bigiron 
-      {  vrName = oo_bigiron_name;  vrIcon = oo_bigiron_icon;  vrDesc = oo_bigiron_desc;  }
-
-      if type = OO_bigurn 
-      {  vrName = oo_bigurn_name;  vrIcon = oo_bigurn_icon;  vrDesc = oo_bigurn_desc;  }
-
-      if type = OO_block 
-      {  vrName = oo_block_name;  vrIcon = oo_block_icon;  vrDesc = oo_block_desc;  }
-
-      if type = OO_bluejug 
-      {  vrName = oo_bluejug_name;  vrIcon = oo_bluejug_icon;  vrDesc = oo_bluejug_desc;  }
-
-      if type = OO_tallurn 
-      {  vrName = oo_tallurn_name;  vrIcon = oo_tallurn_icon;  vrDesc = oo_tallurn_desc;  }
-
-      if type = OO_bucket 
-      {  vrName = oo_bucket_name;  vrIcon = oo_bucket_icon;  vrDesc = oo_bucket_desc;  }
-
-      if type = OO_bunny 
-      {  vrName = oo_bunny_name;  vrIcon = oo_bunny_icon;  vrDesc = oo_bunny_desc; pbHanging = TRUE; }
-
-      if type = OO_corn 
-      {  vrName = oo_corn_name;  vrIcon = oo_corn_icon;  vrDesc = oo_corn_desc;  }
-
-      if type = OO_dress1b 
-      {  vrName = oo_dress1b_name;  vrIcon = oo_dress1b_icon;  vrDesc = oo_dress1b_desc;  }
-
-      if type = OO_goose 
-      {  vrName = oo_goose_name;  vrIcon = oo_goose_icon;  vrDesc = oo_goose_desc; pbHanging = TRUE; }
-
-      if type = OO_ironpot 
-      {  vrName = oo_ironpot_name;  vrIcon = oo_ironpot_icon;  vrDesc = oo_ironpot_desc;  }
-
-      if type = OO_lantern 
-      {  vrName = oo_lantern_name;  vrIcon = oo_lantern_icon;  vrDesc = oo_lantern_desc;  pbFlicker = TRUE;  }
-
-      if type = OO_lettuce 
-      {  vrName = oo_lettuce_name;  vrIcon = oo_lettuce_icon;  vrDesc = oo_lettuce_desc;  }
-
-      if type = OO_mugs 
-      {  vrName = oo_mugs_name;  vrIcon = oo_mugs_icon;  vrDesc = oo_mugs_desc;  }
-
-      if type = OO_pigeon 
-      {  vrName = oo_pigeon_name;  vrIcon = oo_pigeon_icon;  vrDesc = oo_pigeon_desc; pbHanging = TRUE; }
-
-      if type = OO_pitcher1 
-      {  vrName = oo_pitcher1_name;  vrIcon = oo_pitcher1_icon;  vrDesc = oo_pitcher1_desc;  }
-
-      if type = OO_pitcher2 
-      {  vrName = oo_pitcher2_name;  vrIcon = oo_pitcher2_icon;  vrDesc = oo_pitcher2_desc;  }
-
-      if type = OO_pitcher3 
-      {  vrName = oo_pitcher3_name;  vrIcon = oo_pitcher3_icon;  vrDesc = oo_pitcher3_desc;  }
-
-      if type = OO_pitcher4 
-      {  vrName = oo_pitcher4_name;  vrIcon = oo_pitcher4_icon;  vrDesc = oo_pitcher4_desc;  }
-
-      if type = OO_skull1 
-      {  vrName = oo_skull1_name;  vrIcon = oo_skull1_icon;  vrDesc = oo_skull1_desc;  }
-
-      if type = OO_skull2 
-      {  vrName = oo_skull2_name;  vrIcon = oo_skull2_icon;  vrDesc = oo_skull2_desc;  }
-
-      if type = OO_skull3 
-      {  vrName = oo_skull3_name;  vrIcon = oo_skull3_icon;  vrDesc = oo_skull3_desc;  }
-
-      if type = OO_skull4 
-      {  vrName = oo_skull4_name;  vrIcon = oo_skull4_icon;  vrDesc = oo_skull4_desc;  }
-
-      if type = OO_skull5 
-      {  vrName = oo_skull5_name;  vrIcon = oo_skull5_icon;  vrDesc = oo_skull5_desc;  }
-
-      if type = OO_skull6 
-      {  vrName = oo_skull6_name;  vrIcon = oo_skull6_icon;  vrDesc = oo_skull6_desc;  }
-
-      if type = OO_deadtree 
-      {  vrName = oo_deadtree_name;  vrIcon = oo_deadtree_icon;  vrDesc = oo_deadtree_desc;  }
-
-      if type = OO_ALTAR 
-      {  vrName = oo_altar_name;  vrIcon = oo_altar_icon;  vrDesc = oo_altar_desc;  }
-
-      if type = OO_HEAD2
-      {  vrName = oo_head2_name;  vrIcon = oo_head2_icon;  vrDesc = oo_head2_desc;  pbFlicker = TRUE; }
-
-      if type = OO_TREE3 
-      {  vrName = oo_tree3_name;  vrIcon = oo_tree3_icon;  vrDesc = oo_tree3_desc;  }
-
-      if type = OO_BONES 
-      {  vrName = oo_bones_name;  vrIcon = oo_bones_icon;  vrDesc = oo_bones_desc;  }
-
-      if type = OO_NESTOBJ1 
-      {  vrName = oo_nestobj1_name;  vrIcon = oo_nestobj1_icon;  vrDesc = oo_nestobj1_desc;  }
-
-      if type = OO_NESTOBJ2 
-      {  vrName = oo_nestobj2_name;  vrIcon = oo_nestobj2_icon;  vrDesc = oo_nestobj2_desc;  }
-
-      if type = OO_BARBOLT1
-      {  vrName = oo_barbolt1_name;  vrIcon = oo_barbolt1_icon;  vrDesc = oo_barbolt1_desc;  }
-
-      if type = OO_BARBOLT2
-      {  vrName = oo_barbolt2_name;  vrIcon = oo_barbolt2_icon;  vrDesc = oo_barbolt2_desc;  }
-
-      if type = OO_BARBOLT3
-      {  vrName = oo_barbolt3_name;  vrIcon = oo_barbolt3_icon;  vrDesc = oo_barbolt3_desc;  }
-
-      if type = OO_BARBOLT4
-      {  vrName = oo_barbolt4_name;  vrIcon = oo_barbolt4_icon;  vrDesc = oo_barbolt4_desc;  }
-
-      if type = OO_BARBOLT5
-      {  vrName = oo_barbolt5_name;  vrIcon = oo_barbolt5_icon;  vrDesc = oo_barbolt5_desc;  }
-
-      if type = OO_BIGURN2
-      {  vrName = oo_Bigurn2_name;  vrIcon = oo_Bigurn2_icon;  vrDesc = oo_Bigurn2_desc;  }
-
-      if type = OO_NECTREE1
-      {  vrName = oo_nectree1_name;  vrIcon = oo_nectree1_icon;  vrDesc = oo_nectree1_desc;  }
-      if type = OO_NECTREE2
-      {  vrName = oo_nectree2_name;  vrIcon = oo_nectree2_icon;  vrDesc = oo_nectree2_desc;  }
-      if type = OO_NECTREE4
-      {  vrName = oo_nectree4_name;  vrIcon = oo_nectree4_icon;  vrDesc = oo_nectree4_desc;  }
-
-      // OO_NECTREE3 was removed.  It was given a dynamic light.  This is here for reasons
-      //  of sanity-checking.  Now shows icon for tree 4.
-      if type = OO_NECTREE3
-      {  vrName = oo_nectree4_name;  vrIcon = oo_nectree4_icon;  vrDesc = oo_nectree4_desc;  }
-      
-      if type = OO_NECGRAVE1
-      {  vrName = oo_necgrave1_name;  vrIcon = oo_necgrave1_icon;  vrDesc = oo_necgrave1_desc;  }
-      if type = OO_NECGRAVE2
-      {  vrName = oo_necgrave2_name;  vrIcon = oo_necgrave2_icon;  vrDesc = oo_necgrave2_desc;  }
-      if type = OO_NECGRAVE3
-      {  vrName = oo_necgrave3_name;  vrIcon = oo_necgrave3_icon;  vrDesc = oo_necgrave3_desc;  }
-
-      if type = OO_HALFSKULL
-      {  vrName = oo_halfskull_name;  vrIcon = oo_halfskull_icon;  vrDesc = oo_halfskull_desc;  }
-
-      if type = OO_SKULL7
-      {  vrName = oo_skull7_name;  vrIcon = oo_skull7_icon;  vrDesc = oo_skull7_desc;  }
-      if type = OO_SKULL8
-      {  vrName = oo_skull8_name;  vrIcon = oo_skull8_icon;  vrDesc = oo_skull8_desc;  }
-      if type = OO_SKULL9
-      {  vrName = oo_skull9_name;  vrIcon = oo_skull9_icon;  vrDesc = oo_skull9_desc;  }
-      if type = OO_SKULL10
-      {  vrName = oo_skull10_name;  vrIcon = oo_skull10_icon;  vrDesc = oo_skull10_desc;  }
-
-      if type = OO_NECROCK
-      {  vrName = oo_necrock_name;  vrIcon = oo_necrock_icon;  vrDesc = oo_necrock_desc;  }
-
-      if type = OO_DUNG
-      {  vrName = oo_dung_name;  vrIcon = oo_dung_icon;  vrDesc = oo_dung_desc;  }
-      if type = OO_HAY
-      {  vrName = oo_hay_name;  vrIcon = oo_hay_icon;  vrDesc = oo_hay_desc;  }
-      if type = OO_ROCKB
-      {  vrName = oo_rockB_name;  vrIcon = oo_rockB_icon;  vrDesc = oo_rockB_desc;  }
-      if type = OO_ROCKC
-      {  vrName = oo_rockC_name;  vrIcon = oo_rockC_icon;  vrDesc = oo_rockC_desc;  }
-
-      if type = OO_GOATHEAD
-      {  vrName = oo_goathead_name;  vrIcon = oo_goathead_icon;  vrDesc = oo_goathead_desc;  }
-      if type = OO_MORTARANDPESTLE
-      {  vrName = oo_mortpest_name;  vrIcon = oo_mortpest_icon;  vrDesc = oo_mortpest_desc;  }
-      if type = OO_NECBOTTLE
-      {  vrName = oo_necbottle_name;  vrIcon = oo_necbottle_icon;  vrDesc = oo_necbottle_desc;  }
-      if type = OO_NECVASE
-      {  vrName = oo_necvase_name;  vrIcon = oo_necvase_icon;  vrDesc = oo_necvase_desc;  }
-      if type = OO_NECVASE2
-      {  vrName = oo_necvase2_name;  vrIcon = oo_necvase2_icon;  vrDesc = oo_necvase2_desc;  }
-      if type = OO_NECVASE3
-      {  vrName = oo_necvase3_name;  vrIcon = oo_necvase3_icon;  vrDesc = oo_necvase3_desc;  }
-      if type = OO_SACRIFICIALBOWL
-      {  vrName = oo_sacrificialbowl_name;  vrIcon = oo_sacrificialbowl_icon;  vrDesc = oo_sacrificialbowl_desc;  }
-      if type = OO_STONECHAIR
-      {  vrName = oo_stonechair_name;  vrIcon = oo_stonechair_icon;  vrDesc = oo_stonechair_desc;  }
-
-      if type = OO_NECVINE1
-      {  vrName = oo_necvine1_name;  vrIcon = oo_necvine1_icon;  vrDesc = oo_necvine1_desc;  }
-      if type = OO_NECSLIME
-      {  vrName = oo_necslime_name;  vrIcon = oo_necslime_icon;  vrDesc = oo_necslime_desc;  }
-      if type = OO_RAZA_SHRUB
-      {  vrName = oo_razshrub_name;  vrIcon = oo_razshrub_icon;  vrDesc = oo_razshrub_desc;  }
-      if type = OO_RAZA_TREE1
-      {  vrName = oo_raztree1_name;  vrIcon = oo_raztree1_icon;  vrDesc = oo_raztree1_desc;  }
-      
-      if type = OO_MUSEUM_ANT
-      {  vrName = oo_modant_name;  vrIcon = oo_modant_icon;  vrDesc = oo_modant_desc;  }
-      if type = OO_MUSEUM_AVAR
-      {  vrName = oo_modavar_name;  vrIcon = oo_modavar_icon;  vrDesc = oo_modavar_desc;  piXlat = AVARCLAN_ANTIMAGIC;}
-      if type = OO_MUSEUM_LUPOGG
-      {  vrName = oo_modlupog_name;  vrIcon = oo_modlupog_icon;  vrDesc = oo_modlupog_desc;  }
-      if type = OO_MUSEUM_ORC
-      {  vrName = oo_modorc_name;  vrIcon = oo_modorc_icon;  vrDesc = oo_modorc_desc;  }
-      if type = OO_MUSEUM_SPIDER
-      {  vrName = oo_modspider_name;  vrIcon = oo_modspider_icon;  vrDesc = oo_modspider_desc;  }
-      if type = OO_MUSEUM_CENTIPEDE
-      {  vrName = oo_modcentipede_name;  vrIcon = oo_modcentipede_icon;  vrDesc = oo_modcentipede_desc;  }
-      if type = OO_MUSEUM_FUNGUSBEAST
-      {  vrName = oo_modfungusbeast_name;  vrIcon = oo_modfungusbeast_icon;  vrDesc = oo_modfungusbeast_desc;  }
-      if type = OO_MUSEUM_FEY
-      {  vrName = oo_modfey_name;  vrIcon = oo_modfey_icon;  vrDesc = oo_modfey_desc;  }
-
-      if type = OO_MUSEUM_SCIMITAR
-      {  vrName = oo_modscimitar_name;  vrIcon = oo_modscimitar_icon;  vrDesc = oo_modscimitar_desc;  }
-      if type = OO_MUSEUM_HAMMER
-      {  vrName = oo_modhammer_name;  vrIcon = oo_modhammer_icon;  vrDesc = oo_modhammer_desc;  }
-      if type = OO_MUSEUM_SHORTSWORD
-      {  vrName = oo_modshortsword_name;  vrIcon = oo_modshortsword_icon;  vrDesc = oo_modshortsword_desc;  }
-      if type = OO_MUSEUM_HELM
-      {  vrName = oo_modhelm_name;  vrIcon = oo_modhelm_icon;  vrDesc = oo_modhelm_desc;  piGroup = 2; }
-      if type = OO_MUSEUM_PLATEARMOR
-      {  vrName = oo_modplatearmor_name;  vrIcon = oo_modplatearmor_icon;  vrDesc = oo_modplatearmor_desc;  piGroup = 2; }
-      if type = OO_MUSEUM_GAUNTLETS
-      {  vrName = oo_modgauntlets_name;  vrIcon = oo_modgauntlets_icon;  vrDesc = oo_modgauntlets_desc;  }
-
-      if type = OO_MUSEUM_POTION
-      {  vrName = oo_modpotion_name;  vrIcon = oo_modpotion_icon;  vrDesc = oo_modpotion_desc;  piXlat = PT_GRAY_TO_SKY; }
-      if type = OO_MUSEUM_SCROLL
-      {  vrName = oo_modscroll_name;  vrIcon = oo_modscroll_icon;  vrDesc = oo_modscroll_desc;  }
-      if type = OO_MUSEUM_WAND
-      {  vrName = oo_modwand_name;  vrIcon = oo_modwand_icon;  vrDesc = oo_modwand_desc;  piGroup = 2;}
-      if type = OO_MUSEUM_TOKEN
-      {  vrName = oo_modtoken_name;  vrIcon = oo_modtoken_icon;  vrDesc = oo_modtoken_desc;  }
-      if type = OO_MUSEUM_LUTE
-      {  vrName = oo_modlute_name;  vrIcon = oo_modlute_icon;  vrDesc = oo_modlute_desc;  }
-      if type = OO_MUSEUM_PRISM
-      {  vrName = oo_modprism_name;  vrIcon = oo_modprism_icon;  vrDesc = oo_modprism_desc;  }
-      if type = OO_MUSEUM_INKYCAP
-      {  vrName = oo_modinkycap_name;  vrIcon = oo_modinkycap_icon;  vrDesc = oo_modinkycap_desc; piXlat = send(SYS,@EncodeTwoColorXLAT,#color1=XLAT_TO_GREEN,#color2=XLAT_TO_SKIN4);  }
-      if type = OO_MUSEUM_SIGNETRING
-      {  vrName = oo_modsignetring_name;  vrIcon = oo_modsignetring_icon;  vrDesc = oo_modsignetring_desc;  }
-
-      if type = OO_MUSEUM_ALTAR
-      {  vrName = oo_modaltar_name;  vrIcon = oo_modaltar_icon;  vrDesc = oo_modaltar_desc;  }
-      if type = OO_MUSEUM_NEWS
-      {  vrName = oo_modnewsb_name;  vrIcon = oo_modnewsb_icon;  vrDesc = oo_modnewsb_desc;  }
-      if type = OO_MUSEUM_SHRINE
-      {  vrName = oo_modshrin_name;  vrIcon = oo_modshrin_icon;  vrDesc = oo_modshrin_desc;  }
-      if type = OO_MUSEUM_THRONE
-      {  vrName = oo_modthron_name;  vrIcon = oo_modthron_icon;  vrDesc = oo_modthron_desc;  }
-      if type = OO_MUSEUM_CHALICE
-      {  vrName = oo_modchalice_name;  vrIcon = oo_modchalice_icon;  vrDesc = oo_modchalice_desc;  }
-      if type = OO_MUSEUM_RELIC
-      {  vrName = oo_modrelic_name;  vrIcon = oo_modrelic_icon;  vrDesc = oo_modrelic_desc;  }
-
-      if type = OO_MUSEUM_GRAPES
-      {  vrName = oo_modgrapes_name;  vrIcon = oo_modgrapes_icon;  vrDesc = oo_modgrapes_desc;  }
-
-      if type = OO_FLASK_GREEN
-      {  vrName = oo_flaskgrn_name;  vrIcon = oo_flaskgrn_icon;  vrDesc = oo_flaskgrn_desc;  }
-      if type = OO_FLASK_STAND
-      {  vrName = oo_flaskw_name;  vrIcon = oo_flaskw_icon;  vrDesc = oo_flaskw_desc;  }
-
-      if type = OO_JASPERLAMP
-      {  vrName = oo_jasperlamp_name;  vrIcon = oo_jasperlamp_icon;  vrDesc = oo_jasperlamp_desc;  pbFlicker = TRUE;  }
-      if type = OO_JASPERLAMP1
-      {  vrName = oo_jasperlamp1_name;  vrIcon = oo_jasperlamp1_icon;  vrDesc = oo_jasperlamp1_desc;  pbFlicker = TRUE;  }
-      if type = OO_RR_PLANT1
-      {  vrName = oo_RRplant1_name;  vrIcon = oo_RRplant1_icon;  vrDesc = oo_RRplant1_desc;  }
-
-      if type = OO_RR_PLANT2
-      {  vrName = oo_RRplant2_name;  vrIcon = oo_RRplant2_icon;  vrDesc = oo_RRplant2_desc;  }
-
-      if type = OO_RR_TABLE
-      {  vrName = oo_RRtable_name;  vrIcon = oo_RRtable_icon;  vrDesc = oo_RRtable_desc;  }
-
-      if type = OO_RR_BASIN
-      {  vrName = oo_RRwashbasin_name;  vrIcon = oo_RRwashbasin_icon;  vrDesc = oo_RRwashbasin_desc;  }
-      
-      if type = OO_QORMAS_SNOWMAN
-      {  vrName = oo_Qormas_snowman_name;  vrIcon = oo_Qormas_snowman_icon;  vrDesc = oo_Qormas_snowman_desc;  }
-      
-      if type = OO_QORMAS_TREE
-      {  vrName = oo_Qormas_tree_name;  vrIcon = oo_Qormas_tree_icon;  vrDesc = oo_Qormas_tree_desc;  }
-      
-      if type = OO_QORMAS_TREE_BIG
-      {  vrName = oo_Qormas_tree_big_name;  vrIcon = oo_Qormas_tree_big_icon;  vrDesc = oo_Qormas_tree_big_desc;  }
-      
-      if type = OO_QORMAS_WREATH
-      {  vrName = oo_Qormas_wreath_name;  vrIcon = oo_Qormas_wreath_icon;  vrDesc = oo_Qormas_wreath_desc;  }
-
-      if type = OO_SMCRATE
+      switch(type)
       {
+      case OO_3_CLOTH_BOLTS:
+         vrName = oo_3bolts_name;
+         vrIcon = oo_3bolts_icon;
+         vrDesc = oo_3bolts_desc;
+         break;
+      case OO_APPLE:
+         vrName = oo_apple4_name;
+         vrIcon = oo_apple4_icon;
+         vrDesc = oo_apple4_desc;
+         break;
+      case OO_BAG_OF_BEANS:
+         vrName = oo_bagbean4_name;
+         vrIcon = oo_bagbean4_icon;
+         vrDesc = oo_bagbean4_desc;
+         break;
+      case OO_BASKET:
+         vrName = oo_basket4_name;
+         vrIcon = oo_basket4_icon;
+         vrDesc = oo_basket4_desc;
+         break;
+      case OO_BIG_BAG:
+         vrName = oo_bigbag4_name;
+         vrIcon = oo_bigbag4_icon;
+         vrDesc = oo_bigbag4_desc;
+         break;
+      case OO_BIRD_CAGE:
+         vrName = oo_birdbx4_name;
+         vrIcon = oo_birdbx4_icon;
+         vrDesc = oo_birdbx4_desc;
+         break;
+      case OO_BLUE_BOTTLE:
+         vrName = oo_blubott4_name;
+         vrIcon = oo_blubott4_icon;
+         vrDesc = oo_blubott4_desc;
+         break;
+      case OO_CLOTH_BOLT1:
+         vrName = oo_bolt1_name;
+         vrIcon = oo_bolt1_icon;
+         vrDesc = oo_bolt1_desc;
+         break;
+      case OO_CLOTH_BOLT2:
+         vrName = oo_bolt2_name;
+         vrIcon = oo_bolt2_icon;
+         vrDesc = oo_bolt2_desc;
+         break;
+      case OO_CLOTH_BOLT3:
+         vrName = oo_bolt3_name;
+         vrIcon = oo_bolt3_icon;
+         vrDesc = oo_bolt3_desc;
+         break;
+      case OO_CLOTH_BOLT4:
+         vrName = oo_bolt4_name;
+         vrIcon = oo_bolt4_icon;
+         vrDesc = oo_bolt4_desc;
+         break;
+      case OO_CLOTH_BOLT5:
+         vrName = oo_bolt5_name;
+         vrIcon = oo_bolt5_icon;
+         vrDesc = oo_bolt5_desc;
+         break;
+      case OO_CLOTH_BOLT6:
+         vrName = oo_bolt6_name;
+         vrIcon = oo_bolt6_icon;
+         vrDesc = oo_bolt6_desc;
+         break;
+      case OO_BOX_WITH_SNAKE:
+         vrName = oo_boxsnak4_name;
+         vrIcon = oo_boxsnak4_icon;
+         vrDesc = oo_boxsnak4_desc;
+         break;
+      case OO_BROWN_URN:
+         vrName = oo_brnurn4_name;
+         vrIcon = oo_brnurn4_icon;
+         vrDesc = oo_brnurn4_desc;
+         break;
+      case OO_DECORATIVE_POT:
+         vrName = oo_decopot4_name;
+         vrIcon = oo_decopot4_icon;
+         vrDesc = oo_decopot4_desc;
+         break;
+      case OO_DRESS1:
+         vrName = oo_dress1_name;
+         vrIcon = oo_dress1_icon;
+         vrDesc = oo_dress1_desc;
+         break;
+      case OO_DRESS2:
+         vrName = oo_dress3_name;
+         vrIcon = oo_dress3_icon;
+         vrDesc = oo_dress3_desc;
+         break;
+      case OO_DRESS3:
+         vrName = oo_dress4_name;
+         vrIcon = oo_dress4_icon;
+         vrDesc = oo_dress4_desc;
+         break;
+      case OO_FIXINS:
+         vrName = oo_fixins4_name;
+         vrIcon = oo_fixins4_icon;
+         vrDesc = oo_fixins4_desc;
+         break;
+      case OO_FLOWER1:
+         vrName = oo_flower_name;
+         vrIcon = oo_flower_icon;
+         vrDesc = oo_flower_desc;
+         break;
+      case OO_FLOWER2:
+         vrName = oo_flower4_name;
+         vrIcon = oo_flower4_icon;
+         vrDesc = oo_flower4_desc;
+         pbHanging = TRUE;
+         break;
+      case OO_GARLIC:
+         vrName = oo_garlic4_name;
+         vrIcon = oo_garlic4_icon;
+         vrDesc = oo_garlic4_desc;
+         pbHanging = TRUE;
+         break;
+      case OO_GOLD_BOTTLE:
+         vrName = oo_goldbot4_name;
+         vrIcon = oo_goldbot4_icon;
+         vrDesc = oo_goldbot4_desc;
+         break;
+      case OO_GREY_JUG:
+         vrName = oo_gryjug4_name;
+         vrIcon = oo_gryjug4_icon;
+         vrDesc = oo_gryjug4_desc;
+         break;
+      case OO_HERBS:
+         vrName = oo_herbs4_name;
+         vrIcon = oo_herbs4_icon;
+         vrDesc = oo_herbs4_desc;
+         pbHanging = TRUE;
+         break;
+      case OO_JAR:
+         vrName = oo_jar4_name;
+         vrIcon = oo_jar4_icon;
+         vrDesc = oo_jar4_desc;
+         break;
+      case OO_JALA_BOOK:
+         vrName = oo_jbook_name;
+         vrIcon = oo_jbook_icon;
+         vrDesc = oo_jbook_desc;
+         break;
+      case OO_JUG:
+         vrName = oo_jug4_name;
+         vrIcon = oo_jug4_icon;
+         vrDesc = oo_jug4_desc;
+         break;
+      case OO_PALM:
+         vrName = oo_palm_name;
+         vrIcon = oo_palm_icon;
+         vrDesc = oo_palm_desc;
+         break;
+      case OO_POISON:
+         vrName = oo_poison4_name;
+         vrIcon = oo_poison4_icon;
+         vrDesc = oo_poison4_desc;
+         break;
+      case OO_POT:
+         vrName = oo_pot4_name;
+         vrIcon = oo_pot4_icon;
+         vrDesc = oo_pot4_desc;
+         break;
+      case OO_POTION:
+         vrName = oo_potion4_name;
+         vrIcon = oo_potion4_icon;
+         vrDesc = oo_potion4_desc;
+         break;
+      case OO_ROCK1:
+         vrName = oo_rock_name;
+         vrIcon = oo_rock_icon;
+         vrDesc = oo_rock_desc;
+         break;
+      case OO_ROCK2:
+         vrName = oo_rock1_name;
+         vrIcon = oo_rock1_icon;
+         vrDesc = oo_rock1_desc;
+         break;
+      case OO_ROCK3:
+         vrName = oo_rock2_name;
+         vrIcon = oo_rock2_icon;
+         vrDesc = oo_rock2_desc;
+         break;
+      case OO_SPICES:
+         vrName = oo_spices4_name;
+         vrIcon = oo_spices4_icon;
+         vrDesc = oo_spices4_desc;
+         break;
+      case OO_STALACTITE1:
+         vrName = oo_stac1_name;
+         vrIcon = oo_stac1_icon;
+         vrDesc = oo_stac1_desc;
+         break;
+      case OO_STALACTITE2:
+         vrName = oo_stac2_name;
+         vrIcon = oo_stac2_icon;
+         vrDesc = oo_stac2_desc;
+         break;
+      case OO_STALAGMITE1:
+         vrName = oo_stag1_name;
+         vrIcon = oo_stag1_icon;
+         vrDesc = oo_stag1_desc;
+         pbHanging = TRUE;
+         break;
+      case OO_STALAGMITE2:
+         vrName = oo_stag2_name;
+         vrIcon = oo_stag2_icon;
+         vrDesc = oo_stag2_desc;
+         pbHanging = TRUE;
+         break;
+      case OO_STICKS:
+         vrName = oo_sticks4_name;
+         vrIcon = oo_sticks4_icon;
+         vrDesc = oo_sticks4_desc;
+         break;
+      case OO_STOOL_KOCATAN:
+         vrName = oo_stoolko_name;
+         vrIcon = oo_stoolko_icon;
+         vrDesc = oo_stoolko_desc;
+         break;
+      case OO_TREE1:
+         vrName = oo_tree1_name;
+         vrIcon = oo_tree1_icon;
+         vrDesc = oo_tree1_desc;
+         break;
+      case OO_TREE2:
+         vrName = oo_tree2_name;
+         vrIcon = oo_tree2_icon;
+         vrDesc = oo_tree2_desc;
+         break;
+      case OO_URN:
+         vrName = oo_urn4_name;
+         vrIcon = oo_urn4_icon;
+         vrDesc = oo_urn4_desc;
+         break;
+      case OO_ANVIL:
+         vrName = oo_anvil_name;
+         vrIcon = oo_anvil_icon;
+         vrDesc = oo_anvil_desc;
+         break;
+      case OO_QUIVER:
+         vrName = oo_quiver_name;
+         vrIcon = oo_quiver_icon;
+         vrDesc = oo_quiver_desc;
+         break;
+      case OO_RICE:
+         vrName = oo_rice_name;
+         vrIcon = oo_rice_icon;
+         vrDesc = oo_rice_desc;
+         break;
+      case OO_BARREL:
+         vrName = oo_barrel_name;
+         vrIcon = oo_barrel_icon;
+         vrDesc = oo_barrel_desc;
+         break;
+      case OO_BARREL2:
+         vrName = oo_barrel2_name;
+         vrIcon = oo_barrel2_icon;
+         vrDesc = oo_barrel2_desc;
+         break;
+      case OO_BEES:
+         vrName = oo_bees_name;
+         vrIcon = oo_bees_icon;
+         vrDesc = oo_bees_desc;
+         break;
+      case OO_BIGIRON:
+         vrName = oo_bigiron_name;
+         vrIcon = oo_bigiron_icon;
+         vrDesc = oo_bigiron_desc;
+         break;
+      case OO_BIGURN:
+         vrName = oo_bigurn_name;
+         vrIcon = oo_bigurn_icon;
+         vrDesc = oo_bigurn_desc;
+         break;
+      case OO_BLOCK:
+         vrName = oo_block_name;
+         vrIcon = oo_block_icon;
+         vrDesc = oo_block_desc;
+         break;
+      case OO_BLUEJUG:
+         vrName = oo_bluejug_name;
+         vrIcon = oo_bluejug_icon;
+         vrDesc = oo_bluejug_desc;
+         break;
+      case OO_TALLURN:
+         vrName = oo_tallurn_name;
+         vrIcon = oo_tallurn_icon;
+         vrDesc = oo_tallurn_desc;
+         break;
+      case OO_BUCKET:
+         vrName = oo_bucket_name;
+         vrIcon = oo_bucket_icon;
+         vrDesc = oo_bucket_desc;
+         break;
+      case OO_BUNNY:
+         vrName = oo_bunny_name;
+         vrIcon = oo_bunny_icon;
+         vrDesc = oo_bunny_desc;
+         pbHanging = TRUE;
+         break;
+      case OO_CORN:
+         vrName = oo_corn_name;
+         vrIcon = oo_corn_icon;
+         vrDesc = oo_corn_desc;
+         break;
+      case OO_DRESS1B:
+         vrName = oo_dress1b_name;
+         vrIcon = oo_dress1b_icon;
+         vrDesc = oo_dress1b_desc;
+         break;
+      case OO_GOOSE:
+         vrName = oo_goose_name;
+         vrIcon = oo_goose_icon;
+         vrDesc = oo_goose_desc;
+         pbHanging = TRUE;
+         break;
+      case OO_IRONPOT:
+         vrName = oo_ironpot_name;
+         vrIcon = oo_ironpot_icon;
+         vrDesc = oo_ironpot_desc;
+         break;
+      case OO_LANTERN:
+         vrName = oo_lantern_name;
+         vrIcon = oo_lantern_icon;
+         vrDesc = oo_lantern_desc;
+         pbFlicker = TRUE;
+         break;
+      case OO_LETTUCE:
+         vrName = oo_lettuce_name;
+         vrIcon = oo_lettuce_icon;
+         vrDesc = oo_lettuce_desc;
+         break;
+      case OO_MUGS:
+         vrName = oo_mugs_name;
+         vrIcon = oo_mugs_icon;
+         vrDesc = oo_mugs_desc;
+         break;
+      case OO_PIGEON:
+         vrName = oo_pigeon_name;
+         vrIcon = oo_pigeon_icon;
+         vrDesc = oo_pigeon_desc;
+         pbHanging = TRUE;
+         break;
+      case OO_PITCHER1:
+         vrName = oo_pitcher1_name;
+         vrIcon = oo_pitcher1_icon;
+         vrDesc = oo_pitcher1_desc;
+         break;
+      case OO_PITCHER2:
+         vrName = oo_pitcher2_name;
+         vrIcon = oo_pitcher2_icon;
+         vrDesc = oo_pitcher2_desc;
+         break;
+      case OO_PITCHER3:
+         vrName = oo_pitcher3_name;
+         vrIcon = oo_pitcher3_icon;
+         vrDesc = oo_pitcher3_desc;
+         break;
+      case OO_PITCHER4:
+         vrName = oo_pitcher4_name;
+         vrIcon = oo_pitcher4_icon;
+         vrDesc = oo_pitcher4_desc;
+         break;
+      case OO_SKULL1:
+         vrName = oo_skull1_name;
+         vrIcon = oo_skull1_icon;
+         vrDesc = oo_skull1_desc;
+         break;
+      case OO_SKULL2:
+         vrName = oo_skull2_name;
+         vrIcon = oo_skull2_icon;
+         vrDesc = oo_skull2_desc;
+         break;
+      case OO_SKULL3:
+         vrName = oo_skull3_name;
+         vrIcon = oo_skull3_icon;
+         vrDesc = oo_skull3_desc;
+         break;
+      case OO_SKULL4:
+         vrName = oo_skull4_name;
+         vrIcon = oo_skull4_icon;
+         vrDesc = oo_skull4_desc;
+         break;
+      case OO_SKULL5:
+         vrName = oo_skull5_name;
+         vrIcon = oo_skull5_icon;
+         vrDesc = oo_skull5_desc;
+         break;
+      case OO_SKULL6:
+         vrName = oo_skull6_name;
+         vrIcon = oo_skull6_icon;
+         vrDesc = oo_skull6_desc;
+         break;
+      case OO_DEADTREE:
+         vrName = oo_deadtree_name;
+         vrIcon = oo_deadtree_icon;
+         vrDesc = oo_deadtree_desc;
+         break;
+      case OO_ALTAR:
+         vrName = oo_altar_name;
+         vrIcon = oo_altar_icon;
+         vrDesc = oo_altar_desc;
+         break;
+      case OO_HEAD2:
+         vrName = oo_head2_name;
+         vrIcon = oo_head2_icon;
+         vrDesc = oo_head2_desc;
+         pbFlicker = TRUE;
+         break;
+      case OO_TREE3:
+         vrName = oo_tree3_name;
+         vrIcon = oo_tree3_icon;
+         vrDesc = oo_tree3_desc;
+         break;
+      case OO_BONES:
+         vrName = oo_bones_name;
+         vrIcon = oo_bones_icon;
+         vrDesc = oo_bones_desc;
+         break;
+      case OO_NESTOBJ1:
+         vrName = oo_nestobj1_name;
+         vrIcon = oo_nestobj1_icon;
+         vrDesc = oo_nestobj1_desc;
+         break;
+      case OO_NESTOBJ2:
+         vrName = oo_nestobj2_name;
+         vrIcon = oo_nestobj2_icon;
+         vrDesc = oo_nestobj2_desc;
+         break;
+      case OO_BARBOLT1:
+         vrName = oo_barbolt1_name;
+         vrIcon = oo_barbolt1_icon;
+         vrDesc = oo_barbolt1_desc;
+         break;
+      case OO_BARBOLT2:
+         vrName = oo_barbolt2_name;
+         vrIcon = oo_barbolt2_icon;
+         vrDesc = oo_barbolt2_desc;
+         break;
+      case OO_BARBOLT3:
+         vrName = oo_barbolt3_name;
+         vrIcon = oo_barbolt3_icon;
+         vrDesc = oo_barbolt3_desc;
+         break;
+      case OO_BARBOLT4:
+         vrName = oo_barbolt4_name;
+         vrIcon = oo_barbolt4_icon;
+         vrDesc = oo_barbolt4_desc;
+         break;
+      case OO_BARBOLT5:
+         vrName = oo_barbolt5_name;
+         vrIcon = oo_barbolt5_icon;
+         vrDesc = oo_barbolt5_desc;
+         break;
+      case OO_BIGURN2:
+         vrName = oo_Bigurn2_name;
+         vrIcon = oo_Bigurn2_icon;
+         vrDesc = oo_Bigurn2_desc;
+         break;
+      case OO_NECTREE1:
+         vrName = oo_nectree1_name;
+         vrIcon = oo_nectree1_icon;
+         vrDesc = oo_nectree1_desc;
+         break;
+      case OO_NECTREE2:
+         vrName = oo_nectree2_name;
+         vrIcon = oo_nectree2_icon;
+         vrDesc = oo_nectree2_desc;
+         break;
+      case OO_NECTREE4:
+         vrName = oo_nectree4_name;
+         vrIcon = oo_nectree4_icon;
+         vrDesc = oo_nectree4_desc;
+         break;
+      case OO_NECTREE3:
+         // OO_NECTREE3 was removed.  It was given a dynamic light.
+         // This is here for sanity-checking.  Now shows icon for tree 4.
+         vrName = oo_nectree4_name;
+         vrIcon = oo_nectree4_icon;
+         vrDesc = oo_nectree4_desc;
+         break;
+      case OO_NECGRAVE1:
+         vrName = oo_necgrave1_name;
+         vrIcon = oo_necgrave1_icon;
+         vrDesc = oo_necgrave1_desc;
+         break;
+      case OO_NECGRAVE2:
+         vrName = oo_necgrave2_name;
+         vrIcon = oo_necgrave2_icon;
+         vrDesc = oo_necgrave2_desc;
+         break;
+      case OO_NECGRAVE3:
+         vrName = oo_necgrave3_name;
+         vrIcon = oo_necgrave3_icon;
+         vrDesc = oo_necgrave3_desc;
+         break;
+      case OO_HALFSKULL:
+         vrName = oo_halfskull_name;
+         vrIcon = oo_halfskull_icon;
+         vrDesc = oo_halfskull_desc;
+         break;
+      case OO_SKULL7:
+         vrName = oo_skull7_name;
+         vrIcon = oo_skull7_icon;
+         vrDesc = oo_skull7_desc;
+         break;
+      case OO_SKULL8:
+         vrName = oo_skull8_name;
+         vrIcon = oo_skull8_icon;
+         vrDesc = oo_skull8_desc;
+         break;
+      case OO_SKULL9:
+         vrName = oo_skull9_name;
+         vrIcon = oo_skull9_icon;
+         vrDesc = oo_skull9_desc;
+         break;
+      case OO_SKULL10:
+         vrName = oo_skull10_name;
+         vrIcon = oo_skull10_icon;
+         vrDesc = oo_skull10_desc;
+         break;
+      case OO_NECROCK:
+         vrName = oo_necrock_name;
+         vrIcon = oo_necrock_icon;
+         vrDesc = oo_necrock_desc;
+         break;
+      case OO_DUNG:
+         vrName = oo_dung_name;
+         vrIcon = oo_dung_icon;
+         vrDesc = oo_dung_desc;
+         break;
+      case OO_HAY:
+         vrName = oo_hay_name;
+         vrIcon = oo_hay_icon;
+         vrDesc = oo_hay_desc;
+         break;
+      case OO_ROCKB:
+         vrName = oo_rockB_name;
+         vrIcon = oo_rockB_icon;
+         vrDesc = oo_rockB_desc;
+         break;
+      case OO_ROCKC:
+         vrName = oo_rockC_name;
+         vrIcon = oo_rockC_icon;
+         vrDesc = oo_rockC_desc;
+         break;
+      case OO_GOATHEAD:
+         vrName = oo_goathead_name;
+         vrIcon = oo_goathead_icon;
+         vrDesc = oo_goathead_desc;
+         break;
+      case OO_MORTARANDPESTLE:
+         vrName = oo_mortpest_name;
+         vrIcon = oo_mortpest_icon;
+         vrDesc = oo_mortpest_desc;
+         break;
+      case OO_NECBOTTLE:
+         vrName = oo_necbottle_name;
+         vrIcon = oo_necbottle_icon;
+         vrDesc = oo_necbottle_desc;
+         break;
+      case OO_NECVASE:
+         vrName = oo_necvase_name;
+         vrIcon = oo_necvase_icon;
+         vrDesc = oo_necvase_desc;
+         break;
+      case OO_NECVASE2:
+         vrName = oo_necvase2_name;
+         vrIcon = oo_necvase2_icon;
+         vrDesc = oo_necvase2_desc;
+         break;
+      case OO_NECVASE3:
+         vrName = oo_necvase3_name;
+         vrIcon = oo_necvase3_icon;
+         vrDesc = oo_necvase3_desc;
+         break;
+      case OO_SACRIFICIALBOWL:
+         vrName = oo_sacrificialbowl_name;
+         vrIcon = oo_sacrificialbowl_icon;
+         vrDesc = oo_sacrificialbowl_desc;
+         break;
+      case OO_STONECHAIR:
+         vrName = oo_stonechair_name;
+         vrIcon = oo_stonechair_icon;
+         vrDesc = oo_stonechair_desc;
+         break;
+      case OO_NECVINE1:
+         vrName = oo_necvine1_name;
+         vrIcon = oo_necvine1_icon;
+         vrDesc = oo_necvine1_desc;
+         break;
+      case OO_NECSLIME:
+         vrName = oo_necslime_name;
+         vrIcon = oo_necslime_icon;
+         vrDesc = oo_necslime_desc;
+         break;
+      case OO_RAZA_SHRUB:
+         vrName = oo_razshrub_name;
+         vrIcon = oo_razshrub_icon;
+         vrDesc = oo_razshrub_desc;
+         break;
+      case OO_RAZA_TREE1:
+         vrName = oo_raztree1_name;
+         vrIcon = oo_raztree1_icon;
+         vrDesc = oo_raztree1_desc;
+         break;
+      case OO_MUSEUM_ANT:
+         vrName = oo_modant_name;
+         vrIcon = oo_modant_icon;
+         vrDesc = oo_modant_desc;
+         break;
+      case OO_MUSEUM_AVAR:
+         vrName = oo_modavar_name;
+         vrIcon = oo_modavar_icon;
+         vrDesc = oo_modavar_desc;
+         piXlat = AVARCLAN_ANTIMAGIC;
+         break;
+      case OO_MUSEUM_LUPOGG:
+         vrName = oo_modlupog_name;
+         vrIcon = oo_modlupog_icon;
+         vrDesc = oo_modlupog_desc;
+         break;
+      case OO_MUSEUM_ORC:
+         vrName = oo_modorc_name;
+         vrIcon = oo_modorc_icon;
+         vrDesc = oo_modorc_desc;
+         break;
+      case OO_MUSEUM_SPIDER:
+         vrName = oo_modspider_name;
+         vrIcon = oo_modspider_icon;
+         vrDesc = oo_modspider_desc;
+         break;
+      case OO_MUSEUM_CENTIPEDE:
+         vrName = oo_modcentipede_name;
+         vrIcon = oo_modcentipede_icon;
+         vrDesc = oo_modcentipede_desc;
+         break;
+      case OO_MUSEUM_FUNGUSBEAST:
+         vrName = oo_modfungusbeast_name;
+         vrIcon = oo_modfungusbeast_icon;
+         vrDesc = oo_modfungusbeast_desc;
+         break;
+      case OO_MUSEUM_FEY:
+         vrName = oo_modfey_name;
+         vrIcon = oo_modfey_icon;
+         vrDesc = oo_modfey_desc;
+         break;
+      case OO_MUSEUM_SCIMITAR:
+         vrName = oo_modscimitar_name;
+         vrIcon = oo_modscimitar_icon;
+         vrDesc = oo_modscimitar_desc;
+         break;
+      case OO_MUSEUM_HAMMER:
+         vrName = oo_modhammer_name;
+         vrIcon = oo_modhammer_icon;
+         vrDesc = oo_modhammer_desc;
+         break;
+      case OO_MUSEUM_SHORTSWORD:
+         vrName = oo_modshortsword_name;
+         vrIcon = oo_modshortsword_icon;
+         vrDesc = oo_modshortsword_desc;
+         break;
+      case OO_MUSEUM_HELM:
+         vrName = oo_modhelm_name;
+         vrIcon = oo_modhelm_icon;
+         vrDesc = oo_modhelm_desc;
+         piGroup = 2;
+         break;
+      case OO_MUSEUM_PLATEARMOR:
+         vrName = oo_modplatearmor_name;
+         vrIcon = oo_modplatearmor_icon;
+         vrDesc = oo_modplatearmor_desc;
+         piGroup = 2;
+         break;
+      case OO_MUSEUM_GAUNTLETS:
+         vrName = oo_modgauntlets_name;
+         vrIcon = oo_modgauntlets_icon;
+         vrDesc = oo_modgauntlets_desc;
+         break;
+      case OO_MUSEUM_POTION:
+         vrName = oo_modpotion_name;
+         vrIcon = oo_modpotion_icon;
+         vrDesc = oo_modpotion_desc;
+         piXlat = PT_GRAY_TO_SKY;
+         break;
+      case OO_MUSEUM_SCROLL:
+         vrName = oo_modscroll_name;
+         vrIcon = oo_modscroll_icon;
+         vrDesc = oo_modscroll_desc;
+         break;
+      case OO_MUSEUM_WAND:
+         vrName = oo_modwand_name;
+         vrIcon = oo_modwand_icon;
+         vrDesc = oo_modwand_desc;
+         piGroup = 2;
+         break;
+      case OO_MUSEUM_TOKEN:
+         vrName = oo_modtoken_name;
+         vrIcon = oo_modtoken_icon;
+         vrDesc = oo_modtoken_desc;
+         break;
+      case OO_MUSEUM_LUTE:
+         vrName = oo_modlute_name;
+         vrIcon = oo_modlute_icon;
+         vrDesc = oo_modlute_desc;
+         break;
+      case OO_MUSEUM_PRISM:
+         vrName = oo_modprism_name;
+         vrIcon = oo_modprism_icon;
+         vrDesc = oo_modprism_desc;
+         break;
+      case OO_MUSEUM_INKYCAP:
+         vrName = oo_modinkycap_name;
+         vrIcon = oo_modinkycap_icon;
+         vrDesc = oo_modinkycap_desc;
+         piXlat = Send(SYS,@EncodeTwoColorXLAT,#color1=XLAT_TO_GREEN,
+                        #color2=XLAT_TO_SKIN4);
+         break;
+      case OO_MUSEUM_SIGNETRING:
+         vrName = oo_modsignetring_name;
+         vrIcon = oo_modsignetring_icon;
+         vrDesc = oo_modsignetring_desc;
+         break;
+      case OO_MUSEUM_ALTAR:
+         vrName = oo_modaltar_name;
+         vrIcon = oo_modaltar_icon;
+         vrDesc = oo_modaltar_desc;
+         break;
+      case OO_MUSEUM_NEWS:
+         vrName = oo_modnewsb_name;
+         vrIcon = oo_modnewsb_icon;
+         vrDesc = oo_modnewsb_desc;
+         break;
+      case OO_MUSEUM_SHRINE:
+         vrName = oo_modshrin_name;
+         vrIcon = oo_modshrin_icon;
+         vrDesc = oo_modshrin_desc;
+         break;
+      case OO_MUSEUM_THRONE:
+         vrName = oo_modthron_name;
+         vrIcon = oo_modthron_icon;
+         vrDesc = oo_modthron_desc;
+         break;
+      case OO_MUSEUM_CHALICE:
+         vrName = oo_modchalice_name;
+         vrIcon = oo_modchalice_icon;
+         vrDesc = oo_modchalice_desc;
+         break;
+      case OO_MUSEUM_RELIC:
+         vrName = oo_modrelic_name;
+         vrIcon = oo_modrelic_icon;
+         vrDesc = oo_modrelic_desc;
+         break;
+      case OO_MUSEUM_GRAPES:
+         vrName = oo_modgrapes_name;
+         vrIcon = oo_modgrapes_icon;
+         vrDesc = oo_modgrapes_desc;
+         break;
+      case OO_FLASK_GREEN:
+         vrName = oo_flaskgrn_name;
+         vrIcon = oo_flaskgrn_icon;
+         vrDesc = oo_flaskgrn_desc;
+         break;
+      case OO_FLASK_STAND:
+         vrName = oo_flaskw_name;
+         vrIcon = oo_flaskw_icon;
+         vrDesc = oo_flaskw_desc;
+         break;
+      case OO_JASPERLAMP:
+         vrName = oo_jasperlamp_name;
+         vrIcon = oo_jasperlamp_icon;
+         vrDesc = oo_jasperlamp_desc;
+         pbFlicker = TRUE;
+         break;
+      case OO_JASPERLAMP1:
+         vrName = oo_jasperlamp1_name;
+         vrIcon = oo_jasperlamp1_icon;
+         vrDesc = oo_jasperlamp1_desc;
+         pbFlicker = TRUE;
+         break;
+      case OO_RR_PLANT1:
+         vrName = oo_RRplant1_name;
+         vrIcon = oo_RRplant1_icon;
+         vrDesc = oo_RRplant1_desc;
+         break;
+      case OO_RR_PLANT2:
+         vrName = oo_RRplant2_name;
+         vrIcon = oo_RRplant2_icon;
+         vrDesc = oo_RRplant2_desc;
+         break;
+      case OO_RR_TABLE:
+         vrName = oo_RRtable_name;
+         vrIcon = oo_RRtable_icon;
+         vrDesc = oo_RRtable_desc;
+         break;
+      case OO_RR_BASIN:
+         vrName = oo_RRwashbasin_name;
+         vrIcon = oo_RRwashbasin_icon;
+         vrDesc = oo_RRwashbasin_desc;
+         break;
+      case OO_QORMAS_SNOWMAN:
+         vrName = oo_Qormas_snowman_name;
+         vrIcon = oo_Qormas_snowman_icon;
+         vrDesc = oo_Qormas_snowman_desc;
+         break;
+      case OO_QORMAS_TREE:
+         vrName = oo_Qormas_tree_name;
+         vrIcon = oo_Qormas_tree_icon;
+         vrDesc = oo_Qormas_tree_desc;
+         break;
+      case OO_QORMAS_TREE_BIG:
+         vrName = oo_Qormas_tree_big_name;
+         vrIcon = oo_Qormas_tree_big_icon;
+         vrDesc = oo_Qormas_tree_big_desc;
+         break;
+      case OO_QORMAS_WREATH:
+         vrName = oo_Qormas_wreath_name;
+         vrIcon = oo_Qormas_wreath_icon;
+         vrDesc = oo_Qormas_wreath_desc;
+         break;
+      case OO_SMCRATE:
          vrName = oo_smcrate_name;
          vrIcon = oo_smcrate_icon;
          vrDesc = oo_smcrate_desc;
          pbNoMoveOn = TRUE;
-      }
-
-      if type = OO_VJOURNAL
-      {
+         break;
+      case OO_VJOURNAL:
          vrName = oo_vjournal_name;
          vrIcon = oo_vjournal_icon;
          vrDesc = oo_vjournal_desc;
-      }
-
-      if type = OO_BONES_RAZA
-      {
+         break;
+      case OO_BONES_RAZA:
          vrName = oo_bones_name;
          vrIcon = oo_bones_icon;
          vrDesc = oo_bones_raza_desc;
-      }
-
-      if type = OO_MUMMY
-      {
+         break;
+      case OO_MUMMY:
          vrName = oo_mummy_name;
          vrIcon = oo_mummy_icon;
          vrDesc = oo_mummy_desc;
-      }
-
-      if type = OO_MUSEUM_PORTAL
-      {
+         break;
+      case OO_MUSEUM_PORTAL:
          vrName = oo_modportal_name;
          vrIcon = oo_modportal_icon;
          vrDesc = oo_modportal_desc;
-      }
-
-      if type = OO_MUSEUM_TELEPORT
-      {
+         break;
+      case OO_MUSEUM_TELEPORT:
          vrName = oo_modportal_name;
          vrIcon = oo_modteleport_icon;
          vrDesc = oo_modportal_desc;
+         break;
+      case OO_POTPLANT:
+         vrName = oo_potplant_name;
+         vrIcon = oo_potplant_icon;
+         vrDesc = oo_potplant_desc;
+         break;
+      case OO_RSHRUB:
+         vrName = oo_rshrub_name;
+         vrIcon = oo_rshrub_icon;
+         vrDesc = oo_rshrub_desc;
+         break;
+      case OO_BUCKET2:
+         vrName = oo_bucket2_name;
+         vrIcon = oo_bucket2_icon;
+         vrDesc = oo_bucket2_desc;
+         break;
+      case OO_HIST_CENTIPEDE:
+         vrName = oo_modcentipede_name;
+         vrIcon = oo_hist_centipede_icon;
+         vrDesc = oo_modcentipede_desc;
+         break;
+      case OO_HIST_BANKER:
+         vrName = oo_hist_banker_name;
+         vrIcon = oo_hist_banker_icon;
+         vrDesc = oo_hist_banker_desc;
+         break;
+      case OO_HIST_BSMITH:
+         vrName = oo_hist_bsmith_name;
+         vrIcon = oo_hist_bsmith_icon;
+         vrDesc = oo_hist_bsmith_desc;
+         break;
+      case OO_HIST_SCIMITAR:
+         vrName = oo_hist_scimitar_name;
+         vrIcon = oo_hist_scimitar_icon;
+         vrDesc = oo_hist_scimitar_desc;
+         break;
+      case OO_HIST_RAT:
+         vrName = oo_hist_rat_name;
+         vrIcon = oo_hist_rat_icon;
+         vrDesc = oo_hist_rat_desc;
+         break;
+      case OO_HIST_DUKE:
+         vrName = oo_hist_duke_name;
+         vrIcon = oo_hist_duke_icon;
+         vrDesc = oo_hist_duke_desc;
+         break;
+      case OO_HIST_EVPRSTT:
+         vrName = oo_hist_evprstT_name;
+         vrIcon = oo_hist_evprstT_icon;
+         vrDesc = oo_hist_evprstT_desc;
+         break;
+      case OO_HIST_FUNGBST:
+         vrName = oo_hist_fungbst_name;
+         vrIcon = oo_hist_fungbst_icon;
+         vrDesc = oo_hist_fungbst_desc;
+         break;
+      case OO_HIST_GAUNTLET:
+         vrName = oo_hist_gauntlet_name;
+         vrIcon = oo_hist_gauntlet_icon;
+         vrDesc = oo_hist_gauntlet_desc;
+         break;
+      case OO_HIST_GSWORD:
+         vrName = oo_hist_gsword_name;
+         vrIcon = oo_hist_gsword_icon;
+         vrDesc = oo_hist_gsword_desc;
+         break;
+      case OO_HIST_KING1:
+         vrName = oo_hist_king1_name;
+         vrIcon = oo_hist_king1_icon;
+         vrDesc = oo_hist_king1_desc;
+         break;
+      case OO_HIST_PLATE:
+         vrName = oo_hist_plate_name;
+         vrIcon = oo_hist_plate_icon;
+         vrDesc = oo_hist_plate_desc;
+         break;
+      case OO_HIST_LEATHAMR:
+         vrName = oo_hist_leathamr_name;
+         vrIcon = oo_hist_leathamr_icon;
+         vrDesc = oo_hist_leathamr_desc;
+         break;
+      case OO_HIST_ROUNDSHLD:
+         vrName = oo_hist_roundshld_name;
+         vrIcon = oo_hist_roundshld_icon;
+         vrDesc = oo_hist_roundshld_desc;
+         break;
+      case OO_HIST_KSHIELD:
+         vrName = oo_hist_kshld_name;
+         vrIcon = oo_hist_kshld_icon;
+         vrDesc = oo_hist_kshld_desc;
+         break;
+      case OO_HIST_ORC:
+         vrName = oo_hist_orc_name;
+         vrIcon = oo_hist_orc_icon;
+         vrDesc = oo_hist_orc_desc;
+         break;
+      case OO_HIST_ORNHELMA:
+         vrName = oo_hist_ornhelma_name;
+         vrIcon = oo_hist_ornhelma_icon;
+         vrDesc = oo_hist_ornhelma_desc;
+         break;
+      case OO_HIST_PRIESTESS:
+         vrName = oo_hist_priestess_name;
+         vrIcon = oo_hist_priestess_icon;
+         vrDesc = oo_hist_priestess_desc;
+         break;
+      case OO_HIST_GOLDSHIELD:
+         vrName = oo_hist_goldshld_name;
+         vrIcon = oo_hist_goldshld_icon;
+         vrDesc = oo_hist_goldshld_desc;
+         break;
+      case OO_HIST_PRINCESS:
+         vrName = oo_hist_princess_name;
+         vrIcon = oo_hist_princess_icon;
+         vrDesc = oo_hist_princess_desc;
+         break;
+      case OO_HIST_HERMIT:
+         vrName = oo_hist_hermit_name;
+         vrIcon = oo_hist_hermit_icon;
+         vrDesc = oo_hist_hermit_desc;
+         break;
       }
 
       /// tell the room we changed, unless this is in constructor

@@ -84,7 +84,7 @@ messages:
    {
       plExits = $;
 
-      plExits = Cons([ 12, 10, RID_CORNOTH, 36, 57, ROTATE_135 ],plExits);
+      plExits = Cons([ 12, 10, RID_CORNOTH, 36, 75, ROTATE_135 ],plExits);
 
       propagate;
    }

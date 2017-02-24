@@ -82,14 +82,14 @@ messages:
       plExits = Cons([ 30, 37, RID_TOS_ARENA, 21, 7, ROTATE_NONE ],plExits);
 
 
-      plExits = Cons([ 26, 27, RID_EAST_TOS, 26, 25, ROTATE_NONE ],plExits);
-      plExits = Cons([ 27, 27, RID_EAST_TOS, 27, 25, ROTATE_NONE ],plExits);
+      plExits = Cons([ 26, 27, RID_EAST_TOS, 28, 25, ROTATE_NONE ],plExits);
+      plExits = Cons([ 27, 27, RID_EAST_TOS, 29, 25, ROTATE_NONE ],plExits);
 
-      plExits = Cons([ 37, 36, RID_EAST_TOS, 39, 36, ROTATE_NONE ],plExits);
-      plExits = Cons([ 37, 37, RID_EAST_TOS, 39, 37, ROTATE_NONE ],plExits);
+      plExits = Cons([ 37, 36, RID_EAST_TOS, 42, 35, ROTATE_NONE ],plExits);
+      plExits = Cons([ 37, 37, RID_EAST_TOS, 42, 36, ROTATE_NONE ],plExits);
 
-      plExits = Cons([ 16, 36, RID_EAST_TOS, 14, 36, ROTATE_NONE ],plExits);
-      plExits = Cons([ 16, 37, RID_EAST_TOS, 14, 37, ROTATE_NONE ],plExits);
+      plExits = Cons([ 16, 36, RID_EAST_TOS, 17, 35, ROTATE_NONE ],plExits);
+      plExits = Cons([ 16, 37, RID_EAST_TOS, 17, 36, ROTATE_NONE ],plExits);
 
 
    propagate;

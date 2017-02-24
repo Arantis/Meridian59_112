@@ -91,18 +91,20 @@ messages:
       propagate;
    }
 
-   StartPeriodicEnchantment(who=$,state=$)
+   StartPeriodicEnchantment(who=$,state=$,iSpellPower=0)
    {
       // If caster runs out of mana or loses trance, spell ends.
       if Send(who,@GetMana) < viManaDrain * 2
       {
-         Send(who,@StartEnchantment,#what=self,#time=nth(state,1),
-               #state=state,#addicon=False,#lastcall=True);
+         Send(who,@StartEnchantment,#what=self,#time=First(state),
+               #state=state,#addicon=FALSE,#lastcall=TRUE,
+               #iSpellPower=iSpellPower);
       }
       else
       {
-         Send(who,@StartEnchantment,#what=self,#time=nth(state,1),
-               #state=state,#addicon=False,#lastcall=False);
+         Send(who,@StartEnchantment,#what=self,#time=First(state),
+               #state=state,#addicon=FALSE,#lastcall=TRUE,
+               #iSpellPower=iSpellPower);
       }
 
       Send(who,@LoseMana,#amount=viManaDrain);

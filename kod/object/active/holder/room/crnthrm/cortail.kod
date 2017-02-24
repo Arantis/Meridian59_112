@@ -14,7 +14,6 @@ constants:
 
    include blakston.khd
 
-
 resources:
 
    include cortail.lkod
@@ -46,42 +45,34 @@ properties:
 
 messages:
 
-
    CreateStandardExits()
    {
       plExits = $;
 
-  /// TO TOWN
-      plExits = Cons([ 3, 3, RID_CORNOTH, 40, 12, ROTATE_NONE ],plExits);
+      /// TO TOWN
+      plExits = Cons([ 3, 3, RID_CORNOTH, 40, 29, ROTATE_NONE ],plExits);
       plExits = Cons([ 11, 7, ROOM_LOCKED_DOOR],plExits);
       plExits = Cons([ 11, 13, ROOM_LOCKED_DOOR],plExits);
-
 
       propagate;
    }
 
    CreateStandardObjects()
    {
-
-      Send(self,@NewHold,#what=Create(&CorNothTailor),
-           #new_row=4,#new_col=13);
+      Send(self,@NewHold,#what=Create(&CorNothTailor),#new_row=4,#new_col=13);
 
       Send(self,@NewHold,#what=Create(&Candelabra),
-	   #new_row=4,#new_col=1,#fine_row=0,#fine_col=20);
+            #new_row=4,#new_col=1,#fine_row=0,#fine_col=20);
       Send(self,@NewHold,#what=Create(&Candelabra),
-	   #new_row=9,#new_col=3,#fine_row=28,#fine_col=28);
+            #new_row=9,#new_col=3,#fine_row=28,#fine_col=28);
       Send(self,@NewHold,#what=Create(&Stool),
-           #new_row=3,#new_col=11,#fine_row=0,#fine_col=0);
+            #new_row=3,#new_col=11,#fine_row=0,#fine_col=0);
       Send(self,@NewHold,#what=Create(&Brazier),
-           #new_row=5,#new_col=13,#fine_row=16);
+            #new_row=5,#new_col=13,#fine_row=16);
+      Send(self,@NewHold,#what=Create(&Brazier),#new_row=9,#new_col=9);
 
-
-
-      Send(self,@NewHold,#what=Create(&Brazier),
-           #new_row=9,#new_col=9);
       propagate;
    }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

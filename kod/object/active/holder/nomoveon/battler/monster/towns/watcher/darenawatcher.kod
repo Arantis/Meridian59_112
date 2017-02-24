@@ -1,0 +1,220 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+DeathArenaWatcher is Watcher
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include darenawatcher.lkod
+
+   DeathArenaWatcher_name_rsc = "Johlan Tulca"
+   DeathArenaWatcher_icon_rsc = tsdeatharenawatcher.bgf
+   DeathArenaWatcher_desc_rsc = \
+   "Johlan is the son of Kochtal ko'Tulca. He was a proud soldier of the "
+   "Ko'catan army until he was banished from the settlement, into the Orc "
+   "Caves.  He travelled the perilous route to the mainland and set up shop "
+   "in the disused Arena of Kraanan storeroom, turning it into an underground "
+   "tavern and arena."
+
+   DeathArenaWatcher_ad_need_champion1 = "Come on my little ones, be not afraid . . . "
+   DeathArenaWatcher_ad_need_champion2 = \
+      "I can smell your passion  . . . give in to it, there is so "
+      "much blood to shed."
+   DeathArenaWatcher_ad_need_champion3 = \
+      "It is such a small thing to kill others, won't you do it for me?"
+   DeathArenaWatcher_ad_need_champion4 = "I want to see some dead bodies!"
+   DeathArenaWatcher_ad_need_challenger = "Come . . . won't you dance with %s%s?"
+   DeathArenaWatcher_ad_good_fight1 = "YES!! Oh Lord yes!!!  Die you fools die!!!"
+   DeathArenaWatcher_ad_good_fight2 = "I can taste your soul."
+   DeathArenaWatcher_ad_good_fight3 = \
+      "Blood, I can see the blood all over the floor."
+
+   DeathArenaWatcher_no_need = "Stay cool wimp, your time to die will come."
+   DeathArenaWatcher_need_champion = \
+      "We need a champion first. Sacrifice yourself to me."
+   DeathArenaWatcher_dont_need_challenger = \
+      "Later my little one, later.  Enough blood flows through the veins "
+      "of these fools, I can wait for yours."
+   DeathArenaWatcher_fight_in_progress = \
+      "Patience little one! Wait for these fools to die before you might follow "
+      "them."
+
+   DeathArenaWatcher_already_combatant = \
+      "You are already in line to die, just wait."
+   DeathArenaWatcher_already_champion = \
+      "You are already in line to die, just wait"
+   DeathArenaWatcher_already_have_champion = \
+      "You want to be our champion? All you must do is kill %s%s. Are you "
+      "brave enough to challenge %s?"
+
+   DeathArenaWatcher_must_accept = \
+      "Hurry up!  You only have %i seconds left to accept %s%s's challenge."
+
+   DeathArenaWatcher_commence_fight = "FIGHT and DIE!!!"
+   DeathArenaWatcher_last_minute = "You have one minute  . . . then I will get into the "
+      "cage and bring it to an end!"
+
+   DeathArenaWatcher_victor = "~BCurse you %s%s!  Today you live, but not forever!~B"
+   DeathArenaWatcher_new_champion = "~B%s%s is our new Champion, ripe for the killing.~B"
+   DeathArenaWatcher_killed_champion = \
+      "%s%s has slain the Champion, %s%s . . . good to see at least one dead!"
+   DeathArenaWatcher_retain_title = \
+      "%s%s retains the Championship, won't someone give me %s blood?"
+
+   DeathArenaWatcher_ready_to_fight = "%s%s vs %s%s.  Prepare to die  . . ."
+
+   DeathArenaWatcher_cant_leave = "Sorry fool, there's no escape!"
+   DeathArenaWatcher_pitifully_fled = \
+      "%s%s has pitifully fled.  I think I'll have to kill them, yes?"
+   DeathArenaWatcher_fled_reconnect = \
+      "%s%s has pitifully fled.  If %s%s is not back in 30 seconds "
+      "I think I'll have to kill them, yes?"
+   DeathArenaWatcher_only_combatants = \
+      "You have to come into my embrace if you want to kill here!"
+   DeathArenaWatcher_no_fighting_yet = "Not yet my sweet little ones, not yet."
+   DeathArenaWatcher_only_combatants_cast = \
+      "You have to come into my embrace if you want to cast spells here!"
+   DeathArenaWatcher_only_target_combatants = \
+      "You cannot fight non-combatants!"
+
+   DeathArenaWatcher_spell_banned = \
+      "So sorry you can't cast %s here.  Why?  Because I say so."
+
+   DeathArenaWatcher_must_choose_style = \
+      "First you have to choose what kind of fight you want."
+   DeathArenaWatcher_cant_switch = "You can't change that now."
+   DeathArenaWatcher_new_combat_style = \
+      "Great choice.  I've been waiting for a good %s.  Now, who'll "
+      "say the magic word, \"champion\"?"
+
+   DeathArenaWatcher_welcome = "~kJohlan tells you, \"Welcome to the real death arena.\""
+   DeathArenaWatcher_worship_admin = \
+      "Oh how exciting . . . it's %s, %s is sooo important."
+   DeathArenaWatcher_worship_dm = \
+      "Don't except me to grovel to %s, I could care "
+      "less about a %s of Meridian!"
+   DeathArenaWatcher_welcome_champion = "All hail %s%s, spiller of blood."
+
+   DeathArenaWatcher_not_during_fight = \
+      "~kJohlan tells you, \"You cannot offer me commands while "
+      "a fight is still going on.\""
+   DeathArenaWatcher_wont_fight = \
+      "`kApparently %s%s is too cowardly to fight.  Cowards should "
+      "die . . . slowly."
+
+classvars:
+
+   vrName = DeathArenaWatcher_name_rsc
+   vrIcon = DeathArenaWatcher_icon_rsc
+   vrDesc = DeathArenaWatcher_desc_rsc
+
+   vrChallengerAd = DeathArenaWatcher_ad_need_challenger
+   vrAlreadyChampion = DeathArenaWatcher_already_champion
+   vrAlreadyCombatant = DeathArenaWatcher_already_combatant
+   vrCommenceFight = DeathArenaWatcher_commence_fight
+   vrMustAcceptChallenge = DeathArenaWatcher_must_accept
+   vrMustChooseStyle = DeathArenaWatcher_must_choose_style
+   vrFightInProgress = DeathArenaWatcher_fight_in_progress
+   vrNeedChampion = DeathArenaWatcher_need_champion
+   vrNotAcceptingChallengers = DeathArenaWatcher_dont_need_challenger
+   vrAlreadyHaveChamp = DeathArenaWatcher_already_have_champion
+   vrKilledChamp = DeathArenaWatcher_killed_champion
+   vrCannotLeave = DeathArenaWatcher_cant_leave
+   vrOnlyCombatantsCast = DeathArenaWatcher_only_combatants_cast
+   vrOnlyCastCombatants = DeathArenaWatcher_only_target_combatants
+   vrNoFightingYet = DeathArenaWatcher_no_fighting_yet
+   vrSpellBanned = DeathArenaWatcher_spell_banned
+   vrOnlyCombatantsAttack = DeathArenaWatcher_only_combatants
+   vrPlayerFled = DeathArenaWatcher_pitifully_fled
+   vrPlayerFledReconnect = DeathArenaWatcher_fled_reconnect
+   vrPlayerWontFight = DeathArenaWatcher_wont_fight
+   vrWorshipAdmin = DeathArenaWatcher_worship_admin
+   vrWorshipDM = DeathArenaWatcher_worship_dm
+   vrWorshipChamp = DeathArenaWatcher_welcome_champion
+   vrWelcome = DeathArenaWatcher_welcome
+   vrCantSwitch = DeathArenaWatcher_cant_switch
+   vrNewStyle = DeathArenaWatcher_new_combat_style
+   vrAlreadyHaveChamp = DeathArenaWatcher_already_have_champion
+   vrNoNeedCombatant = DeathArenaWatcher_no_need
+   vrReadyOneOnOne = DeathArenaWatcher_ready_to_fight
+   vrLastMinuteFight = DeathArenaWatcher_last_minute
+   vrNewChampion = DeathArenaWatcher_new_champion
+   vrRetainTitle = DeathArenaWatcher_retain_title
+   vrVictor = DeathArenaWatcher_victor
+   vrNoCmdsDuringFight = DeathArenaWatcher_not_during_fight
+
+   viDefinite = ARTICLE_NONE
+   viIndefinite = ARTICLE_NONE
+
+   viAttributes = MOB_NOMOVE | MOB_FULL_TALK | MOB_LISTEN | MOB_NOFIGHT \
+                  | MOB_NOQUEST
+   viOccupation = MOB_ROLE_WATCHER
+   viWatcherID = WATCHER_DEATH_ARENA
+
+properties:
+
+messages:
+
+   // Speech resources messages.
+   GetNeedChampionRsc()
+   {
+      switch (Random(1,4))
+      {
+         case 1: return DeathArenaWatcher_ad_need_champion1;
+         case 2: return DeathArenaWatcher_ad_need_champion2;
+         case 3: return DeathArenaWatcher_ad_need_champion3;
+         case 4: return DeathArenaWatcher_ad_need_champion4;
+      }
+
+      return TosWatcher_ad_need_champion1;
+   }
+
+   GetGoodFightRsc()
+   {
+      switch (Random(1,3))
+      {
+         case 1: return DeathArenaWatcher_ad_good_fight1;
+         case 2: return DeathArenaWatcher_ad_good_fight2;
+         case 3: return DeathArenaWatcher_ad_good_fight3;
+      }
+
+      return DeathArenaWatcher_ad_good_fight1;
+   }
+
+   SayDMWelcome(who = $)
+   {
+      Post(self,@Say,#message_rsc=vrWorshipDM,
+            #parm1=Send(who,@GetName),#parm2=Send(who,@GetLordLady));
+
+      return;
+   }
+
+   SayVictor(who = $)
+   {
+      Send(self,@Say,#message_rsc=vrVictor,#parm1=Send(who,@GetCapDef),
+            #parm2=Send(who,@GetName));
+
+      return;
+   }
+
+   SayChallenge(who = $)
+   {
+      Post(self,@Say,#message_rsc=vrChallengeOffered,
+            #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName),
+            #parm3=Send(who,@GetHimHer),#parm4=Send(who,@GetHeShe));
+
+      return;
+   }
+end
+////////////////////////////////////////////////////////////////////////////////

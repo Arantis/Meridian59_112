@@ -198,6 +198,9 @@ EXPORTS
 	DibOpenFile
 	BitmapsFree
 	CreateMemBitmap
+	DibOpenBitmapFile
+	DibOpenBitmapResource
+	CreateMemBitmapFromBmp
 
 ; Animation
 	AnimateObject

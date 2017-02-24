@@ -7,13 +7,13 @@ Umbrella_desc_rsc = de \
 Umbrella_cast = de \
    "Eine mystische, schimmernde Lichtkuppel strömt aus Deinen Fingerspitzen."
 Umbrella_starts = de \
-   "Eine Kuppel voller mystischem, schimmerndem Licht kommt von %ss Fingerspitzen."
-Umbrella_ends = de "Die Kuppel voller magischer Energie, von %s verschwindet."
+   "Eine Kuppel voller mystischem, schimmerndem Licht kommt von %s%ss Fingerspitzen."
+Umbrella_ends = de "Die Kuppel voller magischer Energie, von %s%s verschwindet."
 Umbrella_caster_ends = de "Die Kuppel voller magischer Energie verschwindet."
 Umbrella_caster_enter = de \
    "Du fühlst, dass dich die Energie des Schirmes schützt."
 Umbrella_enter = de \
    "Du wirst umfasst von einer Kuppel voller magischer Energie, gezaubert "
-   "von %s."
-Umbrella_leave = de "Du bist außerhalb der magischen Kuppel von %s."
-Umbrella_deflected = de "%ss Schirm, dämpft die Kraft des Angriffs."
+   "von %s%s."
+Umbrella_leave = de "Du bist außerhalb der magischen Kuppel von %s%s."
+Umbrella_deflected = de "%s%ss Schirm, dämpft die Kraft des Angriffs."

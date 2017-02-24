@@ -235,7 +235,7 @@ messages:
 
       // global effects of the enchantment
       Send(self,@SomeoneSaid,#type=SAY_MESSAGE,#string=MarionCrtyp1_martyr_on,#what=self);
-      Send(self,@RoomStartEnchantment,#what=oMartyr,#state=150);
+      Send(self,@RoomStartEnchantment,#what=oMartyr,#state=[150,self]);
 
       return;
    }

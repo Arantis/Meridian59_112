@@ -23,26 +23,13 @@ constants:
 
    include blakston.khd
 
-   // IMPORTANT!!!!
-   // Change this offset time whenever the server offset is
-   // changed due to the kod int overflow issue.
-   OFFSET_YEAR = 2014
-   OFFSET_MONTH = 1
-   OFFSET_DAY = 1
-   OFFSET_HOUR = 0
-   OFFSET_MINUTE = 0
-   OFFSET_SECOND = 0
-
 resources:
 
 classvars:
 
 properties:
 
-   // Time zone offset in seconds.
-   piTimeZoneOffset = 18000
    ptTick = $
-
    plCallbacks = $
 
 messages:
@@ -50,7 +37,7 @@ messages:
    Constructor()
    {
       ptTick = CreateTimer(self,@TimeTick,60000);
-      piTimeZoneOffset = GetTimeZoneOffset();
+
       return;
    }
 
@@ -70,6 +57,8 @@ messages:
    Delete()
    {
       DeleteTimer(ptTick);
+
+      plCallBacks = $;
 
       return;
    }
@@ -118,19 +107,18 @@ messages:
          message = SetString($,message);
       }
 
-      iMonthDays = [31,28,31,30,31,30,31,31,30,31,30,31];
-
-      iYear = Send(self,@GetYear);
+      GetDateAndTime(*iYear, *iMonth, *iDay, *iHour, *iMinute, $);
 
       if Send(self,@IsLeapYear,#iYear=iYear)
       {
          iMonthDays = [31,29,31,30,31,30,31,31,30,31,30,31];
       }
+      else
+      {
+         iMonthDays = [31,28,31,30,31,30,31,31,30,31,30,31];
+      }
 
-      iMonth = Send(self,@GetMonth);
-      iDay = Send(self,@GetDay);
-      iHour = Send(self,@GetHour);
-      iMinute = Send(self,@GetMinute) + minutes;
+      iMinute += minutes;
 
       // Fix any rollovers.
       while iMinute >= 60
@@ -193,19 +181,18 @@ messages:
          message = SetString($,message);
       }
 
-      iMonthDays = [31,28,31,30,31,30,31,31,30,31,30,31];
-
-      iYear = Send(self,@GetYear);
+      GetDateAndTime(*iYear, *iMonth, *iDay, *iHour, *iMinute, $);
 
       if Send(self,@IsLeapYear,#iYear=iYear)
       {
          iMonthDays = [31,29,31,30,31,30,31,31,30,31,30,31];
       }
+      else
+      {
+         iMonthDays = [31,28,31,30,31,30,31,31,30,31,30,31];
+      }
 
-      iMonth = Send(self,@GetMonth);
-      iDay = Send(self,@GetDay);
-      iHour = Send(self,@GetHour) + hours;
-      iMinute = Send(self,@GetMinute);
+      iHour += hours;
 
       // Fix any rollovers.
       while iHour >= 24
@@ -262,19 +249,18 @@ messages:
          message = SetString($,message);
       }
 
-      iMonthDays = [31,28,31,30,31,30,31,31,30,31,30,31];
-
-      iYear = Send(self,@GetYear);
+      GetDateAndTime(*iYear, *iMonth, *iDay, *iHour, *iMinute, $);
 
       if Send(self,@IsLeapYear,#iYear=iYear)
       {
          iMonthDays = [31,29,31,30,31,30,31,31,30,31,30,31];
       }
+      else
+      {
+         iMonthDays = [31,28,31,30,31,30,31,31,30,31,30,31];
+      }
 
-      iMonth=Send(self,@GetMonth);
-      iDay=Send(self,@GetDay) + days;
-      iHour=Send(self,@GetHour); 
-      iMinute=Send(self,@GetMinute);
+      iDay += days;
 
       // Fix any rollovers.
       while iDay > Nth(iMonthDays,iMonth)
@@ -325,19 +311,18 @@ messages:
          message = SetString($,message);
       }
 
-      iMonthDays = [31,28,31,30,31,30,31,31,30,31,30,31];
-
-      iYear = Send(self,@GetYear);
+      GetDateAndTime(*iYear, *iMonth, *iDay, *iHour, *iMinute, $);
 
       if Send(self,@IsLeapYear,#iYear=iYear)
       {
          iMonthDays = [31,29,31,30,31,30,31,31,30,31,30,31];
       }
+      else
+      {
+         iMonthDays = [31,28,31,30,31,30,31,31,30,31,30,31];
+      }
 
-      iMonth = Send(self,@GetMonth) + months;
-      iDay = Send(self,@GetDay);
-      iHour = Send(self,@GetHour);
-      iMinute = Send(self,@GetMinute);
+      iMonth += months;
 
       // Fix any rollovers.
       while iMonth > 12
@@ -403,11 +388,9 @@ messages:
          message = SetString($,message);
       }
 
-      iYear = Send(self,@GetYear) + years;
-      iMonth = Send(self,@GetMonth);
-      iDay = Send(self,@GetDay);
-      iHour = Send(self,@GetHour);
-      iMinute = Send(self,@GetMinute);
+      GetDateAndTime(*iYear, *iMonth, *iDay, *iHour, *iMinute, $);
+
+      iYear += years;
 
       // Check for a possible issue caused by a leap year.
       if NOT Send(self,@IsLeapYear,#iYear=iYear)
@@ -457,7 +440,7 @@ messages:
 
       Send(EVENTENGINE_OBJECT,@NewMinute);
 
-      iMinute = Send(self,@GetMinute);
+      GetDateAndTime(*iYear, *iMonth, *iDay, *iHour, *iMinute, $);
 
       if (iMinute = 0)
       {
@@ -466,11 +449,6 @@ messages:
 
       if plCallbacks <> $
       {
-         iYear = Send(self,@GetYear);
-         iMonth = Send(self,@GetMonth);
-         iDay = Send(self,@GetDay);
-         iHour = Send(self,@GetHour);
-
          foreach i in plCallbacks
          {
             lCallbackTime = First(i);
@@ -482,8 +460,6 @@ messages:
             {
                if Nth(lCallbackTime,5) = iMinute
                {
-                     // foreach creates a copy of the list so i exists even if we
-                     // delete it from the original list
                      plCallbacks = DelListElem(plCallbacks,i);
                      Send(Nth(i,2),Nth(i,3),
                         #parm1=Nth(i,4),#parm2=Nth(i,5),#parm3=Nth(i,6),
@@ -506,14 +482,9 @@ messages:
 
    NewHour()
    {
-      local iHour;
-
-      piTimeZoneOffset = GetTimeZoneOffset();
-
       Send(EVENTENGINE_OBJECT,@NewHour);
 
-      iHour = Send(self,@GetHour);
-      if (iHour = 0)
+      if (Send(self,@GetHour) = 0)
       {
          Send(self,@NewDay);
       }
@@ -523,16 +494,13 @@ messages:
 
    NewDay()
    {
-      local iDay;
-
       Send(EVENTENGINE_OBJECT,@NewDay);
 
       // Temporary stats reset tokens expire after a set number
       // of days. Use real days for ease of calculation/less calls.
       Send(&StatsResetToken,@NewDay);
 
-      iDay = Send(self,@GetDay);
-      if (iDay = 1)
+      if (Send(self,@GetDay) = 1)
       {
          Send(self,@NewMonth);
       }
@@ -542,16 +510,13 @@ messages:
 
    NewMonth()
    {
-      local iMonth;
-
       Send(EVENTENGINE_OBJECT,@NewMonth);
 
-      iMonth = Send(self,@GetMonth);
-      if (iMonth = 1)
+      if (Send(self,@GetMonth) = 1)
       {
          Send(self,@NewYear);
       }
-   
+
       return;
    }
 
@@ -562,142 +527,58 @@ messages:
       return;
    }
 
-   GetTimeZoneOffset_K()
-   {
-      return GetTimeZoneOffset();
-   }
-
-   SetTimeZoneOffset()
-   {
-      piTimeZoneOffset = GetTimeZoneOffset();
-
-      return;
-   }
-
-   GetTime_K()
-   {
-      return GetTime();
-   }
-
    GetYear()
    {
-      local iTime, iYear;
+      local iYear;
 
-      iTime = GetTime() - piTimeZoneOffset;
-      iYear=(iTime / 31536000) + OFFSET_YEAR;
+      GetDateAndTime(*iYear, $, $, $, $, $);
 
       return iYear;
    }
 
-   GetYearDay()
-   {
-      local iTime;
-
-      iTime = GetTime() - piTimeZoneOffset;
-
-      if (Send(self,@IsLeapYear,#year=Send(self,@GetYear)))
-      {
-         return (iTime / DAY % 366) + OFFSET_DAY;
-      }
-
-      return (iTime / DAY % 365) + OFFSET_DAY;
-   }
-
    GetMonth()
    {
-      local i, iMonthDays, iMonth, iYearDays;
+      local iMonth;
 
-      iYearDays = Send(self,@GetYearDay);
+      GetDateAndTime($, *iMonth, $, $, $, $);
 
-      iMonthDays = [31,28,31,30,31,30,31,31,30,31,30,31];
-
-      i = 1;
-      while i <= Length(iMonthDays)
-      {
-         if i = 2
-            AND Send(self,@IsLeapYear,#iYear=Send(self,@GetYear))
-         {
-            if iYearDays <= 29
-            {
-               return i;
-            }
-            else
-            {
-               iYearDays = iYearDays - 29;
-            }
-         }
-         else
-         {
-            if iYearDays <= Nth(iMonthDays,i)
-            {
-               return i;
-            }
-            else
-            {
-               iYearDays = iYearDays - Nth(iMonthDays,i);
-            }
-         }
-
-         i = i + 1;
-      }
-
-      return;
+      return iMonth;
    }
 
    GetDay()
    {
-      local i, iDay, iMonthDays;
+      local iDay;
 
-      if Send(self,@IsLeapYear,#iYear=Send(self,@GetYear))
-      {
-         iMonthDays = [31,29,31,30,31,30,31,31,30,31,30,31];
-      }
-      else
-      {
-         iMonthDays = [31,28,31,30,31,30,31,31,30,31,30,31];
-      }
-
-      iDay = Send(self,@GetYearDay);
-
-      foreach i in iMonthDays
-      {
-         if iDay > i
-         {
-            iDay = iDay - i;
-         }
-      }
+      GetDateAndTime($, $, *iDay, $, $, $);
 
       return iDay;
    }
 
    GetHour()
    {
-      local iTime, iHour;
+      local iHour;
 
-      iTime = GetTime() - piTimeZoneOffset;
-      iHour = (iTime % 86400) / 3600;
-
-      if (iHour < 0)
-      {
-         iHour = iHour + 24;
-      }
+      GetDateAndTime($, $, $, *iHour, $, $);
 
       return iHour;
    }
 
    GetMinute()
    {
-      local iTime, iMinute;
+      local iMinute;
 
-      iTime = GetTime() - piTimeZoneOffset;
-      iMinute = (iTime % 3600) / 60;
+      GetDateAndTime($, $, $, $, *iMinute, $);
 
       return iMinute;
    }
 
    GetSecond()
    {
-      return GetTime() % 60;
+      local iSecond;
+
+      GetDateAndTime($, $, $, $, $, *iSecond);
+
+      return iSecond;
    }
 
    IsLeapYear(iYear=1901)

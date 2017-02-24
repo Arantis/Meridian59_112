@@ -162,6 +162,11 @@ messages:
    {
       local i, iDamage, iManaFocus, iTemp, oRoom;
 
+      if (NOT (viHarmful OR viOutlaw))
+      {
+         propagate;
+      }
+
       // Rooms can cast earthquake, so check if we have a room for 'who'
       if IsClass(who,&Room)
       {
@@ -181,7 +186,7 @@ messages:
          if NOT bItemCast
          {
             // Myst and Int boost base damage
-            iDamage = Send(self,@DamageFactors,#damage=iDamage,#who=who);
+            iDamage = Send(self,@DamageFactors,#damage=iDamage,#who=who,#lTargets=lTargets);
 
             // Reduce damage based on spell power.
             iDamage = (iDamage * (50 + (iSpellPower / 2))) / SPELLPOWER_MAXIMUM;

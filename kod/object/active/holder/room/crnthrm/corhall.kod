@@ -55,12 +55,11 @@ messages:
       plExits = $;
 
       /// TO TOWN
-      plExits = Cons([ 2, 3, RID_CORNOTH, 21, 32, ROTATE_NONE ],plExits);
-      plExits = Cons([ 3, 3, RID_CORNOTH, 21, 32, ROTATE_NONE ],plExits);
-      plExits = Cons([ 2, 7, RID_CORNOTH, 24, 39, ROTATE_NONE ],plExits);
-      plExits = Cons([ 3, 7, RID_CORNOTH, 24, 39, ROTATE_NONE ],plExits);
-      plExits = Cons([ 2, 8, RID_CORNOTH, 24, 39, ROTATE_NONE ],plExits);
-      plExits = Cons([ 3, 8, RID_CORNOTH, 24, 39, ROTATE_NONE ],plExits);
+      plExits = Cons([ 3, 3, RID_CORNOTH, 22, 49, ROTATE_NONE ],plExits);
+      plExits = Cons([ 2, 7, RID_CORNOTH, 24, 55, ROTATE_NONE ],plExits);
+      plExits = Cons([ 3, 7, RID_CORNOTH, 24, 55, ROTATE_NONE ],plExits);
+      plExits = Cons([ 2, 8, RID_CORNOTH, 24, 55, ROTATE_NONE ],plExits);
+      plExits = Cons([ 3, 8, RID_CORNOTH, 24, 55, ROTATE_NONE ],plExits);
 
       propagate;
    }
@@ -71,26 +70,25 @@ messages:
 
       oNews = Create(&Newslink,#nid=NID_TOS_HALL,
                         #name=news_cor_hall,#desc=news_cor_hall_desc);
-      Send(self,@NewHold,#what=oNews,#new_row=9,#new_col=6,#fine_row=32,#fine_col=48);
-      
+      Send(self,@NewHold,#what=oNews,#new_row=9,#new_col=6,
+            #fine_row=32,#fine_col=48);
+
       oNews = Send(SYS,@FindNewsByNum,#num=NID_ADVENTURE);
       if oNews = $
       {
-         oNews = Create(&NewsAdventure,#nid=NID_ADVENTURE);       
+         oNews = Create(&NewsAdventure,#nid=NID_ADVENTURE);
       }
 
       Send(self,@NewHold,#what=oNews,#new_row=8,#new_col=10,
            #fine_row=58,#fine_col=28,#new_angle=ANGLE_NORTH);
 
-
       Send(self,@NewHold,#what=Create(&Brazier),
-           #new_row=5,#new_col=11,#fine_row=16,#fine_col=48);
+            #new_row=5,#new_col=11,#fine_row=16,#fine_col=48);
       Send(self,@NewHold,#what=Create(&Brazier),
-           #new_row=3,#new_col=2,#fine_row=56,#fine_col=16);
+            #new_row=3,#new_col=2,#fine_row=56,#fine_col=16);
 
       propagate;
    }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

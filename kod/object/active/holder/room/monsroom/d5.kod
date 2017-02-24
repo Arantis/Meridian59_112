@@ -83,8 +83,8 @@ messages:
       plEdge_Exits = Cons([LEAVE_NORTH, RID_D4, 79, 53, ROTATE_NONE, COL_IS_LESS_THAN,50], plEdge_exits);
       plEdge_Exits = Cons([LEAVE_NORTH, RID_E4, 47, 26, ROTATE_NONE, NO_OTHER_CONDITIONS], plEdge_exits);      
       plEdge_Exits = Cons([LEAVE_NORTH, RID_E4, 47, 34, ROTATE_NONE, COL_IS_GREATER_THAN, 80], plEdge_exits);      
-      plEdge_Exits = Cons([LEAVE_SOUTH, RID_D6, 2, 14, ROTATE_NONE, COL_IS_LESS_THAN,50], plEdge_exits);
-      plEdge_Exits = Cons([LEAVE_SOUTH, RID_E6, 2, 30, ROTATE_NONE, COL_IS_GREATER_THAN,49], plEdge_exits);      
+      plEdge_Exits = Cons([LEAVE_SOUTH, RID_D6E6, 2, 15, ROTATE_NONE, COL_IS_LESS_THAN,50], plEdge_exits);
+      plEdge_Exits = Cons([LEAVE_SOUTH, RID_D6E6, 3, 65, ROTATE_NONE, COL_IS_GREATER_THAN,49], plEdge_exits);      
 
       propagate;
    }

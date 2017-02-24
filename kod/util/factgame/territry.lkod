@@ -3,7 +3,7 @@ TerritoryGame_princess = de "Prinzessin Kateriina"
 TerritoryGame_rebel = de "Jonas der Rebell"
 TerritoryGame_unfactioned = de "Die Fraktionslosen"
 TerritoryGame_bonus_territory = de \
-   "~INachdem %s%s%s%s%s%s%s%s%s%s, von %s eingenommen wurde wird nun auch die Stand von %s %s!"
+   "~INachdem %s%s%s%s%s%s%s%s%s%s von %s eingenommen wurde, wird nun die komplette Stadt%s$0 %s kontrolliert!"
 territorygame_and = de "und "
 TerritoryGame_control = de "kontrolliert"
 TerritoryGame_controls = de "kontrolliert"

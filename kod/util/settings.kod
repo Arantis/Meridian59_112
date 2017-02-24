@@ -90,6 +90,10 @@ properties:
    // Delay between receiving unbound energy and decay setting in in ms.
    piUnboundDelay = 30000
 
+   // Players can't absorb unbound energy from monsters while engaged in PvP or
+   // a short while thereafter. Default of 4 minutes.
+   piUnboundEnergyAttackDelaySec = 240
+
    // XP percent awarded, can be raised to give a bonus.
    piXPPercent = 100
    
@@ -494,6 +498,11 @@ messages:
    CanRecastJalaWithNecklace()
    {
       return pbCanRecastJalaWithNecklace;
+   }
+
+   UnboundEnergyAttackDelaySec()
+   {
+      return piUnboundEnergyAttackDelaySec;
    }
 
    TeleportAttackDelaySec()

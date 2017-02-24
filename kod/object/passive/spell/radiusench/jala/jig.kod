@@ -27,24 +27,26 @@ resources:
    jig_song = jala2.ogg
 
    Jig_cast = "You begin playing an overwhelmingly addictive ditty!"
-   Jig_starts = "%s begins playing an overwhelmingly addictive ditty!"
-   Jig_ends = "The ditty played by %s ends with a final cheery high note."
+   Jig_starts = "%s%s begins playing an overwhelmingly addictive ditty!"
+   Jig_ends = "The ditty played by %s%s ends with a final cheery high note."
    Jig_caster_ends = "You stop playing your little jig."
    Jig_caster_enter = "You feel compelled to dance to your own tune!"
-   Jig_enter = "As %s's song hits your ears, you feel compelled to dance!"
-   Jig_leave = "You have passed outside the range of %s's song, you lose your compulsion to dance."
+   Jig_enter = "As %s%s's song hits your ears, you feel compelled to dance!"
+   Jig_leave = \
+      "You have passed outside the range of %s%s's song, you lose your "
+      "compulsion to dance."
 
-   Jig_cannot_do_that = "You can't do that while you're dancing to %s's song!"
+   Jig_cannot_do_that = "You can't do that while you're dancing to %s%s's song!"
 
 classvars:
 
-   radius_ench_cast = Jig_cast
-   radius_ench_starts = Jig_starts
-   radius_ench_ends = Jig_ends
-   radius_ench_caster_ends = Jig_caster_ends
-   radius_ench_caster_enter = Jig_caster_enter
-   radius_ench_enter = Jig_enter
-   radius_ench_leave = Jig_leave
+   vrEnchantmentOn = Jig_cast
+   vrEnchantmentOnOther = Jig_starts
+   vrEnchantmentOff = Jig_caster_ends
+   vrEnchantmentOffOther = Jig_ends
+   vrEnterRadiusCaster = Jig_caster_enter
+   vrEnterRadius = Jig_enter
+   vrLeaveRadius = Jig_leave
 
    vrName = jig_name_rsc
    vrIcon = jig_icon_rsc
@@ -56,8 +58,10 @@ classvars:
    viSpell_num = SID_JIG
    viSpellExertion = 3
    viChance_To_Increase = 40
-   viMeditate_ratio = 20
+   viMeditate_ratio = 50
    viSpell_level = 4
+
+   viHarmful = TRUE
 
    viAffectsGuildmates = TRUE
    viAffectsEnemies = TRUE
@@ -78,23 +82,23 @@ messages:
       return;
    }
 
-   StartSpecialEffect(what=$,iPower=0,source=$)
+   AddEnchantmentEffects(who=$,state=$)
    {
-      if IsClass(what,&User)
+      if IsClass(who,&User)
       {
-         Send(what,@DoDance);
+         Post(who,@DoDance);
       }
-      
+
       propagate;
    }
-   
-   EndSpecialEffect(what=$,iPower=0,source=$)
+
+   RemoveEnchantmentEffects(who=$,state=$)
    {
-      if IsClass(what,&User)
+      if IsClass(who,&User)
       {
-         Send(what,@StopDancing);
+         Post(who,@StopDancing);
       }
-      
+
       propagate;
    }
 
@@ -102,7 +106,6 @@ messages:
    {
       return TRUE;
    }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

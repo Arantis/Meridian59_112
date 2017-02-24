@@ -8,7 +8,7 @@ SOURCEDIR = .
 OUTDIR = $(CLIENTRUNDIR)\resource
 OUTDIRSUB = ..\$(OUTDIR)
 
-DIRS = qormashelm
+DIRS = qormashelm tosroom
 
 all:
    @-for %i in (*.bgf) do @$(CP) %i $(OUTDIR) >nul

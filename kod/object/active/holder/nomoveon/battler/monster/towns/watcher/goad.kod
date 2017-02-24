@@ -1,0 +1,289 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+Goad is Watcher
+
+constants:
+
+   include blakston.khd
+
+   LAST_MINUTE = 60000
+
+resources:
+
+   include goad.lkod
+
+   Goad_name_rsc = "The Goad"
+   Goad_icon_rsc = GoadX.bgf
+   Goad_desc_rsc = \
+      "As a mortal man Goad betrayed his Queen, sending her to her death.  "
+      "To his dismay, she was only temporarily inconvenienced and now she has "
+      "bound him here, to serve for all eternity.  His twisted form writhes "
+      "in constant agony, relieved only briefly by the wash of ecstasy he "
+      "feels when he oversees the death of another."
+
+   Goad_ad_need_champion1 = "Come my prettys, be not afraid . . . "
+   Goad_ad_need_champion2 = \
+      "I can taste your desire  . . . give in to it, there is so "
+      "much power to be gained."
+   Goad_ad_need_champion3 = \
+      "It is such a small thing to kill another, won't you dance for me?"
+   Goad_ad_need_champion4 = "I must have death!"
+   Goad_ad_need_challenger = "Come . . . won't you dance with %s%s?"
+   Goad_ad_good_fight1 = "YES!! Oh God yes!!!  Die you fools die!!!"
+   Goad_ad_good_fight2 = "I can taste your soul."
+   Goad_ad_good_fight3 = "So sweet . . . your blood is so sweet."
+
+   Goad_no_need = "Be calm little one, your time to die will come."
+   Goad_need_champion = \
+      "By ancient law I must first have a Champion.  Give yourself to me."
+   Goad_dont_need_challenger = \
+      "Later my sweet, later.  Enough blood flows through the veins "
+      "of these fools, I can wait for yours."
+   Goad_fight_in_progress = \
+      "Yes!  As soon as I have feasted upon these fools you may follow them."
+
+   Goad_already_combatant = "So generous . . . but, you are already mine."
+   Goad_already_champion = "So generous . . . but, you are already mine."
+   Goad_already_have_champion = \
+      "So you would be champion?  Nothing could be easier, simply "
+      "challenge and kill %s%s.  Would you dare to challenge %s?"
+
+   Goad_challenge_offered = \
+      "%s%s has challenged you.  Will you crush %s like the bug %s is?"
+   Goad_must_accept = \
+      "Hurry fool!! You only have %i seconds left to accept %s%s's challenge."
+
+   Goad_commence_fight = "Fight!!!!  Kill!!!  Die!!!!"
+   Goad_last_minute = "You have one minute  . . . then I take you both."
+
+   Goad_victor = "~BCurse you %s%s!  Today you live, but not forever!~B"
+   Goad_new_champion = "~B%s%s is our new Champion, ripe for the killing.~B"
+   Goad_killed_champion = \
+      "%s%s has slain the Champion, %s%s . . . such sweet blood!"
+   Goad_retain_title = \
+      "%s%s retains the Championship, won't someone give me %s blood?"
+
+   Goad_ready_to_fight = "%s%s vs %s%s.  Prepare to die  . . ."
+
+   Goad_cant_leave = "Sorry fool, there's no escape!"
+   Goad_pitifully_fled = \
+      "%s%s has pitifully fled.  I think I'll have to kill them, yes?"
+   Goad_fled_reconnect = \
+      "%s%s has pitifully fled.  If %s%s is not back in 30 seconds "
+      "I think I'll have to kill them, yes?"
+   Goad_only_combatants = \
+      "You have to come into my embrace if you want to kill here!"
+   Goad_no_fighting_yet = "Not yet my sweet little blood bag, not yet."
+   Goad_only_combatants_cast = \
+      "You have to come into my embrace if you want to cast spells here!"
+   Goad_only_target_combatants = \
+      "You cannot fight non-combatants!"
+
+   Goad_spell_banned = \
+      "So sorry you can't cast %s here.  Why?  Because I say so."
+
+   Goad_must_choose_style = \
+      "First things first . . . are we to have a duel or a bloodbath?"
+   Goad_cant_switch = "You can't change that now, worm."
+   Goad_new_combat_style = \
+      "Excellent.  I've been thirsting for a good %s.  Now, who'll "
+      "say the magic word, \"champion\"?"
+
+   Goad_style_one_on_one = "duel"
+   Goad_style_last_man_standing = "bloodbath"
+
+   Goad_welcome = "~kGoad tells you, \"Welcome to my hell, worm.\""
+   Goad_worship_admin = \
+      "Oh how exciting . . . it's %s, %s is sooo important."
+   Goad_worship_dm = \
+      "Don't except me to grovel to %s, I could care "
+      "less about a %s of Meridian!"
+   Goad_welcome_champion = "All hail %s%s, spiller of blood."
+
+   Goad_not_during_fight = \
+      "~kThe Goad tells you, \"You cannot offer me commands while "
+      "a fight is still going on.\""
+   Goad_wont_fight = \
+      "`kApparently %s%s is too cowardly to fight.  Cowards should "
+      "die . . . slowly."
+
+classvars:
+
+   vrName = Goad_name_rsc
+   vrIcon = Goad_icon_rsc
+   vrDesc = Goad_desc_rsc
+
+   vrChallengerAd = Goad_ad_need_challenger
+   vrAlreadyChampion = Goad_already_champion
+   vrAlreadyCombatant = Goad_already_combatant
+   vrChallengeOffered = Goad_challenge_offered
+   vrCommenceFight = Goad_commence_fight
+   vrMustAcceptChallenge = Goad_must_accept
+   vrMustChooseStyle = Goad_must_choose_style
+   vrFightInProgress = Goad_fight_in_progress
+   vrNeedChampion = Goad_need_champion
+   vrNotAcceptingChallengers = Goad_dont_need_challenger
+   vrAlreadyHaveChamp = Goad_already_have_champion
+   vrStyleOneOnOne = Goad_style_one_on_one
+   vrStyleLastManStanding = Goad_style_last_man_standing
+   vrKilledChamp = Goad_killed_champion
+   vrCannotLeave = Goad_cant_leave
+   vrOnlyCombatantsCast = Goad_only_combatants_cast
+   vrOnlyCastCombatants = Goad_only_target_combatants
+   vrNoFightingYet = Goad_no_fighting_yet
+   vrSpellBanned = Goad_spell_banned
+   vrOnlyCombatantsAttack = Goad_only_combatants
+   vrPlayerFled = Goad_pitifully_fled
+   vrPlayerFledReconnect = Goad_fled_reconnect
+   vrPlayerWontFight = Goad_wont_fight
+   vrWorshipAdmin = Goad_worship_admin
+   vrWorshipDM = Goad_worship_dm
+   vrWorshipChamp = Goad_welcome_champion
+   vrWelcome = Goad_welcome
+   vrCantSwitch = Goad_cant_switch
+   vrNewStyle = Goad_new_combat_style
+   vrAlreadyHaveChamp = Goad_already_have_champion
+   vrNoNeedCombatant = Goad_no_need
+   vrReadyOneOnOne = Goad_ready_to_fight
+   vrLastMinuteFight = Goad_last_minute
+   vrNewChampion = Goad_new_champion
+   vrRetainTitle = Goad_retain_title
+   vrVictor = Goad_victor
+   vrNoCmdsDuringFight = Goad_not_during_fight
+
+   vrCmdOneOnOne = Goad_style_one_on_one
+   vrCmdLastManStanding = Goad_style_last_man_standing
+
+   viDefinite = ARTICLE_NONE
+   viIndefinite = ARTICLE_NONE
+
+   viAttributes = \
+      MOB_NOMOVE | MOB_FULL_TALK | MOB_LISTEN | MOB_NOFIGHT | MOB_NOQUEST
+   viOccupation = MOB_ROLE_WATCHER
+   viWatcherID = WATCHER_BRAX_ARENA
+
+properties:
+
+   // Goad warns once before killing slow combatants.
+   pbWarned = FALSE
+
+messages:
+
+   // Speech resources messages.
+   GetNeedChampionRsc()
+   {
+      switch (Random(1,4))
+      {
+         case 1: return Goad_ad_need_champion1;
+         case 2: return Goad_ad_need_champion2;
+         case 3: return Goad_ad_need_champion3;
+         case 4: return Goad_ad_need_champion4;
+      }
+
+      return TosWatcher_ad_need_champion1;
+   }
+
+   GetGoodFightRsc()
+   {
+      switch (Random(1,3))
+      {
+         case 1: return Goad_ad_good_fight1;
+         case 2: return Goad_ad_good_fight2;
+         case 3: return Goad_ad_good_fight3;
+      }
+
+      return Goad_ad_good_fight1;
+   }
+
+   SayDMWelcome(who = $)
+   {
+      Post(self,@Say,#message_rsc=vrWorshipDM,
+            #parm1=Send(who,@GetName),#parm2=Send(who,@GetLordLady));
+
+      return;
+   }
+
+   SayVictor(who = $)
+   {
+      Send(self,@Say,#message_rsc=vrVictor,#parm1=Send(who,@GetCapDef),
+            #parm2=Send(who,@GetName));
+
+      return;
+   }
+
+   SayChallenge(who = $)
+   {
+      Post(self,@Say,#message_rsc=vrChallengeOffered,
+            #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName),
+            #parm3=Send(who,@GetHimHer),#parm4=Send(who,@GetHeShe));
+
+      return;
+   }
+
+   Commence()
+   "Called by CommenceTimer."
+   {
+      // Set pbWarned and let Watcher class handle the rest.
+      pbWarned = FALSE;
+
+      propagate;
+   }
+
+   // Goad kills players after the minute is up.
+   FightTimer()
+   {
+      local i;
+
+      ptFight = $;
+
+      if pbWarned = TRUE
+      {
+         /// message:  EVERYBODY DIES!!!!!
+         foreach i in plCombatants
+         {
+            Send(SYS,@UtilGoNearSquare,#what=i,#where=poOwner,
+                  #new_row=9,#new_col=14,#new_angle=ANGLE_EAST);
+            pbWarned = FALSE;
+         }
+
+         return;
+      }
+
+      if pbLastMinute = FALSE
+         AND pbWarned = FALSE
+      {
+         pbLastMinute = TRUE;
+         Send(self,@Say,#message_rsc=vrLastMinuteFight);
+         ptFight = CreateTimer(self,@FightTimer,LAST_MINUTE);
+      }
+      else
+      {
+         if pbWarned = FALSE
+         {
+            pbWarned = TRUE;
+            Send(self,@Say,#message_rsc=vrSpeedUpFight);
+            foreach i in plCombatants
+            {
+               Send(poOwner,@SomethingShot,#who=self,#target=i,
+                     #projectile=Send(SYS,@FindSpellByNum,#num=SID_FIREBALL));
+               Send(i,@AssessDamage,#damage=Send(i,@GetHealth)/2,#what=self,
+                     #report=FALSE,#report_resistance=FALSE,#absolute=TRUE);
+            }
+            ptFight = CreateTimer(self,@FightTimer,LAST_MINUTE/2);
+         }
+      }
+
+      return;
+   }
+
+end
+//////////////////////////////////////////////////////////////////////////////

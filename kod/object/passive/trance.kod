@@ -35,13 +35,14 @@ messages:
 
    BeginCastingTrance( what = $, who = $, lTargets = $, time = 0 )
    {
-      local oWarpTime;
+      local lState, iPower;
 
-      oWarpTime = Send(SYS,@FindSpellByNum,#num=SID_WARPTIME);
-      if Send(Send(who,@GetOwner),@IsEnchanted,#what=oWarpTime)
+      lState = Send(who,@GetRadiusEnchantmentState,#byclass=&WarpTime);
+      if (lState <> $)
       {
-         //time = Send(oWarpTime,@GetStretchedTime,#oldtime=time,
-         //            #oRoom=Send(who,@GetOwner));
+         iPower = Nth(lState,5);
+         // Up to an extra second.
+         time += iPower * 10;
       }
 
       Send(who,@StartEnchantment,#what=self,#time=time,#addicon=FALSE,

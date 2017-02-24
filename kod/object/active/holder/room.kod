@@ -806,12 +806,25 @@ messages:
    "Admin supported."
    "Teleports object to coordinates specified in class vars."
    {
+      // Don't teleport players if logged off.
+      if (what = $
+         OR (IsClass(what,&User)
+            AND NOT Send(what,@IsLoggedOn)))
+      {
+         return FALSE;
+      }
+
       if Send(self,@GetTeleportRow) <> $ AND Send(self,@GetTeleportCol) <> $
       {
          Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
               #new_row=Send(self,@GetTeleportRow),
               #new_col=Send(self,@GetTeleportCol),
               #new_angle=Send(self,@GetTeleportAngle));
+
+         if IsClass(what,&Player) AND NOT IsClass(what,&DM)
+         {
+            Send(what,@WipeUnboundEnergy);
+         }
 
          return TRUE;
       }
@@ -2161,13 +2174,10 @@ messages:
          Send(what,@ShowAddEnchantment,#what=each_obj,#type=ENCHANTMENT_ROOM);
       }
 
-      if IsClass(what,&User)
+      foreach i in Send(what,@GetRadiusEnchantments)
       {
-         foreach i in Send(what,@GetRadiusEnchantments)
-         {
-            each_obj = First(i);
-            Send(what,@ShowAddEnchantment,#what=each_obj,#type=ENCHANTMENT_ROOM);
-         }
+         each_obj = Nth(i,2);
+         Send(what,@ShowAddEnchantment,#what=each_obj,#type=ENCHANTMENT_ROOM);
       }
 
       return;
@@ -2468,6 +2478,35 @@ messages:
       return TRUE;
    }
 
+   GetSectorIDAtLocation(row = $, col = $, fine_row = FINENESS_HALF,
+                         fine_col = FINENESS_HALF)
+   "Gets the sector tag ID in this room for the given location.  Returns -1 on "
+   "error, as valid tags are all >= 0."
+   {
+      local iQflags, iRflags, iHeightF, iHeightFWD, iHeightC, iServerID;
+
+      if (row = $ OR col = $)
+      {
+         Debug("GetSectorIDAtLocation called with $ params for room ",
+               Send(self,@GetName));
+
+         return -1;
+      }
+      // set query-flags, here we're only interested in the sectorinfo
+      iQflags = LIQ_GET_SECTORINFO;
+
+      // query data from bsp in c-function
+      if NOT GetLocationInfoBSP(prmRoom, iQflags, row, col, fine_row, fine_col,
+                  *iRflags, *iHeightF, *iHeightFWD, *iHeightC, *iServerID)
+      {
+         Debug("Failed to get location info in ", Send(self,@GetName));
+
+         return -1;
+      }
+
+      return iServerID;
+   }
+
    LineOfSight(obj1 = $, obj2 = $)
    "Returns TRUE if there is a line of sight between obj1 and obj2"
    {
@@ -2640,6 +2679,9 @@ messages:
       }
 
       ClearPacket();
+
+      // Radius enchants, because SomethingMoved not always sent to players.
+      SendListByClass(plActive,1,&NoMoveOn,@NoMoveOnRadiusEnchCheckOne,#who=what);
 
       return;
    }
@@ -2819,6 +2861,28 @@ messages:
       }
 
       propagate;
+   }
+
+   IsAnyUserInSectorID(iNum=0)
+   "Returns TRUE if any user is present in the sector ID given.  Does not "
+   "count invisible DMs."
+   {
+      local i, each_obj;
+
+      foreach i in plActive
+      {
+         each_obj = First(i);
+
+         if (IsClass(each_obj,&User)
+            AND NOT (IsClass(each_obj,&DM)
+               AND Send(each_obj,@IsDMStealthed))
+            AND Send(each_obj,@GetSectorIDAtObject) = iNum)
+         {
+            return TRUE;
+         }
+      }
+
+      return FALSE;
    }
 
    IsUserInArea(who=$,iRow=$,iCol=$,iFineRow=$,iFineCol=$,lArea=$)
@@ -3376,7 +3440,15 @@ messages:
                return TRUE;
             }
 
-            Send(what,@MsgSendUser,#message_rsc=room_door_was_opened);
+            // Check for specialised door message.
+            if (Length(i) = 7)
+            {
+               Send(what,@MsgSendUser,#message_rsc=Nth(i,7));
+            }
+            else
+            {
+               Send(what,@MsgSendUser,#message_rsc=room_door_was_opened);
+            }
 
             iAngle = Send(self,@TranslateAngleChange,
                           #iAngle=Send(what,@GetAngle),
@@ -3541,6 +3613,20 @@ messages:
          {
             // Should be affected, e.g. turned outlaw.
             Send(oSpell,@StartEnchantment,#who=who,#state=state);
+         }
+      }
+
+      // Radius enchant recalcs.
+      foreach i in plActive
+      {
+         oUser = First(i);
+         if (oUser = who)
+         {
+            Send(oUser,@NoMoveOnRadiusEnchCheckAll);
+         }
+         else if (IsClass(oUser,&NoMoveOn))
+         {
+            Send(oUser,@NoMoveOnRadiusEnchCheckOne,#who=who);
          }
       }
 
@@ -4001,7 +4087,6 @@ messages:
       {
          Send(self,@SetRoomFlag,#flag=ROOM_SNOWING,#value=FALSE);
          Send(self,@WeatherChanged);
-
       }
 
       if pbSnowGroundTexture
@@ -4173,19 +4258,62 @@ messages:
       return;
    }
 
+   #region Arena Functions
    IsArena()
    {
       return FALSE;
    }
 
-   CanTokenEnterRoom()
+   GetWatcher()
+   "Used for Arenas to get the watcher."
    {
-      if Send(self,@IsArena)
-      {
-         return FALSE;
-      }
+      return $;
+   }
 
+   ArenaCanAddCombatants()
+   "Used if an arena has any specific conditions for allowing combatants, e.g. "
+   "max capacity, minimum HP."
+   {
       return TRUE;
+   }
+
+   ArenaGetMaxCombatants()
+   "Default 25, arenas can set this higher or lower depending on size."
+   {
+      return 25;
+   }
+
+   ArenaCanStartFight()
+   "Used if specific conditions are necessary for a room to"
+   "host an arena fight."
+   {
+      return TRUE;
+   }
+
+   ArenaCommenceFight()
+   "Called when the fight joining period ends, for anything the room needs to "
+   "do at this point (e.g. raise sectors)."
+   {
+      return;
+   }
+
+   ArenaBeginFight()
+   "Called when an arena fight begins (i.e. combat is enabled for combatants)."
+   {
+      return;
+   }
+
+   ArenaEndFight()
+   "Called when a fight ends."
+   {
+      return;
+   }
+
+   ArenaCombatantReneges()
+   "Called so the room can do anything specific when a combatant leaves the "
+   "fight area."
+   {
+      return;
    }
 
    IsValidTarget(who=$)
@@ -4195,10 +4323,41 @@ messages:
       return FALSE;
    }
 
-   GetWatcher()
-   "Used for Arenas to get the watcher."
+   ArenaRealDeath()
    {
-      return $;
+      // Should never get called from here but just in case . . .
+      Debug("ArenaRealDeath() called in room.kod  Ergo: SNAFU  Q.E.D.");
+
+      return FALSE;
+   }
+
+   ArenaDropItems()
+   "Whether combatants in real death arena drop items when killed."
+   {
+      return FALSE;
+   }
+
+   SpecialGreeting()
+   {
+      return;
+   }
+
+   ArenaStartTournament()
+   "Called when a DM initiates a tournament."
+   {
+      return;
+   }
+
+   ArenaEndTournament()
+   "Called when a DM ends a tournament."
+   {
+      return;
+   }
+   #endregion Arena Functions
+
+   CanTokenEnterRoom()
+   {
+      return (NOT Send(self,@IsArena));
    }
 
    CorpseFading(corpse=$)
@@ -4215,16 +4374,6 @@ messages:
          Send(First(i),@ObjectCorpseFading,#corpse=corpse);
       }
 
-      return;
-   }
-
-   StartTournament()
-   {
-      return;
-   }
-
-   EndTournament()
-   {
       return;
    }
 
@@ -4285,15 +4434,6 @@ messages:
       foreach i in plEnchantments
       {
          oEnch = Nth(i,2);
-         if IsClass(oEnch,&Jala)
-         {
-            lState = Nth(i,3);
-            if who = Nth(lState,2)
-            {
-               bRetVal = Send(oEnch,@BreakTrance,#who=who,#event=event,
-                              #state=lState,#location=self);
-            }
-         }
 
          // It's a room enchantment! It's a trance spell! It's both!
          //  It's Silence!  Handle the special case here.
@@ -4897,13 +5037,6 @@ messages:
    SeanceCheck()
    {
       return TRUE;
-   }
-
-   ArenaRealDeath()
-   {
-      // Should never get called from here but just in case . . .
-      debug("ArenaRealDeath() called in room.kod  Ergo: SNAFU  Q.E.D.");
-      return FALSE;
    }
 
    ShrineUsed()

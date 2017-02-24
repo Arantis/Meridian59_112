@@ -27,22 +27,23 @@ resources:
    Rejuvenate_song = song04.ogg
 
    Rejuvenate_cast = "You begin to play an energizing song."
-   Rejuvenate_starts = "%s begins to play an energizing song."
-   Rejuvenate_ends = "The energizing song played by %s fades away."
+   Rejuvenate_starts = "%s%s begins to play an energizing song."
+   Rejuvenate_ends = "The energizing song played by %s%s fades away."
    Rejuvenate_caster_ends = "Your energizing song fades."
    Rejuvenate_caster_enter = "You feel the weariness of your soul diminish."
-   Rejuvenate_enter = "%s's energizing song eases the weariness of your soul."
-   Rejuvenate_leave = "You can no longer hear the energizing notes of %s's song."
+   Rejuvenate_enter = "%s%s's energizing song eases the weariness of your soul."
+   Rejuvenate_leave = \
+      "You can no longer hear the energizing notes of %s%s's song."
 
 classvars:
 
-   radius_ench_cast = Rejuvenate_cast
-   radius_ench_starts = Rejuvenate_starts
-   radius_ench_ends = Rejuvenate_ends
-   radius_ench_caster_ends = Rejuvenate_caster_ends
-   radius_ench_caster_enter = Rejuvenate_caster_enter
-   radius_ench_enter = Rejuvenate_enter
-   radius_ench_leave = Rejuvenate_leave
+   vrEnchantmentOn = Rejuvenate_cast
+   vrEnchantmentOnOther = Rejuvenate_starts
+   vrEnchantmentOff = Rejuvenate_caster_ends
+   vrEnchantmentOffOther = Rejuvenate_ends
+   vrEnterRadiusCaster = Rejuvenate_caster_enter
+   vrEnterRadius = Rejuvenate_enter
+   vrLeaveRadius = Rejuvenate_leave
 
    vrName = Rejuvenate_name_rsc
    vrIcon = Rejuvenate_icon_rsc
@@ -55,8 +56,6 @@ classvars:
    viMana = 5           // Mana is amount used upon inititiation
    viManaDrain = 8      // Drain is amount used every viDrainTime milliseconds
    viDrainTime = 5000   // Drain some mana every viDrainTime milliseconds
-
-   viPeriodicEffect = TRUE
 
    viSpellExertion = 3
    viChance_To_Increase = 20
@@ -78,30 +77,19 @@ messages:
 
       return;
    }
-   
-   CalculatePeriodicEffectTime(iPower=0)
+
+   GetDuration(iSpellPower=0)
    {
-      return 100000 / (iPower+1);
+      return 100000 / (iSpellPower+1);
    }
 
-   PeriodicEffect(lEnchanted=$,iPower=0,iRange=0,source=$)
+   PeriodicEffect(who = $)
    {
-      local oUser, lState;
-
-      foreach oUser in lEnchanted
+      if (who <> $)
       {
-         if IsClass(oUser,&User)
-         {
-            lState = Send(oUser,@GetMostPowerfulRadiusEnchantmentState,#byClass=&Rejuvenate);
-            
-            if Nth(lState,3) = source
-               AND Nth(lState,2) = iPower
-            {
-               Send(oUser,@GainMana,#amount=1,#bRespectMax=TRUE);
-            }
-         }
+         Send(who,@GainMana,#amount=1,#bRespectMax=TRUE);
       }
-      
+
       return;
    }
 

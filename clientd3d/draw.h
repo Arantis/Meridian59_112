@@ -45,6 +45,7 @@ M59EXPORT void DrawBorder( AREA *area, int index, DRAWBORDEREXCLUDE* pExclude );
 M59EXPORT void DrawWindowBackgroundBorder( RawBitmap *bg, HDC hdc, AREA *area, int thickness, int xin, int yin, int index, DRAWBORDEREXCLUDE* pExclude );
 
 M59EXPORT HDC CreateMemBitmap(int width, int height, HBITMAP *gOldBitmap, BYTE **gBits);
+M59EXPORT HDC CreateMemBitmapFromBmp(HBITMAP gNewBitmap, HBITMAP *gOldBitmap, HPALETTE palette);
 
 void DrawTransBytes(BYTE *dest, const BYTE *src, int count);
 void DrawTransOffetDest(BYTE *dest, const BYTE *src, int count);

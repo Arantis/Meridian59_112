@@ -92,7 +92,8 @@ messages:
          OR location = $
          OR Send(location,@CheckRoomFlag,#flag=ROOM_NO_COMBAT)
          OR Send(location,@CheckRoomFlag,#flag=ROOM_SANCTUARY)
-         OR Send(location,@checkRoomFlag,#flag=ROOM_SAFE_DEATH)
+         OR Send(location,@CheckRoomFlag,#flag=ROOM_SAFE_DEATH)
+         OR Send(location,@OverridesDeathFunction)
       {
          return;
       }

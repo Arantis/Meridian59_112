@@ -14,14 +14,17 @@
 
 #include "bkod.h"
 
-#define BOF_VERSION 8
+#define BOF_VERSION 9
 
 #define MAX_CLASSES 100
 #define MAX_HANDLERS 500
 
 enum {
    GOTO_IF_FALSE,
-   GOTO_IF_TRUE
+   GOTO_IF_TRUE,
+   GOTO_IF_NULL,
+   GOTO_IF_NEQ_NULL
+   
 };
 enum
 {
@@ -470,8 +473,10 @@ char * name_goto_cond(int cond)
 {
    switch (cond)
    {
-   case GOTO_IF_TRUE : return "!= 0";
-   case GOTO_IF_FALSE : return "= 0";
+   case GOTO_IF_TRUE: return "!= 0";
+   case GOTO_IF_FALSE: return "== 0";
+   case GOTO_IF_NULL: return "== $";
+   case GOTO_IF_NEQ_NULL: return "!= $";
    default : return "INVALID";
    }
 }
@@ -567,9 +572,9 @@ char * name_function(int fnum)
    case GETALLLISTNODESBYCLASS : return "C_GetAllListNodesByClass";
    case LISTCOPY : return "ListCopy";
 
-   case GETTIMEZONEOFFSET : return "GetTimeZoneOffset";
    case GETTIME : return "GetTime";
    case GETTICKCOUNT : return "GetTickCount";
+   case GETDATEANDTIME : return "GetDateAndTime";
 
    case ABS : return "Abs";
    case BOUND : return "Bound";
@@ -855,6 +860,38 @@ void dump_goto_if_false_classvar(char *text)
 {
    dump_goto(text, GOTO_IF_FALSE, CLASS_VAR);
 }
+void dump_goto_if_null_constant(char *text)
+{
+   dump_goto(text, GOTO_IF_NULL, CONSTANT);
+}
+void dump_goto_if_null_local(char *text)
+{
+   dump_goto(text, GOTO_IF_NULL, LOCAL_VAR);
+}
+void dump_goto_if_null_property(char *text)
+{
+   dump_goto(text, GOTO_IF_NULL, PROPERTY);
+}
+void dump_goto_if_null_classvar(char *text)
+{
+   dump_goto(text, GOTO_IF_NULL, CLASS_VAR);
+}
+void dump_goto_if_neq_null_constant(char *text)
+{
+   dump_goto(text, GOTO_IF_NEQ_NULL, CONSTANT);
+}
+void dump_goto_if_neq_null_local(char *text)
+{
+   dump_goto(text, GOTO_IF_NEQ_NULL, LOCAL_VAR);
+}
+void dump_goto_if_neq_null_property(char *text)
+{
+   dump_goto(text, GOTO_IF_NEQ_NULL, PROPERTY);
+}
+void dump_goto_if_neq_null_classvar(char *text)
+{
+   dump_goto(text, GOTO_IF_NEQ_NULL, CLASS_VAR);
+}
 // Calls
 void dump_call_store_none(char *text)
 {
@@ -1088,6 +1125,15 @@ void CreateOpcodeTable(void)
    opcode_table[OP_GOTO_IF_FALSE_L] = dump_goto_if_false_local;
    opcode_table[OP_GOTO_IF_FALSE_P] = dump_goto_if_false_property;
    opcode_table[OP_GOTO_IF_FALSE_V] = dump_goto_if_false_classvar;
+   opcode_table[OP_GOTO_IF_NULL_C] = dump_goto_if_null_constant;
+   opcode_table[OP_GOTO_IF_NULL_L] = dump_goto_if_null_local;
+   opcode_table[OP_GOTO_IF_NULL_P] = dump_goto_if_null_property;
+   opcode_table[OP_GOTO_IF_NULL_V] = dump_goto_if_null_classvar;
+   opcode_table[OP_GOTO_IF_NEQ_NULL_C] = dump_goto_if_neq_null_constant;
+   opcode_table[OP_GOTO_IF_NEQ_NULL_L] = dump_goto_if_neq_null_local;
+   opcode_table[OP_GOTO_IF_NEQ_NULL_P] = dump_goto_if_neq_null_property;
+   opcode_table[OP_GOTO_IF_NEQ_NULL_V] = dump_goto_if_neq_null_classvar;
+
    opcode_table[OP_CALL_STORE_NONE] = dump_call_store_none;
    opcode_table[OP_CALL_STORE_L] = dump_call_store_local;
    opcode_table[OP_CALL_STORE_P] = dump_call_store_property;

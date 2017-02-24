@@ -20,11 +20,10 @@ resources:
 
    Archery_name_rsc = "archery"
    Archery_icon_rsc = archrico.bgf
-   Archery_desc_rsc = "Those with this skill find themselves better able to handle any standard bow.  "
-			"However, the learning curve is tediously slow, and only those with good aim will "
-			"ever truly excel at it."
-
-   /// Add a new proficiency for crossbows.
+   Archery_desc_rsc = \
+      "Those with this skill find themselves better able to handle any "
+      "standard bow.  However, the learning curve is tediously slow, and only "
+      "those with good aim will ever truly excel at it."
 
 classvars:
 
@@ -46,9 +45,8 @@ messages:
 
    GetRequisiteStat(who=$)
    {
-      return send(who,@GetAim);
+      return Send(who,@GetAim);
    }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

@@ -24,30 +24,28 @@ resources:
       "This is a sad song, invoking feelings of loss and sorrow.  It causes "
       "most people hearing it to experience overwhemling sadness, often "
       "leading to foul moods.  This music is appropriate for funerals and "
-      "fighting against the forces of good.  "
-      "It requires 1 sapphire to cast."
-
-   Melancholy_on = "%s%s's melancholy song makes your heart feel heavy."
+      "fighting against the forces of good.  Requires one sapphire to cast."
 
    Melancholy_song = ksong.ogg
 
    Melancholy_cast = "You begin to play a melancholy song."
-   Melancholy_starts = "%s begins to play a melancholy song."
-   Melancholy_ends = "The melancholy song played by %s fades away."
+   Melancholy_starts = "%s%s begins to play a melancholy song."
+   Melancholy_ends = "The melancholy song played by %s%s fades away."
    Melancholy_caster_ends = "Your melancholy song fades."
    Melancholy_caster_enter = "Your heart feels heavy."
-   Melancholy_enter = "%s's melancholy song makes your heart feel heavy."
-   Melancholy_leave = "You can no longer hear the melancholy notes of %s's song."
+   Melancholy_enter = "%s%s's melancholy song makes your heart feel heavy."
+   Melancholy_leave = \
+      "You can no longer hear the melancholy notes of %s%s's song."
 
 classvars:
 
-   radius_ench_cast = Melancholy_cast
-   radius_ench_starts = Melancholy_starts
-   radius_ench_ends = Melancholy_ends
-   radius_ench_caster_ends = Melancholy_caster_ends
-   radius_ench_caster_enter = Melancholy_caster_enter
-   radius_ench_enter = Melancholy_enter
-   radius_ench_leave = Melancholy_leave
+   vrEnchantmentOn = Melancholy_cast
+   vrEnchantmentOnOther = Melancholy_starts
+   vrEnchantmentOff = Melancholy_caster_ends
+   vrEnchantmentOffOther = Melancholy_ends
+   vrEnterRadiusCaster = Melancholy_caster_enter
+   vrEnterRadius = Melancholy_enter
+   vrLeaveRadius = Melancholy_leave
 
    vrName = Melancholy_name_rsc
    vrIcon = Melancholy_icon_rsc
@@ -70,7 +68,7 @@ classvars:
 properties:
 
    prMusic = Melancholy_song
-      
+
 messages:
 
    ResetReagents()
@@ -81,29 +79,30 @@ messages:
       return;
    }
 
-   StartSpecialEffect(what=$,iPower=0,source=$)
+   AddEnchantmentEffects(who=$,state=$)
    {
-      if IsClass(what,&User)
+      if IsClass(who,&User)
       {
-         Send(what,@SetAction,#action=UA_SAD);
+         Send(who,@SetAction,#action=UA_SAD);
       }
 
       propagate;
    }
-   
-   EndSpecialEffect(what=$,iPower=0,source=$)
+
+   RemoveEnchantmentEffects(who=$,iPower=0,source=$)
    {
-      if IsClass(what,&User)
-         AND Send(what,@GetAction) = UA_SAD
+      if IsClass(who,&User)
+         AND Send(who,@GetAction) = UA_SAD
       {
-         Send(what,@SetAction,#action=UA_NORMAL);
+         Send(who,@SetAction,#action=UA_NORMAL);
       }
+
       propagate;
    }
 
    // Stuff we handle to be an attack modifier.
 
-   ModifyHitRoll(who = $,what = $,hit_roll = $)
+   ModifyHitRoll(who = $,what = $,hit_roll = $,state = $)
    {
       if what = $
       {
@@ -114,14 +113,16 @@ messages:
       if Send(what,@GetKarma,#detect=TRUE) > 0
       {
          // Give a small bonus
-         return hit_roll + 100;
+         return hit_roll + Nth(state,5);
       }
 
       return hit_roll;
    }
-   
-   ModifyDamage(who = $,what = $,damage = $)
+
+   ModifyDamage(who = $,what = $,damage = $,state = $)
    {
+      local iPower;
+
       if what = $
       {
          return damage;
@@ -130,13 +131,13 @@ messages:
       // Only affect the good ones...
       if Send(what,@GetKarma,#detect=TRUE) > 0
       {
-         // Roughly equal to Killing Fields
-         return damage + Random(1,5);
+         iPower = Bound(Nth(state,5) / 24,1,4);
+
+         return damage + Random(1,iPower);
       }
 
       return damage;
    }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

@@ -546,6 +546,9 @@ LT_yes = de "Ja"
 LT_wryn = de "Wryn's Keep"
 LT_wool = de "Wolle"
 LT_tova = de "Tova"
+LT_creepy = de "gruselig"
+LT_strangeactivity = de "seltsamen Tätigkeiten"
+LT_creature = de "kreatur"
 LT_mend = de "reparieren"
 LT_mending = de "reparieren"
 LT_blind = de "blind"
@@ -870,6 +873,160 @@ LM_haz_rand_elder1 = de \
 LM_haz_rand_smith1 = de \
    "Der Schmied im Nordwesten der Stadt bietet vorzügliche Waffen für ambitionierte "
    "Abenteurer."
+LM_cormuseum_rand1 = de \
+   "Wusstest du, dass Meridian 59 das erste kommerzielle 3D Massively Multiplayer Spiel war?"
+LM_cormuseum_rand2 = de \
+   "Meridian wurde erstmals am 15. Dezember 1995 zur Beta-Phase vorgestellt und erst am 27. September 1996 folgte die erste kommerzielle Veröffentlichung mit einer monatlich zu bezahlenden Gebühr."
+LM_cormuseum_rand3 = de \
+   "Meridian59 wurde von Archetype Interactive entwickelt und von 3DO im "
+   "Jahre 1996 veröffentlicht und betrieben."
+LM_cormuseum_rand4 = de \
+   "Wusstest du, dass die technologische Basis des Spiels von Sceptre of Goth "
+   "inspiert wurde?"
+LM_cormuseum_rand5 = de \
+   "Meridian war in einer sehr früheren Beta-Phase, als das Spiel von Kevin "
+   "Hester und anderen Spieleentwicklern bei 3DO entdeckt wurde."
+LM_cormuseum_rand6 = de \
+   "Wusstest du, dass der klassische Meridian-Client eine ähnliche Engine "
+   "wie Doom verwendet?"
+LM_cormuseum_rand7 = de \
+   "Meridian59 ist als Open-Source veröffentlicht. Hast du vielleicht "
+   "Interesse das Spiel weiterzuentwickeln? Dann nimm doch Kontakt mit uns auf!"
+LM_cormuseum_rand8 = de \
+   "Wusstest du, dasss Meridian mehrere Auszeichnungen erhielt? Darunter den "
+   "Titel 'Fantasy-Rollenspiel des Jahres 1996'?"
+LM_cormuseum_rand9 = de \
+   "Archetype wurde von Steve Sellers, Mike Sellers und John Hanke geführt. "
+   "Mit den Brüdern Andrew und Chris Kirmse in der wichtigen Rolle der "
+   "technischen Leitung. "
+LM_cormuseum_rand10 = de \
+   "Wusstest du, dass John Hanke (Einer der Entwickler von Meridian) den "
+   "Welthit PokémonGo entwickelt hat?"
+LM_cormuseum_rand11 = de \
+   "Mehr als 25.000 Spieler schlossen sich der ersten öffentlichen Beta "
+   "des Spiels an!"
+LM_cormuseum_rand12 = de \
+   "Meridian hält den Titel als erstes 3D-MMORPG der Welt!"
+LM_cormuseum_rand13 = de \
+   "Meridian hat viele Features, die in vielen anderen Spielen erfolgreich "
+   "kopiert wurden. Darunter Gilden mit einem dynamischen "
+   "Wahlsystem, um die Führung zu ändern. Oder auch Insignien auf Rüstungen "
+   "(Gildenschilder) oder gar Gildenhallen die erobert werden können."
+LM_cormuseum_rand14 = de \
+   "Als 3DO die Server am 31. August geschlossen haben, hat Near Death "
+   "Studios (NDS) im Jahre 2002 die Rechte erworben und die Tore erneut "
+   "geöffnet."
+LM_cormuseum_rand15 = de \
+   "NDS wurde von den ehemaligen Entwicklern Rob 'Q' Ellis und Brian "
+   "'Psychochild' Green gegründet."
+LM_cormuseum_rand16 = de \
+   "Wusstest du, dasss die neue DirectX 3D-Engine im Update 'Evolution' im "
+   "Oktober 2004 enthalten war?"
+LM_cormuseum_rand17 = de \
+   "NDS verkündete die erneute Schließung aller Server am 06. Januar 2010."
+LM_cormuseum_rand18 = de \
+   "Wusstest du, dass im Februar 2010 die Rechte von Meridian wieder an die "
+   "ursprünglichen Entwickler Andrew und Chris Kirmse zurück gingen?"
+LM_cormuseum_rand19 = de \
+   "Meridian59 steht für eines der längsten laufenden MMORPG!"
+LM_cormuseum_rand20 = de \
+   "Am 15. September 2012 haben die Gebrüder Kirmse Ihre Server der Öffentlichkeit "
+   "kostenlos zur Verfügung gestellt."
+LM_cormuseum_rand21 = de \
+   "Wusstest du, dass Meridian eigentlich 'Terranova ' heißen sollte?"
+LM_cormuseum_rand22 = de \
+   "Wusstest du, dass 3DO eine ganze Gilde verbannt hatte, und es damit auf "
+   "die Titelseite einer der größten Gaming-Webseite geschafft hat?"
+LM_cormuseum_rand23 = de \
+   "Willst du mal eine lustige Geschichte aus der Vergangenheit hören? Ein "
+   "Guide hatte die Nerven verloren, und alle Spieler in den Thronsaal zu "
+   "FarNohls Geist teleportiert. Nur zwei der Charaktere überlebten. Der "
+   "Guide war anschließend Geschichte."
+LM_cormuseum_rand24 = de \
+   "Wusstest du, dass 3DO die monatlichen Gebühren von Meridian verdreifachte "
+   "und das ausgerechnet in der Woche, als Ultima Online veröffentlich "
+   "wurde? Die Server haben 50% ihrer Spieler verloren."
+LM_tosdeath_rand1 = de \
+   "Ich habe eine Menge Blut verloren, damit ich diese Arena bezahlen konnte. "
+   "Meine Gegner allerdings haben umso mehr dafür bezahlt. Ich bin hier, und "
+   "sie nicht!"
+LM_tosdeath_rand2 = de \
+   "Wenn mein Vater von diesem Platz hier wüsste, wäre er vermutlich noch "
+   "mehr von mir enttäuscht. Jemand hier, der es ihm sagen möchte? Haha!"
+LM_tosdeath_rand3 = de \
+   "Mein Vater ist ein alter Narr, der immernoch davon überzeugt ist, das "
+   "diese Welt ein guter Platz ist, und wir alle in Frieden miteinander "
+   "leben können."
+LM_tosdeath_rand4 = de \
+   "Als ich noch ein Krieger der Armee auf Ko'catan war, habe ich "
+   "herausgefunden, dass der Mönch von Riija ein guter Spielpartner ist."
+LM_tosdeath_rand5 = de \
+   "Ko'catan die stolze und ehrliche Stadt? Ha, wenn Du nur wüsstest, "
+   "welch Korruption und teuflische Dinge da vor sich gehen, dann würdest "
+   "Du nicht so schlecht von mir denken. Ich bin ein guter Kerl im "
+   "Vergleich zu ... ach, vergiss es."
+LM_tosdeath_rand6 = de \
+   "Sie haben allen erzählt, dass ich verantwortlich für die Dinge bin, "
+   "die im Jungel passiert sind. Niemand weiß was ich durchmachen musste. "
+   "Ich wurde gefoltert und gezwungen die Sachen zu tun, die sie von mir "
+   "wollte."
+LM_tosdeath_rand7 = de \
+   "Ko'catan ist ein Ort, den ich nie wieder sehen möchte. Sie ist nicht "
+   "gnädig, zu niemandem, wenn Du nicht tust was sie sagt. Ich habe einen "
+   "Kerl gesehen, der es abgelehnt hat ... er hat fürchterlich gelitten. "
+LM_tosdeath_rand8 = de \
+   "Die Orkhöhlen sind dunkel und dreckig. Ich würde lieber sterben, als "
+   "diesen Ort wieder zu sehen."
+LM_tosdeath_rand9 = de \
+   "Ich weiß nicht, wer meine Mutter war. Mein Vater hat mir nie von ihr "
+   "erzählt. Gerüchten sind das Einzige was ich über sie gehört habe, aber "
+   "ich konnte diesen nicht Glauben schenken."
+LM_tosdeath_rand10 = de \
+   "Ich habe all diese Dinge nur getan um mehr über meine Mutter heraus zu "
+   "finden."
+LM_tosdeath_rand11 = de \
+   "Ich habe gehört, dass die Leute es mögen, in der stolzen Arena von Kraanan "
+   "zu spielen? Ekelhaft, es ist einfach nur ein Spielplatz für kleine Kinder."
+LM_tosdeath_rand12 = de \
+   "Ich wette, Du weißt nichts über Cort, den Wächter der Arena von Kraanan?"
+LM_tosdeath_rand13 = de \
+   "Du würdest lachen, wenn ich dir erzählen würde, was zwischen Cort und "
+   "Skivlat gestern passiert ist."
+LM_tosdeath_rand14 = de \
+   "Paddock ist ein guter Kerl, er hat nichts gegen mich."
+LM_tosdeath_rand15 = de \
+   "Der Apotheker in Tos würde eine bessere Prinzession abgeben. Er will mir "
+   "nichts verkaufen. Ich denke er hat Angst vor mir."
+LM_bart_necro_rand1 = de \
+   "Ich habe Gerüchte über seltsame Geräusche aus den Ruinen der Stadt Brax "
+   "gehört.  Man munkelt, Tendrath würde die Wahrheit darüber wissen, geht "
+   "und fragt ihn nach den ~Iseltsamen Tätigkeiten~I."
+LM_bart_necro_rand2 = de \
+   "Heute waren ein paar Abenteurer bei mir und erzählten große Geschichten "
+   "über ein unnatürliches großes Skelett, das rund um die Ruinen von Brax "
+   "gesehen wurde.  Wenn jemand über diese ~IKreatur~I bescheid weiß, wäre es "
+   "sicherlich Tendrath."
+LM_paddock_necro_rand1 = de \
+   "Johlan war gestern auf ein Stout zu Besuch und ich fragte ihn nach diesen "
+   "seltsamen Geräuschen die es Gerüchte zu folge in Brax gäbe.  Ich habe "
+   "diesen Mann noch nie zuvor so Ängstlich gesehen!  Es scheint wirklich "
+   "etwas seltsames in ~IBrax~I vorzugehen, und er scheint es zu wissen..."
+LM_johlan_brax_speech = de \
+   "Ich weiß alles über Brax, dieser Ort ist ~Igruselig~I.  Ich war dort und "
+   "traf Goad.  Kennst du Goad?"
+LM_johlan_creepy_speech = de \
+   "Ich habe etwas wirklich unnatürliches gesehen.  Wenn du mehr darüber "
+   "wissen willst, dann geh doch selbst dahin!"
+LM_tendrath_strange_speech = de \
+   "Ein unbekannter Nekromant hat eine böse Kreatur von ungeheurer Macht "
+   "erschaffen.  Ich fürchte, das ist nur ein Vorläufer dessen, was noch "
+   "kommen wird!"
+LM_tendrath_creature_speech = de \
+   "Ihr müsst diese abnormale Kreatur für immer vernichten!  Geh und suche "
+   "lieber einige Verbündete, denn solltest du nur alleine gehen, wirst du "
+   "sicherlich einen qualvollen Tod sterben.  Und hüte dich vor dem Zorn der "
+   "Nekromanten, sonst wirst du noch am Ende seiner Untoten Armee als Sklave "
+   "beitreten."
 lib_signet_lost = de \
    "Du klopfst Deine Taschen ab und wühlst in Deinem Rucksack. Doch vergebens: "
    "Der Siegelring ist verschwunden!"

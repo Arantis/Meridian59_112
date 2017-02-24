@@ -64,7 +64,7 @@ properties:
 
 messages:
 
-   Constructor(victim = $,killer = $,inKocatan = FALSE, assassinated = FALSE,
+   Constructor(victim = $,killer = $,oRoom = $, assassinated = FALSE,
          drawfx = 0, BodyTranslation = 0, LegsTranslation = 0,
          PlayerBodyOverlay = $, Decomposes = TRUE)
    {
@@ -102,12 +102,13 @@ messages:
       {
          // Make player corpses hang around longer.
          ptDelete = CreateTimer(self,@DeleteTimerMessage,600000);
-         Send(Send(SYS,@Findroombynum,#num=RID_UNDERWORLD),@NewDeath,
-               #what=self,#inKocatan=inKocatan);
+         Send(Send(SYS,@FindRoomByNum,#num=RID_UNDERWORLD),@NewDeath,
+               #what=self,#oRoom=oRoom);
       }
 
       // Only the killer can pick up things for the first 25 seconds.
       ptNoSteal = CreateTimer(self,@NoStealTimer,25000);
+
       propagate;
    }
 

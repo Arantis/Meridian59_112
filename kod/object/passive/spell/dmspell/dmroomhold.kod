@@ -66,8 +66,8 @@ messages:
       {
          each_obj = First(i);
 
-         // Don't freeze DMs.
-         if (IsClass(each_obj,&DM))
+         if (NOT IsClass(each_obj,&Battler)
+            OR IsClass(each_obj,&DM))
          {
             continue;
          }

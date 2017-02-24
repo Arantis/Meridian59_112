@@ -518,6 +518,10 @@ resources:
    LT_wryn = "Wryn's Keep"
    LT_wool = "wool"
    LT_tova = "Tova"
+   LT_brax = "brax"
+   LT_creepy = "creepy"
+   LT_strangeactivity = "strange activity"
+   LT_creature = "creature"
 
    // Former spell names, now used for mood reactions
    LT_mend = "mend"
@@ -732,14 +736,168 @@ resources:
    LM_haz_rand15 = "A mighty warrior can spurn magic by advancing his skills.  Unfortunately, there are no notable teachers here."
    LM_haz_rand16 = "Should you kill something, be sure to get the stuff that's been dropped.  Often, you can sell it for a few shillings."
    LM_haz_rand17 = "Be sure that you use your map to help you navigate around.  Type MAP to see it."
-   
+
    LM_haz_rand_apoth1 = "Ravi, the alchemist, is always looking for magical reagents.  Should you find some, he'll offer a good price."
    LM_haz_rand_bar1 = "If you're weary or wounded, Eric's Tavern is a good place to stop and rest."
    LM_haz_rand_inn1 = "Be sure to read all of the signs.  If you've wandered off the path, the sign at the inn on the north side of town is the first."
    LM_haz_rand_elder1 = "Eventually, be sure to seek out the elder.  He has been seeking warriors to help fend off the mummies!"
    LM_haz_rand_smith1 = "The blacksmith in the northwest part of town has excellent weapons and armor for training adventurers."
 
-   lib_signet_lost = "You pat your pockets and check your pack, but you suddenly realize the signet ring you were carrying is gone!"
+   LM_cormuseum_rand1 = \
+      "Did you know that Meridian 59 was the first commercial, 3D massively "
+      "multiplayer online role-playing game?"
+   LM_cormuseum_rand2 = \
+      "Meridian was first launched online in an early form on December 15, "
+      "1995 and released commercially on September 27, 1996 with a flat-rate "
+      "monthly subscription."
+   LM_cormuseum_rand3 = \
+      "Meridian was developed by Archetype Interactive and published in "
+      "September 1996 by 3DO."
+   LM_cormuseum_rand4 = \
+      "Meridian 59 was initially inspired by Scepter of Goth."
+   LM_cormuseum_rand5 = \
+      "The game was in an early beta stage in April 1996 when it was noticed "
+      "by Kevin Hester and other game developers at 3DO."
+   LM_cormuseum_rand6 = \
+      "Not many know that the classic Meridian 59 client uses a similar "
+      "engine to Doom."
+   LM_cormuseum_rand7 = \
+      "Meridian 59 is currently available as open source software.  Want to "
+      "help us develop? Feel free to join in on our forums and on GitHub!"
+   LM_cormuseum_rand8 = \
+      "Meridian 59 received multiple awards, including the fantasy "
+      "role-playing game of the year for 1996!"
+   LM_cormuseum_rand9 = \
+      "Archetype was run by Steve Sellers, Mike Sellers, and John Hanke, with "
+      "Andrew Kirmse and Chris Kirmse filling key technical roles."
+   LM_cormuseum_rand10 = \
+      "Did you know that John Hanke (part of the Archetype Interactive team) "
+      "released Pokémon Go?"
+   LM_cormuseum_rand11 = \
+      "More than 25,000 players joined the game's public beta that lasted up "
+      "until its commercial launch on September 27, 1996."
+   LM_cormuseum_rand12 = \
+      "Meridian arguably holds the title as the first real-time three "
+      "dimensional online role-playing game."
+   LM_cormuseum_rand13 = \
+      "Meridian contained many other features that modern games duplicated "
+      "later! Guilds had a dynamic voting system for changing leadership, "
+      "customized sigils that appeared on shields, and guild halls that "
+      "could be won or lost."
+   LM_cormuseum_rand14 = \
+      "3DO shut down the game on August 31, 2000 and it was re-released by "
+      "Near Death Studios, Inc. in 2002."
+   LM_cormuseum_rand15 = \
+      "Near Death Studios was co-founded by former Meridian 59 developers "
+      "Rob \"Q\" Ellis and Brian \"Psychochild\" Green."
+   LM_cormuseum_rand16 = \
+      "In October 2004, NDS added a new 3D rendering engine to the client in "
+      "the 'Evolution' expansion."
+   LM_cormuseum_rand17 = \
+      "Near Death Studios announced that they would be closing their doors "
+      "on January 6, 2010."
+   LM_cormuseum_rand18 = \
+      "In February, 2010 Meridian 59 was turned over to the original "
+      "technical developers, Andrew \"Zaphod\" Kirmse and Chris \"Zandramas\" "
+      "Kirmse."
+   LM_cormuseum_rand19 = \
+      "Meridian 59 stands as one of the longest running original online "
+      "role-playing games!"
+   LM_cormuseum_rand20 = \
+      "On September 15, 2012, Zaphod & Zandramas released the source code "
+      "for Meridian 59 to the public at no charge to the players."
+   LM_cormuseum_rand21 = \
+      "Archetype Interactive first planned to name this game 'Terranova', "
+      "but went with Meridian due to trademark issues.  Meridian was also "
+      "trademarked, so they added '59' to it!"
+   LM_cormuseum_rand22 = \
+      "3DO banned a whole guild for duping, and the news made it onto the "
+      "front page of one of the biggest gaming websites!"
+   LM_cormuseum_rand23 = \
+      "Want to hear a funny story from the past?  A guide went rogue and "
+      "teleported every player online to the Ghost of Far'Nohl.  Only two "
+      "characters survived, who promptly began looting the victims."
+   LM_cormuseum_rand24 = \
+      "Did you know that 3DO tripled the cost of Meridian subscriptions in "
+      "the same week Ultima Online was released and lost 50% of their players?"
+
+   LM_tosdeath_rand1 = \
+      "I lost a lot of blood to be able to pay for this Arena but my "
+      "opponnents paid even more.  I'm here and they are not!"
+   LM_tosdeath_rand2 = \
+      "If my father knew of this place he would be even more disappointed.  "
+      "Anyone want to tell him?  Haha!"
+   LM_tosdeath_rand3 = \
+      "My father is an old fool who still is under the impression that the "
+      "world is a good place and that we can live in freedom."
+   LM_tosdeath_rand4 = \
+      "When I was a Warrior for the Ko'catan army, I found out that the "
+      "Riija Monk is a good gambling partner."
+   LM_tosdeath_rand5 = \
+      "Ko'catan the proud and honest city? Ha, if you only knew how much "
+      "corruption and evil happens there you wouldn't think so poorly of me.  "
+      "I'm a good guy compared to ... never mind."
+   LM_tosdeath_rand6 = \
+      "They told everyone I'm responsible for what happened in the jungle "
+      "but nobody knows anything about what I went through.  I was tortured "
+      "and forced to do the things she wanted me to do."
+   LM_tosdeath_rand7 = \
+      "Ko'catan is not a place I ever want to see again.  She is not "
+      "gracious to anyone if you don't do what she says.  I saw one guy who "
+      "refused ... he suffered greatly."
+   LM_tosdeath_rand8 = \
+      "The orc caves are dark and dirty.  I would rather die before seeing "
+      "that place again."
+   LM_tosdeath_rand9 = \
+      "I don't know who my mother was.  My father never wanted to tell me.  "
+      "Rumors are the only things I heard and I couldn't believe them. "
+   LM_tosdeath_rand10 = \
+      "I only did all of these things to find out more about my mother."
+   LM_tosdeath_rand11 = \
+      "I heard people like to play with each other in the proud Arena of "
+      "Kraanan?  Disgusting, it is just a playground for little kids."
+   LM_tosdeath_rand12 = \
+      "I bet you don't know anything about Cort, the Watcher from the "
+      "Arena of Kraanan?"
+   LM_tosdeath_rand13 = \
+      "You would laugh if I told you about Cort and what happened with "
+      "Skivlat yesterday. "
+   LM_tosdeath_rand14 = \
+      "Paddock is a good guy, he has nothing against me. "
+   LM_tosdeath_rand15 = \
+      "The apothecary of Tos would make a better Princess.  He will not sell "
+      "anything to me.  I think he is afraid of me."
+
+   LM_bart_necro_rand1 = \
+      "I've heard rumors of strange sounds coming from the ruins of the city "
+      "of Brax.  Tendrath would know the truth of this, were you to ask him "
+      "about this ~Istrange activity~I."
+   LM_bart_necro_rand2 = \
+      "A few adventurers were in here the other day telling tall stories "
+      "about an unnaturally large animated skeleton seen around the ruins of "
+      "Brax.  If anyone knows about this ~Icreature~I, it'd be Tendrath."
+   LM_paddock_necro_rand1 = \
+      "Johlan was here for a drink yesterday and I asked him about the rumors "
+      "of strange sounds coming from Brax.  I've never seen that man scared "
+      "but this seemed to rattle him.  Something strange is happening in "
+      "~IBrax~I and he seems to know something."
+   LM_johlan_brax_speech = \
+      "I know all about Brax, that place is ~Icreepy~I.  I was there and met "
+      "Goad.  You know Goad?"
+   LM_johlan_creepy_speech = \
+      "I've seen something unnatural.  If you want to know more about it go "
+      "and check it out by yourself."
+   LM_tendrath_strange_speech = \
+      "An unknown Necromancer has raised an evil ~Icreature~I of tremendous "
+      "power.  I fear this is merely a precursor of what is to come."
+   LM_tendrath_creature_speech = \
+      "You must banish this abomination.  Take allies with you when you face "
+      "it, and beware the wrath of the necromancer.  If you go alone you may "
+      "die and join the undead army as a slave."
+
+   lib_signet_lost = \
+      "You pat your pockets and check your pack, but you suddenly realize "
+      "the signet ring you were carrying is gone!"
 
 #endregion Fortune Resources
 
@@ -1161,7 +1319,9 @@ messages:
          [48,0,[ LIBACT_SAY, LM_haz_rand_apoth1 ]],
          [48,0,[ LIBACT_SAY, LM_haz_rand_inn1 ]],
          [48,0,[ LIBACT_SAY, LM_haz_rand_smith1 ]],
-         [48,0,[ LIBACT_SAY, LM_haz_rand_elder1 ]]
+         [48,0,[ LIBACT_SAY, LM_haz_rand_elder1 ]],
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand1 ]],
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand2 ]]
       ]],plRandomLib);
 
       plRandomLib = Cons([&RazaInnkeeper,[
@@ -1190,6 +1350,72 @@ messages:
          [48,0,[ LIBACT_SAY, LM_haz_rand_inn1 ]],
          [48,0,[ LIBACT_SAY, LM_haz_rand_smith1 ]],
          [48,0,[ LIBACT_SAY, LM_haz_rand_elder1 ]]
+      ]],plRandomLib);
+
+      plRandomLib = Cons([&CorNothMuseumGuard,[
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand1 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand2 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand3 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand4 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand5 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand6 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand7 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand8 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand9 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand10 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand11 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand12 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand13 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand14 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand15 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand16 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand17 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand18 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand19 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand20 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand21 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand22 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand23 ]],
+         [48,0,[ LIBACT_SAY, LM_cormuseum_rand24 ]]
+      ]],plRandomLib);
+
+      plRandomLib = Cons([&DeathArenaWatcher,[
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand1 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand2 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand3 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand4 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand5 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand6 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand7 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand8 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand9 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand10 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand11 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand12 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand13 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand14 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand15 ]]
+      ]],plRandomLib);
+
+      plRandomLib = Cons([&BarloqueBartender,[
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand1 ]],
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand2 ]]
+      ]],plRandomLib);
+
+      plRandomLib = Cons([&JasperBartender,[
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand1 ]],
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand2 ]]
+      ]],plRandomLib);
+
+      plRandomLib = Cons([&MarionBartender,[
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand1 ]],
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand2 ]]
+      ]],plRandomLib);
+
+      plRandomLib = Cons([&TosInnKeeper,[
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand1 ]],
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand2 ]],
+         [48,0,[ LIBACT_SAY, LM_paddock_necro_rand1 ]]
       ]],plRandomLib);
 
       return;
@@ -1318,6 +1544,12 @@ messages:
          [[LT_freebird], 0, [LIBACT_MOOD, 4], 4]
       ]], plSpeechLib);
 
+      // Tendrath
+      plSpeechLib = Cons([&HunterGhost,[
+         [[LT_strangeactivity], 0, [LIBACT_SAY, LM_tendrath_strange_speech]],
+         [[LT_creature], 0, [LIBACT_SAY, LM_tendrath_creature_speech]]
+      ]], plSpeechLib);
+
 //Tos people
 
       // Skivlat
@@ -1339,6 +1571,12 @@ messages:
          [[LT_shutup], 0, [LIBACT_MOOD, -3], 1],
          [[LT_mend], 0, [LIBACT_MOOD, -1], 2],
          [[LT_mending], 0, [LIBACT_MOOD, -1], 3]
+      ]], plSpeechLib);
+
+      // Johlan
+      plSpeechLib = Cons([&DeathArenaWatcher,[
+         [[LT_brax], 0, [LIBACT_SAY, LM_johlan_brax_speech]],
+         [[LT_creepy], 0, [LIBACT_SAY, LM_johlan_creepy_speech]]
       ]], plSpeechLib);
 
 //Kocatan people

@@ -24,30 +24,27 @@ resources:
       "This song makes people happy!  It is a lively tune, which makes people "
       "feel as if they have a new start on life.  The song causes some people "
       "to smile, often resulting in better moods.  A good mood allows others "
-      "to fight evil more effectively.  "
-      "It requires 1 sapphire to cast."
-
-   Mirth_on = "%s%s's mirthful song lifts your spirits a bit."
+      "to fight evil more effectively.  Requires one sapphire to cast."
 
    Mirth_song = main.ogg
 
    Mirth_cast = "You begin to play a mirthful song."
-   Mirth_starts = "%s begins to play a mirthful song."
-   Mirth_ends = "The mirthful song played by %s fades away."
+   Mirth_starts = "%s%s begins to play a mirthful song."
+   Mirth_ends = "The mirthful song played by %s%s fades away."
    Mirth_caster_ends = "Your mirthful song fades."
    Mirth_caster_enter = "Your spirits lift a bit."
-   Mirth_enter = "%s's mirthful song lifts your spirits a bit."
-   Mirth_leave = "You can no longer hear the mirthful notes of %s's song."
+   Mirth_enter = "%s%s's mirthful song lifts your spirits a bit."
+   Mirth_leave = "You can no longer hear the mirthful notes of %s%s's song."
 
 classvars:
 
-   radius_ench_cast = Mirth_cast
-   radius_ench_starts = Mirth_starts
-   radius_ench_ends = Mirth_ends
-   radius_ench_caster_ends = Mirth_caster_ends
-   radius_ench_caster_enter = Mirth_caster_enter
-   radius_ench_enter = Mirth_enter
-   radius_ench_leave = Mirth_leave
+   vrEnchantmentOn = Mirth_cast
+   vrEnchantmentOnOther = Mirth_starts
+   vrEnchantmentOff = Mirth_caster_ends
+   vrEnchantmentOffOther = Mirth_ends
+   vrEnterRadiusCaster = Mirth_caster_enter
+   vrEnterRadius = Mirth_enter
+   vrLeaveRadius = Mirth_leave
 
    vrName = Mirth_name_rsc
    vrIcon = Mirth_icon_rsc
@@ -81,30 +78,30 @@ messages:
       return;
    }
 
-   StartSpecialEffect(what=$,iPower=0,source=$)
+   AddEnchantmentEffects(who=$,state=$)
    {
-      if IsClass(what,&User)
+      if IsClass(who,&User)
       {
-         Send(what,@SetAction,#action=UA_HAPPY);
+         Send(who,@SetAction,#action=UA_HAPPY);
       }
 
       propagate;
    }
-   
-   EndSpecialEffect(what=$,iPower=0,source=$)
+
+   RemoveEnchantmentEffects(who=$,iPower=0,source=$)
    {
-      if IsClass(what,&User)
-         AND Send(what,@GetAction) = UA_HAPPY
+      if IsClass(who,&User)
+         AND Send(who,@GetAction) = UA_HAPPY
       {
-         Send(what,@SetAction,#action=UA_NORMAL);
+         Send(who,@SetAction,#action=UA_NORMAL);
       }
-      
+
       propagate;
    }
 
    // Stuff we handle to be an attack modifier.
 
-   ModifyHitRoll(who = $,what = $,hit_roll = $)
+   ModifyHitRoll(who = $,what = $,hit_roll = $,state = $)
    {
       if what = $
       {
@@ -115,14 +112,16 @@ messages:
       if Send(what,@GetKarma,#detect=TRUE) < 0
       {
          // Give a small bonus
-         return hit_roll + 100;
+         return hit_roll + Nth(state,5);
       }
 
       return hit_roll;
    }
-   
-   ModifyDamage(who = $,what = $,damage = $)
+
+   ModifyDamage(who = $,what = $,damage = $,state = $)
    {
+      local iPower;
+
       if what = $
       {
          return damage;
@@ -131,13 +130,13 @@ messages:
       // Only affect the evil ones...
       if Send(what,@GetKarma,#detect=TRUE) < 0
       {
-         // Roughly equal to Killing Fields
-         return damage + Random(1,5);
+         iPower = Bound(Nth(state,5) / 24,1,4);
+
+         return damage + Random(1,iPower);
       }
 
       return damage;
    }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

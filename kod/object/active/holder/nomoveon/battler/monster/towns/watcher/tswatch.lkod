@@ -1,0 +1,19 @@
+TosWatcher_name_rsc = de "Der Meister der Arena"
+TosWatcher_desc_rsc = de \
+   "Der Sohn der Priesterin Qertina und des Generals Zylill, der junge Cort, "
+   "wurde zum Meister der Arena von Kraanan ernannt. Ein leichtes Lächeln "
+   "ziert sein Gesicht, während er die Scheinwettkämpfe, die im Namen von "
+   "Kraanan der Faust abgehalten werden, beaufsichtigt."
+TosWatcher_ad_need_champion1 = de \
+   "Ist hier niemand, der sich als Champion stellt?"
+TosWatcher_ad_need_champion2 = de \
+   "Ist hier wirklich niemand, der für Kraanan kämpfen möchte?"
+TosWatcher_ad_need_champion3 = de \
+   "Beweise Dich vor dem kritischen Auge Kraanans!"
+TosWatcher_ad_need_champion4 = de \
+   "Lese die Schilder, um weitere Instruktionen zu bekommen."
+TosWatcher_ad_need_challenger = de "Wagt kein Krieger, %s%s herauszufordern?"
+TosWatcher_ad_good_fight1 = de \
+   "Ein Kampf auf Leben und Tod macht mich immer ganz nervös!"
+TosWatcher_ad_good_fight2 = de "Hip-Hip-Hurrah!"
+TosWatcher_ad_good_fight3 = de "Laß ein bißchen Blut sehen!"

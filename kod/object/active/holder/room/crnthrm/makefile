@@ -6,7 +6,8 @@
 
 DEPEND = ..\crnthrm.bof
 
-BOFS =  cornoth.bof corgroc.bof corhall.bof corinn.bof corwepm.bof cortail.bof coruniv.bof forgot2.bof
+BOFS =  cornoth.bof corgroc.bof corhall.bof corinn.bof corwepm.bof cortail.bof \
+        corgenhall.bof coruniv.bof cormuseum.bof forgot2.bof
 
 !include $(KODDIR)\kod.mak
 

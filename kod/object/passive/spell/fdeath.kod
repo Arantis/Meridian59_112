@@ -283,18 +283,20 @@ messages:
       propagate;
    }
 
-   StartPeriodicEnchantment(who = $, state = $)
+   StartPeriodicEnchantment(who = $, state = $, iSpellPower = 0)
    {
       // If caster runs out of mana or loses trance, spell ends.
       if Send(who,@GetMana) < viManaDrain * 2
       {
          Send(who,@StartEnchantment,#what=self,#time=viDrainTime,
-               #state=state,#addicon=FALSE,#lastcall=TRUE);
+               #state=state,#addicon=FALSE,#lastcall=TRUE,
+               #iSpellPower=iSpellPower);
       }
       else
       {
          Send(who,@StartEnchantment,#what=self,#time=viDrainTime,
-               #state=state,#addicon=FALSE,#lastcall=FALSE);
+               #state=state,#addicon=FALSE,#lastcall=FALSE,
+               #iSpellPower=iSpellPower);
       }
 
       Send(who,@LoseMana,#amount=viManaDrain);
@@ -312,24 +314,14 @@ messages:
 
    //// Stuff we handle to be a defense modifier.
 
-   ModifyDefensePower(who = $, what = $, defense_power = 0)
+   ModifyDefensePower(who = $, what = $, defense_power = 0, state = $)
    {
-      local lState, iSpellpower;
-
-      lState = Send(who,@GetEnchantedState,#what=self);
-
-      if lState <> $
+      if (state = $)
       {
-         iSpellpower = Nth(lState,2);
-      }
-      else
-      {
-         Send(self,@EndEnchantment,#who=who,#state=lState);
-         
          return defense_power;
       }
 
-      return (defense_power + (3 * iSpellpower));
+      return (defense_power + (3 * Nth(state,2)));
    }
 
    ModifyDefenseDamage(who = $, what = $, damage = $)

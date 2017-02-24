@@ -19,3 +19,4 @@ DeathRift_generic_fail = de \
    "Der Pakt mit dem Teufel schlägt fehlt. Irgendetwas scheint zu fehlen."
 DeathRift_warning = de \
    "~BDu spürst eine nahegelegende Verbindung zwischen den Dimensionen!"
+deathrift_bound_desc = de "\n\nDeine Seele ist an den folgenden Ort gebunden: %s."

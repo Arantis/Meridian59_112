@@ -109,7 +109,6 @@ properties:
 
 messages:
 
-
    CanOffer(who=$,target=$)
    {
       if who = $ OR target = $
@@ -117,23 +116,15 @@ messages:
          return FALSE;
       }
 
-      if poWatcher = $
+      if (poWatcher = $
+         OR NOT Send(poWatcher,@FightInSession)
+         OR (Send(poWatcher,@IsCombatant,#who=who)
+            = Send(poWatcher,@IsCombatant,#who=target)))
       {
          return TRUE;
       }
 
-      if NOT Send(poWatcher,@FightInSession)
-      {
-         return TRUE;
-      }
-
-      if Send(poWatcher,@IsCombatant,#who=who) =
-         Send(poWatcher,@IsCombatant,#who=target)
-      {
-         return TRUE;
-      }
-
-      Send(who,@msgSenduser,#message_rsc=NecArena_no_offer);
+      Send(who,@MsgSendUser,#message_rsc=NecArena_no_offer);
 
       return FALSE;
    }
@@ -233,17 +224,14 @@ messages:
             iRow = row;
             iCol = Col;
          }
+         else if IsClass(what,&Player) OR bNonPlayerOkay
+         {
+            iRow = Send(what,@GetRow);
+            iCol = Send(what,@GetCol);
+         }
          else
          {
-            if IsClass(what,&Player) OR bNonPlayerOkay
-            {
-               iRow = Send(what,@GetRow);
-               iCol = Send(what,@GetCol);
-            }
-            else
-            {
-               return FALSE;
-            }
+            return FALSE;
          }
 
          if iRow < NORTH_BOUNDARY
@@ -253,21 +241,18 @@ messages:
          {
             return FALSE;
          }
-         else
+         else if bNonPlayerOkay
+            AND (iRow = NORTH_BOUNDARY
+               OR iRow = SOUTH_BOUNDARY
+               OR iCol = EAST_BOUNDARY
+               OR iCol = WEST_BOUNDARY)
          {
             /// special for walls
-            if bNonPlayerOkay
-               AND (iRow = NORTH_BOUNDARY
-                    OR iRow = SOUTH_BOUNDARY
-                    OR iCol = EAST_BOUNDARY
-                    OR iCol = WEST_BOUNDARY)
-            {
-               return FALSE;
-            }
-            else
-            {
-               return TRUE;
-            }
+            return FALSE;
+         }
+         else
+         {
+            return TRUE;
          }
       }
 
@@ -284,21 +269,29 @@ messages:
    {
       local row, col, angle, rand, i;
 
+      // Don't teleport players if logged off.
+      if (what = $
+         OR (IsClass(what,&User)
+            AND NOT Send(what,@IsLoggedOn)))
+      {
+         return;
+      }
+
       i = 1;
 
       if goinplay
       {
          // teleport to the playing field
-         rand = random(1,6);
+         rand = Random(1,6);
 
          if Length(plOccupied) <> 6
          {
             return FALSE;
          }
 
-         while Nth(plOccupied,rand) AND i < 20
+         while Nth(plOccupied,rand) <> $ AND i < 20
          {
-            rand = random(1,6);
+            rand = Random(1,6);
             i = i + 1;
          }
 
@@ -319,27 +312,27 @@ messages:
             row = 10;
             col = 9;
          }
-         if rand = 2
+         else if rand = 2
          {
             row = 15;
             col = 9;
          }
-         if rand = 3
+         else if rand = 3
          {
             row = 10;
             col = 13;
          }
-         if rand = 4
+         else if rand = 4
          {
             row = 15;
             col = 13;
          }
-         if rand = 5
+         else if rand = 5
          {
             row = 10;
             col = 17;
          }
-         if rand = 6
+         else if rand = 6
          {
             row = 15;
             col = 17;
@@ -361,7 +354,7 @@ messages:
 
       if outofplay = TRUE
       {
-         rand = random(1,3);
+         rand = Random(1,3);
 
          if rand = 1
          {
@@ -369,20 +362,17 @@ messages:
             col = 6;
             angle = ANGLE_EAST;
          }
+         else if rand = 2
+         {
+            row = 9;
+            col = 20;
+            angle = ANGLE_WEST;
+         }
          else
          {
-            if rand = 2
-            {
-               row = 9;
-               col = 20;
-               angle = ANGLE_WEST;
-            }
-            else
-            {
-               row = 7;
-               col = 13;
-               angle = ANGLE_SOUTH;
-            }
+            row = 7;
+            col = 13;
+            angle = ANGLE_SOUTH;
          }
 
          Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
@@ -394,39 +384,34 @@ messages:
       if Send(poWatcher,@IsCombatant,#who=what)
       {
          // Teleport to the playing field
-         rand = random(1,6);
+         rand = Random(1,6);
 
          if rand = 1
          {
             row = 10;
             col = 9;
          }
-
-         if rand = 2
+         else if rand = 2
          {
             row = 15;
             col = 9;
          }
-
-         if rand = 3
+         else if rand = 3
          {
             row = 10;
             col = 13;
          }
-
-         if rand = 4
+         else if rand = 4
          {
             row = 15;
             col = 13;
          }
-
-         if rand = 5
+         else if rand = 5
          {
             row = 10;
             col = 17;
          }
-
-         if rand = 6
+         else if rand = 6
          {
             row = 15;
             col = 17;
@@ -446,20 +431,17 @@ messages:
          col = 6;
          angle = ANGLE_EAST;
       }
+      else if rand = 2
+      {
+         row = 9;
+         col = 20;
+         angle = ANGLE_WEST;
+      }
       else
       {
-         if rand = 2
-         {
-            row = 9;
-            col = 20;
-            angle = ANGLE_WEST;
-         }
-         else
-         {
-            row = 7;
-            col = 13;
-            angle = ANGLE_SOUTH;
-         }
+         row = 7;
+         col = 13;
+         angle = ANGLE_SOUTH;
       }
 
       Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
@@ -470,8 +452,6 @@ messages:
 
    IsValidTarget(who=$)
    {
-      local i;
-
       if poWatcher = $
       {
          Debug("IsValidTarget called with no watcher in existence!");
@@ -479,27 +459,20 @@ messages:
          return;
       }
 
-      if Send(poWatcher,@IsCombatant,#who=who)
-         AND Send(poWatcher,@FightInSession)
-      {
-         return TRUE;
-      }
-
-      return FALSE;
+      return (Send(poWatcher,@IsCombatant,#who=who)
+         AND Send(poWatcher,@FightInSession));
    }
 
-   BeginFight(lCombatants=$)
+   ArenaBeginFight(lCombatants=$)
    {
       plOccupied = [0,0,0,0,0,0];
 
       return;
    }
 
-   ClearFromOccupiedList(who=$)
+   ArenaCombatantReneges(who=$)
    "Clears a combatant from the occupied list."
    {
-      local i;
-
       if who <> $
          AND plOccupied <> $
          AND FindListElem(plOccupied,who)
@@ -510,7 +483,7 @@ messages:
       return;
    }
 
-   EndFight(lCombatants=$)
+   ArenaEndFight(lCombatants=$)
    {
       local i, j, k;
 
@@ -520,15 +493,15 @@ messages:
       }
 
       // Remove radius enchantments
-      foreach i in Send(self,@GetHolderActive)
+      foreach i in plActive
       {
-         j = Send(self,@HolderExtractObject,#data=i);
+         j = First(i);
          if IsClass(j,&Player)
             OR (IsClass(j,&Monster) AND NOT ((Send(j,@GetBehavior) & AI_NPC)))
          {
             foreach k in Send(j,@GetRadiusEnchantments)
             {
-               Send(Nth(k,1),@CancelRadiusEnchantment,#source=Nth(k,3));
+               Send(Nth(k,2),@RemoveEnchantment,#who=j,#state=Nth(k,3));
             }
          }
       }
@@ -555,6 +528,7 @@ messages:
    UnlockArena()
    {
       pbLocked = FALSE;
+
       return;
    }
 
@@ -609,12 +583,12 @@ messages:
          {
             if IsClass(Send(i,@GetOwner),&NecArena)
             {
-               Send(SYS,@utilGoNearSquare,#what=i,#where=self,
-                    #new_row=19,#new_col=13,#fine_row=32,#fine_col=32,
-                    #new_angle = ANGLE_SOUTH);
+               Send(SYS,@UtilGoNearSquare,#what=i,#where=self,
+                     #new_row=19,#new_col=13,#fine_row=32,#fine_col=32,
+                     #new_angle = ANGLE_SOUTH);
 
                // Only want one of these at a time.
-               if ptShrineUsedTimer = $ 
+               if ptShrineUsedTimer = $
                {
                   ptShrineUsedTimer = CreateTimer(self,@ShrineUsedTimer,SHRINE_USED);
                }
@@ -699,12 +673,12 @@ messages:
 
       foreach i in plActive
       {
-         if (IsClass(First(i),&Battler)
-               AND NOT IsClass(First(i),&Goad))
-            AND Send(self,@InPlay,#what=First(i),#bNonPlayerOkay=TRUE)
-         {
-            oVictim = First(i);
+         oVictim = First(i);
 
+         if (IsClass(oVictim,&Battler)
+               AND NOT IsClass(oVictim,&Goad))
+            AND Send(self,@InPlay,#what=oVictim,#bNonPlayerOkay=TRUE)
+         {
             iRow = Send(oVictim,@GetRow);
             iCol = Send(oVictim,@GetCol);
 
@@ -723,20 +697,10 @@ messages:
                   iFine_row = Send(oVictim,@GetFineRow);
                   iFine_col = Send(oVictim,@GetFineCol);
 
-                  if iCol = 7
+                  if ((iCol = 7 AND iFine_row + iFine_col <= 64)
+                     OR (iCol = 19 AND iFine_col >= iFine_row))
                   {
-                     if (iFine_row + iFine_col) <= 64
-                     {
-                        bInStands = TRUE;
-                     }
-                  }
-
-                  if iCol = 19
-                  {
-                     if iFine_col >= iFine_row
-                     {
-                        bInStands = TRUE;
-                     }
+                     bInStands = TRUE;
                   }
                }
 
@@ -774,9 +738,16 @@ messages:
       return;
    }
 
-   ShrineInUse()
+   ArenaCanStartFight()
    {
-      return pbShrineInUse;
+      // No fighting if player at shrine.
+      return NOT pbShrineInUse;
+   }
+
+   ArenaCanAddCombatants(lCombatants = $)
+   {
+      // Small fighting area, 6 max.
+      return (Length(lCombatants) <= 6);
    }
 
    Delete()
@@ -802,6 +773,11 @@ messages:
       }
 
       propagate;
+   }
+
+   ArenaGetMaxCombatants()
+   {
+      return 6;
    }
 
 end

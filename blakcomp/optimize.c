@@ -74,8 +74,12 @@ void SimplifyExpression(expr_type e)
       c1 = e1->value.constval;
       c2 = e2->value.constval;
 
+      // Check for invalid expressions with constants on both sides.
       if (c1->type != C_NUMBER || c2->type != C_NUMBER)
+      {
+         action_error("Cannot use non-number in an expression with two constants!");
          break;
+      }
 
       switch (e->value.binary_opval.op)
       {

@@ -126,7 +126,7 @@ messages:
    {
 
       plEdge_Exits = $;
-      plEdge_Exits = Cons([LEAVE_WEST, RID_E6, 7, 59, ROTATE_NONE], plEdge_exits);
+      plEdge_Exits = Cons([LEAVE_WEST, RID_D6E6, 5, 100, ROTATE_NONE], plEdge_exits);
 
       propagate;
    }

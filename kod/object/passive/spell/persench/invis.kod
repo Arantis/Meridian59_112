@@ -125,13 +125,14 @@ messages:
 
    // Stuff we handle to be a defense modifier.
 
-   ModifyDefensePower(who=$,what=$,defense_power=0)
+   ModifyDefensePower(who=$,what=$,defense_power=0,state=$)
    {
-      local iSpellpower;
+      if (state = $)
+      {
+         return defense_power;
+      }
 
-      iSpellpower = Send(who,@GetEnchantedState,#what=self);
-
-      return (defense_power + 25 + iSpellpower);
+      return (defense_power + 25 + state);
    }
 
    ModifyDefenseDamage(who=$,what=$,damage=$)

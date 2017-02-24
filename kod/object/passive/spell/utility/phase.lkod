@@ -10,7 +10,7 @@ Phase_penned = de \
    "Dein Bezug zur Realität reißt ab und du wirst mit Gewalt an einen sicheren "
    "Ort gebracht um von dem sicheren Ort wieder in die reale Welt zu gehen!"
 Phase_penned_others = de \
-   "%ss Bezug zur Realität reißt %s wird mit Gewalt an einen anderen Ort "
+   "%s's Bezug zur Realität reißt %s$0ab, und wird mit Gewalt an einen sicheren Ort "
    "gebracht!"
 Phase_penned_others_item = de \
    "Der gewalttätige Ausstieg hat dafür gesorgt, dass %s%s aus dem Inventar "

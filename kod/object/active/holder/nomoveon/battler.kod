@@ -336,6 +336,13 @@ messages:
          }
       }
 
+      foreach oEnchantment in plRadiusEnchantments
+      {
+         lCurResist = Send(Nth(oEnchantment,2),@ModifyResistance,
+                           #resistance_list=lCurResist,
+                           #iState=Nth(Nth(oEnchantment,3),5));
+      }
+
       return lCurResist;
    }
 
@@ -475,7 +482,7 @@ messages:
       return;
    }
 
-   IsEnchanted(what=$,byClass=&Spell)
+   IsEnchanted(what=$,byClass=&Spell,state=$)
    "Returns whether or not currently enchanted by <what>."
    {
       local i;
@@ -492,6 +499,10 @@ messages:
       }
       else
       {
+         if (IsClass(what,&RadiusEnchantment))
+         {
+            return Send(self,@IsEnchantedRadius,#what=what,#state=state);
+         }
          return GetListNode(plEnchantments, 2, what) <> $;
       }
 

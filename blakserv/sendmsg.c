@@ -224,9 +224,9 @@ void InitBkodInterpret(void)
    ccall_table[GETALLLISTNODESBYCLASS] = C_GetAllListNodesByClass;
    ccall_table[LISTCOPY] = C_ListCopy;
 
-   ccall_table[GETTIMEZONEOFFSET] = C_GetTimeZoneOffset;
    ccall_table[GETTIME] = C_GetTime;
    ccall_table[GETTICKCOUNT] = C_GetTickCount;
+   ccall_table[GETDATEANDTIME] = C_GetDateAndTime;
    ccall_table[SETCLASSVAR] = C_SetClassVar;
    
    ccall_table[CREATETABLE] = C_CreateTable;
@@ -934,42 +934,34 @@ char *BlakodStackInfo()
 // OP_GOTO_UNCOND: 1 byte instruction, 4 byte address
 void InterpretGotoUncond(int object_id, local_var_type *local_vars)
 {
-   int dest_addr;
-   dest_addr = get_int();
+   int dest_addr = get_int();
    bkod += dest_addr;
 }
 // OP_GOTO_IF_TRUE_C: 1 byte instruction, 4 byte address, 4 byte constant
 void InterpretGotoIfTrueConstant(int object_id, local_var_type *local_vars)
 {
-   int dest_addr;
    val_type var_check;
 
-   dest_addr = get_int();
-
+   int dest_addr = get_int();
    var_check.int_val = get_int();
+
    if (var_check.v.data != 0)
       bkod += dest_addr;
 }
 // OP_GOTO_IF_TRUE_L: 1 byte instruction, 4 byte address, 4 byte local ID
 void InterpretGotoIfTrueLocal(int object_id, local_var_type *local_vars)
 {
-   int dest_addr;
-   int var_check;
+   int dest_addr = get_int();
+   int var_check = get_int();
 
-   dest_addr = get_int();
-
-   var_check = get_int();
    if (local_vars->locals[var_check].v.data != 0)
       bkod += dest_addr;
 }
 // OP_GOTO_IF_TRUE_P: 1 byte instruction, 4 byte address, 4 property ID
 void InterpretGotoIfTrueProperty(int object_id, local_var_type *local_vars)
 {
-   int dest_addr;
-   int var_check;
-
-   dest_addr = get_int();
-   var_check = get_int();
+   int dest_addr = get_int();
+   int var_check = get_int();
 
    if (GetObjectByID(object_id)->p[var_check].val.v.data != 0)
       bkod += dest_addr;
@@ -977,49 +969,38 @@ void InterpretGotoIfTrueProperty(int object_id, local_var_type *local_vars)
 // OP_GOTO_IF_TRUE_V: 1 byte instruction, 4 byte address, 4 classvar ID
 void InterpretGotoIfTrueClassVar(int object_id, local_var_type *local_vars)
 {
-   int dest_addr;
-   int var_check;
-   val_type check_data;
+   int dest_addr = get_int();
+   int var_check = get_int();
+   val_type check_data = RetrieveClassVar(object_id, var_check);
 
-   dest_addr = get_int();
-
-   var_check = get_int();
-   check_data = RetrieveClassVar(object_id, var_check);
    if (check_data.v.data != 0)
       bkod += dest_addr;
 }
 // OP_GOTO_IF_FALSE_C: 1 byte instruction, 4 byte address, 4 byte constant
 void InterpretGotoIfFalseConstant(int object_id, local_var_type *local_vars)
 {
-   int dest_addr;
    val_type var_check;
 
-   dest_addr = get_int();
-
+   int dest_addr = get_int();
    var_check.int_val = get_int();
+
    if (var_check.v.data == 0)
       bkod += dest_addr;
 }
 // OP_GOTO_IF_FALSE_L: 1 byte instruction, 4 byte address, 4 byte local ID
 void InterpretGotoIfFalseLocal(int object_id, local_var_type *local_vars)
 {
-   int dest_addr;
-   int var_check;
+   int dest_addr = get_int();
+   int var_check = get_int();
 
-   dest_addr = get_int();
-
-   var_check = get_int();
    if (local_vars->locals[var_check].v.data == 0)
       bkod += dest_addr;
 }
 // OP_GOTO_IF_FALSE_P: 1 byte instruction, 4 byte address, 4 property ID
 void InterpretGotoIfFalseProperty(int object_id, local_var_type *local_vars)
 {
-   int dest_addr;
-   int var_check;
-
-   dest_addr = get_int();
-   var_check = get_int();
+   int dest_addr = get_int();
+   int var_check = get_int();
 
    if (GetObjectByID(object_id)->p[var_check].val.v.data == 0)
       bkod += dest_addr;
@@ -1027,15 +1008,89 @@ void InterpretGotoIfFalseProperty(int object_id, local_var_type *local_vars)
 // OP_GOTO_IF_FALSE_V: 1 byte instruction, 4 byte address, 4 classvar ID
 void InterpretGotoIfFalseClassVar(int object_id, local_var_type *local_vars)
 {
-   int dest_addr;
-   int var_check;
-   val_type check_data;
+   int dest_addr = get_int();
+   int var_check = get_int();
+   val_type check_data = RetrieveClassVar(object_id, var_check);
 
-   dest_addr = get_int();
-   var_check = get_int();
-
-   check_data = RetrieveClassVar(object_id, var_check);
    if (check_data.v.data == 0)
+      bkod += dest_addr;
+}
+// OP_GOTO_IF_NULL_C: 1 byte instruction, 4 byte address, 4 byte constant
+void InterpretGotoIfNullConstant(int object_id, local_var_type *local_vars)
+{
+   val_type var_check;
+
+   int dest_addr = get_int();
+   var_check.int_val = get_int();
+
+   if (var_check.int_val == 0)
+      bkod += dest_addr;
+}
+// OP_GOTO_IF_NULL_L: 1 byte instruction, 4 byte address, 4 byte local ID
+void InterpretGotoIfNullLocal(int object_id, local_var_type *local_vars)
+{
+   int dest_addr = get_int();
+   int var_check = get_int();
+
+   if (local_vars->locals[var_check].int_val == 0)
+      bkod += dest_addr;
+}
+// OP_GOTO_IF_NULL_P: 1 byte instruction, 4 byte address, 4 property ID
+void InterpretGotoIfNullProperty(int object_id, local_var_type *local_vars)
+{
+   int dest_addr = get_int();
+   int var_check = get_int();
+
+   if (GetObjectByID(object_id)->p[var_check].val.int_val == 0)
+      bkod += dest_addr;
+}
+// OP_GOTO_IF_NULL_V: 1 byte instruction, 4 byte address, 4 classvar ID
+void InterpretGotoIfNullClassVar(int object_id, local_var_type *local_vars)
+{
+   int dest_addr = get_int();
+   int var_check = get_int();
+   val_type check_data = RetrieveClassVar(object_id, var_check);
+
+   if (check_data.int_val == 0)
+      bkod += dest_addr;
+}
+// OP_GOTO_IF_NEQ_NULL_C: 1 byte instruction, 4 byte address, 4 byte constant
+void InterpretGotoIfNeqNullConstant(int object_id, local_var_type *local_vars)
+{
+   val_type var_check;
+
+   int dest_addr = get_int();
+   var_check.int_val = get_int();
+
+   if (var_check.int_val != 0)
+      bkod += dest_addr;
+}
+// OP_GOTO_IF_NEQ_NULL_L: 1 byte instruction, 4 byte address, 4 byte local ID
+void InterpretGotoIfNeqNullLocal(int object_id, local_var_type *local_vars)
+{
+   int dest_addr = get_int();
+   int var_check = get_int();
+
+   if (local_vars->locals[var_check].int_val != 0)
+      bkod += dest_addr;
+}
+// OP_GOTO_IF_NEQ_NULL_P: 1 byte instruction, 4 byte address, 4 property ID
+void InterpretGotoIfNeqNullProperty(int object_id, local_var_type *local_vars)
+{
+   int dest_addr = get_int();
+   int var_check = get_int();
+
+   if (GetObjectByID(object_id)->p[var_check].val.int_val != 0)
+      bkod += dest_addr;
+}
+// OP_GOTO_IF_NEQ_NULL_V: 1 byte instruction, 4 byte address, 4 classvar ID
+void InterpretGotoIfNeqNullClassVar(int object_id, local_var_type *local_vars)
+{
+   int dest_addr = get_int();
+   int var_check = get_int();
+
+   val_type check_data = RetrieveClassVar(object_id, var_check);
+   if (check_data.int_val != 0)
       bkod += dest_addr;
 }
 
@@ -1930,6 +1985,17 @@ void CreateOpcodeTable(void)
    opcode_table[OP_GOTO_IF_FALSE_L] = InterpretGotoIfFalseLocal;
    opcode_table[OP_GOTO_IF_FALSE_P] = InterpretGotoIfFalseProperty;
    opcode_table[OP_GOTO_IF_FALSE_V] = InterpretGotoIfFalseClassVar;
+
+   opcode_table[OP_GOTO_IF_NULL_C] = InterpretGotoIfNullConstant;
+   opcode_table[OP_GOTO_IF_NULL_L] = InterpretGotoIfNullLocal;
+   opcode_table[OP_GOTO_IF_NULL_P] = InterpretGotoIfNullProperty;
+   opcode_table[OP_GOTO_IF_NULL_V] = InterpretGotoIfNullClassVar;
+
+   opcode_table[OP_GOTO_IF_NEQ_NULL_C] = InterpretGotoIfNeqNullConstant;
+   opcode_table[OP_GOTO_IF_NEQ_NULL_L] = InterpretGotoIfNeqNullLocal;
+   opcode_table[OP_GOTO_IF_NEQ_NULL_P] = InterpretGotoIfNeqNullProperty;
+   opcode_table[OP_GOTO_IF_NEQ_NULL_V] = InterpretGotoIfNeqNullClassVar;
+
    opcode_table[OP_CALL_STORE_NONE] = InterpretCallStoreNone;
    opcode_table[OP_CALL_STORE_L] = InterpretCallStoreLocal;
    opcode_table[OP_CALL_STORE_P] = InterpretCallStoreProperty;

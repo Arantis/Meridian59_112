@@ -1,0 +1,130 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+OldLamp is Flickerer
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include oldlamp.lkod
+
+   oldlamp_name_rsc = "lamp"
+   oldlamp_icon_rsc = oldlamp.bgf
+   oldlamp_desc_off_rsc = "These lamps stand like silent sentinels."
+   oldlamp_desc_on_rsc = \
+      "You have to shield your eyes from the gentle glare of the lamp."
+
+classvars:
+
+   vrName = oldlamp_name_rsc
+   vrIcon = oldlamp_icon_rsc
+
+   viObject_flags = OF_NOEXAMINE
+
+   // Lighting flags.  Default "on" and wavering flags
+   viLightFlags = LIGHT_FLAG_ON | LIGHT_FLAG_WAVERING | LIGHT_FLAG_DYNAMIC
+
+   // Light color.
+   viLightColor = LIGHT_FIRE
+
+properties:
+
+   vrDesc = oldlamp_desc_off_rsc
+
+   viStart_frame = 2
+   viEnd_frame = 14
+
+   // Intensity, from 0-255.
+   piLightIntensity = 50
+
+messages:
+
+   Constructed()
+   {
+      Send(self,@SetSwitchOnTime);
+
+      propagate;
+   }
+
+   SetAnimationSpeed()
+   {
+      // Set our animations a bit randomly.
+      piAnim_speed = (Random(4,7) * 10);
+      viStart_frame = Random(2,4);
+      viEnd_frame = Random(12,14);
+
+      return;
+   }
+
+   AmbientLightChanged()
+   {
+      local iPrev_switch;
+
+      iPrev_switch = pbIsLit;
+      Send(self,@SetSwitchOnTime);
+
+      return;
+   }
+
+   SetSwitchOnTime()
+   {
+      local iHour;
+
+      // lamps indoors don't shut off at night.
+      if Send(self,@GetOwner) <> $
+      {
+         if Send(Send(self,@GetOwner),@GetOutsideFactor) = OUTDOORS_NONE
+         {
+            Send(self,@SetSwitch,#bSwitch=ON);
+
+            return;
+         }
+      }
+
+      iHour = Send(SYS,@GetHour);
+
+      if (iHour >= 11) AND (iHour <= 17)
+      {
+         Send(self,@SetSwitch,#bSwitch=OFF);
+      }
+      else
+      {
+         Send(self,@SetSwitch,#bSwitch=ON);
+      }
+
+      return;
+   }
+
+   SetSwitch(bSwitch = ON)
+   {
+      if bSwitch = ON
+      {
+         pbIsLit = TRUE;
+         vrDesc = oldlamp_desc_on_rsc;
+      }
+      else
+      {
+         pbIsLit = FALSE;
+         vrDesc = oldlamp_desc_off_rsc;
+      }
+
+      if (poOwner <> $)
+      {
+         Send(poOwner,@SomethingChanged,#what=self);
+      }
+
+      return;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

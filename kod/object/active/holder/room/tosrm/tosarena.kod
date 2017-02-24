@@ -33,46 +33,58 @@ resources:
    wind_sound_tosarena = ambcntry.ogg
    wind1_sound_tosarena = rs_wind.ogg
 
-   TosArena_no_offer = "The Watcher says, \"Spectators and combatants may not exchange goods during matches."
+   TosArena_no_offer = \
+      "The Watcher says, \"Spectators and combatants may not exchange goods "
+      "during matches."
    TosArena_no_attack = "You may not fight here unless you are a combatant."
    TosArena_no_spell = "Only the combatants may cast spells."
    TosArena_no_rescue = "No chickening out!"
    TosArena_no_target = "That's awfully rude of you!"
    TosArena_between_bouts = "No horseplay between bouts!"
 
-   TosArena_cant_go = "The Watcher says, \"You can't leave!  You're a combatant!\""
+   TosArena_cant_go = \
+      "The Watcher says, \"You can't leave!  You're a combatant!\""
 
    TosArena_traditional = "Traditional"
-   TosArena_traditional_rules = "Traditional bouts are those between only two combatants, a champion "
-      "and a challenger.  If there is no champion, say CHAMPION to claim the title.  A potential "
-      "fighter then says CHALLENGE to challenge the champion.  The champion may then choose to either ACCEPT the "
-      "challenge or RENEGE his title."
+   TosArena_traditional_rules = \
+      "Traditional bouts are those between only two combatants, a champion "
+      "and a challenger.  If there is no champion, say CHAMPION to claim the "
+      "title.  A potential fighter then says CHALLENGE to challenge the "
+      "champion.  The champion may then choose to either ACCEPT the challenge "
+      "or RENEGE his title."
    TosArena_lastman = "Last Man Standing"
-   TosArena_lastman_rules = "Last man standing bouts may have up to 25 combatants.  First, a CHAMPION "
-      "must be declared.  Once someone CHALLENGES him, others have 30 seconds to also CHALLENGE.  "
-      "After the Watcher has begun the match, it's every man for himself.  The last gladiator left in "
-      "the ring wins the glory of Kraanan."
+   TosArena_lastman_rules = \
+      "Last man standing bouts may have up to 25 combatants.  First, a "
+      "CHAMPION must be declared.  Once someone CHALLENGES him, others have "
+      "30 seconds to also CHALLENGE.  After the Watcher has begun the match, "
+      "it's every man for himself.  The last gladiator left in the ring wins "
+      "the glory of Kraanan."
    TosArena_guildvguild = "Guild Vs Guild"
-   TosArena_guildvguild_rules = "Two guilds may choose to combat each other.  A representative "
-      "from one guild registers that guild as the CHAMPION, and then a member of "
-      "the challenging guild proffers a CHALLENGE.  At this point, other guild members "
-      "from both guilds have 30 seconds to join in, although no more than 10 "
-      "people from any one guild may participate."
+   TosArena_guildvguild_rules = \
+      "Two guilds may choose to combat each other.  A representative from one "
+      "guild registers that guild as the CHAMPION, and then a member of the "
+      "challenging guild proffers a CHALLENGE.  At this point, other guild "
+      "members from both guilds have 30 seconds to join in, although no more "
+      "than 10 people from any one guild may participate."
    TosArena_battleRoyale = "Battle Royale"
-   TosArena_battleRoyale_rules = "A mix between last man standing and guild vs guild, "
-      "first a CHAMPION is needed, and then other guild members from other guilds may "
-      "CHALLENGE.  Any number of guilds may take part in the proceedings, but there may "
-      "be no more than 5 members of any one guild in the pit, and no more than 25 combatants total."
+   TosArena_battleRoyale_rules = \
+      "A mix between last man standing and guild vs guild, first a CHAMPION "
+      "is needed, and then other guild members from other guilds may "
+      "CHALLENGE.  Any number of guilds may take part in the proceedings, but "
+      "there may be no more than 5 members of any one guild in the pit, and "
+      "no more than 25 combatants total."
 
    TosArena_rules = "Rules"
    TosArena_rules_rules = \
-      "* Between bouts, any person may say the name of a combat style to change combat styles.  "  
-      "However, all matches must be over and any current champions must RENEGE their titles.\n"
-      "* Magic and combat are limited to between combatants on the arena pit.  Players in the "
-      "stands cannot be harmed by wayward combatants.\n"
-      "* The Watcher reserves the right to make the proceedings more... interesting... if "
-      "he so desires.\n"
-      "* Matches are 'to the death'.  However, combatants suffer no ill effects from arena death."
+      "* Between bouts, any person may say the name of a combat style to "
+      "change combat styles.  However, all matches must be over and any "
+      "current champions must RENEGE their titles.\n"
+      "* Magic and combat are limited to between combatants on the arena "
+      "pit.  Players in the stands cannot be harmed by wayward combatants.\n"
+      "* The Watcher reserves the right to make the proceedings more... "
+      "interesting... if he so desires.\n"
+      "* Matches are 'to the death'.  However, combatants suffer no ill "
+      "effects from arena death."
 
    TosArena_traditional_icon = arsign01.bgf
    TosArena_lastman_icon = arsign02.bgf
@@ -80,10 +92,15 @@ resources:
    TosArena_guild_icon = arsign04.bgf
    TosArena_battleroyale_icon = arsign05.bgf
 
-   TosArena_start_tournament = "Banners unfurl and bugles warble to signify the beginning of the Royal Tournament!"
+   TosArena_start_tournament = \
+      "Banners unfurl and bugles warble to signify the beginning of the "
+      "Royal Tournament!"
    TosArena_end_tournament = "The Royal Tournament has come to an end."
-   TosArena_doors_locked = "You lock the doors of the Arena of Kraanan.  Players may now only enter if a Guardian brings them here."
-   TosArena_doors_unlocked = "You unlock the doors to the Arena, so that all may enter once again."
+   TosArena_doors_locked = \
+      "You lock the doors of the Arena of Kraanan.  Players may now only "
+      "enter if a Guardian brings them here."
+   TosArena_doors_unlocked = \
+      "You unlock the doors to the Arena, so that all may enter once again."
 
    TosArena_Fanfare_Sound = fanfare1.ogg
    TosArena_Combat_Sound = arena1.ogg
@@ -121,9 +138,8 @@ properties:
    pbLocked = FALSE
    pbRealdeath = FALSE
    pbNoReagents = TRUE
-   
-messages:
 
+messages:
 
    CanOffer(who = $, target = $)
    {
@@ -132,33 +148,26 @@ messages:
          return FALSE;
       }
 
-      if poWatcher = $
+      if (poWatcher = $
+         OR NOT Send(poWatcher,@FightInSession)
+         OR (Send(poWatcher,@IsCombatant,#who=who)
+            = Send(poWatcher,@IsCombatant,#who=target)))
       {
          return TRUE;
       }
 
-      if not Send(poWatcher,@FightInSession)
-      {
-         return TRUE;
-      }
-
-      if Send(poWatcher,@IsCombatant,#who=who) = Send(poWatcher,@IsCombatant,#who=target)
-      {
-         return TRUE;
-      }
-
-      Send(who,@msgSenduser,#message_rsc=TosArena_no_offer);
+      Send(who,@MsgSendUser,#message_rsc=TosArena_no_offer);
 
       return FALSE;
    }
-
 
    CheckWatcher(what=$)
    {
       if poWatcher = $
       {
          poWatcher = what;
-         Send(self,@NewHold,#what=what,#new_row=13,#new_col=20,#fine_row=0,#new_angle=ANGLE_WEST);
+         Send(self,@NewHold,#what=what,#new_row=13,#new_col=20,
+               #fine_row=0,#new_angle=ANGLE_WEST);
       }
 
       return;
@@ -170,18 +179,20 @@ messages:
    }
 
    NewHold(what = $,new_row = 22, new_col = 11)
-   "Sends cutesey messages to anyone who enters the room."
-   "Also, note that it will move anyone who enters in the playing field into the stands."
+   "Sends cutesey messages to anyone who enters the room.  Also, note that it "
+   "will move anyone who enters in the playing field into the stands."
    "This should only be necessary for people who drop link."
    {
-      if isClass(what,&User) AND (Send(what,@GetOwner) = $)
+      if IsClass(what,&User)
+         AND (Send(what,@GetOwner) = $)
+         AND NOT Send(poWatcher,@IsCombatant,#who=what)
       {
-         post(self,@Teleport,#what=what,#outofplay=TRUE);
+         Post(self,@Teleport,#what=what,#outofplay=TRUE);
       }
 
       propagate;
    }
-   
+
    CreateStandardExits()
    {
       plExits = $;
@@ -211,24 +222,43 @@ messages:
       propagate;
    }
 
-   CreateStandardObjects()   
+   CreateStandardObjects()
    "Creates the watcher and two signposts."
    {
+      local oSign;
+
       if poWatcher = $
       {
          poWatcher = Create(&TosWatcher);
-         Send(self,@NewHold,#what=poWatcher,#new_row=13,#new_col=20,#fine_row=0,#new_angle=ANGLE_WEST);
-         
-         Send(self,@NewHold,#what=Create(&ArenaSign1,#name=tosarena_rules,#icon=tosarena_rules_icon,
-              #desc=tosarena_rules_rules),#new_row=13,#new_col=19,#fine_row=0,#fine_col=31);
-         Send(self,@NewHold,#what=Create(&ArenaSign1,#name=tosarena_traditional,#icon=tosarena_traditional_icon,
-              #desc=tosarena_traditional_rules),#new_row=11,#new_col=19,#fine_row=28,#fine_col=31);
-         Send(self,@NewHold,#what=Create(&ArenaSign1,#name=tosarena_lastman,#icon=tosarena_lastman_icon,
-              #desc=tosarena_lastman_rules),#new_row=12,#new_col=19,#fine_row=12,#fine_col=31);
-         Send(self,@NewHold,#what=Create(&ArenaSign1,#name=tosarena_guildvguild,#icon=tosarena_guild_icon,
-              #desc=tosarena_guildvguild_rules),#new_row=13,#new_col=19,#fine_row=52,#fine_col=31);
-         Send(self,@NewHold,#what=Create(&ArenaSign1,#name=tosarena_battleroyale,#icon=tosarena_battleroyale_icon,
-              #desc=tosarena_battleroyale_rules),#new_row=14,#new_col=19,#fine_row=36,#fine_col=31);
+         Send(self,@NewHold,#what=poWatcher,#new_row=13,#new_col=20,
+               #fine_row=0,#new_angle=ANGLE_WEST);
+
+         oSign = Create(&ArenaSign1,#name=tosarena_rules,
+                     #icon=tosarena_rules_icon,#desc=tosarena_rules_rules);
+         Send(self,@NewHold,#what=oSign,#new_row=13,#new_col=19,
+               #fine_row=0,#fine_col=31);
+
+         oSign = Create(&ArenaSign1,#name=tosarena_traditional,
+                     #icon=tosarena_traditional_icon,
+                     #desc=tosarena_traditional_rules);
+         Send(self,@NewHold,#what=oSign,#new_row=11,#new_col=19,
+               #fine_row=28,#fine_col=31);
+
+         oSign = Create(&ArenaSign1,#name=tosarena_lastman,
+                     #icon=tosarena_lastman_icon,#desc=tosarena_lastman_rules);
+         Send(self,@NewHold,#what=oSign,#new_row=12,#new_col=19,
+               #fine_row=12,#fine_col=31);
+
+         oSign = Create(&ArenaSign1,#name=tosarena_guildvguild,
+                     #icon=tosarena_guild_icon,#desc=tosarena_guildvguild_rules);
+         Send(self,@NewHold,#what=oSign,#new_row=13,#new_col=19,
+               #fine_row=52,#fine_col=31);
+
+         oSign = Create(&ArenaSign1,#name=tosarena_battleroyale,
+                     #icon=tosarena_battleroyale_icon,
+                     #desc=tosarena_battleroyale_rules);
+         Send(self,@NewHold,#what=oSign,#new_row=14,#new_col=19,
+               #fine_row=36,#fine_col=31);
       }
 
       propagate;
@@ -322,58 +352,37 @@ messages:
 
    IsValidTarget(who=$)
    {
-      local i, oWatcher;
-
       if NOT Send(self,@CheckRoomFlag,#flag=ROOM_SAFE_DEATH)
       {
          return FALSE;
       }
 
-      oWatcher = $;
-      foreach i in plActive
-      {
-      
-         if IsClass(First(i),&TosWatcher)
-         {
-            oWatcher = First(i);
-
-            break;
-         }
-      }
-      
-      if oWatcher = $
+      if poWatcher = $
       {
          Debug("IsValidTarget called with no watcher in existence!");
 
          return;
       }
-      
-      if Send(oWatcher,@IsCombatant,#who=who) AND Send(oWatcher,@FightInSession)
-      {
-         return TRUE;
-      }
-      
-      return FALSE;
+
+      return (Send(poWatcher,@IsCombatant,#who=who)
+         AND Send(poWatcher,@FightInSession));
    }
 
    GetWatcher()
    {
-      local i, oEachObj;
-
-      foreach i in plActive
-      {
-         oEachObj = Send(self,@HolderExtractObject,#data=i);
-         if isClass(oEachObj,&TosWatcher)
-         {
-            return oEachObj;
-         }                  
-      }
-      
-      return $;
+      return poWatcher;
    }
 
    Teleport(what=$,goinplay=FALSE,outofplay=FALSE)
    {
+      // Don't teleport players if logged off.
+      if (what = $
+         OR (IsClass(what,&User)
+            AND NOT Send(what,@IsLoggedOn)))
+      {
+         return;
+      }
+
       // Check goinplay and outofplay first. If we don't have
       // a parameter set, teleport combatants in and anyone else out.
       if goinplay
@@ -468,18 +477,18 @@ messages:
       return;
    }
 
-   BeginFight(lCombatants=$)
+   ArenaBeginFight(lCombatants=$)
    {
       local maze;
 
-      maze = random(1,14);
+      maze = Random(1,14);
 
-      if length(lCombatants) = 2       
+      if Length(lCombatants) = 2
       {
-         // teleport 'em to the cage.      
-         Send(SYS,@UtilGoNearSquare,#what=first(lCombatants),#where=self,
+         // teleport 'em to the cage.
+         Send(SYS,@UtilGoNearSquare,#what=First(lCombatants),#where=self,
               #new_row=5,#new_col=5,#fine_row=0,#fine_col=0,#new_angle=ANGLE_SOUTH_EAST);
-         Send(SYS,@UtilGoNearSquare,#what=nth(lCombatants,2),#where=self,
+         Send(SYS,@UtilGoNearSquare,#what=Nth(lCombatants,2),#where=self,
               #new_row=21,#new_col=5,#fine_row=0,#fine_col=0,#new_angle=ANGLE_NORTH_EAST);
       }
 
@@ -498,78 +507,66 @@ messages:
          return;
       }
 
-      maze = bound(maze,1,14);
+      maze = Bound(maze,1,14);
       if maze = 1
       {
          Send(self,@SetSector,#sector=1,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
       }
-
-      if maze = 2
+      else if maze = 2
       {
          Send(self,@SetSector,#sector=1,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
          Send(self,@SetSector,#sector=2,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
       }
-
-      if maze = 3
+      else if maze = 3
       {
          Send(self,@SetSector,#sector=1,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
          Send(self,@SetSector,#sector=2,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
          Send(self,@SetSector,#sector=3,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
       }
-
-      if maze = 4
+      else if maze = 4
       {
          Send(self,@SetSector,#sector=3,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
       }
-
-      if maze = 5
+      else if maze = 5
       {
          Send(self,@SetSector,#sector=3,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
          Send(self,@SetSector,#sector=6,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
       }
-
-      if maze = 6
+      else if maze = 6
       {
          Send(self,@SetSector,#sector=4,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
       }
-
-      if maze = 7
+      else if maze = 7
       {
          Send(self,@SetSector,#sector=4,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
          Send(self,@SetSector,#sector=5,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
       }
-
-      if maze = 8
+      else if maze = 8
       {
          Send(self,@SetSector,#sector=4,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
          Send(self,@SetSector,#sector=6,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
       }
-
-      if maze = 9
+      else if maze = 9
       {
          Send(self,@SetSector,#sector=4,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
          Send(self,@SetSector,#sector=5,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
          Send(self,@SetSector,#sector=6,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
       }
-
-      if maze = 10
+      else if maze = 10
       {
          Send(self,@SetSector,#sector=5,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
       }
-
-      if maze = 11
+      else if maze = 11
       {
          Send(self,@SetSector,#sector=5,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
          Send(self,@SetSector,#sector=2,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
       }
-
-      if maze = 12
+      else if maze = 12
       {
          Send(self,@SetSector,#sector=5,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
          Send(self,@SetSector,#sector=6,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
       }
-
-      if maze = 13
+      else if maze = 13
       {
          Send(self,@SetSector,#sector=6,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
          Send(self,@SetSector,#sector=2,#animation=ANIMATE_FLOOR_LIFT,#height=192,#speed=32);
@@ -578,22 +575,22 @@ messages:
       return;
    }
 
-   EndFight(lCombatants = $)
+   ArenaEndFight(lCombatants = $)
    {
       local i, j, k;
 
       Send(self,@LowerMaze);
 
       // Remove radius enchantments
-      foreach i in Send(self,@GetHolderActive)
+      foreach i in plActive
       {
-         j = Send(self,@HolderExtractObject,#data=i);
+         j = First(i);
          if IsClass(j,&Player)
             OR (IsClass(j,&Monster) AND NOT ((Send(j,@GetBehavior) & AI_NPC)))
          {
             foreach k in Send(j,@GetRadiusEnchantments)
             {
-               Send(First(k),@CancelRadiusEnchantment,#source=Nth(k,3));
+               Send(Nth(k,2),@RemoveEnchantment,#who=j,#state=Nth(k,3));
             }
          }
       }
@@ -631,7 +628,7 @@ messages:
       return;
    }
 
-   CommenceFight()
+   ArenaCommenceFight()
    {
       Send(self,@SetSector,#sector=8,#animation=ANIMATE_CEILING_LIFT,#height=194,#speed=32);
       Send(self,@SetSector,#sector=9,#animation=ANIMATE_CEILING_LIFT,#height=300,#speed=32);
@@ -639,27 +636,29 @@ messages:
       return;
    }
 
-   StartTournament(marshal = $)
+   ArenaStartTournament(marshal = $)
    {
       Send(self,@SomeoneSaid,#string=TosArena_start_tournament,#type=SAY_MESSAGE,#what=self);
       Send(self,@TeleportToBooth,#who=marshal);
       Send(self,@SomethingWaveRoom,#wave_rsc=TosArena_Fanfare_Sound);
       pbNoReagents = FALSE;
+
       return;
    }
 
-   EndTournament(marshal = $)
+   ArenaEndTournament(marshal = $)
    {
-      Send(self,@someonesaid,#string=TosArena_end_tournament,#type=SAY_MESSAGE,#what=self);
+      Send(self,@SomeoneSaid,#string=TosArena_end_tournament,#type=SAY_MESSAGE,#what=self);
       Send(self,@SomethingWaveRoom,#wave_rsc=TosArena_Fanfare_Sound);
-      pbNoReagents = TRUE;     
+      pbNoReagents = TRUE;
+
       return;
    }
 
    TeleportToBooth(who=$)
    {
       Send(SYS,@UtilGoNearSquare,#what=who,#where=self,#new_row=13,#new_col=20,
-           #fine_row=0,#new_angle=ANGLE_WEST);
+            #fine_row=0,#new_angle=ANGLE_WEST);
 
       return;
    }
@@ -668,15 +667,15 @@ messages:
    {
       if what <> $ AND IsClass(what,&DM)
       {
-         if (StringEqual(string,TosArena_booth_command) OR StringEqual(string,"booth"))
+         if (StringEqual(string,TosArena_booth_command))
          {
             Send(self,@TeleportToBooth,#who=what);
 
             return;
          }
 
-         if Send(what,@CheckDMFlag,#flag=DMFLAG_ALLOW_ARENA_CMDS)
-            AND (StringEqual(string,TosArena_lock_command) OR StringEqual(string,"lock"))
+         if (Send(what,@CheckDMFlag,#flag=DMFLAG_ALLOW_ARENA_CMDS)
+            AND StringEqual(string,TosArena_lock_command))
          {
             if pbLocked
             {
@@ -710,7 +709,8 @@ messages:
 
    SomethingTryGo(what = $,row = $, col = $,fine_row = $,fine_col = $)
    {
-      if row = 20 AND col = 6 AND fine_row > 32 AND fine_col > 32
+      if ((row = 20 AND col = 6 AND fine_row > 32 AND fine_col > 32)
+         OR (row = 19 AND col = 5 AND fine_row < 32 AND fine_col < 32))
       {
          Send(what,@MsgSendUser,#message_rsc=room_door_was_opened);
          Send(what,@WaveSendUser,#wave_rsc=vrDoor_Sound);
@@ -722,31 +722,8 @@ messages:
          return TRUE;
       }
 
-      if row = 19 AND col = 5 AND fine_row < 32 AND fine_col < 32
-      {
-         Send(what,@MsgSendUser,#message_rsc=room_door_was_opened);
-         Send(what,@WaveSendUser,#wave_rsc=vrDoor_Sound);
-
-         Send(SYS,@UtilGoNearSquare,#what=what,
-              #where=Send(SYS,@FindRoomByNum,#num=RID_TOS_ARENA2),
-              #new_row=29,#new_col=35,#new_angle=Send(what,@GetAngle));
-
-         return TRUE;
-      }
-
-      if row = 6 AND col = 5 AND fine_row > 32 AND fine_col < 32
-      {
-         Send(what,@MsgSendUser,#message_rsc=room_door_was_opened);
-         Send(what,@WaveSendUser,#wave_rsc=vrDoor_Sound);
-
-         Send(SYS,@UtilGoNearSquare,#what=what,
-              #where=Send(SYS,@FindRoomByNum,#num=RID_TOS_ARENA2),
-              #new_row=22,#new_col=35,#new_angle=Send(what,@GetAngle));
-
-         return TRUE;
-      }
-
-      if row = 5 AND col = 6 AND fine_row < 32 AND fine_col > 32
+      if ((row = 6 AND col = 5 AND fine_row > 32 AND fine_col < 32)
+         OR (row = 5 AND col = 6 AND fine_row < 32 AND fine_col > 32))
       {
          Send(what,@MsgSendUser,#message_rsc=room_door_was_opened);
          Send(what,@WaveSendUser,#wave_rsc=vrDoor_Sound);
@@ -763,12 +740,9 @@ messages:
 
    CheckBehindBars()
    {
-      local oWatcher, lCombatants, i;
+      local i;
 
-      oWatcher = Send(self,@GetWatcher);
-      lCombatants = Send(oWatcher,@GetCombatantList);
-
-      foreach i in lCombatants
+      foreach i in Send(poWatcher,@GetCombatantList)
       {
          if Send(i,@GetCol) < 7
          {
@@ -808,20 +782,17 @@ messages:
       }
 
       if bOnGround
+         AND pbSnowGroundTexture
       {
-         if pbSnowGroundTexture
-         {
-            Send(self,@ChangeTexture,#id=0,#new_texture=61015,#flags=CTF_FLOOR);
-            Send(self,@ChangeTexture,#id=1,#new_texture=61015,#flags=CTF_FLOOR);
-            Send(self,@ChangeTexture,#id=2,#new_texture=61015,#flags=CTF_FLOOR);
-            Send(self,@ChangeTexture,#id=3,#new_texture=61015,#flags=CTF_FLOOR);
-            Send(self,@ChangeTexture,#id=4,#new_texture=61015,#flags=CTF_FLOOR);
-            Send(self,@ChangeTexture,#id=5,#new_texture=61015,#flags=CTF_FLOOR);
-            Send(self,@ChangeTexture,#id=6,#new_texture=61015,#flags=CTF_FLOOR);
-            Send(self,@ChangeTexture,#id=7,#new_texture=61015,#flags=CTF_FLOOR);
-            Send(self,@ChangeTexture,#id=15,#new_texture=61016,
-                  #flags=CTF_BELOWWALL);
-         }
+         Send(self,@ChangeTexture,#id=0,#new_texture=61015,#flags=CTF_FLOOR);
+         Send(self,@ChangeTexture,#id=1,#new_texture=61015,#flags=CTF_FLOOR);
+         Send(self,@ChangeTexture,#id=2,#new_texture=61015,#flags=CTF_FLOOR);
+         Send(self,@ChangeTexture,#id=3,#new_texture=61015,#flags=CTF_FLOOR);
+         Send(self,@ChangeTexture,#id=4,#new_texture=61015,#flags=CTF_FLOOR);
+         Send(self,@ChangeTexture,#id=5,#new_texture=61015,#flags=CTF_FLOOR);
+         Send(self,@ChangeTexture,#id=6,#new_texture=61015,#flags=CTF_FLOOR);
+         Send(self,@ChangeTexture,#id=7,#new_texture=61015,#flags=CTF_FLOOR);
+         Send(self,@ChangeTexture,#id=15,#new_texture=61016,#flags=CTF_BELOWWALL);
       }
 
       Send(self,@SetRoomFlag,#flag=ROOM_SNOWING,#value=TRUE);

@@ -1,0 +1,338 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+MartyrsGrace is Heal
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include martyrsgrace.lkod
+
+   martyrsgrace_name_rsc = "martyr's grace"
+   martyrsgrace_icon_rsc = imargrace.bgf
+   martyrsgrace_desc_rsc = \
+      "In a display of limitless compassion and empathy, the caster shares in "
+      "the visible suffering of his allies, compelling Shal'ille to come to "
+      "their aid and heal their injuries.  The experience of martyrdom may free "
+      "and rejuvenate the caster's mind.  Requires polished seraphym to cast."
+
+   martyrsgrace_cast_rsc = \
+      "%s%s shares your pain, restoring ~g~B%i~B~n hitpoints."
+
+   martyrsgrace_sacrifice_rsc = \
+      "You share in your allies' pain, sacrificing ~r~B%i~B~n hitpoints."
+
+   martyrsgrace_mana_rsc = \
+      "Your martyrdom leaves you with a sense of heightened clarity, restoring "
+      "~b~B%i~B~n points of mana."
+
+   martyrsgrace_notargetshurt_rsc = \
+      "All of your allies seem to be perfectly healthy. You might want to reconsider "
+      "your matyrdom."
+
+   martyrsgrace_notargetsworthy_rsc = \
+      "You are quite sure that none of the despicable creatures around you are worthy "
+      "of your matyrdom."
+
+   martyrsgrace_notargetsaround_rsc = \
+      "Your matyrdom would be quite pointless with no one around to see it."
+
+classvars:
+
+   vrName = martyrsgrace_name_rsc
+   vrIcon = martyrsgrace_icon_rsc
+   vrDesc = martyrsgrace_desc_rsc
+   vrCastOther = martyrsgrace_cast_rsc
+
+   viSchool = SS_SHALILLE
+   viSpell_num = SID_MARTYRS_GRACE
+   viMana = 0
+   viSpell_level = 6
+   viMeditate_ratio = 100
+   viPostCast_time = 4
+
+   vbIsAreaEffect = TRUE
+
+properties:
+
+messages:
+
+   ResetReagents()
+   {
+      plReagents = $;
+      plReagents = Cons([&PolishedSeraphym,1],plReagents);
+
+      return;
+   }
+
+   CanPayCosts(who = $,lTargets = $)
+   {
+      local oRoom, i, each_obj, lPlayers;
+
+      oRoom = Send(who,@GetOwner);
+
+      // In order to give players detailed feedback about why they can't
+      // cast the spell, we need to take another look at the targets.
+      // First, compile a list of all players in sight sans 'who'.
+      foreach i in Send(oRoom,@GetHolderActive)
+      {
+         each_obj = Send(oRoom,@HolderExtractObject,#data=i);
+
+         if each_obj = who
+         {
+            continue;
+         }
+
+         if NOT IsClass(each_obj,&Player)
+         {
+            continue;
+         }
+
+         if Send(each_obj,@IsInCannotInteractMode)
+         {
+            continue;
+         }
+
+         if (IsClass(oRoom,&GuildHall)
+               AND Send(oRoom,@InFoyer,#who=each_obj)
+                  <> Send(oRoom,@InFoyer,#who=who))
+         {
+            continue;
+         }
+
+         if NOT Send(oRoom,@LineOfSight,#obj1=who,#obj2=each_obj)
+         {
+            continue;
+         }
+
+         lPlayers = Cons(each_obj,lPlayers);
+      }
+
+      // Looks like we are all alone. Let's tell the player.
+      if lPlayers = $
+      {
+         Send(who,@MsgSendUser,#message_rsc=martyrsgrace_notargetsaround_rsc);
+         return FALSE;
+      }
+
+      // Someone must be around, but since they aren't on our original list, they
+      // must be undeserving of our attention. Tell the player.
+      if lTargets = $ 
+      {
+         Send(who,@MsgSendUser,#message_rsc=martyrsgrace_notargetsworthy_rsc);
+         return FALSE;
+      }
+
+      // Our list isn't empty, so there are some nice people around. Let's create
+      // a list of those of them that need our help.
+      lPlayers = $;
+      foreach each_obj in lTargets
+      {
+         if Send(each_obj,@GetHealth) >= Send(each_obj,@GetMaxHealth)
+         {
+            continue;
+         }
+
+         lPlayers = Cons(each_obj,lPlayers);
+      }
+
+      // The list is empty, so let's tell the player that our help isn't needed.
+      if lPlayers = $
+      {
+         // Not enough suffering around here.
+         Send(who,@MsgSendUser,#message_rsc=martyrsgrace_notargetshurt_rsc);
+         return FALSE;
+      }
+
+      // Note: Handling it like this means that we may still send healthy targets
+      // to the spell, as long as there is at least one of them that requires our
+      // attention. Not a problem though, since 0 HP heals are filtered out during
+      // CastSpell. All allies get a blue help flash though, even if they aren't
+      // healed. That's fine. It's nice to know that someone's got your back!
+
+      propagate;
+   }
+
+   SuccessChance()
+   "This spell can't fizzle."
+   {
+      return TRUE;
+   }
+
+   GetNumSpellTargets()
+   {
+      return 0;
+   }
+
+   GetTargets(who=$,lTargets=$)
+   "Picks allied players within line of sight only."
+   {
+      local oRoom, i, each_obj, lFinalTargets;
+
+      if who = $
+      {
+         return;
+      }
+
+      oRoom = Send(who,@GetOwner);
+
+      foreach i in Send(oRoom,@GetHolderActive)
+      {
+         each_obj = Send(oRoom,@HolderExtractObject,#data=i);
+
+         if each_obj = who
+         {
+            continue;
+         }
+
+         if NOT IsClass(each_obj,&Player)
+         {
+            continue;
+         }
+
+         if Send(each_obj,@IsInCannotInteractMode)
+         {
+            continue;
+         }
+
+         if (IsClass(oRoom,&GuildHall)
+               AND Send(oRoom,@InFoyer,#who=each_obj)
+                  <> Send(oRoom,@InFoyer,#who=who))
+         {
+            continue;
+         }
+
+         if NOT Send(oRoom,@LineOfSight,#obj1=who,#obj2=each_obj)
+         {
+            continue;
+         }
+
+         if Send(each_obj,@CheckPlayerFlag,#flag=PFLAG_MURDERER)
+            OR Send(each_obj,@CheckPlayerFlag,#flag=PFLAG_OUTLAW)
+         {
+            continue;
+         }
+
+         if Send(who,@AllowBattlerAttack,#victim=each_obj,#report=FALSE,#actual=FALSE)
+            AND Send(each_obj,@AllowBattlerAttack,#victim=who,#report=FALSE,#actual=FALSE)
+         {
+            continue;
+         }
+
+         lFinalTargets = Cons(each_obj,lFinalTargets);
+      }
+
+      return lFinalTargets;
+   }
+
+   CastSpell(who = $, lTargets = $, iSpellPower = 0)
+   {
+      local lFinalTargets, each_obj, iMissingHealth, iHealth, iBonus, iPool,
+         iMissing, iPercentage, iHeal, iSacrifice, iRestore;
+
+      iMissingHealth = 0;
+
+      // Let's see how much health is lost between all of our targets.
+      foreach each_obj in lTargets
+      {
+         iMissingHealth = iMissingHealth + bound(Send(each_obj,@GetMaxHealth)
+         - Send(each_obj,@GetHealth),0,MAX_HP);
+      }
+
+      // Now figure out the caster's health pool, which is a compound of their 
+      // current health, their spellpower and their karma.
+      // We only utilize 90% of the actual health pool.
+      iHealth = Send(who,@GetHealth)-(Send(who,@GetMaxHealth)/10);
+      iBonus = bound((Send(who,@GetKarma)-60)*5/2,0,100) + iSpellPower;
+      iPool = iHealth*iBonus/100;
+
+      // Figure out, what percentage of the lost health we can restore.
+      iPercentage = 100*iPool/iMissingHealth;
+
+      // If our health pool exceeds missing health, restore all targets to full health.
+      if iPercentage >= 100
+      {
+         foreach each_obj in lTargets
+         {
+            iMissing = bound(Send(each_obj,@GetMaxHealth) - Send(each_obj,@GetHealth),0,MAX_HP);
+            iHeal = iMissing;
+            if iHeal > 0
+            {
+               Send(each_obj,@GainHealthNormal,#amount=iHeal);
+               Send(who,@MsgSendUser,#message_rsc=vrSuccess,
+                     #parm1=Send(each_obj,@GetDef),#parm2=Send(each_obj,@GetName),
+                     #parm3=iHeal);
+
+               Send(each_obj,@MsgSendUser,#message_rsc=vrCastOther,
+                     #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName),
+                     #parm3=iHeal);
+            }
+         }
+         // Pay the price!
+         iSacrifice = iHealth*iMissingHealth/iPool;
+         if iSacrifice > 0
+         {
+            Send(who,@LoseHealth,#amount=iSacrifice);
+            Send(who,@MsgSendUser,#message_rsc=martyrsgrace_sacrifice_rsc,
+               #parm1=iSacrifice);
+            Send(Send(who,@GetOwner),@SomethingWaveRoom,#what=who,
+                  #wave_rsc=Send(who,@GetOuchSound));
+         }
+      }
+      // If missing health exceeds our health pool, restore an equivalent
+      // percentage of missing health instead.
+      else
+      {
+         foreach each_obj in lTargets
+         {
+            iMissing = bound(Send(each_obj,@GetMaxHealth)-Send(each_obj,@GetHealth),0,MAX_HP);
+            iHeal = iMissing*iPercentage/100;
+            if iHeal > 0
+            {
+               Send(each_obj,@GainHealthNormal,#amount=iHeal);
+               Send(who,@MsgSendUser,#message_rsc=vrSuccess,
+                     #parm1=Send(each_obj,@GetDef),#parm2=Send(each_obj,@GetName),
+                     #parm3=iHeal);
+
+               Send(each_obj,@MsgSendUser,#message_rsc=vrCastOther,
+                     #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName),
+                     #parm3=iHeal);
+            }
+         }
+         // Pay the price! Sets health to zero, won't kill though.
+         iSacrifice = iHealth;
+         if iSacrifice > 0
+         {
+            Send(who,@LoseHealth,#amount=iSacrifice);
+            Send(who,@MsgSendUser,#message_rsc=martyrsgrace_sacrifice_rsc,
+               #parm1=iSacrifice);
+            Send(Send(who,@GetOwner),@SomethingWaveRoom,#what=who,
+                  #wave_rsc=Send(who,@GetOuchSound));
+         }
+      }
+
+      // Restore mana based on health sacrificed.
+      iRestore = iSacrifice*iBonus/800;
+      if iRestore > 0
+      {
+         Send(who,@GainMana,#amount=iRestore);
+         Send(who,@MsgSendUser,#message_rsc=martyrsgrace_mana_rsc,
+            #parm1=iRestore);
+      }
+
+
+      propagate;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

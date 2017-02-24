@@ -1,0 +1,77 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+CorNothMuseumGuard is CorNothTown
+
+constants:
+
+   include blakston.khd
+
+   ANIM_WAVE = 1
+
+resources:
+
+   include cnmuseumguard.lkod
+
+   cnmuseumguard_name_rsc = "Mychel"
+   cnmuseumguard_icon_rsc = cnmuseumguard.bgf
+   cnmuseumguard_desc_rsc = \
+      "Mychel, the museum curator, has good attention to detail, "
+      "and the concerns of his visitor. "
+
+   CnMuseum_entry_welcome = "Nice to see you, %s%s! Welcome to the great museum of Meridian 59."
+
+
+classvars:
+   vrName = cnmuseumguard_name_rsc
+   vrIcon = cnmuseumguard_icon_rsc
+   vrDesc = cnmuseumguard_desc_rsc
+
+   viAttributes = \
+      MOB_NOFIGHT | MOB_NOMOVE | MOB_LISTEN | MOB_RANDOM | MOB_SELLER \
+      | MOB_RECEIVE | MOB_BUYER
+   viOccupation = MOB_ROLE_GUARD
+
+properties:
+
+   piAnimation = ANIM_NONE
+
+messages:
+
+   UserEntered(who=$)
+   {
+      Post(who,@SomeoneSaid,#what=self,#type=SAY_RESOURCE,
+            #string=CnMuseum_entry_welcome,
+            #parm1=Send(who,@GetDef),#parm2=Send(who,@GetName));
+
+      propagate;
+   }
+
+   ObjectDesired(what=$)
+   {
+      // Only buys back the scrolls.
+      return IsClass(what,&MuseumScroll);
+   }
+
+   SetForSale()
+   {
+      plFor_sale = [
+         [
+            Create(&MuseumScroll),
+            Create(&WineGoblet),
+            Create(&Mug)
+         ],
+      $,$,$];
+
+      return;
+   } 
+
+end
+////////////////////////////////////////////////////////////////////////////////

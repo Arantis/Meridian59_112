@@ -61,7 +61,7 @@ resources:
    item_stats_offense = "%i offense rating bonus\n"
    item_stats_armor = "%i armor\n"
    item_stats_defense = "%i defense rating bonus\n"
-   item_stats_melee = "%i melee damage bonus\n"
+   item_stats_melee = "%r%i melee damage bonus\n"
    item_stats_min_dmg = "%i-"
    item_stats_base_dmg = "%r%i base damage\n"
    item_stats_owner_dmg = "%r%i damage in owner's hands\n"
@@ -134,11 +134,6 @@ properties:
    plItem_attributes = $
    piItem_flags = 0
 
-   // List of enchantments applied by radius spells.
-   // Each element is [song object, spellpower, caster]
-   // Support for players, monsters, and items
-   plRadiusEnchantments = $
-
 messages:
 
    Constructor(corpse=$, oDMCreator=$)
@@ -186,7 +181,8 @@ messages:
    {
       local i, bFoundProperties, iHigh_level, n, iFarenPower, iRiijaPower,
             iKraananPower, iJalaPower, iShalPower, iQorPower, iInstrumentPower,
-            iNum, iMinDamage, iMinDamageOwner, iAttackType, oItemAtt;
+            iNum, iMinDamage, iMinDamageOwner, iAttackType, oItemAtt,
+            lResists, iLen;
 
       // This message 'telescopes' resources into the 5th %r of
       // item_desc_template. There are 16 different stats we can add;
@@ -267,17 +263,24 @@ messages:
          AddPacket(4,system_blank_resource);
       }
 
-      if Send(self,@GetMeleeDamageBonus) <> 0
+      iMinDamage = Send(self,@GetMinMeleeDamageBonus);
+      if iMinDamage <> 0
       {
-         if bFoundProperties
+         if NOT bFoundProperties
          {
-            AddPacket(4,item_stats_melee, 4,Send(self,@GetMeleeDamageBonus));
+            AddPacket(4,system_rsc_template_12, 4,special_properties_header);
+            bFoundProperties = TRUE;
+         }
+         // Reuse this variable.
+         iMinDamageOwner = Send(self,@GetMaxMeleeDamageBonus);
+         if iMinDamage <> iMinDamageOwner
+         {
+            AddPacket(4,item_stats_melee, 4,item_stats_min_dmg,
+                      4,iMinDamage, 4,iMinDamageOwner);
          }
          else
          {
-            AddPacket(4,system_rsc_template_12, 4,special_properties_header,
-                      4,item_stats_melee, 4,Send(self,@GetMeleeDamageBonus));
-            bFoundProperties = TRUE;
+            AddPacket(4,item_stats_melee, 4,system_blank_resource, 4,iMinDamage);
          }
       }
       else if bFoundProperties
@@ -519,7 +522,8 @@ messages:
          AddPacket(4,system_blank_resource);
       }
 
-      if Send(self,@GetCurrentResistances) <> $
+      lResists = Send(self,@GetCurrentResistances);
+      if lResists <> $
       {
          if NOT bFoundProperties
          {
@@ -527,16 +531,16 @@ messages:
             bFoundProperties = TRUE;
          }
 
-         if Length(Send(self,@GetCurrentResistances)) > 1
+         iLen = Length(lResists);
+         if iLen > 1
          {
-            AddPacket(4,Send(SYS,@AddResourceTemplate,
-                           #iNum=Length(Send(self,@GetCurrentResistances))));
+            AddPacket(4,Send(SYS,@AddResourceTemplate,#iNum=iLen));
          }
 
-         foreach i in Send(self,@GetCurrentResistances)
+         foreach i in lResists
          {
             AddPacket(4,item_stats_resistance, 4,Nth(i,2),
-                      4,Send(SYS,@GetResistanceName,#type=Nth(i,1)));
+                      4,Send(SYS,@GetResistanceName,#type=First(i)));
          }
       }
       else if bFoundProperties
@@ -580,16 +584,16 @@ messages:
       iAttackType = Send(self,@GetAttackSpell);
       if iAttackType <> 0
       {
+         iLen = Length(Send(SYS,@GetSpellTypeList));
          if NOT bFoundProperties
          {
             AddPacket(4,system_rsc_template_3, 4,special_properties_header);
             bFoundProperties = TRUE;
          }
 
-         if Length(Send(SYS,@GetSpellTypeList)) > 1
+         if iLen > 1
          {
-            AddPacket(4,Send(SYS,@AddResourceTemplate,
-                        #iNum=Length(Send(SYS,@GetSpellTypeList))));
+            AddPacket(4,Send(SYS,@AddResourceTemplate,#iNum=iLen));
          }
 
          foreach i in Send(SYS,@GetSpellTypeList)
@@ -612,10 +616,10 @@ messages:
 
       if plItem_attributes <> $
       {
-         if Length(plItem_attributes) > 1
+         iLen = Length(plItem_attributes);
+         if iLen > 1
          {
-            AddPacket(4,Send(SYS,@AddResourceTemplate,
-                           #iNum=Length(plItem_attributes)));
+            AddPacket(4,Send(SYS,@AddResourceTemplate,#iNum=iLen));
          }
 
          foreach i in plItem_attributes
@@ -626,8 +630,7 @@ messages:
             if NOT bFoundProperties
                AND Send(oItemAtt,@GetInfoDesc) <> system_blank_resource
             {
-               AddPacket(4,system_rsc_template_2,
-                         4,special_properties_header);
+               AddPacket(4,system_rsc_template_2, 4,special_properties_header);
                bFoundProperties = TRUE;
             }
 
@@ -710,7 +713,12 @@ messages:
       return 0;
    }
 
-   GetMeleeDamageBonus()
+   GetMinMeleeDamageBonus()
+   {
+      return 0;
+   }
+
+   GetMaxMeleeDamageBonus()
    {
       return 0;
    }
@@ -2435,111 +2443,6 @@ messages:
       }
 
       return resistance_list;
-   }
-
-   AddRadiusEnchantment(what=$,iPower=0,source=$)
-   {
-      local i;
-
-      foreach i in plRadiusEnchantments
-      {
-         if First(i) = what
-            AND Nth(i,2) = iPower
-            AND Nth(i,3) = source
-         {
-            return;
-         }
-      }
-
-      plRadiusEnchantments = Cons([what,iPower,source],plRadiusEnchantments);
-
-      return;
-   }
-
-   RemoveRadiusEnchantment(what=$,iPower=0,source=$)
-   {
-      local i, bFound;
-
-      bFound = FALSE;
-
-      foreach i in plRadiusEnchantments
-      {
-         if First(i) = what
-            AND Nth(i,2) = iPower
-            AND Nth(i,3) = source
-         {
-            plRadiusEnchantments = DelListElem(plRadiusEnchantments,i);
-            bFound = TRUE;
-         }
-      }
-
-      if NOT bFound
-      {
-         Debug(self,"Tried to remove radius enchantment ",what," but not in list",
-               plRadiusEnchantments);
-      }
-
-      return;
-   }
-
-   IsAffectedByRadiusEnchantment(what=$,caster=$,byClass=&RadiusEnchantment)
-   "Returns whether or not currently enchanted by <what> radius enchantment."
-   {
-      local i;
-
-      if plRadiusEnchantments = $
-      {
-         return FALSE;
-      }
-
-      if what = $
-      {
-         foreach i in plRadiusEnchantments
-         {
-            if IsClass(First(i),byClass)
-               AND (caster = $ OR Nth(i,3) = caster)
-            {
-               return TRUE;
-            }
-         }
-      }
-      else
-      {
-         foreach i in plRadiusEnchantments
-         {
-            if First(i) = what
-               AND (caster = $ OR Nth(i,3) = caster)
-            {
-               return TRUE;
-            }
-         }
-      }
-
-      return FALSE;
-   }
-
-   GetMostPowerfulRadiusEnchantmentState(byClass=&RadiusEnchantment)
-   {
-      local i, oHighest;
-
-      foreach i in plRadiusEnchantments
-      {
-         if IsClass(First(i),byClass)
-         {
-            if (oHighest = $
-               OR Nth(i,2) > Nth(oHighest,2))
-            {
-               oHighest = i;
-            }
-         }
-      }
-
-      return oHighest;
-   }
-
-   GetRadiusEnchantments()
-   {
-      return plRadiusEnchantments;
    }
 
    IsInSameRoom(what = $)
