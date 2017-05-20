@@ -22,15 +22,13 @@ resources:
    blind_icon_rsc = iblind.bgf
    blind_desc_rsc = \
       "The magical force of Qor burns the target's eyes, "
-      "taking away all sight for a brief period.  "
-      "Requires two entroot berries and a purple mushroom to cast."
+      "taking away all sight for a brief period."
    blind_caster = "%s%s is now blind."
    blind_already_enchanted = "%s%s is already blind."
    blind_on = \
       "Something burns in your eyes, causing excruciating pain and a loss "
       "of vision."
    blind_off = "Your eyes begin to function again."
-
    blind_sound = qblind.ogg
 
 classvars:
@@ -57,13 +55,13 @@ classvars:
 
 properties:
 
-   piBaseDuration = 4000 // 103 value 5000
-   piSpellPowerModifier = 60 // 103 value 151
-   piDeviation = 10 // 103 value 50//
+   piBaseDuration = 4000
+   piSpellPowerModifier = 60
+   piDeviation = 10
 
    // Min and max values for Blind duration.
-   piMinBlind = 4000 // 103 value 3000
-   piMaxBlind = 12000// 103 value 20000
+   piMinBlind = 4000
+   piMaxBlind = 12000
 
 messages:
 
@@ -88,32 +86,21 @@ messages:
       return;
    }
 
-   CastSpell(who=$,lTargets=$,iSpellPower=0)
+   DoSpellEffects(who=$,lTargets=$,iDuration=0)
    {
-      local oTarget;
+      local oSpell, oTarget;
 
       oTarget = First(lTargets);
-
-      // Spell effects
-      Send(self,@DoSpell,#what=who,#oTarget=oTarget,
-            #iDuration=Send(self,@GetDuration,#iSpellPower=iSpellPower));
-      
-      propagate;
-   }
-
-   DoSpell(what=$,oTarget=$,iDuration=0)
-   {
-      local oSpell;
 
       oSpell = Send(SYS,@FindSpellByNum,#NUM=SID_EAGLE_EYES);
       if Send(oTarget,@IsEnchanted,#what=oSpell)
       {
-         iDuration = Send(oSpell,@DoEagleEyes,#oCaster=what,#oTarget=oTarget,
+         iDuration = Send(oSpell,@DoEagleEyes,#oCaster=who,#oTarget=oTarget,
                           #iDuration=iDuration);
          if iDuration = $
          {
             // Resisted completely.
-            return;
+            return TRUE;
          }
       }
 
@@ -134,7 +121,7 @@ messages:
          Post(oTarget,@ResetBehaviorFlags);
       }
 
-      Send(what,@MsgSendUser,#message_rsc=vrSuccess,
+      Send(who,@MsgSendUser,#message_rsc=vrSuccess,
             #parm1=Send(oTarget,@GetCapDef),#parm2=Send(oTarget,@GetName));
       Send(oTarget,@StartEnchantment,#what=self,#time=iDuration);
 
@@ -186,6 +173,28 @@ messages:
       Send(mob,@SetBehaviorFlag,#flag=AI_NOFIGHT,#value=TRUE);
 
       return;
+   }
+
+   CausesAggression(iSpellpower=0)
+   {
+      return iSpellpower / 3;
+   }
+
+   CanPayMonsterCosts(lTargets=$)
+   {
+      local oTarget;
+
+      oTarget = First(lTargets);
+
+      if (IsClass(oTarget,&Player)
+            AND Send(oTarget,@CheckPlayerFlag,#flag=PFLAG_NO_FIGHT))
+         OR (IsClass(oTarget,&Monster)
+            AND Send(oTarget,@CheckMonsterBehavior,#flag=AI_NOFIGHT))
+      {
+         return FALSE;
+      }
+
+      propagate;
    }
 
 end

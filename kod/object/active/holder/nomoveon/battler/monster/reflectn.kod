@@ -16,8 +16,7 @@ constants:
 
    include blakston.khd
 
-   MANA_DRAIN_DELAY = 8000
-   MANA_DRAIN_AMOUNT = 1
+   MANA_DRAIN = 125
 
 resources:
 
@@ -70,12 +69,16 @@ classvars:
    vrSound_death = reflection_sound_death
    vrMinion_trouble = reflection_trouble
 
-   viDefault_behavior = AI_FIGHT_MONSTERS | AI_FIGHT_NEWBIESAFE \
-                        | AI_FIGHT_AGGRESSIVE
+   viDefault_behavior = AI_FIGHT_NEWBIESAFE | AI_FIGHT_AGGRESSIVE
+
+   vbCanPoison = FALSE
+   vbCanBleed = FALSE
+   vbCanSiphon = FALSE
+   vbCanFatigue = FALSE
+   vbCanBurn = FALSE
 
 properties:
 
-   ptManaDrain
    vrName = reflection_name_rsc
    piDrawfx = 4
    vrIcon = reflection_male_icon_rsc
@@ -94,15 +97,34 @@ messages:
 
    Constructor(iSpellPower=1,oMaster=$)
    {
+      local oSpell;
+
       if oMaster <> $
       {
          poMaster = oMaster;
       }
 
       piSpellpower = iSpellpower;
-      ptManaDrain = CreateTimer(self,@ManaDrainTimer,MANA_DRAIN_DELAY);
       poArrow = Create(&Arrow);
       piDamagePercent = viDamagePercent;
+
+      oSpell = Send(SYS,@FindSpellByNum,#num=SID_REFLECTION);
+
+      if IsClass(oMaster,&Battler)
+      {
+         Send(oMaster,@StartOverTimeEffect,#strength=-MANA_DRAIN,
+            #what=oSpell,#who=self,#removable=REMOVE_INTERNAL,#showicon=TRUE,#type=TYPE_MANA);
+      }
+
+      propagate;
+   }
+
+   Constructed()
+   {
+      Post(self,@SomethingChanged,#what=poOriginal);
+
+      // Let's not linger on top of the original.
+      Post(self,@DoRandomWalk,#override=TRUE);
 
       propagate;
    }
@@ -311,7 +333,7 @@ messages:
             {
                // Attack the old master.
                Send(self,@TargetSwitch,#what=oTarget,#iHatred=150);
-               Send(self,@EnterStateChase);
+               Send(self,@EnterStateEngage);
             }
             else
             {
@@ -341,45 +363,20 @@ messages:
       return;
    }
 
-   ManaDrainTimer()
-   {
-      ptManaDrain = $;
-
-      if poOriginal = $
-      {
-         return;
-      }
-
-      // Ignore mana drain for non-players.
-      if IsClass(poOriginal,&Monster)
-      {
-         return;
-      }
-
-      if NOT Send(poOriginal,@IsLoggedOn)
-      {
-         Send(self,@Delete);
-
-         return;
-      }
-
-      if Send(poOriginal,@GetMana) < MANA_DRAIN_AMOUNT
-      {
-         Send(self,@Delete);
-
-         return;
-      }
-
-      Send(poOriginal,@LoseMana,#amount=MANA_DRAIN_AMOUNT);
-      Send(self,@GetOriginalInfo);
-      Send(poOwner,@SomethingChanged,#what=self);
-      ptManaDrain = CreateTimer(self,@ManaDrainTimer,MANA_DRAIN_DELAY);
-
-      return;
-   }
-
    Delete(bSystem = FALSE)
    {
+      local oSpell;
+
+      oSpell = Send(SYS,@FindSpellByNum,#num=SID_REFLECTION);
+
+      if poMaster <> $
+      {
+         if IsClass(poMaster,&Battler)
+         {
+            Send(poMaster,@DeleteOverTimeEffect,#what=oSpell,#who=self,#removal=REMOVE_INTERNAL);
+         }
+      }
+
       // System clears this list already.
       if (NOT bSystem)
       {
@@ -393,12 +390,6 @@ messages:
          Send(poOwner,@SomeoneSaid,#type=SAY_MESSAGE,#string=reflection_delete,
               #what=self,#parm1=Send(self,@GetCapDef),
               #parm2=Send(self,@GetName,#cap=FALSE));
-      }
-
-      if ptManaDrain <> $
-      {
-         DeleteTimer(ptManaDrain);
-         ptManaDrain = $;
       }
 
       if ptSomethingChanged <> $
@@ -582,28 +573,71 @@ messages:
 
    SomethingChanged(what=$)
    {
-      if poOriginal = $
-      {
-         return;
-      }
+      local oWeapon, iRange, i;
 
-      // Our source object changed; tell everyone that we've changed, too.
-      if (what = poOriginal)
+      if what = poOriginal
       {
          piDrawfx = Send(poOriginal,@GetDrawingEffects);
+
+         foreach i in plActions
+         {
+            plActions = DelListElem(plActions,i);
+         }
+
+         plActions = Cons ([SKID_MINIMUM,0,0,MAX_KOD_INT,50,1,99,COMBAT_ACTION_NEUTRAL],plActions);
+
+         // Gotta get the reflection's correct action list.
          if IsClass(poOriginal,&User)
          {
-            // Players report that if a character casts a lot of
-            // reflections and then changes state, e.g. by putting on lots
-            // of clothing, other clients in the room may crash.  Our
-            // suspicion is that a server buffer gets filled, and then
-            // clients go out of sync.  We increased server buffer sizes
-            // and this appeared to fix it, but players report there may
-            // still be a problem.  Thus we jitter reflection updates to
-            // try to avoid lots of messages being sent out at once.
-            if ptSomethingChanged <> $
+            oWeapon = Send(poOriginal,@GetWeapon);
+
+            if oWeapon <> $
             {
-               ptSomethingChanged = CreateTimer(self,@SomethingChangedTimer,750);
+               iRange = Send(oWeapon,@GetRange);
+               iRange *= iRange;
+
+               if IsClass(oWeapon,&RangedWeapon)
+               {
+                  plActions = Cons([SKID_FIRE,0,0,iRange,100,1,99,COMBAT_ACTION_HARM],plActions);
+               }
+               else
+               {
+                  plActions = Cons([SKID_SLASH,0,0,iRange,100,1,99,COMBAT_ACTION_HARM],plActions);
+               }
+            }
+            else
+            {
+               plActions = Cons([SKID_SLASH,0,0,4096,100,1,99,COMBAT_ACTION_HARM],plActions);
+            }
+         }
+         else
+         {
+            iRange = Send(poOriginal,@GetMeleeRange);
+            iRange *= iRange;
+            plActions = Cons([SKID_SLASH,0,0,iRange,100,1,99,COMBAT_ACTION_HARM],plActions);
+
+            iRange = Send(poOriginal,@GetFireRange);
+            iRange *= iRange;
+            plActions = Cons([SKID_FIRE,0,0,iRange,100,1,99,COMBAT_ACTION_HARM],plActions);
+         }
+
+         if IsClass(poOriginal,&User)
+         {
+            if Send(what,@GetAnimation) = PANM_WAVE
+            {
+               Send(self,@DoWave);
+            }
+            else if Send(what,@GetAnimation) = PANM_POINT
+            {
+               Send(self,@DoPoint);
+            }
+            else if Send(what,@GetAnimation) = PANM_DANCE
+            {
+               Send(self,@DoDance);
+            }
+            else
+            {
+               Send(poOwner,@SomethingChanged,#what=self);
             }
          }
          else
@@ -613,20 +647,6 @@ messages:
       }
 
       propagate;
-   }
-
-   SomethingChangedTimer()
-   "Tell room that we've changed.  This is on a timer to avoid tons "
-   "of changes sent all at once."
-   {
-      ptSomethingChanged = $;
-      if poOriginal <> $
-         AND poOwner <> $
-      {
-         Post(poOwner,@SomethingChanged,#what=self);
-      }
-
-      return;
    }
 
    DoWave()
@@ -668,9 +688,9 @@ messages:
       }
 
       poOriginal = who;
-      piMax_Hit_Points = piSpellpower / 3;
-      piMax_hit_points = Bound(piMax_hit_points,15,40);
-      piHit_Points = piMax_Hit_Points*100;
+      piMax_Health = piSpellpower / 3;
+      piMax_Health = Bound(piMax_Health,15,40);
+      piHealth = piMax_Health*100;
 
       Send(self,@GetOriginalInfo);
 
@@ -682,10 +702,135 @@ messages:
       return Send(poOriginal,@GetIcon);
    }
 
-   MonsterAttack(what=$)
+   DoMeleeAnimation()
+   "Handles melee attack animation."
    {
-      // Do the animation!
-      Send(self,@DoAttack);
+      local oWeapon, oAmmo, i;
+
+      Send(self,@GetOriginalInfo);
+
+      if IsClass(poOriginal,&User)
+      {
+         oWeapon = Send(poOriginal,@GetWeapon);
+
+         if oWeapon <> $
+         {
+            if IsClass(oWeapon,&TouchAttackSpell)
+            {
+               piAnimation = PANM_CAST;
+            }
+            else
+            {
+               piAnimation = PANM_WEAPON_ATTACK;
+            }
+         }
+         else
+         {
+            piAnimation = PANM_FIST_ATTACK;
+         }
+      }
+      else
+      {
+         piAnimation = Send(poOriginal,@GetMeleeAnimation);
+      }
+
+      Send(poOwner,@SomethingChanged,#what=self);
+
+      if IsClass(poOriginal,&User)
+      {
+         piAnimation = PANM_NONE;
+      }
+      else
+      {
+         piAnimation = ANIM_NONE;
+      }
+
+      return;
+   }
+
+   DoMissileAnimation()
+   "Handles ranged attack animation. Default is same as melee."
+   {
+      local oWeapon, oAmmo, i;
+
+      Send(self,@GetOriginalInfo);
+
+      if IsClass(poOriginal,&User)
+      {
+         oWeapon = Send(poOriginal,@GetWeapon);
+         oAmmo = poArrow;
+
+
+         if IsClass(oWeapon,&Bow)
+         {
+            piAnimation = PANM_BOW_FIRE;
+
+            foreach i in Send(poOriginal,@GetPlayerUsing)
+            {
+               if Send(i,@GetItemUseType) = ITEM_USE_QUIVER
+               {
+                  oAmmo = i;
+               }
+            }
+
+            Send(poOwner,@SomethingShot,#who=self,#target=poTarget,#projectile=oAmmo);
+         }
+         else
+         {
+            piAnimation = PANM_FIST_ATTACK;
+         }
+      }
+      else
+      {
+         piAnimation = Send(poOriginal,@GetFireAnimation);
+
+         // If original fires a projectile, we send one too.
+         if Send(poOriginal,@GetProjectileIcon) <> $
+         {
+            Send(poOwner,@SomethingShot,#who=self,#target=poTarget,#projectile=poOriginal);
+         }
+      }
+
+      Send(poOwner,@SomethingChanged,#what=self);
+
+      if IsClass(poOriginal,&User)
+      {
+         piAnimation = PANM_NONE;
+      }
+      else
+      {
+         piAnimation = ANIM_NONE;
+      }
+
+      return;
+   }
+
+   MonsterCastAnimation(iSpellNum=$)
+   "If a monster has a special cast animation, call this."
+   {
+      local oWeapon, oAmmo, i;
+
+      Send(self,@GetOriginalInfo);
+
+      if IsClass(poOriginal,&User)
+      {
+         piAnimation = PANM_CAST;
+      }
+      else
+      {
+         piAnimation = Send(poOriginal,@GetCastAnimation);
+      }
+
+      Send(poOwner,@SomethingChanged,#what=self);
+
+      if IsClass(poOriginal,&User)
+      {
+         piAnimation = PANM_NONE;
+      }
+      else
+      {
+         piAnimation = ANIM_NONE;
+      }
 
       return;
    }
@@ -706,75 +851,6 @@ messages:
    GetDodgeAbility(stroke_obj=$)
    {
       return Send(poOriginal,@GetDodgeAbility,#stroke_obj=stroke_obj);
-   }
-
-   DoAttack()
-   {
-      local oWeapon, oAmmo, i;
-
-      Send(self,@GetOriginalInfo);
-
-      if IsClass(poOriginal,&User)
-      {
-         oWeapon = Send(poOriginal,@GetWeapon);
-         oAmmo = poArrow;
-
-         if oWeapon <> $
-         {
-            if IsClass(oWeapon,&Bow)
-            {
-               piAnimation = PANM_BOW_FIRE;
-
-               foreach i in Send(poOriginal,@GetPlayerUsing)
-               {
-                  if Send(i,@GetItemUseType) = ITEM_USE_QUIVER
-                  {
-                     oAmmo = i;
-                  }
-               }
-
-               Send(poOwner,@SomethingShot,#who=self,#target=poTarget,
-                     #projectile=oAmmo);
-            }
-            else if IsClass(oWeapon,&TouchAttackSpell)
-            {
-               piAnimation = PANM_CAST;
-            }
-            else
-            {
-               piAnimation = PANM_WEAPON_ATTACK;
-            }
-         }
-         else
-         {
-            piAnimation = PANM_FIST_ATTACK;
-         }
-      }
-      else
-      {
-         piAnimation = ANIM_ATTACK;
-         Send(poOriginal,@SetAnimation,#animation=piAnimation);
-         // If original fires a projectile, we send one too.
-         if Send(poOriginal,@GetProjectileIcon) <> $
-         {
-            Send(poOwner,@SomethingShot,#who=self,#target=poTarget,
-                  #projectile=poOriginal);
-         }
-      }
-
-      Send(poOwner,@SomethingChanged,#what=self);
-
-      if IsClass(poOriginal,&User)
-      {
-         piAnimation = PANM_NONE;
-      }
-      else
-      {
-         piAnimation = ANIM_NONE;
-         Send(poOriginal,@SetAnimation,#animation=piAnimation);
-      }
-
-      return;
    }
 
    TryLook(what=$)
@@ -864,7 +940,7 @@ messages:
          OR IsClass(what,&Revenant)
          OR IsClass(what,&EvilTwin)
       {
-         return -1000;
+         return -10000;
       }
 
       // Check if our master can attack the target, if not, we don't want
@@ -872,7 +948,7 @@ messages:
       if (NOT Send(poMaster,@AllowBattlerAttack,#victim=what,#actual=FALSE,
                   #report=FALSE))
       {
-         return -1000;
+         return -10000;
       }
 
       return 0;

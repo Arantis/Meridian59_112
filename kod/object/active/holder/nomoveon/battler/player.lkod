@@ -83,6 +83,8 @@ player_safety_caught_minion = de \
    "Hey! Du hast fast %s%s's Kreatur getroffen! Gut, dass Deine Schutzvorrichtung an "
    "war!"
 player_own_minion = de "Du kannst nicht deine eigenen Kreatur angreifen!"
+player_cannot_attack_follower = de \
+   "Du kannst diese arme, schutzbedürftige Seele nicht angreifen!"
 player_safe_server = de \
    "In dieser Welt können keine anderen Spieler angegriffen werden."
 player_no_enter = de \
@@ -117,8 +119,6 @@ player_unbound_energy_lost = de "Du kanalisierst ~B~t%i~v~B ungebundene Energie 
 player_unbound_energy_wasted = de "Deine Gedanken sind zu sehr mit den jüngsten "
       "Ereignissen beschäftigt, als dass du irgendeinen Nutzen aus der sich vor "
       "deinen Augen verflüchtigenden Energie ziehen könntest."
-player_health_gain_maxed = de \
-   "Deine Lebensenergie kann sich nicht weiter erhöhen."
 player_cant_hit_optout = de \
    "Du hast dich dazu entschieden nicht am Kampf gegen andere Spieler "
    "teilzunehmen."
@@ -471,6 +471,7 @@ player_intrigue_mail = de \
    "Entscheidungen des Hofs beeinflußt - wie alle anderen auch.Lebe wohl, "
    "und vielleicht treffen  wir uns eines Tages am Hof wieder.\n-- Gerah Springer, "
    "Baron der Gemeinde Cor Noth."
+player_Debug_learnpoints = de "%i von %i Punkten verbraucht."
 player_Debug_playercanlearn = de \
    "Damit %s einen Spruch aus Zirkel %i in der Schule %s erlenen kann:~bBereits "
    "im nächsten Zitkel gelernt: ~n%i (%i von dieser Schule).~bKlugheit reduziert "
@@ -495,8 +496,6 @@ player_admin_removed_skill = de "Fertigkeit entfernt."
 death_rift_stayed_too_long = de \
    "Nachdem du zu lange fort warst aber immer noch lebeding findest du dich "
    "selbst zurück in der Realität!"
-second_wind_finished = de \
-   "Du fühlst dich entspannter als dein Zweiter Atem dich verlässt."
 player_monster_attack_string = de "Monster Angriff"
 player_no_weapon_string = de "Keine Waffen"
 cannot_attack_ally = de \
@@ -529,3 +528,8 @@ phased_player_description = de \
    "anders ist, aber sicher nicht hier."
 bad_line_of_sight = de \
    "Deine schlechte Sicht lässt einen Schlag schwieriger werden."
+player_already_leader = de \
+   "Du hast bereits einen Begleiter.  Du solltest ihm mitteilen, dass sich eure ~IWege~I "
+   "wieder ~Itrennen~I sollten, bevor du dir einen anderen Begleiter zulegst."
+player_bonus_tp = de \
+   "Für deine beachtliche Leistung erhältst du ~B~k%i~v~B zusätzliche Trainingspunkte!"

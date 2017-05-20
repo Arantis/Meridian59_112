@@ -24,8 +24,7 @@ resources:
       "Your body is possessed by the spirit of the warrior "
       "Kara'hol for a brief period, enhancing the ferocity of "
       "your attacks.  When the spirit departs, your body "
-      "is temporarily paralyzed from shock.  "
-      "Requires the sacrifice of two entroot berries to cast."
+      "is temporarily paralyzed from shock."
    karahol_enchantment_rsc = \
       "\n\nYour current %s enchantment adds %i offense and 1-%i attack "
       "damage.  When it expires, it will paralyze you for %i seconds."
@@ -127,8 +126,8 @@ messages:
 
       // Hold effect lasts 8 sec at low spellpower, 2 sec at high sp.
       iDuration = Bound(((100-state) * 100 + 2000),2000,8000);
-      Send(oHoldSpell,@DoSpell,#what=self,#oTarget=who,#iDuration=iDuration,
-            #report=TRUE,#bAllowFreeAction=FALSE);
+      Send(oHoldSpell,@DoSpellEffects,#what=who,#lTargets=[who],
+            #iDuration=iDuration,#report=TRUE,#bAllowFreeAction=FALSE);
 
       propagate;
    }

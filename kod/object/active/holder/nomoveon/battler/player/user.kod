@@ -23,8 +23,6 @@ constants:
    SHOW_ENCHANTMENT = 4
    SHOW_CHANGE = 5
 
-   EXERTION_PER_MOVE = 2
-
    GOOD_COLOR = 82
    BAD_COLOR =  83
 
@@ -55,10 +53,6 @@ constants:
 
    // How many packets incoming per second do we allow?
    INCOMING_PACKET_THROTTLE = 25
-
-   // What's the lower threshold for being able to run?  Below this, we can't
-   //  run.
-   VIGOR_RUN_THRESHOLD = 10
 
    // Speedhack/cheating detection:
    // What's the maximum number of times we should log a violation?
@@ -531,25 +525,29 @@ properties:
    piLastPacketTime = 0
    piPacketsPerSecond = 0
 
-   // The ms tick we received last position update from user
-   piLastMoveUpdateTime = 0
-
-   // The ms tick we last drained vigor
-   piLastVigorDrainTime = 0
-
    // This is a token-bucket to limit speedhacking.
    // Moves are accepted unless there is not enough tokens in the bucket left.
    piMovementBucket = 0
 
-   piCheaterLogs = 0
+   // Keeps track of when mobs have last been alerted of our presence.
+   piLastMoveNotification = 0
 
-   ptLogonDelayTimer = $
+   piCheaterLogs = 0
 
    // What order do you want your inventory sorted in?
    plClassOrderPreferences = $
 
    // keep track of how much this player triggers flood protection
    piFloodCount = 0
+
+   // Checks for actual changes before drawing. Removes flicker.
+   plDraw = $
+
+   // Keeps track of the most recent steps a user has taken.
+   plUserTrail = $
+
+   // Steps the player has taken since their last step was recorded.
+   piTrailSteps = 0
 
 messages:
 
@@ -802,9 +800,17 @@ messages:
       local i, sGuild, oBRoom, oHRoom;
 
       poSession = session_id;
+
+      // Users logging on unsafely are held for a short time.
+      Send(self,@LogonDelay);
+
       pbLogged_on = TRUE;
 
       piLastLoginTime = GetTime();
+
+      // Reset draw list to make sure we load our vitals.
+      plDraw = [-1,-1,-1,-1,-1,-1];
+
       // Gotta load interface early!
       Send(self,@UserLoadModule,#module=user_interface_module);
 
@@ -865,16 +871,19 @@ messages:
       Send(self,@ToCliSpellSchools);
       Send(self,@UserLogonHook);
 
-      // Give user the logon delay
-      Send(self,@LogonDelay);
+      // Give a new user a buddy upon first login. Has to happen
+      // after the user has arrived in poOwner.
+      if (piXP_total = 0)
+         AND (poMercenary = $)
+         AND Send(SETTINGS_OBJECT,@IsFollowerEnabled)
+      {
+         Post(self,@CreateFollower,#iDifficulty=5);
+      }
 
       if (poEvilTwin <> $)
       {
          Send(poEvilTwin,@PlaceEvilTwin,#who=self);
       }
-
-      // Update vigor drain time as 'now' so we drain vigor correctly
-      piLastVigorDrainTime = GetTickCount();
 
       oHRoom = $;
       if piHomeroom <> $
@@ -916,37 +925,36 @@ messages:
    }
 
    LogonDelay()
+   "Note that this occurs before the player enters the room."
    {
-      local iLogonDelay, oSpell;
+      local iLogonDelay, oSpell, oRoom;
 
-      if (NOT pbLogged_on)
+      if (pbLogged_on)
       {
+         oRoom = poOwner;
+      }
+      else
+      {
+         oRoom = Send(SYS,@FindRoomByNum,#num=piSave_room);
+      }
+
+      if (oRoom = $)
+      {
+         Debug("User ", self, vrName, " got $ room in LogonDelay");
+
          return;
       }
 
       oSpell = Send(SYS,@FindSpellByNum,#num=SID_HOLD);
 
       if NOT Send(self,@IsEnchanted,#what=oSpell)
-         AND NOT Send(poOwner,@CheckDefaultRoomFlag,#flag=ROOM_SAFELOGOFF)
-         AND NOT (IsClass(self,&DM) AND Send(self,@PlayerIsImmortal))
+         AND NOT Send(oRoom,@CheckDefaultRoomFlag,#flag=ROOM_SAFELOGOFF)
       {
-         if ptLogonDelayTimer <> $
-         {
-            DeleteTimer(ptLogonDelayTimer);
-         }
-         Send(self,@EffectSendUser,#what=self,#effect=EFFECT_PARALYZE_ON);
-         Send(self,@SysMsgSendUser,#message_rsc=user_logon_delay);
          iLogonDelay = Send(SETTINGS_OBJECT,@GetLogonDelay);
-         ptLogonDelayTimer = CreateTimer(self,@LogonHoldOff,iLogonDelay);
+         Send(oSpell,@DoSpellEffects,#lTargets=[self],#iDuration=iLogonDelay,
+               #report=FALSE,#bAllowFreeAction=FALSE);
+         Post(self,@SysMsgSendUser,#message_rsc=user_logon_delay);
       }
-
-      return;
-   }
-
-   LogonHoldOff()
-   {
-      Send(self,@EffectSendUser,#what=self,#effect=EFFECT_PARALYZE_OFF);
-      ptLogonDelayTimer = $;
 
       return;
    }
@@ -3196,7 +3204,7 @@ messages:
    "This message builds the minimap dot flags for each object we can see, "
    "which is then sent to our client for drawing objects on the map/minimap."
    {
-      local iBehavior, iFlags, oIllusion, oOtherGuild;
+      local iBehavior, iFlags, oIllusion, oOtherGuild, oTarget, oMaster;
 
       if what = $
          OR poOwner <> Send(what,@GetOwner)
@@ -3309,41 +3317,85 @@ messages:
          else
          {
             iFlags |= MM_MONSTER;
+
+            oTarget = Send(what,@GetTarget);
+
+            if (oTarget <> $)
+            {
+               if (oTarget = self)
+               {
+                  iFlags |= MM_AGGRO_SELF;
+               }
+               else
+               {
+                  iFlags |= MM_AGGRO_OTHER;
+               }
+            }
          }
       }
 
       if IsClass(what,&Monster)
       {
-         if Send(what,@GetMaster) <> $
-         {
-            if (Send(what,@GetMaster) = self)
-            {
-               return MM_MINION_SELF;
-            }
-            else
-            {
-               return MM_MINION_OTHER;
-            }
-         }
          if Send(what,@GetBehavior) & AI_NPC
          {
             // Draw dots for NPCs.
             return MM_NPC;
          }
+
+         oTarget = Send(what,@GetTarget);
+
+         if (oTarget <> $)
+         {
+            if (oTarget = self)
+            {
+               iFlags |= MM_AGGRO_SELF;
+            }
+            else
+            {
+               iFlags |= MM_AGGRO_OTHER;
+            }
+         }
+
+         oMaster = Send(what,@GetMaster);
+
+         if oMaster <> $
+         {
+            if (oMaster = self)
+            {
+               iFlags |= MM_MINION_SELF;
+            }
+            else if IsClass(oMaster,&Player)
+            {
+               iFlags |= MM_MINION_OTHER;
+            }
+         }
+
+         if Send(what,@GetLeader) = self
+         {
+            iFlags |= MM_MERCENARY;
+         }
+         else if IsClass(what,&Follower)
+         {
+            // For anyone but the leader, followers are simply NPCs.
+            return MM_NPC;
+         }
+
          if IsClass(poOwner,&SurvivalRoom)
          {
             // Survival room specific dots.
             if Send(poOwner,@IsMiniBoss,#what=what)
             {
-               return MM_MINIBOSS;
+               iFlags |= MM_MINIBOSS;
             }
             if Send(poOwner,@IsBoss,#what=what)
             {
-               return MM_BOSS;
+               iFlags |= MM_BOSS;
             }
          }
 
-         return MM_MONSTER;
+         iFlags |= MM_MONSTER;
+
+         return iFlags;
       }
 
       // Not a monster or a player. Ask the object what flags it has.
@@ -3965,9 +4017,8 @@ messages:
    UserMove(new_row = 1, new_col = 1,
             fine_row = FINENESS/2, fine_col = FINENESS/2, speed = 0)
    {
-      local iCurrentTime, iDelta, iDeltaVigor, iExertion, iHasteLevel,
-         iAngle, iRow, iCol, iFineRow, iFineCol, iRoomNum,
-         iDx, iDy, iMoveLength, iMaxMoveRun, 
+      local iCurrentTime, iDelta, iAngle, iRow, iCol, iFineRow, 
+            iFineCol, iRoomNum, iDx, iDy, iMoveLength, iMaxMoveRun, 
          iQflags, iRflags, iHeightF, iHeightFWD, iHeightC, iServerID;
 
       //
@@ -3984,7 +4035,7 @@ messages:
       // 1.2 Get sectorinfo of destination
       //
       iQflags = LIQ_GET_SECTORINFO;
-			
+
       if NOT GetLocationInfoBSP(
                       Send(poOwner,@GetRoomData), iQflags, 
                       new_row, new_col, fine_row, fine_col,
@@ -3994,7 +4045,7 @@ messages:
          iRflags = 0;
       }
 
-	  //
+      //
       // 2. Do not allow any moves if player is marked as not allowed to move or 
       //    if destination is outside of the map.
       //
@@ -4020,14 +4071,12 @@ messages:
       // 3.2 Get time-deltas
       //
       iDelta = iCurrentTime - piLastMoveUpdateTime;
-      iDeltaVigor = iCurrentTime - piLastVigorDrainTime;
 
       //
       // 3.3 Bound time-deltas
       //   These must not be too big for the calculations below
       //
       iDelta = Bound(iDelta,0,2000);
-      iDeltaVigor = bound(iDeltaVigor,0,2000);
 
       //
       // 4.1 Calculate the squared movesize for running in this dt.
@@ -4195,39 +4244,20 @@ messages:
       }
 
       //
-      // 6. Drain vigor once per 1000 ms.
+      // 6. Drain vigor once per 1000 ms. Handled in battler now.
+      // Check CalculateVigorPerTick(). We do have to alert
+      // NewVigor() though. Save our current squared speed first.
       //
-      if iDeltaVigor >= 1000
+      piSpeed = speed * speed;
+      Send(self,@NewVigor);
+
+      //
+      // 7. Notify monsters about presence every second.
+      //
+      if (Abs(iCurrentTime - piLastMoveNotification) > 1000)
       {
-         // Reduce speed value to old value, 5/6ths current value, then
-         // square it.
-         iExertion = (speed * 3)/5;
-         iExertion *= iExertion;
-         iExertion *= EXERTION_PER_MOVE;
-
-         if (piFlags2 & PFLAG2_HASTED)
-         {
-            iHasteLevel = Send(self,@GetEnchantedState,
-                              #what=Send(SYS,@FindSpellByNum,#num=SID_HASTE));
-
-            if iHasteLevel <> $
-            {
-               iExertion = (iExertion * (100 - iHasteLevel)) / 100;
-            }
-         }
-
-         Send(self,@AddExertion,#amount=iExertion);
-
-         // Save vigor drain tick
-         piLastVigorDrainTime = iCurrentTime;
-      }
-
-      //
-      // 7. Notify monsters about presence (bitflag check instead of function)
-      //
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
-      {
-         Send(self,@NotifyMonstersOfPresence);
+         Send(poOwner,@UserMoved,#what=self,#new_row=piRow,#new_col=piCol);
+         piLastMoveNotification = iCurrentTime;
       }
 
       //
@@ -4246,24 +4276,24 @@ messages:
             #fine_row=fine_row,#fine_col=fine_col,
             #cause=CAUSE_USER_INPUT,#speed=speed);
 
-      return;
-   }
+      //
+      // 10. Set the flag so that wall elements can affect us.
+      //
 
-   NotifyMonstersOfPresence()
-   // When a player first enters the room, the game will prevent AIs from
-   //  attacking that player until that player takes an action.  This function
-   //  is called when a player takes his first action in the room.  It should
-   //  be accompanied by a bitcheck of PFLAG_MOVED_SINCE_ENTRY, which was
-   //  previously done in a function call, but is now done in a raw bitcheck
-   //  for performance reasons (as this needs to be checked pretty much before
-   //  a player does anything).  See UserMove() for an example of the correct
-   //  usage of this function.
-   {
-      // Sanity check, or if we want to call the function externally.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
+      Send(self,@SetPlayerFlag,#flag=PFLAG_MOVED_SINCE_ENTRY,#value=TRUE);
+
+      //
+      // 11. Keep track of the most recent steps to facilitate monster pursuit.
+      //
+
+      ++piTrailSteps;
+
+      if piTrailSteps >= Send(poOwner,@GetTrailSteps)
       {
-         Send(self,@SetPlayerFlag,#flag=PFLAG_MOVED_SINCE_ENTRY,#value=TRUE);  
-         Send(poOwner,@FirstMove,#what=self,#new_row=piRow,#new_col=piCol);
+         Send(self,@SetUserTrail,#iRow=new_row,#iCol=new_col,
+            #iFineRow=fine_row,#iFineCol=fine_col);
+
+         piTrailSteps = 0;
       }
 
       return;
@@ -4298,12 +4328,6 @@ messages:
 
       Send(poOwner,@SomethingTurned,#what=self,#new_angle=new_angle,
            #cause=CAUSE_USER_INPUT);
-
-      // bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
-      {
-         Send(self,@NotifyMonstersOfPresence);
-      }
 
       return;
    }
@@ -4488,7 +4512,8 @@ messages:
    //  For looping sounds, cutoff_radius and max_volume are used set
    //  attenuation parameters
    {
-      if (wave_rsc <> $) and (pbLogged_on)
+      if (wave_rsc <> $
+         AND pbLogged_on)
       {
          AddPacket(1,BP_PLAY_WAVE, 4,wave_rsc, 4,source_obj, 1,flags,
                    4,row, 4,col, 4,cutoff_radius, 4,max_volume);
@@ -4501,7 +4526,8 @@ messages:
    WaveSendUserStop(wave_rsc = $, source_obj = 0)
    // Sends a message to the client to stop playing a wav using the resource ID.
    {
-      if (wave_rsc <> $) and (pbLogged_on)
+      if (wave_rsc <> $
+         AND pbLogged_on)
       {
          AddPacket(1,BP_STOP_WAVE, 4,wave_rsc, 4,source_obj);
          SendPacket(poSession);
@@ -4512,18 +4538,16 @@ messages:
 
    SendRoomMusic(music_rsc = $)
    {
-      if pbLogged_on
+      if (pbLogged_on)
       {
-         AddPacket(1,BP_PLAY_MUSIC);
-         if music_rsc = $
+         if (music_rsc <> $)
          {
-            AddPacket(4,0);
+            AddPacket(1,BP_PLAY_MUSIC, 4,music_rsc);
          }
          else
          {
-            AddPacket(4,music_rsc);
+            AddPacket(1,BP_PLAY_MUSIC, 4,0);
          }
-
          SendPacket(poSession);
       }
 
@@ -4532,18 +4556,10 @@ messages:
 
    MidiSendUser(midi_rsc = $)
    {
-      if (midi_rsc <> $) AND (pbLogged_on)
+      if (midi_rsc <> $
+         AND pbLogged_on)
       {
-         AddPacket(1,BP_PLAY_MIDI);
-         if midi_rsc = $
-         {
-            AddPacket(4,0);
-         }
-         else
-         {
-            AddPacket(4,midi_rsc);
-         }
-
+         AddPacket(1,BP_PLAY_MIDI, 4,midi_rsc);
          SendPacket(poSession);
       }
 
@@ -4804,13 +4820,6 @@ messages:
          return 0;
       }
 
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      // bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
-      {
-         Send(self,@NotifyMonstersOfPresence);
-      }
-
       oOldOwner = Send(what,@GetOwner);
 
       // Make sure we're not trying to get something we've already got!
@@ -4974,13 +4983,6 @@ messages:
    {
       local i,Item_pos,oNumber;
 
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      // bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
-      {
-         Send(self,@NotifyMonstersOfPresence);
-      }
-
       if NOT Send(self,@IsHolding,#what=what)
       {
          Send(self,@MsgSendUser,#message_rsc=user_err_drop);
@@ -5111,13 +5113,6 @@ messages:
    UserPut(what = $,where = $,number = $)
    {
       local i, lObjects, lItem_pos, oNumber;
-
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      //  bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)  
-      {
-         Send(self,@NotifyMonstersOfPresence);
-      }
 
       // Detect if someone's using an exploit to put items into another player.
       if IsClass(where,&User)
@@ -5295,13 +5290,6 @@ messages:
       // An excellent example is Out Of Grace, which blocks all tells to 
       // non-DMs, as well as Guild Tells and Broadcasts
 
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      // bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
-      {
-         Send(self,@NotifyMonstersOfPresence);
-      }
-
       if type = SAY_NORMAL
       {
          if StringContain(string,user_say_survival)
@@ -5318,6 +5306,16 @@ messages:
          {
             // If UserSayInventory handles the string, don't keep checking.
             if Send(self,@UserSayInventory,#string=string)
+            {
+               return;
+            }
+         }
+
+         // Run additional checks if user drank a beta potion
+         if Send(self,@CheckPlayerFlag,#flag=PFLAG2_BETA_POTION,#flagset=2)
+         {
+            // If UserSayBetaPotion handles the string, don't keep checking.
+            if Send(self,@UserSayBetaPotion,#string=string)
             {
                return;
             }
@@ -5480,6 +5478,65 @@ messages:
       }
 
       return FALSE;
+   }
+
+   UserSayBetaPotion(string = $)
+   {
+      local iSchool, iLevel, iLearnPoints, iMaxLearnPoints;
+
+      if string <> $
+      {
+         iSchool = 0;
+         iLevel = 0;
+         iLearnPoints = 0;
+
+         iSchool = Send(Send(SYS,@GetLore),@CheckSchoolString,#string=string);
+         iLevel = Send(Send(SYS,@GetLore),@CheckLevelString,#string=string);
+
+         if iSchool <> 0 AND iLevel <> 0
+         {
+            if iSchool = SKS_WEAPONCRAFT
+            {
+               Send(self,@GivePlayerAllSkills,#school=iSchool,#level=iLevel,
+                     #iAbility=99,#upto=TRUE);
+            }
+            else if iSchool = SS_SHALILLE
+               AND Send(self,@GetNumSpellsInSchool,#school=SS_QOR)
+            {
+               // Can't add Shal'ille when already has Qor.
+               return FALSE;
+            }
+            else if iSchool = SS_QOR
+               AND Send(self,@GetNumSpellsInSchool,#school=SS_SHALILLE)
+            {
+               // Can't add Qor when already has Shal'ille.
+               return FALSE;
+            }
+            else
+            {
+               Send(self,@GivePlayerAllSpells,#school=iSchool,#level=iLevel,
+                     #iAbility=99,#upto=TRUE);
+            }
+
+            iMaxLearnPoints = Send(SETTINGS_OBJECT,@GetMaxLearnPoints)
+                                 + (Send(self,@GetRawIntellect) * 2) / 5;
+            iLearnPoints = Send(self,@GetTotalLearnPoints,#except=0);
+            Post(self,@MsgSendUser,#message_rsc=player_Debug_learnpoints,
+                  #parm1=iLearnPoints,#parm2=iMaxLearnPoints);
+
+            // iLearnPoints should always equal iMaxLearnPoints, 
+            // only time it can go over if it is a DM using the potion
+            if iLearnPoints >= iMaxLearnPoints
+            {
+               Send(self,@SetPlayerFlag,#flag=PFLAG2_BETA_POTION,
+                     #value=FALSE,#flagset=2);
+
+               return TRUE;
+            }
+         }
+      }
+
+      return;
    }
 
    UserSayInventory(string = $)
@@ -5811,16 +5868,9 @@ messages:
    }
 
    UserSayGroup(users = $,string = $,no_tell=FALSE)
-   "<no_tell> = True means always Send the 'Sends' message, not 'tells'"
+   "<no_tell> = TRUE means always Send the 'Sends' message, not 'tells'"
    {
       local i,type;
-
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      // bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
-      {
-         Send(self,@NotifyMonstersOfPresence);
-      }   
 
       // A bit hackish, no_tell is currently only used for guild Sends.  Don't
       //  do TrySayGroup on guild Sends to eliminate mana costs.
@@ -5870,13 +5920,6 @@ messages:
 
    UserLook(what = $)
    {
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      // Use a bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
-      {
-         Send(self,@NotifyMonstersOfPresence);
-      }
-
       Send(what,@TryLook,#what=self);
 //      Send(self,@SetPlayerView,#what=what,
 //         #iFlags =   REMOTE_VIEW_CONTROL | REMOTE_VIEW_TURN  
@@ -5888,7 +5931,7 @@ messages:
 
    SendLook(what = $, bShow_All = FALSE)
    {
-      local byInscription, oOwner;
+      local byInscription, oOwner, bAbility;
 
       if pbLogged_on
       {
@@ -5909,30 +5952,56 @@ messages:
             return;
          }
 
-         AddPacket(1,BP_LOOK);
+         // Show special description for non-DM spells that
+         // players can learn.
+         if (IsClass(what,&Spell)
+            AND NOT (Send(what,@GetSchool) = SS_DM_COMMAND)
+            AND Send(what,@CanBeLearned))
+         {
+            bAbility = TRUE;
+            AddPacket(1,BP_LOOK_SPELL);
+         }
+         else if (IsClass(what,&Skill))
+         {
+            bAbility = TRUE;
+            AddPacket(1,BP_LOOK_SKILL);
+         }
+         else
+         {
+            bAbility = FALSE;
+            AddPacket(1,BP_LOOK);
+         }
+
          Send(self,@ToCliObject,#what=what,#show_type=SHOW_LOOK,
-              #bShow_All=bShow_All);
+               #bShow_All=bShow_All);
 
-         byInscription = 0x00;
-         oOwner = Send(what,@GetOwner);
-         if Send(what,@HasInscription)
+         if (bAbility)
          {
-            byInscription |= 0x02;
+            // Must add School, level, mana, vigor costs first.
+            Send(what,@ShowDesc,#bShowAll = bShow_All,#who=self);
          }
-
-         if Send(what,@CanEditInscription)
-            AND (oOwner = self OR oOwner = poOwner)
+         else
          {
-            byInscription |= 0x01;
-         }
+            byInscription = 0x00;
+            oOwner = Send(what,@GetOwner);
+            if Send(what,@HasInscription)
+            {
+               byInscription |= 0x02;
+            }
 
-         AddPacket(1, byInscription);
+            if Send(what,@CanEditInscription)
+               AND (oOwner = self OR oOwner = poOwner)
+            {
+               byInscription |= 0x01;
+            }
 
-         Send(what,@ShowDesc,#bShowAll = bShow_All,#who=self);
+            AddPacket(1, byInscription);
+            Send(what,@ShowDesc,#bShowAll = bShow_All,#who=self);
 
-         if (byInscription)
-         {
-            Send(what,@ShowInscription);
+            if (byInscription)
+            {
+               Send(what,@ShowInscription);
+            }
          }
 
          SendPacket(poSession);
@@ -6165,13 +6234,6 @@ messages:
 
    UserTryActivate(what = $)
    {
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      // bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
-      {
-         Send(self,@NotifyMonstersOfPresence);
-      }
-
       if IsClass(what,&Sun) OR IsClass(what,&Moon)
       {
          // No message for background overlays.
@@ -6200,14 +6262,6 @@ messages:
    UserMail(dest_list = $,string = $)
    {
       local i;
-
-      // 11/21/2014 Keen - why is this even here?  commented out for now.
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      // bitflag check instead of function for speed.
-      //if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
-      //{
-      //   Send(self,@NotifyMonstersOfPresence);
-      //}
 
       // Can't send mail if squelched.
       if piFlags2 & PFLAG2_SQUELCHED_MAIL
@@ -6296,13 +6350,6 @@ messages:
    {
       local lNew_Mail;
 
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      // bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)  
-      {
-         Send(self,@NotifyMonstersOfPresence);
-      }
-
       if index <> $
          AND plNew_mail <> $
       {
@@ -6359,13 +6406,6 @@ messages:
    {
       // check if valid, if item, if holding
 
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      // bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
-      {
-         Send(self,@NotifyMonstersOfPresence);
-      }
-
       if piFlags & PFLAG_TRANCE
       {
          Send(self,@BreakTrance,#event=EVENT_USE);
@@ -6383,13 +6423,6 @@ messages:
 
    UserUnuseItem(what = $)
    {
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      // bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
-      {
-         Send(self,@NotifyMonstersOfPresence);
-      }
-
       if piFlags & PFLAG_TRANCE
       {
          Send(self,@BreakTrance,#event=EVENT_USE);
@@ -6413,13 +6446,6 @@ messages:
    UserAttack(type=STROKE_NORMAL,what=$)
    {
       local i, use_weapon, stroke_id, stroke_obj, is_spell;
-
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      // bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
-      {
-         Send(self,@NotifyMonstersOfPresence);
-      }
 
       if piFlags & PFLAG_TRANCE
       {
@@ -6501,6 +6527,9 @@ messages:
          stroke_obj = use_weapon;
       }
 
+      // Set flag so that wall elements can affect us.
+      Send(self,@SetPlayerFlag,#flag=PFLAG_MOVED_SINCE_ENTRY,#value=TRUE);
+
       return Send(self,@TryAttack,#what=what,#use_weapon=use_weapon,
                   #stroke_obj=stroke_obj);
    }
@@ -6516,20 +6545,6 @@ messages:
          OR NOT IsClass(oSpell,&Spell)
       {
          return;
-      }
-
-      // Command minions to aid in combat
-      if lTargets <> $
-         AND IsClass(oSpell,&AttackSpell)
-      {
-         Send(self,@CommandMinionAttack,#oTarget=First(lTargets));
-      }
-
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      // bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)
-      {
-         Send(self,@NotifyMonstersOfPresence);
       }
 
       if piFlags & PFLAG_TRANCE
@@ -6610,6 +6625,9 @@ messages:
             Send(self,@AddUnboundEnergy,#iAmount=-iCost);
          }
 
+         // Set flag so that wall elements can affect us.
+         Send(self,@SetPlayerFlag,#flag=PFLAG_MOVED_SINCE_ENTRY,#value=TRUE);
+
          // Alright, cast that spell already.
          Send(oSpell,@BeginCastingTrance,#who=self,#lTargets=lFinalTargets,
                #iSpellPower=iSpellPower);
@@ -6651,13 +6669,6 @@ messages:
 
    UserAction(action = $)
    {
-      // User took an action!  Wake any AIs in the room to the user's presence!
-      // bitflag check instead of function for speed.
-      if NOT (piFlags & PFLAG_MOVED_SINCE_ENTRY)  
-      {
-         Send(self,@NotifyMonstersOfPresence);
-      }
-
       // Make this count as an attack.  This prevents action spamming.
       // IsOkayAttackTime defaults to 1 second
       if NOT Send(self,@IsOkayAttackTime)
@@ -6669,6 +6680,13 @@ messages:
       {
          Send(self,@DoWave);
 
+         if poMercenary <> $ 
+            AND NOT IsTimer(poMercenary)
+            AND (Send(poMercenary,@GetOwner) = poOwner)
+         {
+            Send(poMercenary,@DoWave);
+         }
+
          return;
       }
 
@@ -6676,12 +6694,26 @@ messages:
       {
          Send(self,@DoPoint);
 
+         if poMercenary <> $ 
+            AND NOT IsTimer(poMercenary)
+            AND (Send(poMercenary,@GetOwner) = poOwner)
+         {
+            Send(poMercenary,@DoPoint);
+         }
+
          return;
       }
 
       if action = UA_DANCE
       {
          Send(self,@DoDance);
+
+         if poMercenary <> $ 
+            AND NOT IsTimer(poMercenary)
+            AND (Send(poMercenary,@GetOwner) = poOwner)
+         {
+            Send(poMercenary,@DoDance);
+         }
 
          return;
       }
@@ -8108,7 +8140,7 @@ messages:
       propagate;
    }
 
-   SomethingPhasedIn(what = $)
+   SomethingPhasedIn(what = $,bTeleport=FALSE)
    {
       if (what = self)
       {
@@ -8121,7 +8153,9 @@ messages:
          Send(self,@MsgSendUser,#message_rsc=user_self_phase_in,
                #parm1=(Send(self,@GetRemainingPhaseTime)/1000));
       }
-      else
+      // Don't send the 'phase in' message if the user teleported.
+      // Phase sends a different message in that case.
+      else if (NOT bTeleport)
       {
          Send(self,@MsgSendUser,#message_rsc=user_phase_in,
                #parm1=Send(what,@GetName));
@@ -8678,12 +8712,15 @@ messages:
    DrawHealth()
    {
       if pbLogged_on
+      AND (First(plDraw)/100 - piHealth/100 OR Nth(plDraw,2) - piMax_health)
       {
          AddPacket(1,BP_STAT,1,1);
          Send(self,@SendStatHealth);
          SendPacket(poSession);
+         SetFirst(plDraw,piHealth);
+         SetNth(plDraw,2,piMax_health);
       }
-      
+
       return;
    }
 
@@ -8698,10 +8735,13 @@ messages:
    DrawMana()
    {
       if pbLogged_on
+      AND (Nth(plDraw,3)/100 - piMana/100 OR Nth(plDraw,4) - piMax_mana)
       {
          AddPacket(1,BP_STAT,1,1);
          Send(self,@SendStatMana);
          SendPacket(poSession);
+         SetNth(plDraw,3,piMana);
+         SetNth(plDraw,4,piMax_mana);
       }
 
       return;
@@ -8710,7 +8750,30 @@ messages:
    SendStatMana()
    {
       AddPacket(1,2, 4,user_stat_mana, 1,STAT_VALUE, 1,STAT_INTEGER,
-                4,piMana, 4,0, 4,100, 4,piMax_mana);
+                4,Send(self,@GetMana), 4,0, 4,100, 4,piMax_mana);
+
+      return;
+   }
+
+   DrawVigor()
+   {
+      if pbLogged_on
+      AND (Nth(plDraw,5)/100 - piVigor/100 OR Nth(plDraw,6) - piMax_vigor)
+      {
+         AddPacket(1,BP_STAT, 1,1);
+         Send(self,@SendStatVigor);
+         SendPacket(poSession);
+         SetNth(plDraw,5,piVigor);
+         SetNth(plDraw,6,piMax_vigor);
+      }
+
+      return;
+   }
+
+   SendStatVigor()
+   {
+      AddPacket(1,3,4,user_stat_vigor,1,STAT_VALUE,1,STAT_INTEGER,
+         4,Send(self,@GetVigor),4,0,4,200,4,Send(self,@GetVigorRestThreshold,#base=FALSE));
 
       return;
    }
@@ -9268,26 +9331,6 @@ messages:
       return;
    }
 
-   DrawVigor()
-   {
-      if pbLogged_on
-      {
-         AddPacket(1,BP_STAT, 1,1);
-         Send(self,@SendStatVigor);
-         SendPacket(poSession);
-      }
-
-      return;
-   }
-
-   SendStatVigor()
-   {
-      AddPacket(1,3, 4,user_stat_vigor, 1,STAT_VALUE, 1,STAT_INTEGER,
-                4,piVigor, 4,0, 4,200, 4,piVigor_rest_threshold);
-
-      return;
-   }
-
    DrawStatSpell(index = $)
    {
       if pbLogged_on
@@ -9376,7 +9419,7 @@ messages:
    {
       if pbLogged_on
       {
-         AddPacket(1,BP_LIGHT_PLAYER,1,bound(piLight,0,255));
+         AddPacket(1,BP_LIGHT_PLAYER,1,Bound(piLight,0,255));
          SendPacket(poSession);
       }
 
@@ -10995,6 +11038,36 @@ messages:
       }
 
       return;
+   }
+
+   SetUserTrail(iRow=$,iCol=$,iFineRow=$,iFineCol=$)
+   {
+      local i;
+
+      if (poOwner = $)
+         OR (iRow = $)
+         OR (iCol = $)
+         OR (iFineRow = $)
+         OR (iFineCol = $)
+      {
+         plUserTrail = $;
+      }
+      else
+      {
+         plUserTrail = Cons([iRow,iCol,iFineRow,iFineCol],plUserTrail);
+
+         if Length(plUserTrail) > Send(poOwner,@GetTrailLength)
+         {
+            plUserTrail = DelLastListElem(plUserTrail);
+         }
+      }
+
+      return;
+   }
+
+   GetUserTrail()
+   {
+      return plUserTrail;
    }
 
 end

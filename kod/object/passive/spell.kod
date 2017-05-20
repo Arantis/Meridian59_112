@@ -38,9 +38,7 @@ resources:
 
    spell_triggers_outlawing = \
       "You have been labeled an outlaw for casting an antisocial spell!"
-   spell_outlaw = " Casting this spell can cause you to be labeled an outlaw."
-   spell_nothing = " "
-   spell_blank = ""
+   spell_outlaw = "  Casting this spell can cause you to be labeled an outlaw."
 
    spell_no_rest = "You can't cast spells while resting!"
    spell_bad_location = "You can't cast %s here."
@@ -89,7 +87,13 @@ resources:
    spell_silenced_rsc = "Your words catch in your throat and you cannot speak."
 
    spell_fail_wav = spelfail.ogg
-   spell_desc_rsc = "SCHOOL : %s         LEVEL : %i \n\n%s%s%s%r%r%r"
+   spell_desc_school = "SCHOOL : %s"
+   spell_desc_level = "LEVEL : %i"
+   spell_desc_mana = "MANA : %i"
+   spell_desc_vigor = "VIGOR : %i"
+   spell_desc_rsc = "%s%s%s%r%r%r%r"
+   spell_reg_desc = "\n\nRequired reagents:%r"
+   spell_reg_one = "\n   %i %s"
    spell_school_riija = "Riija"
    spell_school_shalille = "Shal'ille"
    spell_school_qor = "Qor"
@@ -145,6 +149,12 @@ resources:
    cannot_cast_on_phased_out = \
       "You can't cast anything on %s while %s is phased out of existence!"
 
+   over_time_effect_wearing_off = \
+      "The sudden feeling passes."
+
+   over_time_effect_starting = \
+      "Suddenly, you feel a little different."
+
 classvars:
 
    vrName = spell_name_rsc
@@ -164,6 +174,10 @@ classvars:
    viSpell_level = 1
 
    viMana = 1
+   // Amount drained every second in 10^(-3) mana.
+   viManaDrain = 0
+
+   viTickDuration = 1000
 
    viChance_To_Increase = 20
 
@@ -223,6 +237,10 @@ classvars:
    viOffensive = FALSE
    viResistanceType = 0
 
+   // Adjusts the casting frequency of monster casts of the spell.
+   viStartingPriority = $
+   viPriorityAdjustment = $
+
 properties:
 
    // Format of reagents:  Each element of plReagents is a list, describing a
@@ -237,6 +255,7 @@ properties:
    piAverage_spellpower = 0         
    piCast_attempts_at_players = 0
 
+   pbCanBeLearned = TRUE
    pbAccessible = TRUE
    pbEnabled = TRUE
 
@@ -271,13 +290,21 @@ messages:
    }
 
    IsAccessible()
+   "Can the spell be learned by players (DMs not affected by this)."
    {
       return pbAccessible;
    }
 
    IsEnabled()
+   "Can the spell be cast by players?"
    {
       return pbEnabled;
+   }
+
+   CanBeLearned()
+   "Can any object learn this spell? Includes accessibility to DMs."
+   {
+      return pbCanBeLearned;
    }
 
    GetSchoolStr(iSchool=-1)
@@ -317,15 +344,19 @@ messages:
       return rSchool;
    }
 
+   // WARNING: Spells display a custom description, don't override this
+   // message unless you are sure you know what the effect will be if a
+   // user tries to look at the overridden spell's description.
    ShowDesc(who=$)
    {
       local rSchool, rOutlaw, rExtra;
 
       if viSchool <> SS_DM_COMMAND
+         AND pbCanBeLearned
       {
          rSchool = Send(self,@GetSchoolStr);
-      
-         rOutlaw = spell_nothing;
+
+         rOutlaw = system_blank_resource;
          if viOutlaw
          {
             rOutlaw = spell_outlaw;
@@ -333,25 +364,71 @@ messages:
 
          rExtra = Send(self,@GetExtraDesc);
 
-         AddPacket(4,spell_desc_rsc, 4,rSchool, 4,viSpell_Level, 4,vrDesc,
-                   4,rOutlaw, 4,rExtra);
+         // First send spell data for special desc box.
+         AddPacket(4,spell_desc_school, 4, rSchool,
+                   4,spell_desc_level, 4, viSpell_Level,
+                   4,spell_desc_mana, 4,viMana,
+                   4,spell_desc_vigor, 4,viSpellExertion,
+                   4,spell_desc_rsc, 4,vrDesc, 4,rOutlaw, 4,rExtra);
 
+         Send(self,@SendTPCost,#who=who);
+         Send(self,@SendReagentCost,#who=who);
          Send(self,@SendStatsDesc,#who=who);
          Send(self,@SendTimeDesc,#who=who);
 
-         if piMeditate_ratio = 0
-         {
-            AddPacket(4,spell_nothing);
-         }
-         else
-         {
-            AddPacket(4,spell_meditate_ratio_rsc,4,piMeditate_ratio);
-         }
+         return;
+      }
+
+      propagate;
+   }
+
+   SendTPCost(who = $)
+   {
+      if piMeditate_ratio = 0
+      {
+         AddPacket(4,system_blank_resource);
+      }
+      else
+      {
+         AddPacket(4,spell_meditate_ratio_rsc,4,piMeditate_ratio);
+      }
+
+      return;
+   }
+
+   SendReagentCost(who = $)
+   {
+      local i, lTemplates, iLen, iNumber, oItem;
+
+      if plReagents = $
+      {
+         AddPacket(4,system_blank_resource);
 
          return;
       }
-      
-      propagate;
+
+      lTemplates = Send(SYS,@GetItemTemplates);
+
+      if (lTemplates = $)
+      {
+         AddPacket(4,system_blank_resource);
+
+         return;
+      }
+
+      iLen = Length(plReagents);
+
+      AddPacket(4,spell_reg_desc, 4,Send(SYS,@AddResourceTemplate,#iNum=iLen));
+
+      foreach i in plReagents
+      {
+         oItem = GetListElemByClass(lTemplates,First(i));
+         iNumber = Nth(i,2);
+         AddPacket(4, spell_reg_one, 4,iNumber,
+                   4, Send(oItem,@GetName,#number=iNumber));
+      }
+
+      return;
    }
 
    SendTimeDesc()
@@ -364,19 +441,19 @@ messages:
 
    GetExtraDesc()
    {
-      return spell_nothing;
+      return system_blank_resource;
    }
 
    SendStatsDesc()
    {
-      AddPacket(4, spell_blank);
+      AddPacket(4, system_blank_resource);
 
       return;
    }
 
    EffectDesc(who=$)
    {
-      AddPacket(4, spell_blank);
+      AddPacket(4, system_blank_resource);
 
       return;
    }
@@ -783,6 +860,11 @@ messages:
    {
       local i, each_obj, oRoom, iRand, oSpell, oTarget;
 
+      if NOT IsClass(who,&User)
+      {
+         return TRUE;
+      }
+
       if lTargets <> $
          AND Length(lTargets) = 1
       {
@@ -798,11 +880,6 @@ messages:
 
             return FALSE;
          }
-      }
-
-      if NOT IsClass(who,&User)
-      {
-         return TRUE;
       }
 
       if NOT pbEnabled
@@ -1022,7 +1099,7 @@ messages:
    }
 
    CanPayMonsterCosts(who=$,lTargets=$,iSpellpower=$)
-   {   
+   {
       local oSpell, oRoom;
 
       if NOT Send(self,@CanPayCosts,#who=who,#ltargets=ltargets,
@@ -1246,7 +1323,7 @@ messages:
       {
          Send(who,@LoseMana,#amount=Send(self,@GetManaCost,#who=who,
               #iSpellpower=iSpellPower)/2);
-         Send(who,@AddExertion,#amount=(10000*viSpellExertion)/2);
+         Send(who,@LoseVigor,#precision=TRUE,#amount=(100*viSpellExertion)/2);
       }
       
       Send(who,@MsgSendUser,#message_rsc=spell_failed_by_chance,#Parm1=vrName);
@@ -1291,7 +1368,7 @@ messages:
                      #lRadiusState=Nth(i,3));
       }
 
-      num = bound(num,5,99);
+      num = Bound(num,5,99);
 
       if lTargets <> $
          AND Send(self,@GetNumSpellTargets) = 1
@@ -1365,7 +1442,7 @@ messages:
            #iSpellPower=iSpellpower));
 
       // Spell casting requires exertion (which is in 10^-4 units)
-      Send(who,@AddExertion,#amount=10000*viSpellExertion);
+      Send(who,@LoseVigor,#precision=TRUE,#amount=100*viSpellExertion);
 
       // Escaped Convict loses mana and vigor, but reagents are not required
       if (IsClass(who,&EscapedConvict)
@@ -1429,21 +1506,124 @@ messages:
       return TRUE;
    }
 
-   CastSpell(who = $, lTargets = $, iSpellPower = 0, bItemCast=FALSE)
+   DoSpellEffects()
    {
-      local oTarget, oRoom;
+      return TRUE;
+   }
+
+   GetDuration()
+   {
+      return 0;
+   }
+
+   CheckCastPowerModifiers(who=$,lTargets=$,iSpellPower=0,report=TRUE)
+   "Modifiers that don't affect the success of the spell, but still modify "
+   "the power it will cast at."
+   {
+      local oSpell, oTarget;
+
+      if lTargets <> $
+      {
+         oTarget = First(lTargets);
+      }
+      else
+      {
+         oTarget = $;
+      }
+      
+      // Anti-magic aura PE will lower the spellpower of any spell cast by the
+      // enchanted player, or any spell cast directly on that player.
+      if (IsClass(who,&Battler))
+      {
+         if (Send(who,@CheckBattlerFlag,#flag=BFLAG_SPELLPOWER_MOD))
+         {
+            oSpell = Send(SYS,@FindSpellByNum,#num=SID_ANTIMAGIC_AURA);
+            if Send(who,@IsEnchanted,#what=oSpell)
+            {
+               iSpellPower = Send(oSpell,@ModifySpellPower,#who=who,#oSpell=self,
+                                 #report=report,#iSpellPower=iSpellPower,
+                                 #state=Send(who,@GetEnchantedState,#what=oSpell));
+            }
+         }
+         if (oTarget <> $
+            AND oTarget <> who
+            AND Length(lTargets) = 1
+            AND IsClass(oTarget,&Battler)
+            AND Send(oTarget,@CheckBattlerFlag,#flag=BFLAG_SPELLPOWER_MOD))
+         {
+            // Single target enchanted with a spellpower mod.
+            oSpell = Send(SYS,@FindSpellByNum,#num=SID_ANTIMAGIC_AURA);
+            if Send(oTarget,@IsEnchanted,#what=oSpell)
+            {
+               iSpellPower = Send(oSpell,@ModifySpellPower,#who=who,#oSpell=self,
+                                 #report=report,#iSpellPower=iSpellPower,
+                                 #state=Send(oTarget,@GetEnchantedState,#what=oSpell));
+            }
+         }
+      }
+
+      return iSpellPower;
+   }
+
+   CastSpell(who = $, lTargets = $, iSpellPower = 0, iPowerLevel = 100,
+             bItemCast=FALSE, bRing=FALSE, bStun=FALSE,report=TRUE)
+   {
+      local oTarget, oRoom, i, iAggro, iDuration;
+
+      // Insert any spellpower-modifying effects here that shouldn't affect
+      // the actual casting/success of the spell, but still have an effect on
+      // its power. Note that a few spells won't be affected by this - some
+      // DM spells, meditate and elusion - as their effects are done before
+      // CastSpell is called. These spells must call CheckCastPowerModifiers.
+
+      iSpellPower = Send(self,@CheckCastPowerModifiers,#who=who,
+                        #lTargets=lTargets,#iSpellPower=iSpellPower,
+                        #report=report);
+
+      // Some spells will need a duration in DoSpellEffects. Called here
+      // because some calls to DoSpellEffects from elsewhere will send their
+      // own duration.
+      iDuration = Send(self,@GetDuration,#iSpellPower=iSpellPower,
+                        #caster=who,#lTargets=lTargets);
+
+      // DoSpellEffects performs the actual work of the spell (i.e. the effect
+      // the spell has, a buff or an attack etc). Returns FALSE if there is
+      // an error that should stop CastSpell from going any further.
+      if (NOT Send(self,@DoSpellEffects,#who=who,#lTargets=lTargets,
+                  #report=report,#iSpellPower=iSpellPower,#iDuration=iDuration,
+                  #iPowerLevel=iPowerLevel,#bItemCast=bItemCast,
+                  #bRing=bRing,#bStun=bStun))
+      {
+         return;
+      }
+
+      // Add a mana drain if applicable.
+      if IsClass(who,&Battler) AND viManaDrain > 0
+      {
+         if IsClass(who,&Player)
+         {
+            Send(who,@StartOverTimeEffect,#strength=-viManaDrain,#what=self,#who=who,
+               #removable=REMOVE_INTERNAL,#showicon=FALSE,#type=TYPE_MANA);
+         }
+         // Monsters can maintain draining spells more easily.
+         else
+         {
+            Send(who,@StartOverTimeEffect,#strength=-viManaDrain/2,#what=self,#who=who,
+               #removable=REMOVE_INTERNAL,#showicon=FALSE,#type=TYPE_MANA);
+         }
+      }
 
       if IsClass(who,&DM)
       {
-         ClearTempString();
-         if lTargets <> $
+         if (lTargets <> $)
          {
-            AppendTempString(" on target ");
-            AppendTempString(Send(First(lTargets),@GetTrueName));
+            GodLog("DM ",Send(who,@GetTrueName)," cast ", Send(self,@GetName),
+                  " on ",Send(First(lTargets),@GetTrueName));
          }
-
-         GodLog("DM ",Send(who,@GetTrueName)," cast the spell ",
-               Send(self,@GetName),GetTempString());
+         else
+         {
+            GodLog("DM ",Send(who,@GetTrueName)," cast ", Send(self,@GetName));
+         }
       }
 
       if NOT bItemCast
@@ -1461,7 +1641,6 @@ messages:
       }
 
       if viFlash = FLASH_GOOD_SELF
-         AND who <> $
          AND IsClass(who,&User)
       {
          Send(who,@GoodSpellFlashEffect);
@@ -1506,8 +1685,7 @@ messages:
 
       // Let players see the spellpower their spells are cast at, if they
       // have the setting enabled in their preference menu.
-      if who <> $
-         AND IsClass(who,&Player)
+      if IsClass(who,&Player)
          AND Send(who,@CheckPlayerPreference,#flag=CF_SPELLPOWER)
       {
          Send(who,@MsgSendUser,#message_rsc=spell_display_spellpower,
@@ -1518,15 +1696,6 @@ messages:
       if lTargets <> $
       {
          oTarget = First(lTargets);
-
-         // If the spell was cast on a monster, let the monster keep track of that for loot.
-         if IsClass(oTarget,&Monster)
-            AND NOT bItemCast
-            AND who <> $
-            AND IsClass(who,&Player)
-         {
-            Send(oTarget,@AddToSpellList,#spellNum=viSpell_num);
-         }
       }
       else
       {
@@ -1538,43 +1707,45 @@ messages:
          Send(self,@ImproveAbility,#who=who,#target=oTarget);
       }
 
-      if NOT IsClass(who,&ItemAttribute)
-      {
-         oRoom = Send(SYS,@UtilGetRoomRecurse,#what=who);
-      }
-      else
-      {
-         oRoom = Send(SYS,@UtilGetRoomRecurse,#what=oTarget);
-      }
+      oRoom = Send(SYS,@UtilGetRoomRecurse,#what=who);
 
       if oRoom <> $
       {
-         if IsClass(who,&Admin)
-            AND Send(who,@IsHidden)
+         if IsClass(who,&DM)
+            AND Send(who,@IsDMStealthed)
          {
-            if oTarget = $
-            {
-               Debug("ADMIN: ",Send(who,@GetTrueName)," cast ",
-                     Send(Self,@GetName)," while hidden.");
-            }
-            else
-            {
-               Debug("ADMIN: ",Send(who,@GetTrueName)," cast ",
-                     Send(self,@GetName)," on ",Send(oTarget,@GetTrueName),
-                     " while hidden.");
-            }
-
             return;
          }
 
          Send(self,@PlaySpellSound,#room_obj=oRoom,#what=who);
          Send(oRoom,@SpellCast,#who=who,#oSpell=self,#lItems=lTargets,
                #bItemCast=bItemCast);
-      }
 
-      if Send(self,@AffectsSpellPower)
-      {
-         Send(oRoom,@SetRoomFlag,#flag=ROOM_ANTI_MAGIC,#value=TRUE);
+         // Add hatred to our targets if we cast a non-damage aggressive
+         // spell. Also inform the room that this was an attack.
+         // Only done if caster was a battler.
+         if (IsClass(who,&Battler))
+         {
+            iAggro = Send(self,@CausesAggression,#iSpellpower=iSpellPower);
+            iAggro *= 100;
+            if (iAggro)
+            {
+               foreach i in lTargets
+               {
+                  if IsClass(i,&Battler)
+                  {
+                     Send(i,@AddHurtMeRecently,#who=who,#amount=iAggro);
+                     Send(oRoom,@SomethingAttacked,#what=who,#victim=i,
+                           #use_weapon=self);
+                  }
+               }
+            }
+         }
+
+         if Send(self,@AffectsSpellPower)
+         {
+            Send(oRoom,@SetRoomFlag,#flag=ROOM_ANTI_MAGIC,#value=TRUE);
+         }
       }
 
       if IsClass(who,&Player)
@@ -1626,7 +1797,8 @@ messages:
          }
       }
 
-      // Count that this spell was cast successfully
+      // Count that this spell was cast successfully.
+      // Counts spells cast by monsters, items etc.
       Send(Send(SYS,@GetStatistics),@SpellCast,#oSpell=self,#who=who);
 
       return;
@@ -1757,7 +1929,7 @@ messages:
          iCost = iCost - Send(oPrincessShield,@GetSpellManaReduction);
       }
 
-      return bound(iCost,1,$);
+      return Bound(iCost,1,$);
    }
 
    GetRequisiteStat(who=$)
@@ -1818,7 +1990,7 @@ messages:
       }
 
       iInitialChance = Send(self,@GetInitialChance,#who=who);
-      iRandom = random(1,100);
+      iRandom = Random(1,100);
       if iRandom > iInitialChance
       {
          return FALSE;
@@ -1846,9 +2018,9 @@ messages:
       }
 
       RequisiteStat = Send(self,@GetRequisiteStat,#who=who);
-      increase_chance = bound(increase_chance,(1+RequisiteStat/10),99);
+      increase_chance = Bound(increase_chance,(1+RequisiteStat/10),99);
       
-      iRandom = random(0,100);      
+      iRandom = Random(0,100);      
       if iRandom < increase_chance
       {      
          Send(who,@ChangeSpellAbility, #spell_num=vispell_Num,#amount=1,
@@ -2143,9 +2315,85 @@ messages:
       return;
    }
 
-   BreakTrance()
+   BreakTrance(who=$,state=$,event=$,what=$,location=$)
    {
+      local oRoom, bRecheck;
+
+      if event = EVENT_OOM AND viManaDrain = 0
+      {
+         return FALSE;
+      }
+
+      if IsClass(self,&Silence) AND event = EVENT_ATTACK
+      {
+         return FALSE;
+      }
+
+      if IsClass(self,&RadiusEnchantment)
+      {
+         // The spell keeps going if you get damaged, move, cast, use an item,
+         // or make an attack. Players must rest to end most radius spells.
+         if event = EVENT_DAMAGE
+            OR event = EVENT_ATTACK
+            OR event = EVENT_RUN
+            OR event = EVENT_DISRUPT
+            OR event = EVENT_CAST
+            OR event = EVENT_USE
+         {
+            return FALSE;
+         }
+
+         oRoom = Send(who,@GetOwner);
+
+         // Only cancel a maintained RE if it is offensive & caster is
+         // entering a non-combat room.
+         if (event = EVENT_NEWOWNER OR event = EVENT_REQNEWOWNER)
+         {
+            if oRoom <> $
+               AND NOT (viHarmful AND Send(oRoom,@CheckRoomFlag,#flag=ROOM_NO_COMBAT))
+            {
+               return FALSE;
+            }
+         }
+
+         bRecheck = (event = EVENT_REST);
+      }
+
+      if IsClass(self,&ManaFocus) AND event = EVENT_CAST AND IsClass(what,&AttackSpell)
+      {
+         return FALSE;
+      }
+
+      if IsClass(self,&MultiCastSpell) AND NOT IsClass(First(state),&Prism)
+      {
+         return FALSE;
+      }
+
+      if IsClass(self,&Eavesdrop) AND event = EVENT_CAST AND what = self
+      {
+         return TRUE;
+      }
+
+      Send(self,@TranceEnding,#who=who,#state=state,#bRecheck=bRecheck);
+
       return TRUE;
+   }
+
+   TranceEnding(who=$)
+   "Allow maintained spells to do something when their trance breaks."
+   {
+      if viManaDrain > 0
+      {
+         // Stop drain effect!
+         Send(who,@DeleteOverTimeEffect,#what=self,#who=who,#removal=REMOVE_INTERNAL);
+      }
+
+      return;
+   }
+
+   GetManaDrain()
+   {
+      return viManaDrain;
    }
 
    // Called when enchantment did not go full term
@@ -2407,7 +2655,7 @@ messages:
 
       if Send(oRoom,@CheckRoomFlag,#flag=ROOM_ANTI_MAGIC)
       {
-         oModifierSpell = Send(SYS,@FindSpellByNum,#num=SID_ANTIMAGIC_AURA);
+         oModifierSpell = Send(SYS,@FindSpellByNum,#num=SID_ANTIMAGIC_ROOM);
          iSpellPower = Send(oModifierSpell,@ModifySpellPower,
                               #who=who,#oRoom=oRoom,#oSpell=self,
                               #iSpellPower=iSpellPower);
@@ -2487,16 +2735,11 @@ messages:
    ModifyMonsterBehavior()
    {
       return;
-   }   
+   }
 
    IsIllusion()
-   {           
-      if viSchool = SS_RIIJA
-      {
-         return TRUE;
-      }
-      
-      return FALSE;
+   {
+      return viSchool = SS_RIIJA;
    }
 
    TranceBroken(oCaster=$)
@@ -2504,7 +2747,7 @@ messages:
       Send(oCaster,@MsgSendUser,#message_rsc=spell_trance_break,
            #parm1=Send(self,@GetName));
       Send(oCaster,@WaveSendUser,#wave_rsc=spell_trance_break_sound);
-      
+
       return;
    }
 
@@ -2575,6 +2818,11 @@ messages:
       return $;
    }
 
+   GetScrollClass()
+   {
+      return $;
+   }
+
    ////  Enchanted Item Labeling stuff.
 
    // When a player enchants an item information about them
@@ -2615,6 +2863,12 @@ messages:
       return resistance_list;
    }
 
+   ModifySpellPower(who=$,state=$,oSpell=$,iSpellPower=SPELLPOWER_MINIMUM)
+   {
+      // Spells can overwrite this to modify spellpower.
+      return iSpellPower;
+   }
+
    HasConditionalEffect()
    "Used by RoomEnchantment. Conditional effects are those applied by room "
    "enchantments differently based on safety or other status of the room's "
@@ -2632,6 +2886,81 @@ messages:
    IsAffectedByRadiusEnchantment()
    {
       return FALSE;
+   }
+
+   OverTimeEffectWearingOff(who=$,overtimeeffect=$,report=TRUE)
+   "Just a dummy catching over time effects without message."
+   {
+      return;
+   }
+
+   OverTimeEffectStarting(who=$,overtimeeffect=$,report=TRUE)
+   "Just a dummy catching over time effects without message."
+   {
+      return;
+   }
+
+   // Most spells don't have a range limitation. Return MAX_KOD_INT.
+   GetSquaredRange()
+   {
+      return MAX_KOD_INT;
+   }
+
+   // Harmful spells tend to cause aggression. Some exceptions though.
+   CausesAggression(iSpellpower=0)
+   {
+      return viHarmful;
+   }
+
+   GetCombatType()
+   {
+      if viHarmful AND NOT vbIsAreaEffect
+      {
+         return COMBAT_ACTION_HARM;
+      }
+
+      if IsClass(self,&Heal)
+      {
+         return COMBAT_ACTION_HEAL;
+      }
+
+      if IsClass(self,&PersonalEnchantment)
+      {
+         return COMBAT_ACTION_BUFF;
+      }
+
+      return COMBAT_ACTION_NEUTRAL;
+   }
+
+   // Adjustments for monster casting
+   GetStartingPriority()
+   {
+      if viStartingPriority = $
+      {
+         return Random(0,700);
+      }
+
+      return viStartingPriority;
+   }
+
+   GetPriorityAdjustment()
+   {
+      if viPriorityAdjustment = $
+      {
+         return 200 + (viMana*5 + viSpellExertion*20)*viSpell_Level;
+      }
+
+      return viPriorityAdjustment;
+   }
+
+   GetMonsterManaCost()
+   {
+      return viMana;
+   }
+
+   GetMonsterExertion()
+   {
+      return viSpellExertion;
    }
 
 end

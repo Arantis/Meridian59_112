@@ -22,11 +22,9 @@ resources:
    manafocus_name_rsc = "mana focus"
    manafocus_icon_rsc = imanafoc.bgf
    manafocus_desc_rsc = \
-      "Focuses your magical energy, "
-      "regenerating your mana at an accelerated rate and "
-      "increasing the damage of natural elemental attack spells. "
-      "Dissipates if your concentration is broken.  "
-      "Requires one mushroom to cast."
+      "Focuses your magical energy, regenerating your mana at an accelerated "
+      "rate and increasing the damage of natural elemental attack spells. "
+      "Dissipates if your concentration is broken."
    manafocus_enchantment_rsc = \
       "\n\nYour current %s enchantment was cast with %i spellpower."
    manafocus_on = "You feel newly focused magic raging through your body."
@@ -80,19 +78,6 @@ messages:
       return;
    }
 
-   BreakTrance(who=$,state=$,event=0,what=$)
-   {
-      /// Attack Spells (fireballs and lightning bolts) must not break this trance
-      if event = EVENT_CAST
-         AND IsClass(what,&AttackSpell)
-      {
-         return;
-      }
-
-      Send(who,@RemoveEnchantment,#what=self);
-      return;
-   }
-
    AdjustManaTime(time=0, iSpellPower=0)
    "Reduces time passed in so that mana regens faster.  Returns reduced time."
    {
@@ -120,6 +105,14 @@ messages:
                 4,Send(who,@GetEnchantedState,#what=self));
       
       return;
+   }
+
+   TranceEnding(who=$,state=$)
+   "Allow maintained spells to do something when their trance breaks."
+   {
+      Send(who,@RemoveEnchantment,#what=self,#state=state);
+
+      propagate;
    }
 
 end

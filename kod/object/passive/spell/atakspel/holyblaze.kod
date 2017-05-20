@@ -19,18 +19,17 @@ resources:
    include holyblaze.lkod
 
    holyblaze_name_rsc = "holy blaze"
-
    holyblaze_icon_rsc = iholybl.bgf
-
    holyblaze_desc_rsc = \
       "Bathes a target at short range in a blaze of holy energy, healing it "
-      "or harming it, depending on its karma.  Requires emeralds and elderberries to cast."
-
+      "or harming it, depending on its karma."
    holyblaze_sound = sholytch.ogg
-
    holyblaze_cast_rsc = \
-      "%s%s engulfs you in a blaze of holy energy, restoring ~g~B%i~B~n hitpoints."
-   holyblaze_cast_on_other = "You engulf %s%s in a blaze of holy energy, restoring ~g~B%i~B~n hitpoints."
+      "%s%s engulfs you in a blaze of holy energy, restoring ~g~B%i~B~n "
+      "hitpoints."
+   holyblaze_cast_on_other = \
+      "You engulf %s%s in a blaze of holy energy, restoring ~g~B%i~B~n "
+      "hitpoints."
    holyblaze_unnecessary_rsc = "%s%s is perfectly healthy."
 
 classvars:
@@ -115,13 +114,13 @@ messages:
       propagate;
    }
 
-   CastSpell(who = $, lTargets = $, iSpellpower = 1, bItemCast = FALSE)
+   DoSpellEffects(who = $, lTargets = $, iSpellpower = 1, bItemCast = FALSE)
    {
       local oTarget, iHeal, iCasterKarma, iTargetKarma;
 
       if (Length(lTargets) <> 1)
       {
-         return;
+         return FALSE;
       }
 
       if (viHarmful OR viOutlaw)
@@ -137,7 +136,7 @@ messages:
       iHeal = Random(piDamageMin*100,piDamageMax*100)*(iSpellpower+101)/100;
       iHeal = (100 + bound((iCasterKarma+iTargetKarma)/4,0,50))*iHeal/100;
 
-      iHeal = Send(oTarget,@GainHealthNormal,#amount=iHeal,#precision=TRUE);
+      iHeal = Send(oTarget,@GainHealth,#amount=iHeal,#precision=TRUE);
 
       Send(who,@MsgSendUser,#message_rsc=holyblaze_cast_on_other,
             #parm1=Send(oTarget,@GetDef),#parm2=Send(oTarget,@GetName),
@@ -148,7 +147,7 @@ messages:
             #parm3=iHeal/100);
 
       // Give them a little boost if they help someone of higher Karma.
-      if (iCasterKarma < iTargetKarma)
+      if (iCasterKarma < iTargetKarma) AND IsClass(who,&Player)
       {
          Send(who,@AddKarma,#amount=Send(who,@CalculateKarmaChangeFromAct,
                #karma_doer=iCasterKarma,#karma_act=iTargetKarma,
@@ -178,15 +177,15 @@ messages:
 
       if bUndead
       {
-         return damage + (damage*iCasterKarma/100);
+         return damage + (damage * iCasterKarma / 100);
       }
 
       if iTargetKarma < 0
       {
-         return damage + damage*(iCasterKarma - iTargetKarma)/400;
+         return damage + damage * (iCasterKarma - iTargetKarma) / 400;
       }
       
-      return damage - damage*iTargetKarma/100;
+      return damage - damage * iTargetKarma / 100;
    }
 
    RestoreProperties()

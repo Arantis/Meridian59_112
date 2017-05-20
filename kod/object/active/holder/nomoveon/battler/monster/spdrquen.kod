@@ -14,12 +14,6 @@ constants:
 
    include blakston.khd
 
-   POISON_CHANCE = 15
-   // 30 seconds duration
-   POISON_DURATION = 30000
-   // in health points * 10^-4 / second
-   POISON_LOSSRATE = 2500
-
 resources:
 
    include spdrquen.lkod
@@ -30,8 +24,6 @@ resources:
    spiderqueen_desc_rsc = \
       "The huge egg sac of the queen spider makes her slow and heavy, but "
       "dark intelligence shines in her many red eyes."
-   qspider_illusion_poisoned = \
-      "%s%s reels as poison from your attack courses through %s veins."
 
    spiderqueen_dead_icon_rsc = spdrquX.bgf
    spiderqueen_dead_name_rsc = "dead queen spider"
@@ -50,6 +42,13 @@ classvars:
    vrDead_icon = spiderqueen_dead_icon_rsc
    vrDead_name = spiderqueen_dead_name_rsc
 
+   // This monster poisons enemies...
+   viPoisonChance = 7
+   viPoisonStrength = 1000
+   viPoisonDuration = 30000
+   viPoisonHealth = 25
+   viPoisonVigor = 50
+
    viTreasure_type = TID_SPIDER_QUEEN
    viSpeed = SPEED_NONE
    viAttack_type = ATCK_WEAP_BITE
@@ -61,7 +60,7 @@ classvars:
    viVisionDistance = 6
 
    // Attack range of 256 (4 row/col units).
-   viAttackRange = 256
+   viMeleeRange = 256
 
    viKarma = -90
    viDefault_behavior = AI_NOMOVE | AI_FIGHT_AGGRESSIVE | AI_FIGHT_SWITCHALOT
@@ -72,6 +71,13 @@ classvars:
    vrSound_miss = spiderqueen_sound_miss
    vrSound_aware = spiderqueen_sound_aware
    vrSound_death = spiderqueen_sound_death
+
+   vbCanSiphon = FALSE
+
+   // Very, very used to dark places.
+   viNightVision = 200
+
+   viBonusXP = 100
 
 properties:
 
@@ -89,15 +95,6 @@ messages:
                       ];
 
       propagate;
-   }
-
-   MonsterAttack(what = $)
-   {
-      piAnimation = ANIM_ATTACK;
-      Send(poOwner,@SomethingChanged,#what=self);
-      piAnimation = ANIM_NONE;
-
-      return;
    }
 
    SendLookAnimation()
@@ -127,50 +124,31 @@ messages:
 
    HitSideEffect(what = $, who = $)
    {
-      local oSpell, oSpell2;
-
-      if Random(1,POISON_CHANCE) = 1
-      {
-         oSpell = Send(SYS,@FindSpellByNum,#num=SID_POISON);
-         Send(oSpell,@MakePoisoned,#who=what,#lossrate=POISON_LOSSRATE,
-               #duration=POISON_DURATION);
-
-         if who <> $
-         {
-            Send(who,@MsgSendUser,#message_rsc=qspider_illusion_poisoned,
-                  #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName),
-                  #parm3=Send(what,@GetHisHer));
-         }
-      }
+      local oSpell;
 
       if Random(1,4) = 1
       {
-         oSpell2 = Send(SYS,@FindSpellByNum,#num=SID_SPIDER_WEB);
+         oSpell = Send(SYS,@FindSpellByNum,#num=SID_SPIDER_WEB);
          if who <> $
          {
-            Send(oSpell2,@CastSpell,#who=who,#lTargets=[what],#ispellpower=30,
+            Send(oSpell,@CastSpell,#who=who,#lTargets=[what],#ispellpower=30,
                   #bItemCast=TRUE);
          }
          else
          {
-            Send(oSpell2,@CastSpell,#who=self,
+            Send(oSpell,@CastSpell,#who=self,
                   #lTargets=[poTarget],#ispellpower=100);
          }
       }
 
-      return;
+      propagate;
    }
 
-   IsAlly(target = $)
+   IsAlliedClass(what=$)
    {
-      if target = $
-      {
-         return FALSE;
-      }
-
-      if IsClass(target,&Spider)
-         OR IsClass(target,&SpiderBaby)
-         OR IsClass(target,&SpiderQueen)
+      if IsClass(what,&DeathSpider)
+         OR IsClass(what,&SpiderBaby)
+         OR IsClass(what,&Spider)
       {
          return TRUE;
       }

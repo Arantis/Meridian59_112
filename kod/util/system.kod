@@ -216,6 +216,7 @@ resources:
    system_cardinal_10 = "ten"
    system_cardinal_11 = "eleven"
    system_cardinal_12 = "twelve"
+   system_cardinal_16 = "sixteen"
    system_cardinal_20 = "twenty"
    system_cardinal_30 = "thirty"
    system_cardinal_40 = "forty"
@@ -643,6 +644,7 @@ messages:
       Send(self,@CreateAllVaultsIfNew);
       Send(self,@RecreateAllBrains);
       Send(self,@RecreateLibrary);
+      Send(self,@RecreateWeatherSystem);
       Send(self,@RecreateAllRooms);
       Send(self,@RecreateAssassinGame);
       // The following two lines are handled in Parliament
@@ -1881,7 +1883,7 @@ messages:
             if Send(self,@GetChaosNight)
             {
                rMessage = system_user_killed;
-               // Get True name instead of normal name for Frenzy action.
+               // Get TRUE name instead of normal name for Frenzy action.
                param3 = Send(killer,@GetTrueName);
             }
 
@@ -2685,7 +2687,7 @@ messages:
       if poParliament <> $
       {
          Send(poParliament,@RecreateNPCs);
-         Send(poParliament,@SetDeleting,#value=False);
+         Send(poParliament,@SetDeleting,#value=FALSE);
       }
 
       // Restore state of Duke's feast hall
@@ -2768,7 +2770,7 @@ messages:
 
       if poParliament
       {
-         Send(poParliament,@SetDeleting,#value=True);
+         Send(poParliament,@SetDeleting,#value=TRUE);
       }
 
       foreach i in plRooms
@@ -2786,7 +2788,7 @@ messages:
 
       if poParliament
       {
-         Send(poParliament,@SetDeleting,#value=False);
+         Send(poParliament,@SetDeleting,#value=FALSE);
          Send(poParliament,@RecreateNPCs);
       }
 
@@ -3119,7 +3121,7 @@ messages:
       foreach i in plShrines
       {
          allegiance = Send(i,@GetAllegiance);
-         if allegiance = bound(allegiance,SS_SHALILLE,SS_JALA)
+         if allegiance = Bound(allegiance,SS_SHALILLE,SS_JALA)
          {
             power = Send(i,@GetPower);
             // New shrine power is equal to old shrine power + power
@@ -3155,7 +3157,7 @@ messages:
 
    GetShrineBonus(school=$)
    {
-      if school = $ OR school <> bound(school,SS_SHALILLE,SS_JALA)
+      if school = $ OR school <> Bound(school,SS_SHALILLE,SS_JALA)
       {
          return 0;
       }
@@ -3171,7 +3173,7 @@ messages:
 
    CreateOneSpellIfNew(num = $,class = $)
    {
-      local oSpell, iSchool;
+      local oSpell, iSchool, iNum;
 
       if Send(self,@FindSpellByNum,#num=num) = $
       {
@@ -3182,7 +3184,16 @@ messages:
             return;
          }
 
-         AddTableEntry(phSpells,Send(oSpell,@GetSpellNum),oSpell);
+         iNum = Send(oSpell,@GetSpellNum);
+         // Double check if we were given the correct SID. If not, log a debug
+         // message but still create the spell, using spell's actual SID.
+         if (num <> iNum)
+         {
+            Debug("Spell ID mismatch in CreateOneSpellIfNew for given SID ",
+               num, " and retrieved SID ",iNum);
+         }
+
+         AddTableEntry(phSpells,iNum,oSpell);
          plSpells = Cons(oSpell,plSpells);
 
          // Check if we should add this spell to new char spells list.
@@ -3195,6 +3206,10 @@ messages:
                plNewCharSpells = Cons(oSpell,plNewCharSpells);
             }
          }
+      }
+      else
+      {
+         Debug("WARNING: Duplicate spell found with SID ", num);
       }
 
       return;
@@ -3271,6 +3286,7 @@ messages:
 
       Send(self,@CreateOneSpellIfNew,#num=SID_INVISIBILITY,#class=&Invisibility);
       Send(self,@CreateOneSpellIfNew,#num=SID_ANTIMAGIC_AURA,#class=&AntiMagicAura);
+      Send(self,@CreateOneSpellIfNew,#num=SID_ANTIMAGIC_ROOM,#class=&AntiMagicRoom);
       Send(self,@CreateOneSpellIfNew,#num=SID_ENFEEBLE,#class=&Enfeeble);
       Send(self,@CreateOneSpellIfNew,#num=SID_RESIST_MAGIC,#class=&ResistMagic);
       Send(self,@CreateOneSpellIfNew,#num=SID_SWAP,#class=&Swap);
@@ -3294,6 +3310,11 @@ messages:
       Send(self,@CreateOneSpellIfNew,#num=SID_ICE_NOVA,#class=&IceNova);
       Send(self,@CreateOneSpellIfNew,#num=SID_FIRE_STORM,#class=&FireStorm);
       Send(self,@CreateOneSpellIfNew,#num=SID_SPIRIT_BLAST,#class=&SpiritBlast);
+      Send(self,@CreateOneSpellIfNew,#num=SID_BLEED,#class=&Bleed);
+      Send(self,@CreateOneSpellIfNew,#num=SID_SIPHON,#class=&Siphon);
+      Send(self,@CreateOneSpellIfNew,#num=SID_FATIGUE,#class=&Fatigue);
+      Send(self,@CreateOneSpellIfNew,#num=SID_BURN,#class=&Burn);
+      Send(self,@CreateOneSpellIfNew,#num=SID_LULLABY,#class=&Lullaby);
 
       Send(self,@CreateOneSpellIfNew,#num=SID_NODEBURST,#class=&Nodeburst);
       Send(self,@CreateOneSpellIfNew,#num=SID_PURIFY,#class=&Purify);
@@ -3423,6 +3444,8 @@ messages:
       Send(self,@CreateOneSpellIfNew,#num=SID_LOADOUT,#class=&Loadout);
       Send(self,@CreateOneSpellIfNew,#num=SID_CONVEYANCE,#class=&Conveyance);
       Send(self,@CreateOneSpellIfNew,#num=SID_PHASE,#class=&Phase);
+      
+      Send(self,@CreateOneSpellIfNew,#num=SID_CREATE_SCROLL,#class=&CreateScroll);
 
       // Trance may be searched for frequently, leave at end of list
       Send(self,@CreateOneSpellIfNew,#num=SID_TRANCE,#class=&Trance);
@@ -3683,7 +3706,7 @@ messages:
          Send(self,@RefigureAllAbilityTotals);
       }
 
-      return True;
+      return TRUE;
    }
 
    DeleteSkill(what = $)
@@ -3731,12 +3754,12 @@ messages:
       iXP = 0;
 
       // Double table size, less collisions.
-      phXPTable = CreateTable((MAX_CALCULATED_HP - MIN_HP) * 2);
+      phXPTable = CreateTable((MAX_CALCULATED_HEALTH - MIN_HEALTH) * 2);
 
       // Add zero entry for starting XP.
-      AddTableEntry(phXPTable, MIN_HP, 0);
+      AddTableEntry(phXPTable, MIN_HEALTH, 0);
 
-      for (i = MIN_HP + 1; i <= MAX_CALCULATED_HP + 1; ++i)
+      for (i = MIN_HEALTH + 1; i <= MAX_CALCULATED_HEALTH + 1; ++i)
       {
          // Cumulative XP is hp * hp per HP.
          iXP = iXP + i * i;
@@ -3778,6 +3801,7 @@ messages:
       foreach i in plUsers
       {
          Send(i,@RemoveAllEnchantments,#report=FALSE);
+         Send(i,@DeleteAllOverTimeEffects);
       }
 
       foreach i in plSpells
@@ -4026,6 +4050,24 @@ messages:
       ptRecreateTimer = $;
       Send(self,@RecalcWeatherConditions);
       Send(self,@SystemInitGameHour);
+
+      return;
+   }
+
+   RecreateWeatherSystem()
+   {
+      local i;
+
+      // Check if we need to add zones to weather condition list.
+      if (Length(plWeatherConditions) < WEATHER_ZONE_MAX)
+      {
+         for (i = Length(plWeatherConditions); i < WEATHER_ZONE_MAX; ++i)
+         {
+            // Append since we're likely adding new zones at the end.
+            plWeatherConditions = AppendListElem(WEATHER_PATTERN_CLEAR,
+                                    plWeatherConditions);
+         }
+      }
 
       return;
    }
@@ -4983,7 +5025,7 @@ messages:
       else
       {
          poParliament = Create(&Parliament);
-         Send(poParliament,@Recreate,#initial=True);
+         Send(poParliament,@Recreate,#initial=TRUE);
          Send(poParliament,@NewGameDay);
       }
 
@@ -5239,6 +5281,25 @@ messages:
       return;
    }
 
+   ActivateFollowers()
+   {
+      Send(SETTINGS_OBJECT,@SetFollowerEnabled);
+      Send(&ThreeCouncilor,@SetForSale);
+      Send(&Player,@RestoreFollower);
+
+      return;
+   }
+
+   DeactivateFollowers()
+   {
+      Send(SETTINGS_OBJECT,@SetFollowerEnabled,#bEnabled=FALSE);
+      Send(&ThreeCouncilor,@SetForSale);
+      Send(&Follower,@FollowerAbsence);
+      Send(&Player,@StoreFollower);
+
+      return;
+   }
+
    EnableRoomIllusions()
    {
       if NOT pbRoomIllusionsEnabled
@@ -5276,108 +5337,109 @@ messages:
       }
 
       plMonsterTemplates = $;
-      plMonsterTemplates = cons(create(&ant),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&Centipede),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&OldCentipede),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&cow),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&guard),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&ent),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&frogman),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&fungusbeast),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&ghost),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&GiantRat),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&OldRat),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&GiantRatKing),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&GiantRatSoldier),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&SmallRat),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&iceperson),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&blackmummy),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&mummy),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&lupogg),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&lupoggking),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&orc),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&OldOrc),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&skeleton),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&redant),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&scorpion),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&slime),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&spider),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&spiderbaby),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&spiderqueen),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&troll),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&stonetroll),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&snowrat),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&yeti),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&zombie),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&fairy),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&evilfairy),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&avar,#clan=AVARCLAN_PROMAGIC),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&avarshaman,#clan=AVARCLAN_PROMAGIC),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&avarchieftain,#clan=AVARCLAN_PROMAGIC),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&CaveOrc),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&OrcPitBoss),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&Shadowbeast),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&OrcWizard),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&DragonFly),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&DragonFlyQueen),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&DragonFlyPet),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&Kriipa),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&Elephant),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&Bunny),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&KillerBunny),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&EasterBunny),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&Wolf),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&Chupacabra),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&Minotaur),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Ant,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Centipede,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&OldCentipede,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Cow,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Guard,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Ent,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Frogman,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&FungusBeast,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Ghost,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&GiantRat,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&OldRat,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&GiantRatKing,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&GiantRatSoldier,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&SmallRat,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&IcePerson,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&BlackMummy,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Mummy,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Lupogg,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&LupoggKing,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Orc,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&OldOrc,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Skeleton,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&RedAnt,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Scorpion,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Slime,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Spider,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&SpiderBaby,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&SpiderQueen,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Troll,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&StoneTroll,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&SnowRat,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Yeti,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Zombie,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Fairy,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&EvilFairy,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Avar,#template=TRUE,#clan=AVARCLAN_PROMAGIC),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&AvarShaman,#template=TRUE,#clan=AVARCLAN_PROMAGIC),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&AvarChieftain,#template=TRUE,#clan=AVARCLAN_PROMAGIC),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&CaveOrc,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&OrcPitBoss,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Shadowbeast,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&OrcWizard,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&DragonFly,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&DragonFlyQueen,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&DragonFlyPet,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Kriipa,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Elephant,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Bunny,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&KillerBunny,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&EasterBunny,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Wolf,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Chupacabra,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Minotaur,#template=TRUE),plMonsterTemplates);
 
       plMonsterTemplates = cons(create(&Lich,#template=TRUE),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&BatteredSkeleton),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&TuskedSkeleton),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&DaemonSkeleton),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&GiantDaemonSkeleton),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&NarthylWorm),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&DeathSpider),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&BatteredSkeleton,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&TuskedSkeleton,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&DaemonSkeleton,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&GiantDaemonSkeleton,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&NarthylWorm,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&DeathSpider,#template=TRUE),plMonsterTemplates);
 
-      plMonsterTemplates = cons(create(&GroundWorm),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&GroundWormLarva),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&GroundWormQueen),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&Human),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&RebelTroop),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&DukeTroop),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&DukeMage),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&PrincessTroop),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&PrincessMage),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&NecromancerTroop),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&Necromancer),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&GroundWorm,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&GroundWormLarva,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&GroundWormQueen,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Human,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&RebelTroop,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&DukeTroop,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&DukeMage,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&PrincessTroop,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&PrincessMage,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&NecromancerTroop,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Necromancer,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Follower,#template=TRUE),plMonsterTemplates);
 
-      plMonsterTemplates = cons(create(&XeoFire),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&XeoWater),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&XeoEarth),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&XeoAir),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&XeoAcid),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&XeoUnholy),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&XeoHoly),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&XeoNeru),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&XeoIll),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&XeoFire,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&XeoWater,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&XeoEarth,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&XeoAir,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&XeoAcid,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&XeoUnholy,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&XeoHoly,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&XeoNeru,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&XeoIll,#template=TRUE),plMonsterTemplates);
 
-      plMonsterTemplates = cons(create(&DarkAngel),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&MolluskMonster),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&DarkAngel,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&MolluskMonster,#template=TRUE),plMonsterTemplates);
 
-      plMonsterTemplates = cons(create(&SpectralMummy),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&LivingStatue),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&SpectralMummy,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&LivingStatue,#template=TRUE),plMonsterTemplates);
 
-      plMonsterTemplates = cons(create(&DuskRat),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&Thrasher),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&EvilEnt),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&DuskRat,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Thrasher,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&EvilEnt,#template=TRUE),plMonsterTemplates);
       
-      plMonsterTemplates = cons(create(&EarthElemental),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&EarthElementalChampion),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&FireElemental),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&FireElementalChampion),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&IceElemental),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&IceElementalChampion),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&NeruElemental),plMonsterTemplates);
-      plMonsterTemplates = cons(create(&NeruElementalChampion),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&EarthElemental,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&EarthElementalChampion,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&FireElemental,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&FireElementalChampion,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&IceElemental,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&IceElementalChampion,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&NeruElemental,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&NeruElementalChampion,#template=TRUE),plMonsterTemplates);
 
       return;
    }
@@ -5444,7 +5506,8 @@ messages:
       plItemTemplates = cons(create(&Book),plItemTemplates);
       plItemTemplates = cons(create(&LoreTosApoth),plItemTemplates);
       plItemTemplates = cons(create(&LoreHist1),plItemTemplates);
-      
+      plItemTemplates = cons(create(&MercenaryContract),plItemTemplates);
+
       plItemTemplates = cons(create(&JalaNecklace),plItemTemplates);
       plItemTemplates = cons(create(&NecromancerAmulet),plItemTemplates);
       plItemTemplates = cons(create(&ShadowAmulet),plItemTemplates);
@@ -5514,6 +5577,8 @@ messages:
       plItemTemplates = cons(create(&Gift),plItemTemplates);
 
       // Scrolls
+      plItemTemplates = cons(create(&BlankScroll),plItemTemplates);
+      
       plItemTemplates = cons(create(&DarknessScroll),plItemTemplates);
       plItemTemplates = cons(create(&DiscordScroll),plItemTemplates);
       plItemTemplates = cons(create(&DispellIllusionScroll),plItemTemplates);
@@ -5530,6 +5595,8 @@ messages:
       plItemTemplates = cons(create(&LoadoutScroll),plItemTemplates);
       plItemTemplates = cons(create(&MirthScroll),plItemTemplates);
       plItemTemplates = cons(create(&MelancholyScroll),plItemTemplates);
+      plItemTemplates = cons(create(&LullabyScroll),plItemTemplates);
+      plItemTemplates = cons(create(&ForcesOfLightScroll),plItemTemplates);
 
       // Wands
       plItemTemplates = cons(create(&BonkStick),plItemTemplates);
@@ -6287,7 +6354,7 @@ messages:
    {
       // Make sure School is set and within proper bounds
       if school = $
-         OR school <> bound(school,SS_SHALILLE,SS_JALA)
+         OR school <> Bound(school,SS_SHALILLE,SS_JALA)
          or plBonusSpellpower = $
       {
          return 0;
@@ -6531,6 +6598,39 @@ messages:
       return getTempString();
    }
 
+   GetCardinalResource(number = 0)
+   {
+      switch(number)
+      {
+      case 0: return system_cardinal_0;
+      case 1: return system_cardinal_1;
+      case 2: return system_cardinal_2;
+      case 3: return system_cardinal_3;
+      case 4: return system_cardinal_4;
+      case 5: return system_cardinal_5;
+      case 6: return system_cardinal_6;
+      case 7: return system_cardinal_7;
+      case 8: return system_cardinal_8;
+      case 9: return system_cardinal_9;
+      case 10: return system_cardinal_10;
+      case 11: return system_cardinal_11;
+      case 12: return system_cardinal_12;
+      case 16: return system_cardinal_16;
+      case 20: return system_cardinal_20;
+      case 30: return system_cardinal_30;
+      case 40: return system_cardinal_40;
+      case 50: return system_cardinal_50;
+      case 60: return system_cardinal_60;
+      case 70: return system_cardinal_70;
+      case 80: return system_cardinal_80;
+      case 90: return system_cardinal_90;
+      case 100: return system_cardinal_100;
+      }
+
+      // Return "a handful of" since we don't have the number here.
+      return system_fuzzy_cardinal_5;
+   }
+
    AppendCardinalToTempString(number = 0)
    "Appends -1, zero, one, ..., twelve, 13, ... 34, etc. to the TempString."
    {
@@ -6547,6 +6647,7 @@ messages:
       if (number =  10) { AppendTempString(system_cardinal_10); return; }
       if (number =  11) { AppendTempString(system_cardinal_11); return; }
       if (number =  12) { AppendTempString(system_cardinal_12); return; }
+      if (number =  16) { AppendTempString(system_cardinal_16); return; }
       if (number =  20) { AppendTempString(system_cardinal_20); return; }
       if (number =  30) { AppendTempString(system_cardinal_30); return; }
       if (number =  40) { AppendTempString(system_cardinal_40); return; }
@@ -6602,6 +6703,7 @@ messages:
       if (StringContain(string,system_cardinal_10)) {return 10;}
       if (StringContain(string,system_cardinal_11)) {return 11;}
       if (StringContain(string,system_cardinal_12)) {return 12;}
+      if (StringContain(string,system_cardinal_16)) {return 16;}
       if (StringContain(string,system_cardinal_20)) {return 20;}
       if (StringContain(string,system_cardinal_30)) {return 30;}
       if (StringContain(string,system_cardinal_40)) {return 40;}
@@ -7345,120 +7447,37 @@ messages:
       return;
    }
 
-   DistributeBetaPotions(giveHealth=TRUE, maxHP=150, HealthCap=150,
-                         giveSpells=TRUE, maxLevel=6,
-                         MaxPotionsPerPlayer=5, deadwood=0, allMax=FALSE)
+   DistributeBetaPotions(health = 100, healthCap = 100, giveHealth = TRUE,
+                         logged_on = TRUE)
    {
-      local i, temp, lFinal, iCount, iPosition, iCutoff, iNumPotions,
-            iSchool, iLevel, iHP;
+      local i, oItem, lGive;
 
-      // We want to give players potions based on the amount of logged on
-      //  time they've logged.  So let's sort em.
-
-      lFinal = Send(self,@SortUsersByPlayTime);
-
-      if lFinal = $
+      if health <> 0 AND healthCap <> 0 AND giveHealth <> $
       {
-         // Something went bad with the sort.  Bail.
-         return;
-      }
-
-      // Okay, only the percent above deadwood get anything.  The rest
-      //  are probably mostly chaff.
-
-      iCount = 1;
-      iHP = maxHP / 8;
-      iSchool = 0;
-      iLevel = 0;
-      iNumPotions = 1;
-
-      foreach i in lFinal
-      {
-         iPosition = (iCount*100)/length(lFinal);
-
-         // iCutoff is the place where we switch segments.  There are five
-         //  different cutoff categories once you get past the deadwood.
-         // EX: Deadwood = 40, so iCutoff = 12. Segments: 100-88//, 87-76//, etc.
-         // NOTE: If you want less categories, then have deadwood be a negative
-         //  number.  Ex: deadwood = -25 means there will be 4 categories, since
-         //  (100 - (-25)) / 5 = 25// cutoff.
-         iCutoff = (100 - deadwood) / 5;
-
-         if allMax
+         if (logged_on)
          {
-            // If we're all max, give out max potions, but only one.
-            iHP = maxHP;
-            iLevel = maxLevel;
-            iNumPotions = 1;
-         }
-         else if iPosition > (100 - iCutoff)
-         {
-            iHP = maxHP;
-            iLevel = maxLevel;
-            iNumPotions = MaxPotionsPerPlayer;
-         }
-         else if iPosition > (100 - (2 * iCutoff))
-         {
-            iHP = (maxHP*4/5);
-            iLevel = bound(maxLevel-1,1,$);
-            iNumPotions = bound(MaxPotionsPerPlayer-1,1,$);
-         }
-         else if iPosition > (100 - (3 * iCutoff))
-         {
-            iHP = (maxHP*3/5);
-            iLevel = bound(maxLevel-1,1,$);
-            iNumPotions = bound(MaxPotionsPerPlayer-2,1,$);
-         }
-         else if iPosition > (100 - (4 * iCutoff))
-         {
-            iHP = (maxHP*2/5);
-            iLevel = bound(maxLevel-2,1,$);
-            iNumPotions = bound(MaxPotionsPerPlayer-3,1,$);
-         }
-         else if iPosition > deadwood
-         {
-            iHP = (maxHP*1/5);
-            iLevel = bound(maxLevel-2,1,$);
-            iNumPotions = bound(MaxPotionsPerPlayer-4,1,$);
+            lGive = plUsers_logged_on;
          }
          else
          {
-            // Deadwood!  No potion for you!
-            iHP = 0;
+            lGive = plUsers;
          }
 
-         iCount++;
-
-         temp = [ SS_QOR,SS_RIIJA,SS_KRAANAN,SS_SHALILLE,SS_FAREN,SS_JALA,SKS_FENCING ];
-
-         if iHP = 0
+         foreach i in lGive
          {
-            Debug(Send(i,@GetTrueName),"Was deemed unworthy of boosting.");
-         }
-         else
-         {
-            if NOT giveSpells
-            {
-               iLevel = 0;
-            }
+            oItem = Create(&BetaPotion,#health=health,#healthCap=healthCap,
+                           #giveHealth=giveHealth);
+            Send(i,@Newhold,#what=oItem);
 
-            if NOT giveHealth
+            if Send(i,@IsLoggedOn)
             {
-               iHP = 0;
-            }
-
-            while iNumPotions > 0 AND temp <> $
-            {
-               iSchool = Nth(temp,random(1,length(temp)));
-               temp = DelListElem(temp,iSchool);
-               Send(i,@Newhold,#what=Create(&BetaPotion,#health=iHP,#school=iSchool,
-                    #level=iLevel,#giveHealth=giveHealth,#healthCap=healthCap));
-               iNumPotions = iNumPotions - 1;
+               Send(i,@MsgSendUser,#Message_rsc=system_gift,
+                     #parm1=Send(oItem,@GetIndef),#parm2=Send(oItem,@GetName));
             }
          }
       }
 
-      return;
+      return system_success_rsc;
    }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -7533,16 +7552,16 @@ messages:
       if bPercent
       {
          // Convert the values to 5 byte values
-         iRed5 = bound((iRed * 31)/100, 0, 31);
-         iGreen5 = bound((iGreen * 31)/100, 0, 31);
-         iBlue5 = bound((iBlue * 31)/100, 0, 31);
+         iRed5 = Bound((iRed * 31)/100, 0, 31);
+         iGreen5 = Bound((iGreen * 31)/100, 0, 31);
+         iBlue5 = Bound((iBlue * 31)/100, 0, 31);
       }
       else
       {
          // Bound the values to 5 byte values
-         iRed5 = bound(iRed, 0, 31);
-         iGreen5 = bound(iGreen, 0, 31);
-         iBlue5 = bound(iBlue, 0, 31);
+         iRed5 = Bound(iRed, 0, 31);
+         iGreen5 = Bound(iGreen, 0, 31);
+         iBlue5 = Bound(iBlue, 0, 31);
       }
 
       // The final format is XRRRRRGGGGGBBBBB, where X is the "negative" bit.

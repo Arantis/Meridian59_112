@@ -14,12 +14,6 @@ constants:
 
    include blakston.khd
 
-   // At least how many enchantments should there be on a person to check for auto-remove?
-   MIN_ENCHANTMENTS_FOR_AUTOREMOVE = 2
-
-   // What's the minimum chance to remove spells we want before checking for auto-remove?
-   MIN_CHANCE_FOR_AUTOREMOVE = 60
-
 resources:
 
    include purify.lkod
@@ -27,8 +21,7 @@ resources:
    purify_name_rsc = "purify"
    purify_icon_rsc = ipurify.bgf
    purify_desc_rsc = \
-      "Removes harmful personal enchantments on the target. "
-      "Requires two emeralds and an elderberry to cast."
+      "Removes harmful personal enchantments on the target."
    purify_on = \
       "A bright, holy light is trying to cleanse your soul of impure effects."
    purify_not_enchanted = \
@@ -82,7 +75,7 @@ messages:
 
    CanPayCosts(who = $, lTargets = $, bItemCast = FALSE)
    {
-      local oTarget, i, lEnchantment, bHasEnchantment, oSpell;
+      local oTarget, i, oEffect;
 
       // If it's only self cast, spoof self as target for following code
       if NOT pbCan_Cast_on_others
@@ -98,41 +91,13 @@ messages:
 
       oTarget = First(lTargets);
 
-      if NOT IsClass(oTarget, &User)
+      if NOT IsClass(oTarget,&User)
       {
          if NOT bItemCast
          {
             Send(who,@MsgSendUser,#message_rsc=spell_bad_target,#parm1=vrName,
                   #parm2=Send(oTarget,@GetDef),#parm3=Send(oTarget,@GetName));
          }
-         
-         return FALSE;
-      }
-
-      // The target must have an enchantment
-      lEnchantment = Send(oTarget,@GetEnchantmentList);
-      bHasEnchantment = IsClass(who,&DM);
-
-      if lEnchantment <> $
-      {
-         foreach i in lEnchantment
-         {
-            oSpell = Nth(i,2);
-            if Send(oSpell,@IsPersonalEnchantment)
-               AND Send(oSpell,@CanBeRemovedByPlayer)
-               AND Send(oSpell,@IsHarmful)
-            {
-               bHasEnchantment = TRUE;
-
-               break;
-            }
-         }
-      }
-
-      if NOT bHasEnchantment
-      {
-         Send(who,@MsgSendUser,#message_rsc=purify_not_enchanted,
-               #parm1=Send(oTarget,@GetDef),#parm2=Send(oTarget,@GetName));
 
          return FALSE;
       }
@@ -148,10 +113,34 @@ messages:
          return FALSE;
       }
 
-      propagate;
+      // The target must have a debuff.
+      foreach i in Send(oTarget,@GetEnchantmentList)
+      {
+         if IsClass(Nth(i,2),&Debuff)
+         {
+            propagate;
+         }
+      }
+
+      // Check over time effects.
+      foreach i in Send(oTarget,@GetOverTimeEffects)
+      {
+         oEffect = Nth(i,5);
+
+         if (oEffect <> 0) AND IsClass(oEffect,&Debuff)
+         {
+            propagate;
+         }
+      }
+
+      // If we get to here, we didn't have anything to remove.
+      Send(who,@MsgSendUser,#message_rsc=purify_not_enchanted,
+            #parm1=Send(oTarget,@GetDef),#parm2=Send(oTarget,@GetName));
+
+      return FALSE;
    }
 
-   CastSpell(who = $, lTargets = $, iSpellPower = 0)
+   DoSpellEffects(who = $, lTargets = $, iSpellPower = 0)
    {
       local oTarget, lInfo, oSpell, lList, lEnchantmentList;
 
@@ -162,6 +151,7 @@ messages:
       }
 
       oTarget = First(lTargets);
+
       if oTarget <> who
       {
          Send(who,@MsgSendUser,#message_rsc=spell_cast_on_target,
@@ -188,16 +178,15 @@ messages:
          }
       }
 
-      Send(self,@DoPurify,#who=oTarget,#iChance=iSpellPower);
+      Send(self,@DoPurify,#who=oTarget,#iSpellPower=iSpellPower);
 
-      propagate;
+      return TRUE;
    }
 
-   DoPurify(who=$, iChance=$)
+   DoPurify(who=$, iSpellPower=$)
    "Remove negative enchantments on who with a given chance to remove each one."
    {
-      local iNumEnchantments, lEnchantments, iModifiedChance, oEnchantment,
-            oSpell, lList, bRemovedSomething;
+      local iNumEnchantments, lDebuffs, iChance, i, oSpell, bRemovedSomething;
 
       if who = $
       {
@@ -205,53 +194,45 @@ messages:
       }
 
       // Chance of $ means that we want to remove it all.
-      if iChance = $
+      if iSpellPower = $
       {
          Send(who,@RemoveAllPersonalEnchantments);
-         
+         Send(who,@DeleteOverTimeEffect,#clear=TRUE);
+
          return TRUE;
       }
 
       bRemovedSomething = FALSE;
 
-      lList = Send(who,@GetEnchantmentList);
+      lDebuffs = GetAllListNodesByClass(Send(who,@GetEnchantmentList), 2,&Debuff);
 
-      foreach oEnchantment in lList
+      foreach i in Send(who,@GetOverTimeEffects)
       {
-         oSpell = Nth(oEnchantment,2);
+         oSpell = Nth(i,5);
 
-         if Send(oSpell,@IsPersonalEnchantment)
-            AND Send(oSpell,@CanBeRemovedByPlayer)
-            AND Send(oSpell,@IsHarmful)
+         // Poison is handled afterwards.
+         if IsClass(oSpell,&Debuff) AND NOT IsClass(oSpell,&Poison)
          {
-            lEnchantments = Cons(oSpell,lEnchantments);
+            lDebuffs = Cons(oSpell,lDebuffs);
          }
       }
 
-      iNumEnchantments = Length(lEnchantments);
+      iChance = Length(lDebuffs) * 20 + iSpellPower;
 
-      // Anti-clumpy code: If there is at least two enchantments in the room and the chance to
-      //  dispell is greater than 60//, then auto-remove one enchantment.
-      if iNumEnchantments >= MIN_ENCHANTMENTS_FOR_AUTOREMOVE
-         AND iChance >= MIN_CHANCE_FOR_AUTOREMOVE
+      foreach oSpell in lDebuffs
       {
-         oEnchantment = Nth(lEnchantments,Random(1,iNumEnchantments));
-         Send(who,@RemoveEnchantment,#what=oEnchantment);
-         lEnchantments = DelListElem(lEnchantments,oEnchantment);
-         iNumEnchantments = iNumEnchantments - 1;
-         bRemovedSomething = TRUE;
-      }
-
-      foreach oEnchantment in lEnchantments
-      {
-         iModifiedChance = iChance;
-
-         if iChance = $ OR iModifiedChance > Random(1,100)
+         if iChance > Random(1,100)
          {
-            Send(who,@RemoveEnchantment,#what=oEnchantment);
+            Send(who,@RemoveEnchantment,#what=oSpell);
+            Send(who,@DeleteOverTimeEffect,#what=oSpell,#removal=REMOVE_PLAYER);
             bRemovedSomething = TRUE;
          }
+
+         iChance -= (125 - iSpellPower);
       }
+
+      oSpell = Send(SYS,@FindSpellByNum,#num=SID_CURE_POISON);
+      Send(oSpell,@DoCurePoison,#who=who,#iSpellPower=bound(iChance,0,99));
 
       return bRemovedSomething;
    }

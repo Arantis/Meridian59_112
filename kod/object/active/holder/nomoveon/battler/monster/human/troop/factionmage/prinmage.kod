@@ -31,13 +31,13 @@ classvars:
    vrName = Princessmage_name_rsc
    vrDesc = Princessmage_desc_rsc
    vrDead_name = Princessmage_dead_name_rsc
-
-
    viColorTranslate1 = XLAT_TO_ORANGE     // Shirt
    viColorTranslate2 = XLAT_TO_GREEN   // Pants
    vcShieldClass = &PrincessShield
 
    viFaction = FACTION_PRINCESS
+
+   viPowerLevel = 100
 
 properties:
 
@@ -54,7 +54,9 @@ messages:
 
    Constructor()
    {
-      plSpellBook = [ [SID_LIGHTNING_BOLT,5,100] ];
+      plActions =  [ [SID_EXPLOSIVE_FROST], [SID_MARK_OF_DISHONOR],
+                     [SID_LIGHTNING_BOLT], [SID_FIREBALL], [SID_DAZZLE],
+                     [SID_FORCES_OF_LIGHT], [SID_MINOR_HEAL], [SID_MAJOR_HEAL] ];
 
       propagate;
    }

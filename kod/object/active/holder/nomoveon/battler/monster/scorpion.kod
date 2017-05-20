@@ -25,8 +25,6 @@ resources:
       "The scorpion's deadly stinger rises high in the air "
       "and its hard plated body protects it from all but the "
       "strongest attacks."
-   scorpion_illusion_poisoned = \
-      "%s%s reels as poison from your attack courses through %s veins."
 
    scorpion_dead_icon_rsc = scorpX.bgf
    scorpion_dead_name_rsc = "dead scorpion"
@@ -45,6 +43,13 @@ classvars:
    vrDead_icon = scorpion_dead_icon_rsc
    vrDead_name = scorpion_dead_name_rsc
 
+   // This monster poisons enemies...
+   viPoisonChance = 6
+   viPoisonStrength = 1000
+   viPoisonDuration = 180000
+   viPoisonHealth = 35
+   viPoisonVigor = 10
+
    viTreasure_type = TID_MEDIUM_TOUGH
    viSpeed = SPEED_FAST
    viAttack_type = ATCK_WEAP_STING
@@ -53,7 +58,7 @@ classvars:
    viDifficulty = 8
    viVisionDistance = 10
    // Attack range of 192, or 3 row/col.
-   viAttackRange = 192
+   viMeleeRange = 192
    viKarma = 60
    viWimpy = 40
    viCashmin = 275
@@ -63,12 +68,12 @@ classvars:
    vrSound_aware = scorpion_sound_aware
    vrSound_death = scorpion_sound_death
 
+   vbCanPoison = FALSE
+   vbCanSiphon = FALSE
+   vbCanBleed = FALSE
+
 properties:
 
-   piPoison_Chance = 18
-   piPoison_Duration = 180000
-   piPoison_Loss_Rate = 3500
-   
    piAnimation = ANIM_NONE
 
 messages:
@@ -80,15 +85,6 @@ messages:
                         [ATCK_WEAP_BLUDGEON, -10 ] ];
 
       propagate;
-   }
-
-   MonsterAttack(what = $)
-   {
-      piAnimation = ANIM_ATTACK;
-      Send(poOwner,@SomethingChanged,#what=self);
-      piAnimation = ANIM_NONE;
-
-      return;
    }
 
    SendMoveAnimation()
@@ -108,27 +104,6 @@ messages:
       }
 
       propagate;
-   }
-
-   HitSideEffect(what=$,who=$)
-   {
-      local oSpell;
-
-      if Random(1,piPoison_Chance) = 1
-      {
-         oSpell = Send(SYS,@FindSpellByNum,#num=SID_POISON);
-         Send(oSpell,@MakePoisoned,#who=what,
-               #lossrate=piPoison_Loss_Rate,#duration=piPoison_Duration);
-
-         if who <> $
-         {
-            Send(who,@MsgSendUser,#message_rsc=scorpion_illusion_poisoned,
-                  #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName),
-                  #parm3=Send(what,@GetHisHer));
-         }
-      }
-
-      return;
    }
 
 end

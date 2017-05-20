@@ -22,8 +22,7 @@ resources:
    Silence_icon_rsc = isilence.bgf
    Silence_desc_rsc = \
       "Muffles all speech preventing spell casting and communication as long "
-      "as caster concentrates.  Requires dark angel feathers and purple "
-      "mushrooms."
+      "as caster concentrates."
    Silence_unnecessary = "This area already is already silenced."
    Silence_on = "A curtain of silence falls across the room."
    Silence_off = "The curtain of silence is lifted."
@@ -51,8 +50,7 @@ classvars:
    viMana = 10
    viSpell_level = 3
 
-   viManaDrain = 10      // Drain is amount used every viDrainTime milliseconds
-   viDrainTime = 1000    // Drain some mana every viDrainTime milliseconds
+   viManaDrain = 10000            // Mana drained per second (10^3)
    
    viChance_To_Increase = 10
    viMeditate_ratio = 50
@@ -76,7 +74,7 @@ messages:
       return;
    }
 
-   CastSpell(who = $, iSpellPower = 0)
+   DoSpellEffects(who = $, iSpellPower = 0)
    "Initiation point for the spell."
    {
       local oRoom, lJalaInfo, oJalaCaster, oJalaSpell, lJalaState;
@@ -114,30 +112,7 @@ messages:
          }
       }
 
-      propagate;
-   }
-
-   BreakTrance(who=$, event=$, state=$, location=$)
-   {
-      local oRoom;
-
-      if event = EVENT_ATTACK
-      {
-         return FALSE;
-      }
-
-      if location = $
-      {
-         oRoom = Send(who,@GetOwner);
-      }
-      else
-      {
-         oRoom = location;
-      }
-
-      Send(oRoom,@RemoveEnchantment,#what=self);
-
-      propagate;
+      return TRUE;
    }
 
    StartPeriodicEnchantment(where=$, state=$)
@@ -148,21 +123,8 @@ messages:
 
       oCaster = First(state);
 
-      // If caster runs out of mana or loses trance, spell ends.
-      if Send(oCaster,@GetMana) < viManaDrain * 2
-      {
-         Send(where,@RoomStartEnchantment,#what=self,
-               #time=Send(self,@GetDuration,#iSpellPower=Nth(state,2)),
-               #state=state,#addicon=FALSE,#lastcall=TRUE);
-      }
-      else
-      {
-         Send(where,@RoomStartEnchantment,#what=self,
-               #time=Send(self,@GetDuration,#iSpellPower=Nth(state,2)),
-               #state=state,#addicon=FALSE,#lastcall=FALSE);
-      }
-
-      Send(oCaster,@LoseMana,#amount=viManaDrain);
+      Send(where,@RoomStartEnchantment,#what=self,#time=viTickDuration,
+         #state=state,#addicon=FALSE,#lastcall=FALSE);
 
       return;
    }
@@ -183,19 +145,28 @@ messages:
       return;
    }
 
-   GetDuration(iSpellPower=0)
-   {
-      local iDuration;
-
-      // Better spellpower means longer time between drains.
-      iDuration = viDrainTime + ((viDrainTime * iSpellPower) / SPELLPOWER_MAXIMUM);
-
-      return iDuration;
-   }
-
    SpellBannedInArena()
    {
       return TRUE;
+   }
+
+   TranceEnding(who=$,location=$)
+   "Allow maintained spells to do something when their trance breaks."
+   {
+      local oRoom;
+
+      if location = $
+      {
+         oRoom = Send(who,@GetOwner);
+      }
+      else
+      {
+         oRoom = location;
+      }
+
+      Send(oRoom,@RemoveEnchantment,#what=self);
+
+      propagate;
    }
 
 end

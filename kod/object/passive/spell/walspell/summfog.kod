@@ -21,15 +21,12 @@ resources:
    SummonFog_name_rsc = "fog"
    SummonFog_icon_rsc = ifog.bgf
    SummonFog_desc_rsc = \
-      "Creates a cloud of fog that is often mistaken for poisonous fog.  "
-      "Requires elderberries to cast."
-
+      "Creates a cloud of fog that is often mistaken for poisonous fog."
    SummonFog_cast_rsc = \
       "A thick fog rises from the ground before you."
    SummonFog_failed_rsc = \
       "There is too much summoning magic focused here to create fog." 
    SummonFog_sound = ffog.ogg
-
    SummonFog_spell_intro_rsc = \
       "Faren Lv. 1: Summons a wall of billowing fog to confuse your foes."
 
@@ -51,6 +48,7 @@ classvars:
    viSpellExertion = 1
    viCast_time = 2000
    vrSucceed_wav = SummonFog_sound
+   vrSuccess = SummonFog_cast_rsc
    viChance_To_Increase = 20
 
    viHarmful = FALSE
@@ -71,13 +69,6 @@ messages:
       plReagents = Cons([&Elderberry,1], plReagents);
 
       return;
-   }
-
-   CastSpell(who = $, lTargets = $, iSpellPower = 1)
-   {
-      Send(who,@MsgSendUser,#message_rsc=SummonFog_cast_rsc);
-
-      propagate;
    }
 
    PlaceWallElements(who = $, iSpellPower = 0)

@@ -22,8 +22,7 @@ resources:
    QorBane_icon_rsc = iqorbane.bgf
    QorBane_desc_rsc = \
       "Permeates an area with the holy essence of Shal'ille, harming any who "
-      "attempt to call on the evil energy of Qor.  Requires one vial of yrxl "
-      "sap and one fairy wing to cast."
+      "attempt to call on the evil energy of Qor."
    
    QorBane_unnecessary = "This area is already polarized against Qor."
 
@@ -87,7 +86,7 @@ messages:
       return;
    }
 
-   CastSpell(who = $, iSpellPower = 0)
+   DoSpellEffects(who = $, iSpellPower = 0)
    "Initiation point for the spell."
    {
       local oRoom;
@@ -97,7 +96,7 @@ messages:
       {
          Send(who,@MsgSendUser,#message_rsc=vrAlreadyEnchanted);
 
-         return;
+         return FALSE;
       }
 
       // global effects of the enchantment
@@ -105,7 +104,7 @@ messages:
       Send(oRoom,@RoomStartEnchantment,#what=self,#state=[iSpellPower,who],
             #time=Send(self,@GetDuration,#iSpellPower=iSpellPower));
 
-      propagate;
+      return TRUE;
    }
 
    GetDuration(iSpellPower=0)

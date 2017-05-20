@@ -21,9 +21,8 @@ resources:
    darkness_name_rsc = "darkness"
    darkness_icon_rsc = idarknes.bgf
    darkness_desc_rsc = \
-      "Draws a curtain of darkness over a room, making it more "
-      "amenable to followers of the Vile One.  "
-      "Requires nothing but a sinister intent"
+      "Draws a curtain of darkness over a room, making it more amenable to "
+      "followers of the Vile One.  Requires nothing but a sinister intent."
    darkness_unnecessary = "This area already has a darkness enchantment."
    darkness_on = \
       "A curtain of darkness is drawn across the room, stirring the "
@@ -51,10 +50,10 @@ classvars:
    viSchool = SS_QOR
    viMana = 8
    viSpell_level = 1
-   
+
    viChance_To_Increase = 30
    viMeditate_ratio = 10
-   
+
 properties:
 
 messages:
@@ -66,7 +65,7 @@ messages:
       return;
    }
 
-   CastSpell(who = $, iSpellPower = 0)
+   DoSpellEffects(who = $, iSpellPower = 0)
    "Initiation point for the spell."
    {
       local oRoom, iBaseLight;
@@ -87,7 +86,7 @@ messages:
 
       Send(oRoom,@AddBaseLight,#amount=-(iSpellPower+25));
 
-      propagate;
+      return TRUE;
    }
 
    StartEnchantmentNewOccupant( who = $ )
@@ -126,6 +125,11 @@ messages:
       AddPacket(4, darkness_enchantment_rsc, 4, Send(self,@GetName), 4, -iState);
 
       return;
+   }
+
+   GetScrollClass()
+   {
+      return &DarknessScroll;
    }
 
 end

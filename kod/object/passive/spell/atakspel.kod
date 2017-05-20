@@ -158,13 +158,13 @@ messages:
       return 1;
    }
 
-   CastSpell(who=$,lTargets=$,iSpellPower=0,bItemCast=FALSE)
+   DoSpellEffects(who=$,lTargets=$,iSpellPower=0,iPowerLevel=100,bItemCast=FALSE)
    {
       local i, iDamage, iManaFocus, iTemp, oRoom;
 
       if (NOT (viHarmful OR viOutlaw))
       {
-         propagate;
+         return TRUE;
       }
 
       // Rooms can cast earthquake, so check if we have a room for 'who'
@@ -178,6 +178,12 @@ messages:
       }
 
       iDamage = Random(piDamageMin*100, piDamageMax*100);
+
+      if IsClass(who,&Monster)
+      {
+         iDamage = iDamage * iPowerLevel / 100;
+         iDamage = (iDamage * (50 + (iSpellPower / 2))) / SPELLPOWER_MAXIMUM;
+      }
 
       if IsClass(who,&Player)
       {
@@ -287,13 +293,10 @@ messages:
             }
          }
 
-         Send(oRoom,@SomethingAttacked,#what=who,#victim=i,#use_weapon=self);
-
          Send(self,@DoSideEffect,#who=who,#victim=i,#damage=iDamage);
       }
 
-      // This used to not propagate, but as of July 2014 it does. No bugs yet noted.
-      propagate;
+      return TRUE;
    }
 
    DamageFactors(damage=0,who=$)
@@ -363,6 +366,16 @@ messages:
    ComputeDamage(who=$,target=$,iDamage=$)
    {
       return;
+   }
+
+   GetSquaredRange()
+   {
+      if piRange = $
+      {
+         return MAX_KOD_INT;
+      }
+
+      return piRange*piRange;
    }
 
 end

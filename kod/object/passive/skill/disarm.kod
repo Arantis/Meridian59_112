@@ -43,7 +43,7 @@ classvars:
    viDefinite = ARTICLE_NONE
 
    viSkill_num = SKID_DISARM
-   viSchool = SKS_FENCING
+   viSchool = SKS_WEAPONCRAFT
    viSkill_Level = 6
    viChance_to_Increase = 30
    viMeditate_ratio = 100
@@ -72,7 +72,7 @@ messages:
          return FALSE;
       }
 
-      Send(who,@AddExertion,#amount=1000*viSkillExertion);
+      Send(who,@LoseVigor,#precision=TRUE,#amount=10*viSkillExertion);
 
       return TRUE;
    }
@@ -133,8 +133,6 @@ messages:
       iAbil = Send(who,@GetSkillAbility,#Skill_num=viSkill_num);
 
       if (IsClass(oTarget,&Player))
-         AND (Send(SYS,@IsPKAllowed)
-            OR Send(Send(who,@GetOwner),@IsArena))
       {
          // Players will unwield weapon
 
@@ -172,7 +170,7 @@ messages:
             // about 5x more. This adds the additional 4x extra in
             // addition to the amount already taken. This is because
             // it's much more harmful to players.
-            Send(who,@AddExertion,#amount=4 * (1000 * viSkillExertion));
+            Send(who,@LoseVigor,#precision=TRUE,#amount=4 * (10 * viSkillExertion));
          }
       }
       else
@@ -193,7 +191,7 @@ messages:
          // Stun between 2 and 6 seconds.
          iAbil = Bound((iAbil + iModifier - Send(oTarget,@GetLevel) / 2) * 100,
                         2000,6000);
-         Send(oHoldSpell,@DoSpell,#what=who,#oTarget=oTarget,
+         Send(oHoldSpell,@DoSpellEffects,#who=who,#lTargets=[oTarget],
                #iDuration=iAbil,#report=FALSE);
       }
 

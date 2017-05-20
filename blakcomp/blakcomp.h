@@ -12,6 +12,7 @@
 
 #ifdef BLAK_PLATFORM_WINDOWS
 #include <io.h>
+#include <direct.h>
 #endif
 
 #ifdef BLAK_PLATFORM_LINUX
@@ -26,6 +27,8 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <time.h>
 #include <ctype.h>
 #include "util.h"
 #include "table.h"
@@ -53,7 +56,11 @@
 //      called when a if/while/do-while/for-condition statement has a single
 //      expression containing the null check. Also replaces the list $ check
 //      assignment and test in foreach loops.
-#define BOF_VERSION 9
+// BOF_VERSION 10 (2-5-2017) added:
+//    - Split the 3 call opcodes into 6 based on whether any settings
+//      (named parameters) are present. Most calls use the new opcodes
+//      and skip outputting a 0 num settings byte. 10% kod performance increase.
+#define BOF_VERSION 10
 
 #define IDBASE        10000      /* Lowest # of user-defined id.  Builtin ids have lower #s */
 #define RESOURCEBASE  20000      /* Lowest # of user-defined resource. */
@@ -66,7 +73,7 @@
 
 #define MAXARGS         30      /* Maximum # of arguments to a function */
 
-#define TABLESIZE       1023    /* Size of symbol tables */
+#define TABLESIZE       3037    /* Size of symbol tables */
 
 #define MAX_LANGUAGE_ID 184
 
@@ -315,7 +322,7 @@ typedef struct {
    int curclass;         /* Current class id # */
    int curmessage;       /* Current message handler id # */
    list_type recompile_list; /* List of classes that need to be recompiled */
-   list_type constants;  /* List of constants declared in current class */
+   Table constants;      /* Table of constants declared in current class */
 
    int num_strings;      /* Number of debugging strings encountered so far */
    list_type strings;    /* List of pointers to debugging strings */ 
@@ -338,6 +345,8 @@ void include_file(char *filename);
 const char * get_function_name_by_opcode(int opcode);
 
 /* action handlers */
+int include_const_file_parse(char *);
+void include_const_file_parse_finished(void);
 const_type make_numeric_constant(int);
 const_type make_nil_constant(void);
 const_type make_string_constant(char *);
@@ -402,6 +411,7 @@ void action_error(const char *fmt, ...);
 void simple_error(const char *fmt, ...);
 void simple_warning(const char *fmt, ...);
 void initialize_parser(void);
+void compile_file_list(char *path, list_type l); // also used in dircompile.c
 
 int id_hash(const void *info, int table_size);
 int id_compare(void *info1, void *info2);
@@ -410,6 +420,8 @@ int class_compare(void *info1, void *info2);
 int add_identifier(id_type id, int type);
 int get_statement_line(stmt_type s, int curline);
 
+void codegen_init(void);
+void codegen_exit(void);
 void codegen(char *current_fname, char *bof_fname);
 void set_kodbase_filename(char *filename);
 int load_kodbase(void);
@@ -422,6 +434,7 @@ extern SymbolTable st;          /* Compiler's symbol table */
 /**************************** Include files ***************************/
 #include "sort.h"
 #include "optimize.h"
+#include "dircompile.h"
 
 #endif /* #ifdef _BLAKCOMP_H */
 

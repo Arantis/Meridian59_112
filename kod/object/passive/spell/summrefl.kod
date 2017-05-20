@@ -11,6 +11,7 @@
 SummonReflection is Spell
 
 constants:
+
    include blakston.khd
 
 resources:
@@ -23,18 +24,13 @@ resources:
    summonreflection_desc_rsc = \
       "Summons a creature which mirrors your own appearance.  Note that you "
       "are responsible for any of your reflections actions, and that they are "
-      "notoriously hard to control.  Requires two firesand and two uncut "
-      "seraphym to cast."
-
+      "notoriously hard to control."
    summonreflection_failed_rsc = \
       "There is too much summoning magic focused here to summon a reflection."
-   
    summonreflection_limit_rsc = \
       "You are already maintaining the maximum number of reflections."
-
    reflection_cannot_cast_here = \
       "You are not allowed to create a reflection here."
-
    summonreflection_sound = rmirrimg.ogg
 
 classvars:
@@ -88,7 +84,7 @@ messages:
       return 0;
    }
 
-   CastSpell(who=$,lTargets=$,iSpellPower=1)
+   DoSpellEffects(who=$,lTargets=$,iSpellPower=1)
    {
       local oRoom, oReflection;
 
@@ -98,7 +94,7 @@ messages:
       {
          Debug(who, Send(who,@GetName), " tried to create a reflection in $ room.");
 
-         return;
+         return FALSE;
       }
 
       oReflection = Create(&Reflection,#iSpellpower=iSpellpower,#oMaster=who);
@@ -113,10 +109,8 @@ messages:
       // poMaster set in Reflection's Constructor, but not added as a minion.
       Send(who,@NewControlledMinion,#minion=oReflection);
       Send(SYS,@AddReflection,#who=who,#oReflection=oReflection);
-      Send(oReflection,@SetBehaviorFlag,#flag=AI_MOVE_FOLLOW_MASTER,
-            #value=TRUE);
 
-      propagate;
+      return TRUE;
    }
 
    CountPlayerReflections(who=$)

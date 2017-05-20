@@ -23,9 +23,7 @@ resources:
    SummonWeb_overlay = webov.bgf
    SummonWeb_desc_rsc = \
       "The spider webs created by this spell may hamper the ability of those "
-      "who stumble upon them to move.  "
-      "Requires web moss to cast."
-                        
+      "who stumble upon them to move."
    SummonWeb_cast_rsc = "A sticky field of spider webs appears before you."
    SummonWeb_failed_rsc = \
       "There is too much summoning magic focused here to create a web." 
@@ -45,6 +43,7 @@ classvars:
    viSpellExertion = 3
    viCast_time = 3000
 
+   vrSuccess = SummonWeb_cast_rsc
    vrSucceed_wav = SummonWeb_sound
    viChance_To_Increase = 25
    viMeditate_ratio = 30
@@ -68,13 +67,6 @@ messages:
       plReagents = Cons([&WebMoss,1], plReagents);
 
       return;
-   }
-
-   CastSpell(who = $, lTargets = $, iSpellPower = 0)
-   {
-      Send(who,@MsgSendUser,#message_rsc=SummonWeb_cast_rsc);
-
-      propagate;
    }
 
    PlaceWallElements(who = $, iSpellPower = 0)
@@ -224,11 +216,17 @@ messages:
          return FALSE;
       }
 
+      // No pestering immortals!
+      if IsClass(otarget,&DM) AND Send(otarget,@PlayerIsImmortal)
+      {
+         return FALSE;
+      }
+
       // check for enchantment already applied
       if Send(otarget,@IsEnchanted,#what=self)
       {
          return FALSE;
-      }      
+      }
 
       Send(oTarget,@StartEnchantment,#what=self,#time=idurationsecs*1000,
            #report=report,#state=report);

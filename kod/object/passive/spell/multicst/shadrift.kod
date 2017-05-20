@@ -26,8 +26,8 @@ resources:
       "Forms a magical bond between a prism and the area in which it "
       "is cast.  Subsequent castings with the same prism cause a mystical "
       "portal to form which will transport all who enter it to the exact spot "
-      "to which the prism was bound.  "
-      "Requires the feathers of a dark angel and a prism. "
+      "to which the prism was bound.  The casters' energies must be focused "
+      "through a prism."
    
    DeathsDoor_sound = qdthdoor.ogg
 
@@ -68,8 +68,7 @@ classvars:
    viCast_time = 20000
    viChance_To_Increase = 25
 
-   viManaDrain = 1       // Drain is amount used every viDrainTime milliseconds
-   viDrainTime = 1000    // Drain some mana every viDrainTime milliseconds
+   viManaDrain = 1000            // Mana drained per second (10^3)
 
    viCast_time = 0    // in milliseconds
 
@@ -91,11 +90,6 @@ messages:
    }
 
    CanPayCosts(who=$,lTargets=$,iSpellPower=0)
-   {
-      propagate;
-   }
-
-   CastSpell(who=$,lTargets=$,iSpellPower=0)
    {
       propagate;
    }

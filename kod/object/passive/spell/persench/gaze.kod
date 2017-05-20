@@ -23,8 +23,7 @@ resources:
    paralyze_name_rsc = "gaze of the basilisk"
    paralyze_icon_rsc = iparalyz.bgf
    paralyze_desc_rsc = \
-      "Grants the caster the ability to paralyze any who meet his gaze.  "
-      "Requires one yrxl sap and one purple mushroom to cast."
+      "Grants the caster the ability to paralyze any who meet his gaze."
    gaze_enchantment_rsc = \
       "\n\nYour current %s enchantment will paralyze opponents that attack "
       "you for %i - %i milliseconds.  Opponents attacking at range have a "
@@ -142,8 +141,8 @@ messages:
             Send(who,@MsgSendUser,#message_rsc=paralyze_caster,
                   #parm1=Send(what,@GetCapDef),#parm2=Send(what,@GetName));
 
-            Send(oSpell,@DoSpell,#what=who,#oTarget=what,#iDuration=iDuration,
-                  #report=FALSE);
+            Send(oSpell,@DoSpellEffects,#who=who,#lTargets=[what],
+                  #iDuration=iDuration,#report=FALSE);
          }
       }
 

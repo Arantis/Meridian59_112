@@ -21,12 +21,9 @@ resources:
    identify_name_rsc = "identify"
    identify_icon_rsc = iidentif.bgf
    identify_desc_rsc = \
-     "Reveals any special properties of an item to the caster.  "
-     "Requires three emeralds to cast."
-
+     "Reveals any special properties of an item to the caster."
    identify_cant = "You can't seem to gain a proper focus on %s%s."
    identify_working = "You concentrate on %s%s and see..."
-
    identify_sound = sident.ogg
 
 classvars:
@@ -82,18 +79,18 @@ messages:
       propagate;
    }
 
-   CastSpell(who=$,lTargets=$)
+   DoSpellEffects(who=$,lTargets=$)
    {
       local oTarget;
 
       oTarget = First(lTargets);
 
-      Send(who,@MsgSendUser,#message_rsc=identify_working, 
+      Send(who,@MsgSendUser,#message_rsc=identify_working,
             #parm1=Send(oTarget,@GetDef),#parm2=Send(oTarget,@GetName));
 
       Send(who,@SendLook,#what=oTarget,#bShow_All=TRUE);
 
-      propagate;
+      return TRUE;
    }
 
 end

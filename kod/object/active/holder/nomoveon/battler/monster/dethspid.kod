@@ -13,9 +13,6 @@ DeathSpider is Monster
 constants:
 
    include blakston.khd
-   POISON_CHANCE = 10
-   POISON_DURATION = 180000   //// in milliseconds
-   POISON_LOSSRATE = 5000    //// in health points * 10^-4 / second
 
 resources:
 
@@ -33,8 +30,6 @@ resources:
       "transformed in return for longevity.  All the old tales, however, "
       "warn travellers to beware of this malignant creature's extraordinarily "
       "poisonous bite."
-   dspider_illusion_poisoned = \
-      "%s%s reels as poison from your attack courses through %s veins."
 
    DeathSpider_dead_icon_rsc = spidmagX.bgf
    DeathSpider_dead_name_rsc = "dead spider"
@@ -52,6 +47,13 @@ classvars:
    vrDead_icon = DeathSpider_dead_icon_rsc
    vrDead_name = DeathSpider_dead_name_rsc
 
+   // This monster poisons enemies...
+   viPoisonChance = 10
+   viPoisonStrength = 1000
+   viPoisonDuration = 180000
+   viPoisonHealth = 50
+   viPoisonVigor = 10
+
    viTreasure_type = TID_BLACK_SPIDER
    viSpeed = SPEED_AVERAGE
    viAttack_type =  ATCK_WEAP_BITE
@@ -60,7 +62,7 @@ classvars:
    viDifficulty = 5
    viVisionDistance = 12
    viKarma = -30
-   viDefault_behavior = AI_MOVE_REGROUP | AI_FIGHT_AGGRESSIVE
+   viDefault_behavior = AI_FIGHT_AGGRESSIVE
    viWimpy = 30
    viCashmin = 375
    viCashmax = 950
@@ -68,6 +70,11 @@ classvars:
    vrSound_miss = DeathSpider_sound_miss
    vrSound_aware = DeathSpider_sound_aware
    vrSound_death = DeathSpider_sound_death
+
+   vbCanSiphon = FALSE
+
+   // Quite used to dark places.
+   viNightVision = 50
 
 properties:
 
@@ -89,13 +96,6 @@ messages:
       Send(self,@DoLegSpasm);
 
       propagate;
-   }
-
-   MonsterAttack()
-   {
-      Send(self,@DoLegSpasm);
-
-      return;
    }
 
    DoLegSpasm()
@@ -134,42 +134,15 @@ messages:
       propagate;
    }
 
-   HitSideEffect(what = $, who = $)
+   IsAlliedClass(what=$)
    {
-      local oSpell;
-
-      if Random(1,POISON_CHANCE) = 1
-      {
-         oSpell = Send(SYS,@FindSpellByNum,#num=SID_POISON);
-         Send(oSpell,@MakePoisoned,#who=what,
-               #lossrate=POISON_LOSSRATE,#duration=POISON_DURATION);
-      
-         if who <> $
-         {
-            Send(who,@MsgSendUser,#message_rsc=dspider_illusion_poisoned,
-                  #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName),
-                  #parm3=Send(what,@GetHisHer));
-         }
-      }
-
-      return;
-   }
-
-   IsAlly(target = $)
-   {
-      if target = $
-      {
-         return FALSE;
-      }
-
-      if IsClass(target,&Spider)
-         OR isClass(target,&SpiderBaby)
-         OR isClass(target,&SpiderQueen)
+      if IsClass(what,&SpiderBaby)
+         OR IsClass(what,&Spider)
+         OR IsClass(what,&SpiderQueen)
       {
          return TRUE;
       }
 
-      // Charm checks up higher.
       propagate;
    }
 

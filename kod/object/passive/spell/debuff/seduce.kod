@@ -23,9 +23,7 @@ resources:
    seduce_desc_rsc = \
       "You worm your way into the mind of a weak-willed creature, "
       "in the hope that it will follow you and fight for you "
-      "if you are attacked.  "
-      "Requires one web moss and two kriipa claws."
-
+      "if you are attacked."
    seduce_caster = "%s%s has been seduced."
    seduce_target_on = "You make your move on %s%s."
    seduce_player_second = "%s%s tries %s best to seduce you."
@@ -36,7 +34,6 @@ resources:
    seduce_cast_self = "You cannot seduce yourself!"
    seduce_stolen = "%s%s has seduced your %s!"
    seduce_too_many = "You are unable to control another minion."
-
    seduce_sound = rperappr.ogg
 
 classvars:
@@ -132,36 +129,22 @@ messages:
             return FALSE;
          }
       }
-      else
-      {
-         if Send(who,@CheckBattlerMinionCount)
+      else if Send(who,@CheckBattlerMinionCount)
                >= Send(SETTINGS_OBJECT,@GetPlayerMinionLimit)
-         {
-            return FALSE;
-         }
+      {
+         return FALSE;
       }
 
       propagate;
    }
 
-   CastSpell(who=$,lTargets=$,iSpellPower=0)
+   DoSpellEffects(who=$,lTargets=$,iDuration=0,iSpellPower=0)
    {
-      local oTarget;
+      local iRoll, oMaster, oTarget;
 
       oTarget = First(lTargets);
 
-      // Spell effects
-      Send(self,@DoSpell,#what=who,#oTarget=oTarget,#iSpellPower=iSpellPower,
-            #iDuration=Send(self,@GetDuration,#iSpellPower=iSpellPower));
-
-      propagate;
-   }
-
-   DoSpell(what=$,oTarget=$,iDuration=0,iSpellPower=0)
-   {
-      local iRoll, oMaster;
-
-      if IsClass(what,&Monster)
+      if IsClass(who,&Monster)
       {
          // If a monster successfully casts this spell, we assume
          // they're allowed to have whatever they're casting on
@@ -171,15 +154,15 @@ messages:
          if oMaster <> $
          {
             Send(oMaster,@MsgSendUser,#message_rsc=seduce_stolen,
-                  #parm1=Send(what,@GetCapDef),#parm2=Send(what,@GetName),
+                  #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName),
                   #parm3=Send(oTarget,@GetName));
             // Since we don't necessarily want it going after the old master,
             // use RemoveEnchantment instead of EndEnchantment
             Send(oTarget,@RemoveEnchantment,#what=self);
          }
 
-         Send(oTarget,@StartEnchantment,#what=self,#time=iDuration,#state=what);
-         Send(oTarget,@SetMaster,#oMaster=what);
+         Send(oTarget,@StartEnchantment,#what=self,#time=iDuration,#state=who);
+         Send(oTarget,@SetMaster,#oMaster=who);
 
          propagate;
       }
@@ -189,22 +172,22 @@ messages:
       // target's level, we succeed. Can essentially always seduce low level
       // monsters, but will usually fail against high level mobs.
 
-      iRoll = (Send(what,@GetBaseMaxHealth)/3);       // 0-50
-      iRoll = (iRoll + Send(what,@GetIntellect));     // 0-50
+      iRoll = (Send(who,@GetBaseMaxHealth)/3);       // 0-50
+      iRoll = (iRoll + Send(who,@GetIntellect));     // 0-50
       iRoll = (iRoll + iSpellPower/2);                // 0-50
 
       // Put an upper bound on our roll of caster HP+5, so we don't have lower
       // HP casters running around with a thrasher or similar.
-      iRoll = Bound(iRoll,0,(Send(what,@GetBaseMaxHealth)+5));
+      iRoll = Bound(iRoll,0,(Send(who,@GetBaseMaxHealth)+5));
 
       // If our roll number is larger than the target's max hitpoints,
       // we can charm it.
-      if iRoll > Send(oTarget,@GetMaxHitPoints)
-         OR (IsClass(what,&DM)
-            AND Send(what,@PlayerIsImmortal))
+      if iRoll > Send(oTarget,@GetMaxHealth)
+         OR (IsClass(who,&DM)
+            AND Send(who,@PlayerIsImmortal))
       {
          // Tell the caster the spell is happening on a monster.
-         Send(what,@MsgSendUser,#message_rsc=vrSuccess,
+         Send(who,@MsgSendUser,#message_rsc=vrSuccess,
                #parm1=Send(oTarget,@GetCapDef),#parm2=Send(oTarget,@GetName));
 
          // Do the work on the monster. If we seduced this from another
@@ -214,7 +197,7 @@ messages:
          if oMaster <> $
          {
             Send(oMaster,@MsgSendUser,#message_rsc=seduce_stolen,
-                  #parm1=Send(what,@GetCapDef),#parm2=Send(what,@GetName),
+                  #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName),
                   #parm3=Send(oTarget,@GetName));
             // Since we don't necessarily want it going after the old master,
             // use RemoveEnchantment instead of EndEnchantment
@@ -222,22 +205,22 @@ messages:
             Send(oTarget,@RemoveEnchantment,#what=self);
          }
 
-         Send(oTarget,@StartEnchantment,#what=self,#time=iDuration,#state=what);
-         Send(oTarget,@SetMaster,#oMaster=what);
+         Send(oTarget,@StartEnchantment,#what=self,#time=iDuration,#state=who);
+         Send(oTarget,@SetMaster,#oMaster=who);
       }
       else
       {
-         Send(what,@MsgSendUser,#message_rsc=seduce_fail_spell,
+         Send(who,@MsgSendUser,#message_rsc=seduce_fail_spell,
                #parm1=Send(oTarget,@GetDef),#parm2=Send(oTarget,@GetName));
 
          // If we failed by a large margin, the monster wants to kill us now.
          // Also a sneaky form of long-distance bait (by design).
-         if iRoll < (Send(oTarget,@GetMaxHitPoints)/4)
+         if iRoll < (Send(oTarget,@GetMaxHealth)/4)
          {
             // oops!  since you failed, now they really hate you!
-            Send(oTarget,@TargetSwitch,#what=what,
-                  #iHatred=Bound(Send(what,@GetBaseMaxHealth),25,100));
-            Send(oTarget,@EnterStateChase,#target=what,#actnow=TRUE);
+            Send(oTarget,@TargetSwitch,#what=who,
+                  #iHatred=Bound(Send(who,@GetBaseMaxHealth),25,100));
+            Send(oTarget,@EnterStateEngage,#target=who,#actnow=TRUE);
          }
       }
 
@@ -292,7 +275,7 @@ messages:
             AND oRoom = oTargetRoom)
          {
             Send(who,@TargetSwitch,#what=oTarget,#iHatred=150);
-            Send(who,@EnterStateChase);
+            Send(who,@EnterStateEngage);
          }
       }
 
@@ -303,10 +286,8 @@ messages:
    {
       if (Send(mob,@GetMaster) <> $)
       {
-         Send(mob,@SetBehaviorFlag,#flag=AI_MOVE_FOLLOW_MASTER,#value=TRUE);
          Send(mob,@SetBehaviorFlag,#flag=AI_FIGHT_AGGRESSIVE,#value=FALSE);
          Send(mob,@SetBehaviorFlag,#flag=AI_FIGHT_NEWBIESAFE);
-         Send(mob,@SetBehaviorFlag,#flag=AI_FIGHT_MONSTERS);
       }
 
       return;

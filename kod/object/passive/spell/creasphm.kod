@@ -11,22 +11,21 @@
 CreateSpiritualHammer is Spell
 
 constants:
+
    include blakston.khd
 
 resources:
 
    include creasphm.lkod
 
-   createspiritualhammer_cast_rsc = "A spiritual hammer appears."
-   createspiritualhammer_inv_full_rsc = "A spiritual appears in the air before you, "
-      "but before you can drop something and grab it, it vanishes."
-
    createspiritualhammer_name_rsc = "spiritual hammer"
    createspiritualhammer_icon_rsc = ispirith.bgf
    createspiritualhammer_desc_rsc = \
-      "Materializes a spiritual hammer.  "
-      "Requires emeralds and orc teeth to cast."
-
+      "Materializes a spiritual hammer."
+   createspiritualhammer_cast_rsc = "A spiritual hammer appears."
+   createspiritualhammer_inv_full_rsc = \
+      "A spiritual appears in the air before you, but before you "
+      "can drop something and grab it, it vanishes."
    createspiritualhammer_sound = sspham.ogg
 
 classvars:
@@ -47,7 +46,6 @@ classvars:
 
 properties:
 
-
 messages:
 
    ResetReagents()
@@ -66,24 +64,27 @@ messages:
       return 0;
    }
 
-   GetLongevity(iSpellPower = 0)
+   GetDuration(iSpellPower = 0)
    {
-      local iLongevity;
+      local iDuration;
 
-      iLongevity = 10 + ((50 * iSpellpower) / 100);  // lasts 10 - 60 minutes
-      iLongevity = iLongevity * 60 * 1000;  // Convert to ms
+      iDuration = 10 + ((50 * iSpellpower) / 100);  // lasts 10 - 60 minutes
 
-      return iLongevity;   
+      return iDuration * 60 * 1000;  // Convert to ms
    }
 
-
-   CastSpell(who = $, lTargets = $,iSpellPower = $)
+   DoSpellEffects(who = $, iDuration = $, iSpellPower = $)
    {
-      local oSpiritualHammer, iLongevity, iToHitBonus;
+      local oSpiritualHammer, iToHitBonus;
 
-      iLongevity = send(self,@GetLongevity,#iSpellPower=iSpellPower);
+      if (iDuration = $)
+      {
+         iDuration = Send(self,@GetDuration,#iSpellPower=iSpellPower);
+      }
+
       iToHitBonus = (iSpellPower * 3) / 2;
-      oSpiritualHammer = Create(&SpiritualHammer,#iLongevity=iLongevity,#iToHitBonus=iToHitBonus);
+      oSpiritualHammer = Create(&SpiritualHammer,#iLongevity=iDuration,
+                              #iToHitBonus=iToHitBonus);
 
       if Send(who,@ReqNewHold,#what=oSpiritualHammer)
       {
@@ -96,9 +97,8 @@ messages:
          Send(who,@MsgSendUser,#message_rsc=createspiritualhammer_inv_full_rsc);
       }
 
-      propagate;
+      return TRUE;
    }
 
 end
-
 ////////////////////////////////////////////////////////////////////////////////

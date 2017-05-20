@@ -22,8 +22,7 @@ resources:
    rescue_icon_rsc = rescuico.bgf
    rescue_desc_rsc = \
       "Calls upon Shal'ille to transport you back to "
-      "safety.  Ability determines how fast you are rescued.  "
-      "Requires one emerald to cast."
+      "safety.  Ability determines how fast you are rescued."
    Rescue_Start = "You start your rescue preparations."
    Rescue_Success = \
       "You feel a holy force rescue you from your current situation."
@@ -61,11 +60,6 @@ messages:
       return;
    }
 
-   GetNumSpellTargets()
-   {
-      return 0;
-   }
-
    CanPayCosts(who = $,lTargets = $)
    {
       // Can't cast just after attacking someone
@@ -95,7 +89,7 @@ messages:
       propagate;
    }
 
-   CastSpell(who = $, iSpellPower = 0)
+   DoSpellEffects(who = $, iSpellPower = 0)
    {
       local iDelay;
 
@@ -106,13 +100,13 @@ messages:
       // Add a little delay in sometimes.
       if Random(1,2) = 1
       {
-         iDelay = iDelay + Random(2000, 4000);
+         iDelay += Random(2000, 4000);
       }
 
       Send(who,@StartRescueTimer,#time=iDelay);
       Send(who,@MsgSendUser,#message_rsc=Rescue_Start);
 
-      propagate;
+      return TRUE;
    }
 
    DoRescue(who = $)

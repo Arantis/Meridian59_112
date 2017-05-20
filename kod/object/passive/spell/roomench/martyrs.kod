@@ -20,25 +20,19 @@ resources:
 
    martyrsbg_name_rsc = "martyr's battleground"
    martyrsbg_icon_rsc = imartyrs.bgf
-
    martyrsbg_desc_rsc = \
       "Calls the attention of the gods to the area, increasing "
       "the likelihood they will give those who die here a chance "
-      "at vengeance with a revenant.  "
-      "Requires elderberry and mushroom to cast."
-   
+      "at vengeance with a revenant."
    martyrsbg_unnecessary = "You already feel the presence of the gods here."
-
    martyrsbg_on = \
-      "You suddenly feel as though you are being watched, and judged by intangible beings."
-
+      "You suddenly feel as though you are being watched, and judged by "
+      "intangible beings."
    martyrsbg_off = \
-      "The area feels less ordained.  It seems the gods have lost interest in the frays "
-      "in the area."
-
+      "The area feels less ordained.  It seems the gods have lost interest "
+      "in the frays in the area."
    martyrsbg_new_entrant = \
       "You imagine you can feel the presence of the gods watching you."
-
    martrysbg_sound = smatbat.ogg
 
 classvars:
@@ -70,7 +64,7 @@ messages:
       return;
    }
 
-   CastSpell(who = $, iSpellPower = 0)
+   DoSpellEffects(who = $, iSpellPower = 0)
    "Initiation point for the spell."
    {
       local oRoom;
@@ -84,19 +78,12 @@ messages:
          oRoom = Send(who,@GetOwner);
       }
 
-      if Send(oRoom,@IsEnchanted,#what=self)
-      {
-         Send(who,@MsgSendUser,#message_rsc=martyrsbg_unnecessary);
-
-         return;
-      }
-
       // global effects of the enchantment
       Send(oRoom,@SomeoneSaid,#type=SAY_MESSAGE,#string=martyrsbg_on,#what=self);
       Send(oRoom,@RoomStartEnchantment,#what=self,#state=[iSpellPower+50, who],
            #time=send(self,@GetDuration,#iSpellPower=iSpellPower));
-      
-      propagate;
+
+      return TRUE;
    }
 
    GetDuration(iSpellPower=0)
@@ -104,7 +91,7 @@ messages:
       local iDuration;
 
       iDuration = 45 + (iSpellPower*3);  /// 30 - 228 seconds
-      iDuration = iDuration * 1000;      /// convert to seconds            
+      iDuration = iDuration * 1000;      /// convert to seconds
 
       return random(iDuration/2,iDuration);
    }
@@ -123,6 +110,11 @@ messages:
       Send(where,@SomeoneSaid,#type=SAY_MESSAGE,#string=martyrsbg_off,#what=self);
 
       return;
+   }
+
+   GetScrollClass()
+   {
+      return &MartyrScroll;
    }
 
 end

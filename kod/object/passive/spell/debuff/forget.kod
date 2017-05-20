@@ -21,26 +21,26 @@ resources:
    forgetspell_name_rsc = "forget"
    forgetspell_icon_rsc = iforget.bgf
    forgetspell_desc_rsc = \
-      "Causes the victim to forget his or her own abilities.  "
-      "Requires one firesand and two uncut seraphym to cast."
-
+      "Causes the victim to forget his or her own abilities and at times, "
+      "even their enemies."
    forgetspell_already_enchanted = \
       "You can't seem to make %s%s any more forgetful."
-
    forgetspell_on = "The art of %s slips from your mind."
    forgetspell_off = \
       "You suddenly recall what it was that you had forgotten."
    forgetspell_caster = \
-      "You glare at %s%s and they appear momentarily confused."
+      "%s%s blinks a few times and seems quite distracted."
+   forgetspell_memory_wipe_caster = \
+      "It seems as though %s%s has forgotten about you."
+   forgetspell_memory_wipe_full = \
+      "It seems as though %s%s has lost all recollection of previous events."
    forgetspell_cast_self = \
       "It occurs to you that casting forget on yourself may cause you to "
        "forget forgetting what you had forgotten, and thus you might forget "
        "not forgetting all you had forgotten when the forget spell leaves "
        "you, and so you forget about it."
-
    forgetspell_caster_failed = \
       "%s%s is too stupid to make any stupider!"
-
    forgetspell_sound = rforget.ogg
 
 classvars:
@@ -76,45 +76,52 @@ messages:
    ResetReagents()
    {
       plReagents = $;
-      plReagents = Cons([&FireSand,1],plReagents);
-      plReagents = Cons([&UncutSeraphym,2],plReagents);
+      plReagents = Cons([&UncutSeraphym,1],plReagents);
 
       return;
    }
 
-   CastSpell(who=$,lTargets=$,iSpellPower=0)
+   DoSpellEffects(who=$,lTargets=$,iDuration=0,iSpellPower=0)
    {
-      local oTarget;
+      local iPowerLeft, i, lSkills, lSpells, lState, iCompound, oTarget,
+            iAbilityNum, oAbility, iSkillLength, iSpellLength;
 
       oTarget = First(lTargets);
-
-      // Spell effects
-      Send(self,@DoSpell,#what=who,#oTarget=oTarget,#iSpellPower=iSpellPower,
-           #iDuration=Send(self,@GetDuration,#iSpellPower=iSpellPower));
-
-      propagate;
-   }
-
-   DoSpell(what=$,oTarget=$,iDuration=0,iSpellPower=0)
-   {
-      local iPowerLeft,i,lSkills,lSpells,lState,
-            iCompound,iAbilityNum,oAbility,iSkillLength,iSpellLength;
 
       if IsClass(oTarget,&Monster)
       {
          // Lasts quarter duration on mobs, 7.5-15 seconds. 
          // Makes them enter the waiting state, 'forgetting' the target.
          iDuration = iDuration/4;
-         Send(oTarget,@EnterStateWait,#delay=iDuration);
+
          Send(oTarget,@StartEnchantment,#what=self,#time=iDuration);
-         Send(what,@MsgSendUser,#message_rsc=forgetspell_caster,
-               #parm1=Send(oTarget,@GetDef),
+         Send(who,@MsgSendUser,#message_rsc=forgetspell_caster,
+               #parm1=Send(oTarget,@GetCapDef),
                #parm2=Send(oTarget,@GetName));
+
+         // Put the mob on timeout for the duration. Any aggression towards the
+         // mob will wake it, however.
+         Send(oTarget,@EnterStateWait,#delay=iDuration);
+
+         // If we managed to perform a memory wipe, the mob will have lost its target
+         // upon waking. Inform the caster.
+         if IsClass(who,&DM) AND Send(who,@PlayerIsImmortal)
+         {
+            if Send(oTarget,@MemoryWipe,#bFull=TRUE)
+            {
+               Send(who,@MsgSendUser,#message_rsc=forgetspell_memory_wipe_full,
+                  #parm1=Send(oTarget,@GetDef),#parm2=Send(oTarget,@GetName));
+            }
+         }
+         else if Send(oTarget,@MemoryWipe,#who=who,#iMemoryWipe=iSpellPower)
+         {
+            Send(who,@MsgSendUser,#message_rsc=forgetspell_memory_wipe_caster,
+               #parm1=Send(oTarget,@GetDef),#parm2=Send(oTarget,@GetName));
+         }
 
          propagate;
       }
 
-      lState = $;
       lSkills = Send(oTarget,@GetSkillList);
       lSpells = Send(oTarget,@GetSpellList);
       iPowerLeft = iSpellPower;
@@ -124,7 +131,7 @@ messages:
 
       if iSkillLength = 0 and iSpellLength = 0
       {
-         Send(what,@MsgSendUser,#message_rsc=forgetspell_caster_failed,
+         Send(who,@MsgSendUser,#message_rsc=forgetspell_caster_failed,
                #parm1=Send(oTarget,@GetCapDef),
                #parm2=Send(oTarget,@GetName,#cap=TRUE));
 
@@ -140,21 +147,18 @@ messages:
       while iPowerLeft > 0
       {
          oAbility = $;
-         
+
          if iSpellLength = 0
          {
             i = 2;
          }
+         else if iSkillLength = 0
+         {
+            i = 1;
+         }
          else
          {
-            if iSkillLength = 0
-            {
-               i = 1;
-            }
-            else
-            {
-               i = Random(1,2);
-            }
+            i = Random(1,2);
          }
 
          if i = 1 AND iSpellLength > 0
@@ -164,19 +168,16 @@ messages:
             iAbilityNum = Send(oTarget,@DecodeSpellNum,#compound=iCompound);
             oAbility = Send(SYS,@FindSpellByNum,#num=iAbilityNum);
          }
-         else
+         else if iSkillLength > 0
          {
-            if iSkillLength > 0
-            {
-               i = Random(1,iSkillLength);
-               iCompound = Nth(lSkills,i);
-               iAbilityNum = Send(oTarget,@DecodeSkillNum,#compound=iCompound);
-               oAbility = Send(SYS,@FindSkillByNum,#num=iAbilityNum);
-            }
+            i = Random(1,iSkillLength);
+            iCompound = Nth(lSkills,i);
+            iAbilityNum = Send(oTarget,@DecodeSkillNum,#compound=iCompound);
+            oAbility = Send(SYS,@FindSkillByNum,#num=iAbilityNum);
          }
 
          lState = Cons(oAbility,lState);
-         iPowerLeft = iPowerLeft - 24;
+         iPowerLeft -= 24;
       }
 
       foreach i in lState
@@ -188,7 +189,7 @@ messages:
          }
       }
 
-      Send(what,@MsgSendUser,#message_rsc=forgetspell_caster,
+      Send(who,@MsgSendUser,#message_rsc=forgetspell_caster,
             #parm1=Send(oTarget,@GetIndef),
             #parm2=Send(oTarget,@GetName));
 
@@ -240,9 +241,7 @@ messages:
    "Determines if the target has the forget enchantment, and if so, checks "
    "if they have forgotten 'what'"
    {
-      local  lState, iStateMember;
-
-      lState = $;
+      local lState;
 
       if IsClass(who,&Player)
          AND NOT Send(who,@CheckPlayerFlag,#flag=PFLAG_FORGOTTEN)
@@ -256,14 +255,12 @@ messages:
          return FALSE;
       }
 
-      foreach iStateMember in lState
-      {
-         if iStateMember = what
-         {
-            return TRUE;
-         }
-      }
+      return FindListElem(lState,what);
+   }
 
+   // Will not cause aggro.
+   CausesAggression(iSpellpower=0)
+   {
       return FALSE;
    }
 

@@ -21,11 +21,8 @@ resources:
    illusionarywounds_icon_rsc = iilluwou.bgf
    illusionarywounds_desc_rsc = \
       "Causes the victim to see imagined wounds, but imagination "
-      "always gives in to one's right mind, assuming one lives so long.  "
-      "Requires solagh and firesand."
-
+      "always gives in to one's right mind, assuming one lives so long."
    illusionarywounds_cast = "Your illusion takes the form of %s."
-
    illusionarywounds_off = "Hey!  Some of those wounds were illusionary!"
    illusionarywounds_sound = riija.ogg
 
@@ -82,7 +79,7 @@ messages:
       return;
    }
 
-   CastSpell(who = $, lTargets = $, iSpellPower = 0, bItemCast = FALSE)
+   DoSpellEffects(who = $, lTargets = $, iSpellPower = 0, bItemCast = FALSE)
    {
       local iDamage, iManaFocus, oRoom, oSpell, oTarget, iDuration;
 
@@ -113,7 +110,8 @@ messages:
             #parm1=Send(oSpell,@GetName));
 
       iDuration = Send(self,@GetDuration,#iSpellPower=iSpellPower);
-      iDamage = Send(self,@GetHPLoss,#who=who,#victim=First(lTargets),#iSpellPower=iSpellPower);
+      iDamage = Send(self,@GetHPLoss,#who=who,#victim=First(lTargets),
+                     #iSpellPower=iSpellPower);
 
       if IsClass(who,&Player)
       {
@@ -151,20 +149,14 @@ messages:
 
       Send(self,@DoSideEffect,#who=who,#victim=oTarget,#damage=iDamage);
 
-      // If the spell was cast on a monster, let the monster keep track of that 
-      // for loot.
-      if IsClass(oTarget,&Monster) AND NOT bItemCast
-      {
-        Send(oTarget,@AddToSpellList,#spellnum=viSpell_num);
-      }
-
       if NOT bItemCast
       {
          Send(self,@ImproveAbility,#who=who,#target=oTarget);
       }
 
-      // DON'T PROPAGATE!  This way, events will be handled in the proper order.
-      return;
+      // Return FALSE here so we don't process anything in spell.kod.
+      // This way, events will be handled in the proper order.
+      return FALSE;
    }
 
    GetAttackSpell()
@@ -201,7 +193,7 @@ messages:
       else
       {
          iBaseDamage = 30 - Bound(Send(victim,@GetDifficulty)*2,1,20);
-         iMaxHPs = Send(victim,@ReturnMaxHitPoints);
+         iMaxHPs = Send(victim,@GetMaxHealth);
       }
 
       // Inflation by factor 100 for greater accuracy.
@@ -219,7 +211,7 @@ messages:
 
       if iFactor > 1
       {
-         iHPLoss = iHPLoss / iFactor;
+         iHPLoss /= iFactor;
       }
 
       return iHPLoss;
@@ -257,7 +249,7 @@ messages:
    {
       if (Send(who,@GetExactHealth) > 0)
       {
-         Send(who,@GainHealthNormal,#amount=state,#precision=TRUE);
+         Send(who,@GainHealth,#amount=state,#precision=TRUE);
          if IsClass(who,&Player)
             AND report
          {

@@ -61,12 +61,17 @@ Lm_first_damage_level = de "~r~B%s%s ist leicht verwundet."
 Lm_second_damage_level = de "~r~B%s%s ist verletzt."
 Lm_third_damage_level = de "~r~B%s%s ist schwer verletzt."
 Lm_fourth_damage_level = de "~r~B%s%s ist schwach und dem Tode nahe."
+Lm_first_heal_level = de "~B~t%s%s hat sich etwas erholt und macht eigentlich wieder einen recht gesunden Eindruck."
+Lm_second_heal_level = de "~B~t%s%s hat sich etwas erholt, scheint aber immer noch leicht verwundet zu sein."
+Lm_third_heal_level = de "~B~t%s%s hat sich etwas erholt, sieht aber immer noch aus, als ob es verletzt wäre."
+Lm_fourth_heal_level = de "~B~t%s%s hat sich etwas erholt, leidet aber immer noch an schweren Verletzungen."
 Lm_party_killed_monster = de \
    "~r~B%s%s hat das Monster erschlagen. %s%s ist tot!"
-Lm_monster_healing = de \
-   "~g%s%s weicht zurück, um für einen Moment neue Kraft zu schöpfen."
+Lm_party_monster_died_to_dot = de "%s%s%s siecht dahin."
+Lm_monster_winded = de "~I~r%s%s%s braucht einen Moment um wieder zu Atem zu kommen!"
+Lm_monster_spin = de "~I~r%s%s greift mit einem blitzschnellen Wirbelangriff an!"
 monster_desc_level = de \
-   "Dieses Monster bringt Dich bis zu %i Lebenspunkten."
+   "Dieser Gegner bringt Dich bis zu %i Lebenspunkten."
 Lm_condition_healthy = de "%s\n\n%r"
 Lm_condition_good = de \
    "%s\n\n%r\n\n%s%s ist verletzt, aber immer noch ziemlich stark."
@@ -117,6 +122,11 @@ Lm_bnkr_player_full = de \
    "in Gefahr!"
 Lm_bnkr_player_all_full = de \
    "Du kannst nicht einmal mehr einen einzigen Schilling halten!"
+Lm_mercenary_join = de "Du solltest nicht alleine losziehen.  Es ist gefährlich da draußen...  "
+   "Ich werde dich begleiten, bis ~Ies Zeit wird, dass sich unsere Wege wieder trennen~I."
+Lm_mercenary_join_contracted = de "Zu Diensten!"
+Lm_mercenary_leave = de "Ich geh' mal wieder zurück zu meiner Truppe.  Pass' auf dich auf!"
+Lm_mercenary_leave_trigger = de "es wird Zeit, dass sich unsere Wege wieder trennen"
 vaultman_nogold = de \
    "Du brauchst meine Dienste nicht in Anspruch zu nehmen, um %s%s zu verwahren."
 vaultman_nocursed = de "Ich kann keine %s%s von Dir nehmen."
@@ -193,3 +203,5 @@ monster_faction_fey_evil = de "dem Fey Dirhai"
 monster_faction_frogmen = de "dem Froschman"
 monster_faction_heretic = de "dem Kult der Drei"
 monster_faction_undead = de "den Knechten des Todes"
+monster_leash_reset = de \
+      "Ermüdet von der vergeblichen Jagd bricht %s%s die Verfolgung ab."

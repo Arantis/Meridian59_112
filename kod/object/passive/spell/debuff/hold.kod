@@ -22,7 +22,7 @@ resources:
    hold_icon_rsc = ihold.bgf
    hold_desc_rsc = \
       "Surrounds the target with magical energy, causing paralysis for "
-      "several seconds.  Requires two purple mushrooms to cast."
+      "several seconds."
    hold_already_enchanted = "%s%s is already held."
    hold_caster = "%s%s is now held in place by a magical force."
    hold_on = \
@@ -72,33 +72,22 @@ messages:
       return;
    }
 
-   CastSpell(who=$,lTargets=$,iSpellpower=0,report=TRUE)
+   DoSpellEffects(who=$,lTargets=$,iDuration=$,report=TRUE,bAllowFreeAction=TRUE)
+   "Holds target for duration milliseconds."
    {
-      local oTarget;
+      local i, oSpell, oTarget;
 
-      oTarget = First(lTargets);
-
-      // Spell effects.
-      Send(self,@DoSpell,#what=who,#oTarget=oTarget,#report=report,
-            #iDuration=Send(self,@GetDuration,#iSpellPower=iSpellPower));
-
-      propagate;
-   }
-
-   DoSpell(what=$,oTarget=$,iDuration=$,report=TRUE,bAllowFreeAction=TRUE)
-   "Holds target for duration seconds."
-   {
-      local i, oSpell;
-
-      if oTarget = $
+      if (lTargets = $)
       {
          return FALSE;
       }
 
+      oTarget = First(lTargets);
+
       // Check for enchantment already applied
       if Send(oTarget,@IsEnchanted,#what=self)
       {
-         return FALSE;
+         return TRUE;
       }
 
       // Check for spell called with $ iDuration, apply default time if so.
@@ -113,12 +102,12 @@ messages:
          oSpell = Send(SYS,@FindSpellByNum,#num=SID_FREE_ACTION);
          if Send(oTarget,@IsEnchanted,#what=oSpell)
          {
-            iDuration = Send(oSpell,@DoFreeAction,#oHoldCaster=what,
+            iDuration = Send(oSpell,@DoFreeAction,#oHoldCaster=who,
                               #oTarget=oTarget,#iDuration=iDuration);
             if iDuration = $
             {
                // Resisted completely
-               return FALSE;
+               return TRUE;
             }
 
             iDuration = Bound(iDuration,500,10000);
@@ -147,9 +136,10 @@ messages:
          Send(oTarget,@ResetBehaviorFlags);
       }
 
-      if report
+      if (report
+         AND who <> $)
       {
-         Send(what,@MsgSendUser,#message_rsc=vrSuccess,
+         Send(who,@MsgSendUser,#message_rsc=vrSuccess,
                #parm1=Send(oTarget,@GetCapDef),#parm2=Send(oTarget,@GetName));
       }
 
@@ -179,7 +169,6 @@ messages:
             Send(who,@EffectSendUser,#what=self,#effect=EFFECT_PARALYZE_OFF);
          }
 
-         Send(who,@EffectSendUser,#what=self,#effect=EFFECT_PARALYZE_OFF);
          if state
          {
             Send(who,@MsgSendUser,#message_rsc=vrEnchantment_Off);
@@ -197,7 +186,11 @@ messages:
 
    RestartEnchantmentEffect(who=$,state=$)
    {
-      Send(who,@MsgSendUser,#message_rsc=vrEnchantment_On);
+      if (state)
+      {
+         Send(who,@MsgSendUser,#message_rsc=vrEnchantment_On);
+      }
+
       Send(who,@EffectSendUser,#what=self,#effect=EFFECT_PARALYZE_ON);
 
       return;
@@ -221,6 +214,28 @@ messages:
       }
 
       return;
+   }
+
+   CausesAggression(iSpellpower=0)
+   {
+      return iSpellpower / 3;
+   }
+
+   CanPayMonsterCosts(lTargets=$)
+   {
+      local oTarget;
+
+      oTarget = First(lTargets);
+
+      if (IsClass(oTarget,&Player)
+            AND Send(oTarget,@CheckPlayerFlag,#flag=PFLAG_NO_FIGHT))
+         OR (IsClass(oTarget,&Monster)
+            AND Send(oTarget,@CheckMonsterBehavior,#flag=AI_NOFIGHT))
+      {
+         return FALSE;
+      }
+
+      propagate;
    }
 
 end

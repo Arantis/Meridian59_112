@@ -11,6 +11,7 @@
 Blink is TeleportationSpell
 
 constants:
+
    include blakston.khd
 
 resources:
@@ -20,10 +21,11 @@ resources:
    blink_name_rsc = "blink"
    blink_icon_rsc = iblink.bgf
    blink_desc_rsc = \
-     "Teleports you to a central location in the room.  "
-	 "Requires nothing but a will to move."
-
-   blink_spell_intro = "Riija Level 1: The Trickster's most basic spell teleports you to the local place of power."
+      "Teleports you to a central location in the room.  "
+      "Requires nothing but a will to move."
+   blink_spell_intro = \
+      "Riija Level 1: The Trickster's most basic spell teleports you to "
+      "the local place of power."
 
 classvars:
 
@@ -54,42 +56,40 @@ messages:
       return;
    }
 
-   GetNumSpellTargets()
+   DoSpellEffects(who = $, lTargets = $)
    {
-      return 0;
-   }
+      local oRoom, oFollower, iNum;
 
-   CastSpell(who = $, lTargets = $)
-   {
-      local owner, oRoom;
+      oRoom = Send(who,@GetOwner);
+      oFollower = Send(who,@GetMercenary);
 
-      owner = Send(who,@GetOwner);
-
-      if send(owner,@GetRoomNum) = RID_KOC_HALL_OF_HEROES
+      if oFollower <> $
+         AND (IsTimer(oFollower)
+            OR NOT IsClass(oFollower,&Follower)
+            OR (Send(oFollower,@GetOwner) <> oRoom))
       {
-         oRoom = send(SYS,@FindRoomByNum,#num=RID_TOS_FORGET);
-         if oRoom <> $
-         {
-            post(oRoom,@Teleport,#what=who);
-
-            propagate;
-         }
+         oFollower = $;
       }
 
-      if send(owner,@GetRoomNum) = RID_BAZMANS_ROOM
-      {
-         oRoom = send(SYS,@FindRoomByNum,#num=RID_FORGOTTEN_TOO);
-         if oRoom <> $
-         {
-            post(oRoom,@teleport,#what=who);
+      iNum = Send(oRoom,@GetRoomNum);
 
-            propagate;
-         }
+      if iNum = RID_KOC_HALL_OF_HEROES
+      {
+         oRoom = Send(SYS,@FindRoomByNum,#num=RID_TOS_FORGET);
+      }
+      else if iNum = RID_BAZMANS_ROOM
+      {
+         oRoom = Send(SYS,@FindRoomByNum,#num=RID_FORGOTTEN_TOO);
       }
 
-      send(owner,@Teleport,#what=who);  
+      Send(oRoom,@Teleport,#what=who);
 
-      propagate;
+      if oFollower <> $
+      {
+         Post(oRoom,@Teleport,#what=oFollower,#mob_override=TRUE);
+      }
+
+      return TRUE;
    }
 
    SuccessChance(who=$)
@@ -103,7 +103,6 @@ messages:
    {
       return FALSE;
    }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

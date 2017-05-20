@@ -33,6 +33,9 @@
    MAX_KOD_INT = 134217727
    MIN_KOD_INT = -134217728
 
+   // maximum number that can be squared without exceeding MAX_KOD_INT
+   MAX_KOD_INT_SQRT = 11585
+
    // Time constants of the world
 
    // MS_PER_DAY = 24 * 3600 * 1000
@@ -60,7 +63,7 @@
    OF_PLAYER         = 0x00000004
    OF_ATTACKABLE     = 0x00000008
    OF_GETTABLE       = 0x00000010
-   // careful--only one's user is ALLOWED to put/get in.
+   // careful - only the ones user are ALLOWED to put/get in.
    OF_CONTAINER      = 0x00000020
    OF_NOEXAMINE      = 0x00000040
    OF_ITEM_MAGIC     = 0x00000080
@@ -118,6 +121,9 @@
    MM_BOSS                 = 0x00000800
    MM_RARE_ITEM            = 0x00001000
    MM_NO_PVP               = 0x00002000
+   MM_AGGRO_SELF           = 0x00004000
+   MM_AGGRO_OTHER          = 0x00008000
+   MM_MERCENARY            = 0x00010000
 
    // Player name color sent as hex RGB value. Define constants
    // for ease of use as needed. Requires OF_PLAYER boolean flag
@@ -1612,8 +1618,8 @@
 
    // Monster behaviors, or "states"
    STATE_LIMBO       = 0x00001
-   STATE_ATTACK      = 0x00002
-   STATE_CHASE       = 0x00004
+   STATE_ENGAGE      = 0x00002
+   STATE_REST        = 0x00004
    STATE_WAIT        = 0x00008
    STATE_MOVE        = 0x00010
    STATE_ZERO_MASK   = 0xFF000
@@ -1648,11 +1654,12 @@
    // Monster moves to optimal range, which it asks itself for.
    //  Used for monsters with ranged attacks.
    AI_MOVE_OPTIMAL_RANGE      = 0x0000008
-   AI_MOVE_FOLLOW_MASTER      = 0x0000010
+   // Currently free...
+
    // Monster will flee any defined 'frighteners'
    AI_MOVE_FLEE_FRIGHTENERS   = 0x0000020
-   // When wounded, monster will seek the closest ally and move to them
-   AI_MOVE_REGROUP            = 0x0000040
+   // Mob is on the run.
+   AI_FLEEING                 = 0x0000040
    AI_MOVE_WALKTHROUGH_WALLS  = 0x0000080
    // monster will continue moving even if the room has no users
    AI_MOVE_WHEN_ALONE         = 0x0000100
@@ -1660,8 +1667,8 @@
    AI_HAS_TARGET_LOCATION     = 0x0000400
    AI_LOOPING_PATROL          = 0x0000800
    AI_NOFIGHT                 = 0x0001000
-   // monster will fight other monsters
-   AI_FIGHT_MONSTERS          = 0x0002000
+   // Monster is on its way to the flagpole.
+   AI_RALLY                   = 0x0002000
    AI_FIGHT_AGGRESSIVE        = 0x0004000
    AI_FIGHT_KARMA_AGGRESSIVE  = 0x0008000
    AI_FIGHT_MURDERERS         = 0x0010000
@@ -1670,17 +1677,24 @@
    // monster won't change targets unless current target is gone
    AI_FIGHT_SINGLEMINDED      = 0x0040000
    // monster attacks the aggressor in a room.
-   AI_FIGHT_DEFENDER          = 0x0080000
+   AI_FIGHT_THROUGH_WALLS     = 0x0080000
    // monster chooses a new target that's in range randomly.
    AI_FIGHT_LASHOUT           = 0x0100000
-   // monster will search for the toughest wizard in the room.
-   AI_FIGHT_WIZARD_KILLER     = 0x0200000
+   // currently free...
+   AI_RETURN_TO_SPAWN         = 0x0200000
    // monster will attack almost anything.
    AI_FIGHT_HYPERAGGRESSIVE   = 0x0400000
    // monster will check for new enemies a lot.
    AI_FIGHT_SWITCHALOT        = 0x0800000
    // monster may strike through walls (revenants)
-   AI_FIGHT_THROUGH_WALLS     = 0x1000000
+   AI_CORNERED                = 0x1000000
+   // Monster is cornered and will fight back.
+   AI_SOCIALIZER              = 0x2000000
+   // Monster likes to meet up with other monsters for a chat.
+   AI_STROLLING               = 0x4000000
+
+   // Battlers need this much vigor to be able to run.
+   VIGOR_RUN_THRESHOLD = 1000
 
    // Monster movement speeds
    SPEED_NONE          = 0
@@ -1713,6 +1727,12 @@
    MEDIUM_GOOD  =  60
    HIGH_GOOD    =  80
    MAX_GOOD     = 100
+
+   // Action classification
+   COMBAT_ACTION_NEUTRAL = 0
+   COMBAT_ACTION_HARM = 1
+   COMBAT_ACTION_HEAL = 2
+   COMBAT_ACTION_BUFF = 3
 
    // Avar types
    // Same as purple to blue
@@ -2010,6 +2030,17 @@
    STROKE_UNHOLY_TOUCH = 26
    STROKE_DELVIERANCE = 27
 
+   // Over Time Effects
+   // Resource Types
+   TYPE_HEALTH = 0
+   TYPE_MANA = 1
+   TYPE_VIGOR = 2
+
+   // Types of removal
+   REMOVE_NONE = 0
+   REMOVE_PLAYER = 1
+   REMOVE_INTERNAL = 2
+
    // Unique skill constants
    // Don't create any lower than 400 - conflict with spells (1-399).
    SKID_MINIMUM = 400
@@ -2025,6 +2056,7 @@
    SKID_DEFAULT = 420
    SKID_SLASH = 421
    SKID_THRUST = 422
+   SKID_SPIN = 423
 
    // Missile weapon strokes here.
    SKID_FIRE = 425
@@ -2144,7 +2176,9 @@
    SID_HOLY_BLAZE = 93
    SID_MARTYRS_GRACE = 94
    SID_SPIRIT_BLAST = 95
-
+   SID_BLEED = 96
+   SID_SIPHON = 97
+   SID_FATIGUE = 98
    SID_REFLECTION = 99
    SID_SPIRITUAL_HAMMER = 100
    SID_APPARITION = 101
@@ -2235,6 +2269,21 @@
    SID_PHASE = 186
    SID_MEDITATE = 187
    SID_UNHOLY_TOUCH = 188
+   SID_CREATE_SCROLL = 189
+   // Boons
+   SID_AGILITY_BOON = 190
+   SID_AIM_BOON =     191
+   SID_STAMINA_BOON = 192
+   SID_STRENGTH_BOON = 193
+   SID_MYSTICISM_BOON = 194
+   SID_INTELLECT_BOON = 195
+   SID_MANA_BOON =    196
+   SID_HP_BOON =      197
+   SID_VIGOR_BOON =   198
+
+   SID_BURN = 199
+   SID_LULLABY = 200
+   SID_ANTIMAGIC_ROOM = 201
 
    // Depreciated spell IDs
    SID_LIGHTNING = 1                   // use SID_LIGHTNING_BOLT
@@ -2256,16 +2305,6 @@
    SID_BRAMBLEWALL = 141               // use SID_BRAMBLE_WALL
    SID_GLOW_WEAPON = 153               // use SID_GLOW
 
-   // Boons
-   SID_AGILITY_BOON = 190
-   SID_AIM_BOON =     191
-   SID_STAMINA_BOON = 192
-   SID_STRENGTH_BOON = 193
-   SID_MYSTICISM_BOON = 194
-   SID_INTELLECT_BOON = 195
-   SID_MANA_BOON =    196
-   SID_HP_BOON =      197
-   SID_VIGOR_BOON =      198
    // No sids above 400 to keep spell IDs unique from skill IDs!
 
    // Stats
@@ -2301,10 +2340,10 @@
    SS_JALA = 6
    SS_DM_COMMAND = 7
 
-   // We may use skill an spell schools in the same routines, thus no overlap.
-   SKS_FENCING = 10
-   SKS_BRAWLING = 11
-   SKS_THIEVERY = 12
+   // We may use skill and spell schools in the same routines, thus no overlap.
+   SKS_WEAPONCRAFT = 10
+   SKS_DM = 11
+   SKS_ROGUE = 12
 
    // Enchantment icon showing
    ENCHANTMENT_SHOW_NONE = 0
@@ -2360,12 +2399,39 @@
    SPELLPOWER_MINIMUM = 1
    SPELLPOWER_MAXIMUM = 99
 
+   // Battler flags (piBattlerFlags in battler.kod)
+   // A set of flags each battler has which keep track of various effects
+   // on that battler, rather than keeping boolean properties.
+
+   // BFLAG_HEALTH_REGEN | BFLAG_MANA_REGEN | BFLAG_VIGOR_REGEN
+   BFLAG_REGEN_MASK     = 0x000E
+   // BFLAG_HEALTH_CURSE | BFLAG_VIGOR_CURSE | BFLAG_MANA_CURSE
+   BFLAG_CURSE_MASK     = 0x0070
+
+   // Set if we are resting.
+   BFLAG_RESTING        = 0x0001
+   // Regen flags keep track of polarity of our regen. Increases accuracy.
+   BFLAG_HEALTH_REGEN   = 0x0002
+   BFLAG_MANA_REGEN     = 0x0004
+   BFLAG_VIGOR_REGEN    = 0x0008
+   // Some effects may stop our regeneration.
+   BFLAG_HEALTH_CURSE   = 0x0010
+   BFLAG_VIGOR_CURSE    = 0x0020
+   BFLAG_MANA_CURSE     = 0x0040
+   // Affected by something that changes spellpower of incoming/outgoing spells.
+   BFLAG_SPELLPOWER_MOD = 0x0080
+
    // Player flags
 
    PKILL_ENABLE_HP = 50
-   MIN_HP = 20
-   MAX_HP = 150
-   MAX_CALCULATED_HP = 392
+   MIN_HEALTH = 20
+   MAX_HEALTH = 150
+   MAX_CALCULATED_HEALTH = 392
+   MIN_MANA = 15
+   MAX_MANA = 150
+   MAX_CALCULATED_MANA = 250
+   MAX_VIGOR = 200
+   MAX_CALCULATED_VIGOR = 200
    MAX_XP = 20000000
    MAX_XP_DEATH_LOSS = 10000
 
@@ -2405,7 +2471,7 @@
 
    // Second set of player flags (in piFlags2)
    // A mask of flags that are unaffected by ResetPlayerFlagList
-   PFLAG2_MASK             = 0x011F80
+   PFLAG2_MASK             = 0x031F80
 
    PFLAG2_HASTED           = 0x000001
    PFLAG2_DANCING          = 0x000002
@@ -2428,6 +2494,7 @@
    PFLAG2_SQUELCHED_ALL    = 0x003E00
    // Keep 0x8000 free for future squelch flag.
    PFLAG2_DARENA_DEATH     = 0x010000
+   PFLAG2_BETA_POTION      = 0x020000
 
    // Third set of player flags (in piFlags3)
    // piFlags3 can now be used as a proper bitfield, and no longer
@@ -2571,6 +2638,8 @@
    EVENT_DISRUPT = 9
    // Player is moving to a new room but has not yet
    EVENT_REQNEWOWNER = 10
+   // Player ran out of mana.
+   EVENT_OOM = 11
 
    // Hot spot definitions
 
@@ -2626,6 +2695,8 @@
    //  to be at least as high as the highest node value.
    //  Extra room was consciously left.
    NODE_MAX_VALUE = 0x8000
+   // Sum of all valid nodes (NODE_GUEST not used)
+   NODE_ALL       = 0x1BFF
 
    // Guilds
 

@@ -24,7 +24,7 @@ resources:
       "This song makes people happy!  It is a lively tune, which makes people "
       "feel as if they have a new start on life.  The song causes some people "
       "to smile, often resulting in better moods.  A good mood allows others "
-      "to fight evil more effectively.  Requires one sapphire to cast."
+      "to fight evil more effectively."
 
    Mirth_song = main.ogg
 
@@ -55,8 +55,7 @@ classvars:
    viSpell_level = 1
 
    viMana = 2
-   viManaDrain = 2
-   viDrainTime = 5000
+   viManaDrain = 400    // Mana drained per second (10^3)
 
    viSpellExertion = 1
    viChance_To_Increase = 25
@@ -136,6 +135,11 @@ messages:
       }
 
       return damage;
+   }
+
+   GetScrollClass()
+   {
+      return &MirthScroll;
    }
 
 end

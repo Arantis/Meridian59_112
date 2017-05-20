@@ -23,10 +23,11 @@ resources:
    reveal_desc_rsc = \
       "Strips away all hidden properties of an item, allowing anyone to see "
       "its special abilities.  This spell can only improve if cast on an item "
-      "with unrevealed properties.  Requires ten emeralds to cast."
+      "with unrevealed properties."
    reveal_cant = "You can't seem to focus on %s%s."
    reveal_working = \
-      "You concentrate on %s%s, and gradually its secrets become plain for all to see!"
+      "You concentrate on %s%s, and gradually its secrets become plain for "
+      "all to see!"
    reveal_strip_misdir = "Your magics strip the illusions from %s%s!"
    reveal_sound = sreveal.ogg
 
@@ -96,7 +97,7 @@ messages:
 
    ImproveAbility()
    {
-      if NOT piAdvance 
+      if NOT piAdvance
       {
          return FALSE;
       }
@@ -104,11 +105,11 @@ messages:
       propagate;
    }
 
-   CastSpell(who=$,lTargets=$,iSpellPower=0)
+   DoSpellEffects(who=$,lTargets=$,iSpellPower=0)
    {
       local oTarget, lData, iPower, oItemAtt;
 
-      oTarget = First( lTargets );
+      oTarget = First(lTargets);
 
       Send(who,@MsgSendUser,#message_rsc=reveal_working, 
             #parm1=Send(oTarget,@GetDef),#parm2=Send(oTarget,@GetName));
@@ -142,7 +143,7 @@ messages:
          }
       }
 
-      propagate;
+      return TRUE;
    }
 
 end

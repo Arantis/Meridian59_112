@@ -34,6 +34,8 @@ classvars:
    vcShieldClass = &DukeShield
    viFaction = FACTION_DUKE
 
+   viPowerLevel = 100
+
 properties:
 
    piBaseLevel = 50
@@ -49,7 +51,8 @@ messages:
 
    Constructor()
    {
-      plSpellBook = [ [SID_SPLASH_OF_ACID,5,100] ];
+      plActions = [ [SID_SPLASH_OF_ACID], [SID_BLESS], [SID_MAGIC_SHIELD], 
+                    [SID_BLIND], [SID_HOLD], [SID_VERTIGO], [SID_FORGET] ];
 
       propagate;
    }

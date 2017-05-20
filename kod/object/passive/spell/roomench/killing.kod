@@ -25,8 +25,7 @@ resources:
    killingfields_icon_rsc = ikillfel.bgf
    killingfields_desc_rsc = \
       "Induces magical blood-lust, increasing the damage of all attacks in "
-      "the area.  Requires elderberries and orc teeth to cast."
-   
+      "the area."
    killingfields_already_enchanted = "This place is already a killing field."
    killingfields_enchantment_rsc = \
       "\n\nThe %s enchantment currently adds 2-5 damage to all attacks "
@@ -68,7 +67,7 @@ messages:
       return;
    }
 
-   CastSpell(who = $,iSpellPower = 0)
+   DoSpellEffects(who = $,iSpellPower = 0)
    {
       local oRoom;
 
@@ -88,7 +87,7 @@ messages:
            #time=send(self,@GetDuration,#iSpellPower=iSpellPower));
       Send(oRoom,@EnchantAllOccupants,#what=self);
 
-      propagate;
+      return TRUE;
    }
 
    StartEnchantmentNewOccupant(who = $)
@@ -155,6 +154,11 @@ messages:
       AddPacket(4,killingfields_enchantment_rsc, 4,Send(self,@GetName));
 
       return;
+   }
+
+   GetScrollClass()
+   {
+      return &KillingFieldScroll;
    }
 
 end

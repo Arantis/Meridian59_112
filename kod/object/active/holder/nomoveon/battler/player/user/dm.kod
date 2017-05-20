@@ -55,6 +55,9 @@ resources:
    dm_makesignetfail = "You were unable to create a signet ring at this time."
 
    // Commands
+   dm_inspectroom = "room"
+   dm_inspectmonsterroom = "monster"
+   dm_inspectpreviousroom = "previous"
    dm_makemonster = "monster"
    dm_event_sign_command = "event sign"
    dm_makeitem = "item"
@@ -334,7 +337,6 @@ resources:
 
    // Spell messages
    dm_spell_base = "~B[%s cast %s%s%s.]"
-   dm_spell_blank = ""
    dm_spell_on = " on "
    dm_spell_a_group = "a group"
    dm_spell_you = "you"
@@ -470,6 +472,27 @@ messages:
       return;
    }
 
+   GetMoveOnType()
+   {
+      // Blank DMs can't block movement.
+      if (piDMFlags & DMFLAG_INVISIBLE)
+      {
+         return MOVEON_YES;
+      }
+
+      propagate;
+   }
+
+   LogonDelay()
+   {
+      if (pbImmortal)
+      {
+         return;
+      }
+
+      propagate;
+   }
+
    UserLogonHook()
    {
       if pbCapableDM
@@ -546,6 +569,72 @@ messages:
 
    Killed(what=$)
    {
+      if pbImmortal
+      {
+         return;
+      }
+
+      propagate;
+   }
+
+   LoseHealth()
+   {
+      if pbImmortal
+      {
+         return 0;
+      }
+
+      propagate;
+   }
+
+   HealthDecay()
+   {
+      ptHealth = $;
+
+      if pbImmortal
+      {
+         return;
+      }
+
+      propagate;
+   }
+
+   LoseMana()
+   {
+      if pbImmortal
+      {
+         return 0;
+      }
+
+      propagate;
+   }
+
+   ManaDecay()
+   {
+      ptMana = $;
+
+      if pbImmortal
+      {
+         return;
+      }
+
+      propagate;
+   }
+
+   LoseVigor()
+   {
+      if pbImmortal
+      {
+         return 0;
+      }
+
+      propagate;
+   }
+
+   VigorDecay()
+   {
+      ptVigor = $;
+
       if pbImmortal
       {
          return;
@@ -812,7 +901,7 @@ messages:
 
    UserSay(string=$,type=$)
    {
-      local i;
+      local i, oRoom, bPrevious, bMonster, lRooms;
 
       if type <> SAY_DM
       {
@@ -1086,6 +1175,49 @@ messages:
          return;
       }
 
+      if StringContain(string,dm_inspectroom)
+      {
+         // Run through RIDs up to max ID.
+         // Begin at our current room.
+         lRooms = Send(SYS,@GetRooms);
+         i = FindListElem(lRooms,poOwner);
+         bMonster = StringContain(string,dm_inspectmonsterroom);
+         bPrevious = StringContain(string,dm_inspectpreviousroom);
+         oRoom = $;
+
+         while (oRoom = $) OR (bMonster AND NOT IsClass(oRoom,&MonsterRoom))
+         {
+            // plRooms has reversed order of phRooms, which is sorted by RID.
+            if bPrevious
+            {
+               ++i;
+            }
+            else
+            {
+               --i;
+            }
+
+            // Wrap around.
+            if i = 0
+            {
+               i = Length(lRooms);
+            }
+            else if i > Length(lRooms)
+            {
+               i = 1;
+            }
+
+            oRoom = Nth(lRooms,i);
+         }
+
+         Send(SYS,@UtilGoNearSquare,#what=self,#where=oRoom,
+              #new_row=Send(oRoom,@GetTeleportRow),
+              #new_col=Send(oRoom,@GetTeleportCol),
+              #new_angle=Send(oRoom,@GetTeleportAngle));
+
+         return;
+      }
+
       // Makes the DM/Admin into Q; only green-named can use.
       if pbImmortalSave > 1
          AND StringEqual(string,"Zandramas, in your always infinite wisdom, please make me Q.")
@@ -1260,10 +1392,10 @@ messages:
          piMysticismMod = 20;
          piAimMod = 20;
 
-         piVigor = 200;
+         piVigor = 20000;
          Send(self,@GainBaseMaxHealth,#amount=150-piBase_max_health);
          Send(self,@ResetXPToLevel);
-         Send(self,@NewMaxMana,#amount=200-piMax_mana);
+         Send(self,@ConnectManaNode,#all=TRUE);
 
          if Send(self,@CheckLog)
          {
@@ -1272,7 +1404,7 @@ messages:
          }
 
          Send(self,@GainHealth,#amount=piMax_health*100-piHealth,#precision=TRUE);
-         Send(self,@GainMana,#amount=piMax_mana-piMana);
+         Send(self,@GainMana,#amount=piMax_mana*100-piMana);
          Send(self,@EvaluatePKStatus);
          Send(self,@PlayerIsIntriguing);
          Send(self,@NewVigor);
@@ -2105,9 +2237,8 @@ messages:
 
    DMSayPlain()
    {
-      local i, lObjects, oObject;
+      local i, oObject;
 
-      Send(self,@ResetPlayerIcon,#alldone=FALSE);
       pbMorph = FALSE;
 
       // For characters we want to have a non-standard icon
@@ -2122,16 +2253,16 @@ messages:
       Send(self,@SetPlayerFlag,#flag=PFLAG_ANONYMOUS,#value=FALSE);
       Send(self,@ResetPlayerDrawfx,#drawfx=DRAWFX_NONE);
 
-      piDMFlags = piDMFlags & ~DMFLAG_INVISIBLE;
-      piDMFlags = piDMFlags & ~DMFLAG_SHADOW;
+      piDMFlags &= ~DMFLAG_INVISIBLE;
+      piDMFlags &= ~DMFLAG_SHADOW;
 
       Send(self,@ResetPlayerFlagList);
 
-      lObjects = Send(poOwner,@GetHolderActive);
+      Send(self,@ResetPlayerIcon);
 
-      foreach i in lObjects
+      foreach i in Send(poOwner,@GetHolderActive)
       {
-         oObject = Send(poOwner,@HolderExtractObject,#data=i);
+         oObject = First(i);
 
          if IsClass(oObject,&User)
          {
@@ -2414,17 +2545,6 @@ messages:
       return;
    }
 
-   AddExertion(amount=0,SetToThreshold=FALSE)
-   {
-      if pbImmortal
-      {
-         // Don't add exertion if we're immortal.
-         return;
-      }
-
-      propagate;
-   }
-
    SpellCast(who=$,oSpell=$,lItems=$)
    "Notification sent when a spell is cast in the room."
    {
@@ -2434,8 +2554,8 @@ messages:
       {
          if lItems = $ OR Length(lItems) = 0
          {
-            rOn = dm_spell_blank;
-            rTarget = dm_spell_blank;
+            rOn = system_blank_resource;
+            rTarget = system_blank_resource;
          }
          else
          {
@@ -2570,9 +2690,8 @@ messages:
    {
       if pbMorph
       {
-         piBody_translations = piBody_translations & ~DM_TRANSLATION_BODY_MASK;
-         piBody_translations = piBody_translations | 
-                               (Send(self,@GetDefaultShirtTranslation)
+         piBody_translations &= ~DM_TRANSLATION_BODY_MASK;
+         piBody_translations |= (Send(self,@GetDefaultShirtTranslation)
                                 * DM_TRANSLATION_BODY_MUL);
 
          if poOwner <> $ AND alldone

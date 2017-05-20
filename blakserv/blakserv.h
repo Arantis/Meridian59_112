@@ -32,9 +32,9 @@
 #define INVALID_DSTR -1
 #define NO_SUPERCLASS 0
 
-#define MAX_DEPTH 2000
+#define MAX_DEPTH 800
 
-#define BOF_VERSION 9
+#define BOF_VERSION 10
 
 // enable constants such as M_PI from math.h
 #define _USE_MATH_DEFINES

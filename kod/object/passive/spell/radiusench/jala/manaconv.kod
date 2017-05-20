@@ -18,24 +18,30 @@ resources:
 
    include manaconv.lkod
 
-   ManaConvergence_name_rsc = "mana convergence"
+   ManaConvergence_name_rsc = "witless ditty"
    ManaConvergence_icon_rsc = imanacon.bgf
    ManaConvergence_desc_rsc = \
-      "The words of this song form an enchantment which increases the "
-      "effectiveness of magical attack spells.  Requires one perfect polished "
-      "seraphym."
+      "The ruthlessly vexing lyrics and annoyingly catchy melody of this most devious "
+      "ditty will worm themselves into the minds of the bard's adversaries, causing them "
+      "to leak mystical energy.  The leaked mana may then be siphoned by the minstrel to "
+      "be used for his own purposes."
 
    ManaConvergence_song = jala5.ogg
 
-   Mana_Convergence_cast = "You begin to play a charged song of empowerment."
+   Mana_Convergence_cast = "With a wicked smile, you begin to play an annoying little ditty."
    Mana_Convergence_starts = \
-      "%s%s begins to play a charged song of empowerment."
-   Mana_Convergence_ends = "The charged song played by %s%s fades away."
-   Mana_Convergence_caster_ends = "Your song of empowerment fades."
+      "%s%s begins to play an annoyingly catchy ditty."
+   Mana_Convergence_ends = "At long last, the annoying little ditty played by %s%s comes to an end."
+   Mana_Convergence_caster_ends = "Your annoying little ditty comes to an end."
    Mana_Convergence_enter = \
-      "The flow of magic in this place suddenly becomes stronger."
+      "An annoying little tune enters your ear and emptiness spreads throughout your mind "
+      "as you involuntarily begin to hum along."
    Mana_Convergence_leave = \
-      "The empowered crackling of energy in the air around you fades."
+      "You breathe a sigh of relief as you manage to banish the annoying ditty from your mind."
+   manacon_sap_caster = \
+      "%s%s begins to hum the tune you planted in %s head."
+   manacon_sap_target = \
+      "You utter a cry of frustration as %s%s's ditty causes you to lose your train of thought."
 
 classvars:
 
@@ -52,15 +58,13 @@ classvars:
    vrDesc = ManaConvergence_desc_rsc
 
    viMana = 10          // Mana is amount used upon inititiation
-   viManaDrain = 9      // Drain is amount used every viDrainTime milliseconds
-   viDrainTime = 5000    // Drain some mana every viDrainTime milliseconds
+   viManaDrain = 1800    // Mana drained per second (10^3)
    viSpell_num = SID_MANA_CONVERGENCE
 
    viSchool = SS_JALA
    viSpell_level = 5
    viMeditate_ratio = 75
 
-   viAffectsGuildmates = TRUE
    viAffectsEnemies = TRUE
 
 properties:
@@ -77,15 +81,38 @@ messages:
       return;
    }
 
-   ModifySpellPower(who=$,oSpell=$,state=$,iSpellPower=0)
+   PeriodicEffect(who=$,state=$)
    {
-      if state <> $
-         AND IsClass(oSpell,&AttackSpell)
+      local oCaster, iManaGain;
+
+      oCaster = First(state);
+
+      if (IsClass(who,&Player)
+         AND NOT (who = oCaster))
       {
-         return iSpellPower + Nth(state,5);
+         iManaGain = Send(who,@LoseMana,#amount=1);
+
+         if (iManaGain > 0)
+         {
+            Send(oCaster,@GainMana,#amount=iManaGain,#bCapped=TRUE);
+            Send(oCaster,@MsgSendUser,#message_rsc=manacon_sap_caster,
+                  #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName),
+                  #parm3=Send(who,@GetHisHer));
+
+            Send(who,@MsgSendUser,#message_rsc=manacon_sap_target,
+                  #parm1=Send(oCaster,@GetCapDef),#parm2=Send(oCaster,@GetName));
+         }
       }
 
-      return iSpellPower;
+      propagate;
+   }
+
+   GetStateDuration(state = $)
+   {
+      local iDuration;
+
+      // 4000-5000 ms.
+      return 5000 - (Nth(state,5) * 10);
    }
 
 end
