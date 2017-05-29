@@ -773,6 +773,12 @@ messages:
       return piTimeLoggedIn;
    }
 
+   // Used by GetStealth in player.kod to check if the player enjoys login protection.
+   GetTimeSinceLogin()
+   {
+      return GetTime() - piLastLoginTime;
+   }
+
    SendFirstTimeAppeal()
    {
       Send(self,@UserAppeal,#first_time=TRUE);
@@ -8100,8 +8106,17 @@ messages:
 
    SomethingPhasedOut(what = $, iHealth = 0, iMaxHealth = 0)
    {
+      local oToken;
+
       if (what = self)
       {
+         oToken = Send(self,@FindHolding,#class=&Token);
+
+         if (oToken <> $)
+         {
+            Send(oToken,@UserPhased,#where=poOwner);
+         }
+
          Send(self,@RemoveAllMinions);
 
          // Evil twin attacking us.
@@ -8166,8 +8181,17 @@ messages:
 
    SomethingSpectatedOut(what = $)
    {
+      local oToken;
+
       if (what = self)
       {
+         oToken = Send(self,@FindHolding,#class=&Token);
+
+         if (oToken <> $)
+         {
+            Send(oToken,@UserPhased,#where=poOwner);
+         }
+
          Send(self,@RemoveAllMinions);
 
          // Evil twin goes to limbo, to await our return.
@@ -10462,7 +10486,7 @@ messages:
    {
       // We're not moving if it's been more than 2 seconds since we moved
       //   OR if we're flagged as unable to move.
-      if (GetTime() - piLastMoveUpdateTime) > 2
+      if (Abs(GetTickCount() - piLastMoveUpdateTime) > 2000)
          OR (piFlags & PFLAG_NO_MOVE)
       {
          return FALSE;
