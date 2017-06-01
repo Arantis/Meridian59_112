@@ -82,6 +82,35 @@ properties:
 
 messages:
 
+   Constructed()
+   {
+      Send(self,@ValidateMonsterGenPoints);
+
+      propagate;
+   }
+
+   ValidateMonsterGenPoints()
+   {
+      local i, iSectorID, each_obj, iRow, iCol;
+
+      foreach i in plGenerators
+      {
+         iRow = First(i);
+         iCol = Nth(i,2);
+
+         iSectorID = Send(self,@GetSectorIDAtLocation,#row=iRow,#col=iCol,
+                           #fine_row=FINENESS_HALF,#fine_col=FINENESS_HALF);
+         if (iSectorID = $
+            OR iSectorID < 0)
+         {
+            Debug("Invalid plGenerator coords ", iRow, iCol,
+                  " in room ",vrName, GetClass(self));
+         }
+      }
+
+      return;
+   }
+
    Delete()
    {
       if ptGen <> $
@@ -96,6 +125,8 @@ messages:
          ptOkay_To_Load = $;
          pbOkay_To_Load = TRUE;
       }
+
+      plGenerators = $;
 
       propagate;
    }
@@ -115,12 +146,12 @@ messages:
 
       if vbScaleSpawnRateWithPlayers
       {
-         iWaitTime = iWaitTime / Bound(piHero_count,1,iMaxHeroes);
+         iWaitTime /= Bound(piHero_count,1,iMaxHeroes);
       }
       else
       {
          // Always have max spawn rate
-         iWaitTime = iWaitTime / iMaxHeroes;
+         iWaitTime /= iMaxHeroes;
       }
 
       return iWaitTime;
@@ -230,11 +261,19 @@ messages:
 
    NewHold(what = $)
    {
-      if IsClass(what,&Battler)
+      if (IsClass(what,&Battler)
+         AND Send(what,@IsLegitimateSpawn))
       {
-         Post(self,@CountMonsters);
-         Post(self,@CountHeroes);
-         Post(self,@AdjustMaxMonsters);
+         if Send(what,@CountsAsMonster)
+         {
+            ++piMonster_Count;
+         }
+         else if Send(what,@CountsAsHero)
+         {
+            ++piHero_count;
+         }
+
+         Send(self,@AdjustMaxMonsters);
       }
 
       propagate;
@@ -242,14 +281,54 @@ messages:
 
    LeaveHold(what = $)
    {
-      if IsClass(what,&Battler)
+      if (IsClass(what,&Battler)
+         AND Send(what,@IsLegitimateSpawn))
       {
-         Post(self,@CountMonsters);
-         Post(self,@CountHeroes);
-         Post(self,@AdjustMaxMonsters);
+         if Send(what,@CountsAsMonster)
+         {
+            --piMonster_Count;
+         }
+         else if Send(what,@CountsAsHero)
+         {
+            --piHero_count;
+         }
+
+         Send(self,@AdjustMaxMonsters);
       }
 
       propagate;
+   }
+
+   UpdateBattlerCount()
+   "Updates our count of monsters and heroes (players and their helpers)."
+   "Does the same thing as combined CountMonsters and CountHeroes."
+   {
+      local i, oObject;
+
+      piMonster_Count = 0;
+      piHero_count = 0;
+
+      foreach i in plActive
+      {
+         oObject = First(i);
+
+         if (IsClass(oObject,&Battler)
+            AND Send(oObject,@IsLegitimateSpawn))
+         {
+            // Count monsters, but only if they're meanies.
+            if Send(oObject,@CountsAsMonster)
+            {
+               ++piMonster_Count;
+            }
+            else if Send(oObject,@CountsAsHero)
+            {
+               // Count heroes, include friendly monsters.
+               ++piHero_count;
+            }
+         }
+      }
+
+      return;
    }
 
    CountMonsters()
@@ -260,7 +339,7 @@ messages:
 
       foreach i in plActive
       {
-         oObject = Send(self,@HolderExtractObject,#data=i);
+         oObject = First(i);
 
          if IsClass(oObject,&Battler)
          {
@@ -284,7 +363,7 @@ messages:
 
       foreach i in plActive
       {
-         oObject = Send(self,@HolderExtractObject,#data=i);
+         oObject = First(i);
 
          if IsClass(oObject,&Battler)
          {
@@ -494,7 +573,6 @@ messages:
       plGenerators = generators;
 
       return;
-   
    }
 
    GetPatrolPaths()
@@ -508,7 +586,7 @@ messages:
       {
          return;
       }
-      
+
       plPatrolPaths = patrolPaths;
 
       return;
