@@ -218,7 +218,11 @@ void *ReallocCHK(int malloc_id, void *p,size_t size, size_t old_size )
 
 	void *tmp ; 
 
-	tmp = MallocCHK(size,__FILE__,__LINE__) ;
+#ifndef NDEBUG
+   tmp = MallocCHK(size, __FILE__, __LINE__);
+#else
+   tmp = MallocCHK(size);
+#endif
 
 	if( old_size < size )
 	{
@@ -247,7 +251,7 @@ const char *memory_stat_names[] =
 		"Systimer", "Nameid",
 		"Class", "Message", "Object",
 		"List", "Object properties",
-		"Configuration", "Rooms",
+		"Configuration", "Rooms", "Astar",
 		"Admin constants", "Buffers", "Game loading",
 		"Tables", "Socket blocks", "Game saving",
 		

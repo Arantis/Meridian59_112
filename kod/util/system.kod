@@ -2622,6 +2622,10 @@ messages:
       Send(self,@CreateOneRoomIfNew,#num=RID_DESERTRIVER1,#class=&DesertRiver1);
       Send(self,@CreateOneRoomIfNew,#num=RID_DESERTRIVER2,#class=&DesertRiver2);
       Send(self,@CreateOneRoomIfNew,#num=RID_DESERTBRIDGE,#class=&DesertBridge);
+	  
+	  Send(self,@CreateOneRoomIfNew,#num=RID_RATCAVE1,#class=&RatCave1);
+	  Send(self,@CreateOneRoomIfNew,#num=RID_RATCAVE2,#class=&RatCave2);
+	  Send(self,@CreateOneRoomIfNew,#num=RID_RATCAVE3,#class=&RatCave3);
 
 
       if poRentableRoomMaintenance <> $  // After a clean build, for example.
@@ -2724,6 +2728,14 @@ messages:
 
       // Check validity of all exits/edge exit lists.
       Send(self,@TestAllRoomExits);
+
+      ///////////////////////////////////////////////
+      // Temporary! One-time fix of old timestamps.
+      // Newsglobes.
+      Send(&News,@FixPostTimestamps);
+      // Mails.
+      Send(&User,@FixMailTimestamps);
+      ///////////////////////////////////////////////
 
       return TRUE;
    }
@@ -3357,6 +3369,9 @@ messages:
       Send(self,@CreateOneSpellIfNew,#num=SID_VIGOR_BOON,#class=&VigorBoon);
       Send(self,@CreateOneSpellIfNew,#num=SID_HP_BOON,#class=&HPBoon);
       Send(self,@CreateOneSpellIfNew,#num=SID_MANA_BOON,#class=&ManaBoon);
+
+      Send(self,@CreateOneSpellIfNew,#num=SID_COOLDOWN_NODEBURST,#class=&CooldownNodeBurst);
+      Send(self,@CreateOneSpellIfNew,#num=SID_COOLDOWN_SPOREBURST,#class=&CooldownSporeBurst);
 
       Send(self,@CreateOneSpellIfNew,#num=SID_MARTYRS_BATTLEGROUND,#class=&MartyrsBattleground);
       Send(self,@CreateOneSpellIfNew,#num=SID_RESIST_POISON,#class=&ResistPoison);
@@ -4239,8 +4254,6 @@ messages:
       Send(poNodeAttack,@NewGameDay);
       Send(poRentableRoomMaintenance,@NewGameDay);
       Send(&SoldierShield,@NewGameDay);
-
-      Send(Send(self,@FindSpellByNum,#num=SID_NODEBURST),@NewGameDay);
 
       Send(self,@VerifyUsersLoggedOn);
 
@@ -5751,6 +5764,7 @@ messages:
       plItemTemplates = cons(create(&Soup),plItemTemplates);
       plItemTemplates = cons(create(&Cheese),plItemTemplates);
       plItemTemplates = cons(create(&Bread),plItemTemplates);
+      plItemTemplates = cons(create(&TurkeyLeg),plItemTemplates);
       plItemTemplates = cons(create(&Grapes),plItemTemplates);
       plItemTemplates = cons(create(&Apple),plItemTemplates);
       plItemTemplates = cons(create(&Cookie),plItemTemplates);

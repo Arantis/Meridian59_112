@@ -168,6 +168,7 @@
    LIR_SECTOR_INSIDE  = 0x000010
    LIR_SECTOR_HASFTEX = 0x000020
    LIR_SECTOR_HASCTEX = 0x000040
+   LIR_SECTOR_NOMOVE  = 0x000080
    LIR_BLOCKED_OBJECT = 0x000100
 
    // Projectile and Light flags
@@ -416,6 +417,21 @@
    NEWS_PERMISSION_READ = 0x01
    NEWS_PERMISSION_WRITE = 0x02
    NEWS_PERMISSION_READ_WRITE = 0x03
+
+   // News list elements
+   NEWS_ARTICLE_INDEX = 1 // Ideally keep as 1 so First(article) works
+   NEWS_ARTICLE_POSTER = 2
+   NEWS_ARTICLE_SHORT_TIME = 3
+   NEWS_ARTICLE_LONG_TIME = 4
+   NEWS_ARTICLE_TITLE = 5
+   NEWS_ARTICLE_BODY = 6
+
+   // Mail list elements
+   MAIL_SENDER = 1
+   MAIL_SHORT_TIME = 2
+   MAIL_LONG_TIME = 3
+   MAIL_RECEIVERS = 4
+   MAIL_TEXT = 5
 
    // Room IDs (RIDS)
 
@@ -911,6 +927,11 @@
    RID_MAR_CRYPT1 = 2600
    RID_MAR_CRYPT2 = 2601
    RID_MAR_CRYPT3A = 2602
+   
+   // Tos to Barloque Rat Caves 2701-2750
+   RID_RATCAVE1 = 2701
+   RID_RATCAVE2 = 2702
+   RID_RATCAVE3 = 2703
 
    // "Historical" rooms 9000-10000
    // These are older rooms that we're throwing in for historical/nostalgia
@@ -1622,8 +1643,11 @@
    STATE_REST        = 0x00004
    STATE_WAIT        = 0x00008
    STATE_MOVE        = 0x00010
+   STATE_MOVE_PATH   = 0x00020
+   STATE_MOVE_DIRECT = 0x00040
    STATE_ZERO_MASK   = 0xFF000
 
+   ESTATE_LONG_STEP  = 0x02000
    ESTATE_AVOIDING   = 0x04000
    ESTATE_CLOCKWISE  = 0x08000
 
@@ -2284,6 +2308,8 @@
    SID_BURN = 199
    SID_LULLABY = 200
    SID_ANTIMAGIC_ROOM = 201
+   SID_COOLDOWN_NODEBURST = 202
+   SID_COOLDOWN_SPOREBURST = 203
 
    // Depreciated spell IDs
    SID_LIGHTNING = 1                   // use SID_LIGHTNING_BOLT
@@ -2356,6 +2382,12 @@
    // [oTimer, what, iSpellPower] and [oTimer, what, state, iSpellPower]
    ENCHANTMENT_LIST_NO_STATE = 3
    ENCHANTMENT_LIST_STATE = 4
+
+   // Radius enchantment state indexes
+   RE_STATE_CASTER = 1 // Keep caster as 1 so First(state) works.
+   RE_STATE_SOURCE = 2
+   RE_STATE_RANGE = 3
+   RE_STATE_DURATION = 4
 
    // Learning constants
    LEARN_FAILED_ALREADY_HAS = -4
@@ -3584,6 +3616,8 @@
    QN_STATUS_IN_PROGRESS            = 0x3
    QN_STATUS_AWAITING_MONSTER_DEATH = 0x4
    QN_STATUS_COMPLETED              = 0x5
+   // Used for assignable quests which need to unassign after deadline.
+   QN_STATUS_WAITING_FOR_PLAYERS_TIMED = 0x6
 
    // Quest node prize types
    QN_PRIZETYPE_ITEM                      = 0x01      // Specific item's object ID

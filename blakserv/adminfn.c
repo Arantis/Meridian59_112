@@ -2392,6 +2392,7 @@ void AdminShowCalls(int session_id,admin_parm_type parms[],
 		case GETLOCATIONINFOBSP: strcpy(c_name, "GetLocationInfoBSP"); break;
 		case GETRANDOMPOINTBSP: strcpy(c_name, "GetRandomPointBSP"); break;
 		case GETSTEPTOWARDSBSP: strcpy(c_name, "GetStepTowardsBSP"); break;
+      case GETRANDOMMOVEDESTBSP: strcpy(c_name, "GetRandomMoveDestBSP"); break;
 		case BLOCKERADDBSP: strcpy(c_name, "BlockerAddBSP"); break;
 		case BLOCKERMOVEBSP: strcpy(c_name, "BlockerMoveBSP"); break;
 		case BLOCKERREMOVEBSP: strcpy(c_name, "BlockerRemoveBSP"); break;
@@ -2419,6 +2420,8 @@ void AdminShowCalls(int session_id,admin_parm_type parms[],
 		case GETALLLISTNODESBYCLASS : strcpy(c_name, "GetAllListNodesByClass"); break;
 		case LISTCOPY : strcpy(c_name, "ListCopy"); break;
 		case GETTIME : strcpy(c_name, "GetTime"); break;
+		case GETUNIXTIMESTRING: strcpy(c_name, "GetUnixTimeString"); break;
+		case OLDTIMESTAMPFIX: strcpy(c_name, "OldTimestampFix"); break;
 		case GETTICKCOUNT : strcpy(c_name, "GetTickCount"); break;
 		case GETDATEANDTIME : strcpy(c_name, "GetDateAndTime"); break;
 		case ABS : strcpy(c_name, "Abs"); break;

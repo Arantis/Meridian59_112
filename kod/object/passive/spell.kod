@@ -146,12 +146,12 @@ resources:
 
    Spell_too_few_hp_rsc = "You are not powerful enough to cast this spell."
 
+   cannot_cast_cooldown = \
+      "You cannot cast %s - this spell is still on cooldown!"
    cannot_cast_on_phased_out = \
       "You can't cast anything on %s while %s is phased out of existence!"
-
    over_time_effect_wearing_off = \
       "The sudden feeling passes."
-
    over_time_effect_starting = \
       "Suddenly, you feel a little different."
 
@@ -200,6 +200,9 @@ classvars:
    viCast_time = 0
    // viPostCast_time in seconds, since it works off GetTime().
    viPostCast_time = 1
+
+   // Cooldown classvars: SID is the ID of the cooldown spell to use.
+   viCooldownSID = 0
 
    vrSucceed_wav = $
 
@@ -856,13 +859,30 @@ messages:
       return TRUE;
    }
 
+   CooldownCastTried(who = $, rName = $)
+   "rName is the name of the spell being cast."
+   {
+      Send(who,@MsgSendUser,#message_rsc=cannot_cast_cooldown,#parm1=rName);
+
+      return;
+   }
+
    CanPayCosts(who=$,lTargets=$,iSpellPower=0,bItemCast=FALSE,bFreeCast=FALSE)
    {
       local i, each_obj, oRoom, iRand, oSpell, oTarget;
 
-      if NOT IsClass(who,&User)
+      // Check for a cooldown in effect.
+      if (viCooldownSID > 0)
       {
-         return TRUE;
+         oSpell = Send(SYS,@FindSpellByNum,#num=viCooldownSID);
+         if (oSpell <> $
+            AND Send(who,@IsEnchanted,#what=oSpell))
+         {
+            // Cooldown might want to do specific things here.
+            Send(oSpell,@CooldownCastTried,#who=who,#rName=vrName);
+
+            return FALSE;
+         }
       }
 
       if lTargets <> $
@@ -880,6 +900,12 @@ messages:
 
             return FALSE;
          }
+      }
+
+      // Following checks only apply to user casters.
+      if NOT IsClass(who,&User)
+      {
+         return TRUE;
       }
 
       if NOT pbEnabled
@@ -1195,16 +1221,17 @@ messages:
    CheckPlayerHelp(who=$, lTargets=$)
    "Checks to see if the player can cast the beneficial spell on said targets."
    {
-      local oObject;
+      local oObject, oOwner;
 
       // If lTargets is $, then we're casting an room-effect spell, let it go.
       if lTargets <> $
       {
          foreach oObject in lTargets
          {
+            oOwner = Send(oObject,@GetOwner);
             // If we're in the arena, we can cast it.
             if IsClass(oObject,&Battler)
-               AND Send(Send(oObject,@GetOwner),@IsArena)
+               AND (oOwner <> $ AND Send(oOwner,@IsArena))
             {
                return TRUE;
             }
@@ -1568,7 +1595,7 @@ messages:
    CastSpell(who = $, lTargets = $, iSpellPower = 0, iPowerLevel = 100,
              bItemCast=FALSE, bRing=FALSE, bStun=FALSE,report=TRUE)
    {
-      local oTarget, oRoom, i, iAggro, iDuration;
+      local oTarget, oRoom, i, iAggro, iDuration, oSpell;
 
       // Insert any spellpower-modifying effects here that shouldn't affect
       // the actual casting/success of the spell, but still have an effect on
@@ -1597,19 +1624,31 @@ messages:
          return;
       }
 
-      // Add a mana drain if applicable.
-      if IsClass(who,&Battler) AND viManaDrain > 0
+      // Add a mana drain and cooldown if applicable.
+      if IsClass(who,&Battler)
       {
-         if IsClass(who,&Player)
+         if (viManaDrain > 0)
          {
-            Send(who,@StartOverTimeEffect,#strength=-viManaDrain,#what=self,#who=who,
-               #removable=REMOVE_INTERNAL,#showicon=FALSE,#type=TYPE_MANA);
+            if IsClass(who,&Player)
+            {
+               Send(who,@StartOverTimeEffect,#strength=-viManaDrain,#what=self,#who=who,
+                  #removable=REMOVE_INTERNAL,#showicon=FALSE,#type=TYPE_MANA);
+            }
+            // Monsters can maintain draining spells more easily.
+            else
+            {
+               Send(who,@StartOverTimeEffect,#strength=-viManaDrain/2,#what=self,#who=who,
+                  #removable=REMOVE_INTERNAL,#showicon=FALSE,#type=TYPE_MANA);
+            }
          }
-         // Monsters can maintain draining spells more easily.
-         else
+
+         if (viCooldownSID > 0)
          {
-            Send(who,@StartOverTimeEffect,#strength=-viManaDrain/2,#what=self,#who=who,
-               #removable=REMOVE_INTERNAL,#showicon=FALSE,#type=TYPE_MANA);
+            oSpell = Send(SYS,@FindSpellByNum,#num=viCooldownSID);
+            if (oSpell <> $)
+            {
+               Send(oSpell,@CastSpell,#who=self,#oTarget=who);
+            }
          }
       }
 
@@ -1711,8 +1750,16 @@ messages:
 
       if oRoom <> $
       {
+         if Send(self,@AffectsSpellPower)
+         {
+            Send(oRoom,@SetRoomFlag,#flag=ROOM_ANTI_MAGIC,#value=TRUE);
+         }
+
+         // Don't do noticeable things for blank DMs (IsHidden)
+         // or for invisible DMs (IsDMStealthed).
          if IsClass(who,&DM)
-            AND Send(who,@IsDMStealthed)
+            AND (Send(who,@IsDMStealthed)
+               OR Send(who,@IsHidden))
          {
             return;
          }
@@ -1740,11 +1787,6 @@ messages:
                   }
                }
             }
-         }
-
-         if Send(self,@AffectsSpellPower)
-         {
-            Send(oRoom,@SetRoomFlag,#flag=ROOM_ANTI_MAGIC,#value=TRUE);
          }
       }
 
@@ -2276,17 +2318,17 @@ messages:
 
    SpellMurmurMessage(caster=$,target=$,hearer=$)
    {
-      if isClass(caster,&Admin)
-         AND Send(caster, @IsHidden)
+      if IsClass(caster,&DM)
+         AND Send(caster,@IsHidden)
       {
-         return;     
-      }      
-      
+         return;
+      }
+
       if caster = hearer
       {
          return;
       }
-        
+
       if Send(self,@GetNumSpellTargets) <> 1
       {
          Send(hearer,@MsgSendUser,#message_rsc=spell_gesture_third,
@@ -2294,24 +2336,21 @@ messages:
               #parm2=Send(caster,@GetName,#cap=TRUE),
               #parm3=Send(caster,@GetHisHer));
       }
+      else if hearer = target
+      {
+         Send(hearer,@MsgSendUser,#message_rsc=spell_gesture_third_target,
+              #parm1=Send(caster,@GetCapIndef),#parm2=Send(caster,@GetName),
+              #parm3=Send(caster,@GetHisHer),#parm4=object_article_none_rsc,
+              #parm5=spell_you);
+      }
       else
       {
-         if hearer = target
-         {  
-            Send(hearer,@MsgSendUser,#message_rsc=spell_gesture_third_target,
-                 #parm1=Send(caster,@GetCapIndef),#parm2=Send(caster,@GetName),
-                 #parm3=Send(caster,@GetHisHer),#parm4=object_article_none_rsc,
-                 #parm5=spell_you);   
-         }
-         else
-         {
-            Send(hearer,@MsgSendUser,#message_rsc=spell_gesture_third_target,
-                 #parm1=Send(caster,@GetCapIndef),#parm2=Send(caster,@GetName),
-                 #parm3=Send(caster,@GetHisHer),#parm4=Send(target,@GetIndef),
-                 #parm5=Send(target,@GetName));
-         }
+         Send(hearer,@MsgSendUser,#message_rsc=spell_gesture_third_target,
+              #parm1=Send(caster,@GetCapIndef),#parm2=Send(caster,@GetName),
+              #parm3=Send(caster,@GetHisHer),#parm4=Send(target,@GetIndef),
+              #parm5=Send(target,@GetName));
       }
-      
+
       return;
    }
 
@@ -2883,16 +2922,6 @@ messages:
       if viHarmful AND NOT vbIsAreaEffect
       {
          return COMBAT_ACTION_HARM;
-      }
-
-      if IsClass(self,&Heal)
-      {
-         return COMBAT_ACTION_HEAL;
-      }
-
-      if IsClass(self,&PersonalEnchantment)
-      {
-         return COMBAT_ACTION_BUFF;
       }
 
       return COMBAT_ACTION_NEUTRAL;

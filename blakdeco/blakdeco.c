@@ -545,6 +545,7 @@ char * name_function(int fnum)
    case BLOCKERCLEARBSP: return "BlockerClearBSP";
    case GETRANDOMPOINTBSP: return "GetRandomPointBSP";
    case GETSTEPTOWARDSBSP: return "GetStepTowardsBSP";
+   case GETRANDOMMOVEDESTBSP: return "GetRandomMoveDestBSP";
 
    case STRINGTONUMBER : return "StringToNumber";
 
@@ -573,6 +574,8 @@ char * name_function(int fnum)
    case LISTCOPY : return "ListCopy";
 
    case GETTIME : return "GetTime";
+   case GETUNIXTIMESTRING: return "GetUnixTimeString";
+   case OLDTIMESTAMPFIX: return "OldTimestampFix";
    case GETTICKCOUNT : return "GetTickCount";
    case GETDATEANDTIME : return "GetDateAndTime";
 
