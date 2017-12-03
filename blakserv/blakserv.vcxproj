@@ -198,6 +198,7 @@ copy "$(SolutionDir)bin\libcurl.dll" "$(SolutionDir)run\server"</Command>
     <ClInclude Include="apndfile.h" />
     <ClInclude Include="astar.h" />
     <ClInclude Include="async.h" />
+    <ClInclude Include="async_windows.h" />
     <ClInclude Include="blakres.h" />
     <ClInclude Include="blakserv.h" />
     <ClInclude Include="block.h" />
@@ -341,6 +342,8 @@ copy "$(SolutionDir)bin\libcurl.dll" "$(SolutionDir)run\server"</Command>
     <ResourceCompile Include="blakserv.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="ant.bmp" />
+    <Image Include="archetype.bmp" />
     <Image Include="logo.ico" />
     <Image Include="meridian.ico" />
   </ItemGroup>
@@ -359,6 +362,9 @@ copy "$(SolutionDir)bin\libcurl.dll" "$(SolutionDir)run\server"</Command>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
       <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="signal.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

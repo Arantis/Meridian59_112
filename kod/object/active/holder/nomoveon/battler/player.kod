@@ -164,7 +164,7 @@ resources:
    player_temp_safe_end = \
       "~I~BYou feel your guardian angel has departed once more."
 
-   player_improved = "~I~BYou have improved in the art of %s."
+   player_improved = "~I~BYou have improved in the art of %s.~n ~B[%i%%] "
    player_improved_wav_rsc = imp.ogg
    player_aggressor = "Shal'ille frowns upon your unprovoked attack."
    player_aggressor_minion = \
@@ -210,9 +210,9 @@ resources:
    player_unbound_energy_wiped = "The volatile energy surrounding you "
       "dissipates in the violently twisting aether."
    player_unbound_energy_gained = "You gather ~B~t%i~v~B unbound energy "
-      "from your fallen enemy."
+      "from your fallen enemy. (~B~t%i ~v~Btotal)"
    player_unbound_energy_lost = "You channel ~B~t%i~v~B unbound energy "
-      "to shape your spell."
+      "to shape your spell. Your remaining unbound energy is ~B~t%i~v~B."
    player_unbound_energy_wasted = "Your mind is too preoccupied with your "
       "recent encounter to make any use of the subtle energies dispersing "
       "before your eyes."
@@ -293,8 +293,6 @@ resources:
       "Not a court vassal, yet affected by the Meridian Council."
    player_not_intriguing = "Not yet concerned with affairs at the Royal Court."
 
-   player_nl = "\n"
-   player_sp = " "
    player_dot = "."
 
    // Master fixed info resource.
@@ -2036,7 +2034,7 @@ messages:
 //         }
 //
 //         AppendTempString(player_dot);
-//         AppendTempString(player_nl);
+//         AppendTempString(system_newline_resource);
 //      }
 //      AddPacket(4,GetTempString());
 
@@ -2533,40 +2531,37 @@ messages:
       }
       else
       {
-         if NOT IsClass(self,&Guest)
+         foreach i in lSpells
          {
-            foreach i in lSpells
+            oSpell = Send(SYS, @FindSpellByNum, #num=i);
+            // Not offered to new characters -> cheating, skip spell
+            if (oSpell <> $ AND Send(oSpell,@OfferToNewCharacters))
             {
-               oSpell = Send(SYS, @FindSpellByNum, #num=i);
-               // Not offered to new characters -> cheating, skip spell
-               if (oSpell <> $ AND Send(oSpell,@OfferToNewCharacters))
+               iLevel = Send(oSpell,@GetLevel);
+               if (iLevel <= 2)
                {
-                  iLevel = Send(oSpell,@GetLevel);
-                  if (iLevel <= 2)
-                  {
-                     Send(self,@AddSpell,#num=i,#initial=TRUE);
-                  }
-                  if (Send(oSpell,@GetSchool) = SS_QOR)
-                  {
-                     bQor = TRUE;
-                  }
-                  if (Send(oSpell,@GetSchool) = SS_SHALILLE)
-                  {
-                     bShalille = TRUE;
-                  }
+                  Send(self,@AddSpell,#num=i,#initial=TRUE);
+               }
+               if (Send(oSpell,@GetSchool) = SS_QOR)
+               {
+                  bQor = TRUE;
+               }
+               if (Send(oSpell,@GetSchool) = SS_SHALILLE)
+               {
+                  bShalille = TRUE;
                }
             }
+         }
 
-            foreach i in lSkills
+         foreach i in lSkills
+         {
+            oSkill = Send(SYS,@FindSkillByNum,#num=i);
+            if (oSkill <> $)
             {
-               oSkill = Send(SYS,@FindSkillByNum,#num=i);
-               if (oSkill <> $)
+               iLevel = Send(oSkill,@GetLevel);
+               if (iLevel <= 2)
                {
-                  iLevel = Send(oSkill,@GetLevel);
-                  if (iLevel <= 2)
-                  {
-                     Send(self,@AddSkill,#num=i,#initial=TRUE);
-                  }
+                  Send(self,@AddSkill,#num=i,#initial=TRUE);
                }
             }
          }
@@ -3056,12 +3051,8 @@ messages:
                }
             }
 
+            // Calls SomethingChanged.
             Send(self,@ResetPlayerFlagList,#who=self);
-
-            if poOwner <> $
-            {
-               Send(poOwner,@SomethingChanged,#what=self);
-            }
 
             return;
          }
@@ -3093,12 +3084,8 @@ messages:
                }
             }
 
+            // Calls SomethingChanged
             Send(self,@ResetPlayerFlagList,#who=self);
-
-            if poOwner <> $
-            {
-               Send(poOwner,@SomethingChanged,#what=self);
-            }
 
             return;
          }
@@ -3715,7 +3702,8 @@ messages:
             Post(self,@DrawOffense);
          }
       }
-      else
+      else if (NOT (IsClass(what,&KillingFields)
+                 OR IsClass(what,&ForcesOfLight)))
       {
          Debug(self,vrName, "Tried to remove attack modifier",what,
                Send(what,@GetName)," not in list",plAttack_modifiers);
@@ -3780,6 +3768,12 @@ messages:
       Send(self,@SetPlayerFlag,#flag=type,#value=bSquelched,#flagset=2);
 
       return bSquelched;
+   }
+
+   IsPlayerSquelched()
+   {
+      return ((PFLAG2_SQUELCHED_ALL & piFlags2)
+         OR (piFlags2 & PFLAG2_SQUELCHED_APPEAL));
    }
 
    TrySay()
@@ -4638,12 +4632,7 @@ messages:
             // have your 'safety' off to attack anyone.
             if report
             {
-               if IsClass(self,&Guest)
-               {
-                  Send(self,@MsgSendUser,#message_rsc=player_guardian_angel,
-                       #parm1=Send(victim,@GetDef),#parm2=Send(victim,@GetName));
-               }
-               else if minion
+               if minion
                {
                   Send(self,@MsgSendUser,#message_rsc=player_safety_caught_minion,
                         #parm1=Send(victim,@GetDef),#parm2=Send(victim,@GetName));
@@ -5899,19 +5888,8 @@ messages:
          Send(poOwner,@SomethingKilled,#what=self,#victim=what);
       }
 
-      // Let our shield know we killed something.
-      oSoldierShield = Send(self,@FindUsing,#class=&SoldierShield);
-      if oSoldierShield <> $
-      {
-         Send(oSoldierShield,@KilledSomething,#what=what);
-      }
-
-      // Let JOF know we killed something.
-      oObject = Send(self,@FindUsing,#class=&JewelOfFroz);
-      if oObject <> $
-      {
-         Send(oObject,@KilledSomething,#what=what);
-      }
+      // Let the objects we're using know we killed something.
+      SendList(plUsing,0,@KilledSomething,#what=what);
 
       if IsClass(what,&User)
          AND what <> self
@@ -6986,7 +6964,14 @@ messages:
 
    RemoveNodeFromList(node_num=0)
    {
-      piNodelist = piNodelist & ~node_num ;
+      piNodelist &= ~node_num;
+
+      // Have to update mana node quest in quest log.
+      // Would be better to update each quest individually...
+      if (pbLogged_on)
+      {
+         Send(self,@ToCliStats,#group=5);
+      }
 
       return;
    }
@@ -6994,6 +6979,13 @@ messages:
    ResetNodeList()
    {
       piNodelist = 0;
+
+      // Have to update mana node quest in quest log.
+      // Would be better to update each quest individually...
+      if (pbLogged_on)
+      {
+         Send(self,@ToCliStats,#group=5);
+      }
 
       return;
    }
@@ -7031,6 +7023,13 @@ messages:
          piNodelist |= node_num;
       }
 
+      // Have to update mana node quest in quest log.
+      // Would be better to update each quest individually...
+      if (pbLogged_on)
+      {
+         Send(self,@ToCliStats,#group=5);
+      }
+
       Send(self,@ComputeMaxMana);
 
       return;
@@ -7044,6 +7043,13 @@ messages:
       }
 
       piNodelist &= ~node_num;
+
+      // Have to update mana node quest in quest log.
+      // Would be better to update each quest individually...
+      if (pbLogged_on)
+      {
+         Send(self,@ToCliStats,#group=5);
+      }
 
       Send(self,@ComputeMaxMana);
 
@@ -7678,7 +7684,7 @@ messages:
          if poOwner <> $
          {
             Post(self,@MsgSendUser,#message_rsc=player_improved,
-                  #parm1=spellName);
+                  #parm1=spellName,#parm2=newAbility);
             Send(poOwner,@SomethingWaveRoom,#what=self,
                   #wave_rsc=player_improved_wav_rsc);
 
@@ -8222,7 +8228,7 @@ messages:
          if poOwner <> $
          {
             Post(self,@MsgSendUser,#message_rsc=player_improved,
-                  #parm1=skillName);
+                  #parm1=skillName,#parm2=newability);
             Send(poOwner,@SomethingWaveRoom,#what=self,
                   #wave_rsc=player_improved_wav_rsc);
          }
@@ -9061,12 +9067,12 @@ messages:
          if iAmount > 0
          {
             Send(self,@MsgSendUser,#message_rsc=player_unbound_energy_gained,
-                  #parm1=iAmount);
+                  #parm1=iAmount,#parm2=piUnbound_energy);
          }
          else if iAmount < 0
          {
             Send(self,@MsgSendUser,#message_rsc=player_unbound_energy_lost,
-                  #parm1=-iAmount);
+                  #parm1=-iAmount,#parm2=piUnbound_energy);
          }
       }
 
@@ -9262,7 +9268,7 @@ messages:
       // Stop any rescue attempts that were going on.
       Send(self,@CancelRescue);
       
-      piLastDeathTime = getTime();
+      piLastDeathTime = GetTime();
 
       // Grab the location of the deceased.
       // Might need to grab the old location if logged off.
@@ -11509,7 +11515,7 @@ messages:
 
       if (poOwner <> $)
       {
-         Send(poOwner,@SomethingChanged,#what=self);
+         Send(poOwner,@SomethingChangedFlags,#what=self);
       }
 
       return;
@@ -12560,6 +12566,10 @@ messages:
       {
          ptTempSafe = CreateTimer(self,@EndTempSafe,iTime);
          Send(self,@MsgSendUser,#message_rsc=player_temp_safe);
+         if (poOwner <> $)
+         {
+            Send(poOwner,@SomethingChangedFlags,#what=self);
+         }
       }
       else
       {
@@ -12575,7 +12585,7 @@ messages:
       if poOwner <> $
       {
          Send(self,@MsgSendUser,#message_rsc=player_temp_safe_end);
-         Send(poOwner,@SomethingChanged,#what=self);
+         Send(poOwner,@SomethingChangedFlags,#what=self);
       }
 
       ptTempSafe = $;
@@ -12633,7 +12643,7 @@ messages:
 
       if (poOwner <> $)
       {
-         Send(poOwner,@SomethingChanged,#what=self);
+         Send(poOwner,@SomethingChangedFlags,#what=self);
       }
 
       return;
@@ -12645,7 +12655,7 @@ messages:
 
       if (poOwner <> $)
       {
-         Send(poOwner,@SomethingChanged,#what=self);
+         Send(poOwner,@SomethingChangedFlags,#what=self);
       }
 
       return;
@@ -12699,7 +12709,7 @@ messages:
       // Don't require new service if the player has been an active soldier.
       if oSoldierShield = $
       {
-         piFactionServiceUpdate = piFactionServiceUpdate + tyme - piFactionTimeUpdated;
+         piFactionServiceUpdate += tyme - piFactionTimeUpdated;
       }
       else
       {
@@ -14195,13 +14205,31 @@ messages:
 
       time = GetTime();
 
-      piLastDeathTime = time;
-      piGuildRejoinTimestamp = time;
-      piLast_restart_time = time;
+      // Can be 0 if never died.
+      if (piLastDeathTime > 0)
+      {
+         piLastDeathTime = time;
+      }
+
+      // Set to 0, so we don't cause any guild join delays.
+      piGuildRejoinTimestamp = 0;
+
+      // Can be 0 for non-created players.
+      if (piLast_restart_time > 0)
+      {
+         piLast_restart_time = time;
+      }
+
+      if (piFactionTimeUpdated > 0)
+      {
+         piFactionTimeUpdated = time;
+      }
+
       piTimeLastStomachUpdate = 0;
       piTimeAttackedPlayer = 0;
       piTimeAttackedByPlayer = 0;
       piTimeLastMurder = 0;
+      piReward_timestamp = 0;
 
       return;
    }
@@ -14486,16 +14514,16 @@ messages:
       if poOwner <> $
       {
          Send(poOwner,@RemoveFromBuilderGroup,#who=self);
-         Send(poOwner,@SomethingChanged,#what=self);
+         Send(poOwner,@SomethingChangedFlags,#what=self);
 
          // Let's see that we left the group
          foreach i in Send(poOwner,@GetPlActive)
          {
-            each_obj = Send(poOwner,@HolderExtractObject,#data=i);
+            each_obj = First(i);
             if IsClass(each_obj,&User)
                AND Send(poOwner,@AreGroupedHere,#who=self,#what=each_obj)
             {
-               Send(self,@SomethingChanged,#what=each_obj);
+               Send(self,@SomethingChangedFlags,#what=each_obj);
             }
          }
       }
@@ -14520,18 +14548,18 @@ messages:
       if poOwner <> $
       {
          Send(poOwner,@AddToBuilderGroup,#who=self);
-         Send(poOwner,@SomethingChanged,#what=self);
+         Send(poOwner,@SomethingChangedFlags,#what=self);
          ptLeaveBuilderGroupTimer = CreateTimer(self,@LeaveBuilderGroupTimer,
                                        Send(poOwner,@GetGroupTime));
 
          // Let's see our new group
          foreach i in Send(poOwner,@GetPlActive)
          {
-            each_obj = Send(poOwner,@HolderExtractObject,#data=i);
+            each_obj = First(i);
             if IsClass(each_obj,&User)
                AND Send(poOwner,@AreGroupedHere,#who=self,#what=each_obj)
             {
-               Send(self,@SomethingChanged,#what=each_obj);
+               Send(self,@SomethingChangedFlags,#what=each_obj);
             }
          }
       }
@@ -15153,6 +15181,8 @@ messages:
          // troops, as long as they aren't necromancers.
          else if IsClass(what,&FactionTroop)
             AND (iFaction <> FACTION_NECROMANCER)
+            AND (poKill_target <> what
+               AND Send(what,@GetTarget) <> self)
          {
             return TRUE;
          }

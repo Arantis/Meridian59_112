@@ -136,7 +136,8 @@ enum {
    BP_REQ_BUY_ITEMS         = 125,
    BP_CHANGE_DESCRIPTION    = 126,
    BP_REQ_INVENTORY_MOVE    = 127,
-
+   BP_ROOM_CONTENTS_FLAGS   = 128,
+   BP_CHANGE_FLAGS          = 129,
    BP_PLAYER                = 130,
    BP_STAT                  = 131,
    BP_STAT_GROUP            = 132,
@@ -283,6 +284,24 @@ enum {
    UC_MINIGAME_RESET_PLAYERS= 49,
 
    UC_REQ_TIME = 60,
+};
+
+// Character creation error enum
+enum {
+   CC_OK = 0,
+   CC_GENERIC_ERROR = 1, // Client uses this for e.g. broken protocol message.
+   CC_NOT_FIRST_TIME = 2, // Player has a restart time > 0.
+   CC_NAME_TOO_LONG = 3,
+   CC_NAME_BAD_CHARACTERS = 4, // Invalid letters in name.
+   CC_NAME_IN_USE = 5,
+   CC_NO_MOB_NAME = 6,
+   CC_NO_NPC_NAME = 7,
+   CC_NO_GUILD_NAME = 8,
+   CC_NO_BAD_WORDS = 9,
+   CC_NO_CONFUSING_NAME = 10, // Gods names, 'You' etc.
+   CC_RETIRED_NAME = 11, // Names of old designers/admins.
+   CC_DESC_TOO_LONG = 12,
+   CC_INVALID_GENDER = 13,
 };
 
 // Login error action constants
@@ -545,8 +564,6 @@ enum {
    DF_DIRHELP          = 0x10,   // File's location is help subdirectory
    DF_DIRMAIL          = 0x14,   // File's location is mail subdirectory
    DF_ADVERTISEMENT    = 0x18,   // Identifies file as an advertisement (goes in client dir)
-
-   DF_GUEST            = 0x20,   // File should be downloaded by guests
 };
 #define DownloadCommand(z)  ((z) & 0x03)
 #define DownloadLocation(z) ((z) & 0x1c)
@@ -573,6 +590,9 @@ enum {
    SL_FLICKER_ON       = 1,         // Turn flickering on
    SL_FLICKER_OFF      = 2,         // Turn flickering off
 };
+
+/* Size in bytes of UDP header (without TYPE byte) */
+#define SIZE_HEADER_UDP      11
 
 /* Size in bytes of numbers in protocol */
 #define SIZE_TYPE            1
@@ -607,6 +627,9 @@ enum {
 #define SIZE_FILTER          2
 #define SIZE_PROJECTILE_FLAGS 2
 #define SIZE_PROJECTILE_RESERVED 2
+#define SIZE_SESSION_ID      4
+#define SIZE_CHARINFO_ERROR 1
+#define SIZE_OBJECTFLAGS (3 * SIZE_VALUE + 3 * SIZE_TYPE)
 
 // new defines for dynamic lighting of d3d client
 #define LIGHT_FLAG_NONE		0x0000

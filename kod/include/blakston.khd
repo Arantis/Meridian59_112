@@ -1142,8 +1142,8 @@
    ROOM_ANTI_MAGIC    = 0x0100
    // Anyone may be killed here.
    ROOM_KILL_ZONE     = 0x0200
-   // This is one of the RID_GUEST rooms.
-   ROOM_GUEST_AREA    = 0x0400
+
+
    // Advancing in spells is 10 times harder here.
    //  Depreciated: Override ModifyChanceToImprove() instead.
    ROOM_HARD_LEARN    = 0x0800
@@ -1239,11 +1239,10 @@
    ICON_ROOM_SANCTUARY     = 7
    ICON_ROOM_ANTI_MAGIC    = 8
    ICON_ROOM_KILL_ZONE     = 9
-   ICON_ROOM_GUEST_AREA    = 10
-   ICON_ROOM_HARD_LEARN    = 11
-   ICON_ROOM_SAFELOGOFF    = 12
-   ICON_ROOM_TRIPLE_HEAL   = 13
-   ICON_ROOM_NO_MOB_COMBAT = 14
+   ICON_ROOM_HARD_LEARN    = 10
+   ICON_ROOM_SAFELOGOFF    = 11
+   ICON_ROOM_TRIPLE_HEAL   = 12
+   ICON_ROOM_NO_MOB_COMBAT = 13
 
    // Weather and Backgrounds (skyboxen)
    // Day Phase Constants
@@ -2723,15 +2722,14 @@
    NODE_CORPSENODE   = 0x0080
    NODE_I9           = 0x0100
    NODE_FAERIE       = 0x0200
-   // Guest node is normally not attainable except by guests.
-   NODE_GUEST        = 0x0400
+//   NODE_RAZA         = 0x0400
    NODE_Q            = 0x0800
    NODE_AVAR         = 0x1000
    // If more nodes are added, this value should go up
    //  to be at least as high as the highest node value.
    //  Extra room was consciously left.
    NODE_MAX_VALUE = 0x8000
-   // Sum of all valid nodes (NODE_GUEST not used)
+   // Sum of all valid nodes (NODE_RAZA not used)
    NODE_ALL       = 0x1BFF
 
    // Guilds
@@ -3236,6 +3234,7 @@
    QST_ID_PRINCESS_SOLDIER       = 73
    QST_ID_REBEL_SOLDIER          = 74
    QST_ID_ABSTAIN_PVP            = 75
+   QST_ID_MANA_NODE              = 76
 
    // Quest Node Template IDs. Each quest has multple Quest Nodes.
    QNT_ID_DUKE_JOIN_ONE          = 1
@@ -3523,6 +3522,8 @@
    QNT_ID_ABSTAIN_PVP_ONE        = 217
    QNT_ID_ABSTAIN_PVP_TWO        = 218
 
+   QNT_ID_MANA_NODE_ONE          = 219
+
    // Quest misc constants
 
    // An player must be this close to an NPC to offer/receive items, talk, etc.
@@ -3766,7 +3767,23 @@
    MAX_GUILD_RANK_LEN = 20
    MAX_URL_LEN = 200
    MAX_CHAT_LEN = 550
-   
+
+   // Character creation error constants
+   CC_OK = 0
+   CC_GENERIC_ERROR = 1 // Client uses this for e.g. broken protocol message.
+   CC_NOT_FIRST_TIME = 2 // Player has a restart time > 0.
+   CC_NAME_TOO_LONG = 3
+   CC_NAME_BAD_CHARACTERS = 4 // Invalid letters in name.
+   CC_NAME_IN_USE = 5
+   CC_NO_MOB_NAME = 6
+   CC_NO_NPC_NAME = 7
+   CC_NO_GUILD_NAME = 8
+   CC_NO_BAD_WORDS = 9
+   CC_NO_CONFUSING_NAME = 10 // Gods names, 'You' etc.
+   CC_RETIRED_NAME = 11 // Names of old designers/admins.
+   CC_DESC_TOO_LONG = 12
+   CC_INVALID_GENDER = 13
+
    //Statistics Constants, must match enum sql_recordtype in database.h
    STAT_TOTALMONEY = 1
    STAT_MONEYCREATED = 2

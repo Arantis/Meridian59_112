@@ -98,6 +98,12 @@ enum opcode_id {
    OP_ISCLASS_P,
    OP_ISCLASS_CONST_L,
    OP_ISCLASS_CONST_P,
+   OP_FIRST_L,
+   OP_FIRST_P,
+   OP_REST_L,
+   OP_REST_P,
+   OP_GETCLASS_L,
+   OP_GETCLASS_P,
    NUMBER_OF_OPCODES // Must be last.
 };
 
@@ -123,7 +129,6 @@ enum
 enum
 {
    CREATEOBJECT = 1,
-   GETCLASS = 5,
 
    SENDMESSAGE = 11,
    POSTMESSAGE = 12,
@@ -190,8 +195,7 @@ enum
    GETALLLISTNODESBYCLASS = 99,
    APPENDLISTELEM = 100,
    CONS = 101,
-   FIRST = 102,
-   REST = 103,
+
    LENGTH = 104,
    NTH = 105,
    MLIST = 106,
@@ -263,8 +267,12 @@ enum
 #define MIN_KOD_INT (1<<27)      // 28th bit is sign. 0x08000000 == kod -134217728
 #define KODFINENESS 64           // how many fine rows give a full row
 
-#define KOD_FALSE (1 << 28)
-#define KOD_TRUE ((1 << 28)+1)
+// num bits to shift a tag to get it to the correct position.
+// 28 for 32-bit kod data types, presumably 56 for 64-bit.
+#define KOD_SHIFT 28
+
+#define KOD_FALSE (TAG_INT << KOD_SHIFT)
+#define KOD_TRUE ((TAG_INT << KOD_SHIFT)+1)
 
 // Defined here for sendmsg.h/c and codegen.c.
 // Max number of locals in a message.

@@ -611,12 +611,7 @@ messages:
 
    IsMature()
    {
-      if piMature = 0
-      {
-         return TRUE;
-      }
-      
-      return FALSE;
+      return piMature = 0;
    }
 
    GetLastGuildhallRaid()
@@ -628,11 +623,21 @@ messages:
    {
       if now = $
       {
-         now = getTime();
+         now = GetTime();
       }
-      
+
       piLastGuildhallRaid = now;
-      
+
+      return;
+   }
+
+   UpdateTimeValues()
+   {
+      if (piLastGuildhallRaid > 0)
+      {
+         piLastGuildhallRaid = GetTime();
+      }
+
       return;
    }
 
@@ -1422,7 +1427,7 @@ messages:
                #parm3=Send(who,@GetTrueName));
 
          // Reset friend/foe colors
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
 
       return TRUE;
@@ -1455,7 +1460,7 @@ messages:
          }
 
          // Reset friend/foe colors for everyone
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
 
       if bFound = TRUE
@@ -1466,7 +1471,7 @@ messages:
          oOwner = Send(who,@GetOwner);
          if oOwner <> $
          {
-            Send(oOwner,@SomethingChanged,#what=who);
+            Send(oOwner,@SomethingChangedFlags,#what=who);
          }
 
          return TRUE;
@@ -2032,7 +2037,7 @@ messages:
       // Reset friend/foe colors
       foreach i in plMembers
       {
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
 
       return;
@@ -2166,7 +2171,7 @@ messages:
               #parm4=Send(otherguild,@GetName));
 
          // Reset friend/foe colors
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
       
       Send(otherguild,@DeclareAlly,#otherguild=self);
@@ -2207,7 +2212,7 @@ messages:
               #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
          // Reset friend/foe colors
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
       
       return;
@@ -2232,7 +2237,7 @@ messages:
                     #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
                // Reset friend/foe colors
-               Send(First(j),@ToCliRoomContents);
+               Send(First(j),@ToCliRoomContentsFlags);
             }
             
             Send(otherguild,@RemoveDeclaredAlly,#otherguild=self);
@@ -2287,7 +2292,7 @@ messages:
                     #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
                // Reset friend/foe colors
-               Send(First(j),@ToCliRoomContents);
+               Send(First(j),@ToCliRoomContentsFlags);
             }
 
             Post(otherguild,@RemoveDeclaredAlly,#otherguild=self);
@@ -2308,7 +2313,7 @@ messages:
                     #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
                // Reset friend/foe colors
-               Send(First(j),@ToCliRoomContents);
+               Send(First(j),@ToCliRoomContentsFlags);
             }
 
             return TRUE;
@@ -2382,7 +2387,7 @@ messages:
               #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
          // Reset friend/foe colors
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
       
       Send(otherguild,@DeclaredEnemy,#otherguild=self);
@@ -2435,7 +2440,7 @@ messages:
               #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
          // Reset friend/foe colors
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
       
       return;
@@ -2596,7 +2601,7 @@ messages:
                     #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
                // Reset all friend/foe colors
-               Send(First(j),@ToCliRoomContents);
+               Send(First(j),@ToCliRoomContentsFlags);
             }
             
             Send(otherguild,@RemoveDeclaredEnemy,#otherguild=self);
@@ -2637,7 +2642,7 @@ messages:
                      #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
                // Reset friend/foe colors
-               Send(First(j),@ToCliRoomContents);
+               Send(First(j),@ToCliRoomContentsFlags);
             }
 
             return TRUE;
@@ -2729,7 +2734,7 @@ messages:
       // Reset friend/foe colors
       foreach i in plMembers
       {
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
 
       RecordStat(STAT_GUILDDISBAND, Send(self,@GetName) );

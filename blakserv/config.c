@@ -70,7 +70,7 @@ config_table_type config_table[] =
 { SOCKET_MAINTENANCE_PORT,F, "MaintenancePort",CONFIG_INT,  "9998" },
 { SOCKET_MAINTENANCE_MASK,F, "MaintenanceMask",CONFIG_STR,  "::ffff:127.0.0.1" },
 { SOCKET_DNS_LOOKUP,      T, "DNSLookup",     CONFIG_BOOL,  "No" },
-{ SOCKET_NAGLE,           F, "Nagle",         CONFIG_BOOL,  "Yes" },
+{ SOCKET_NAGLE,           F, "Nagle",         CONFIG_BOOL,  "No" },
 { SOCKET_BLOCK_TIME,      T, "BlockTime",     CONFIG_INT,   "300" }, /* seconds */
 
 { CHANNEL_GROUP,          F, "[Channel]",     CONFIG_GROUP, "" },
@@ -80,15 +80,6 @@ config_table_type config_table[] =
 { CHANNEL_FLUSH,          T, "Flush",         CONFIG_BOOL,  "No" },
 { CHANNEL_GOD_DISK,       T, "GodDisk",       CONFIG_BOOL,  "Yes" },
 { CHANNEL_ADMIN_DISK,     T, "AdminDisk",     CONFIG_BOOL,  "Yes" },
-
-{ GUEST_GROUP,            F, "[Guest]",       CONFIG_GROUP, "" },
-{ GUEST_ACCOUNT,          F, "Account",       CONFIG_STR,   "GUEST" },
-{ GUEST_CREDITS,          F, "Credits",       CONFIG_INT,   "10" },
-{ GUEST_MAX,              T, "Max",           CONFIG_INT,   "30" },
-{ GUEST_SERVER_MIN,       T, "ServerMin",     CONFIG_INT,   "100" },
-{ GUEST_SERVER_MAX,       T, "ServerMax",     CONFIG_INT,   "109" },
-{ GUEST_TOO_MANY,         F, "TooMany",       CONFIG_STR,   
-     "Too many guests are logged on right now; please try again later." },
 
 { ACCOUNT_GROUP,          T, "[Account]",     CONFIG_GROUP, "" },
 { ACCOUNT_NUM_SLOTS,      T, "NumSlots",      CONFIG_INT,   "3" },
@@ -119,14 +110,6 @@ config_table_type config_table[] =
 
 { MOTD_GROUP,             F, "[MessageOfTheDay]", CONFIG_GROUP, "" },
 { MOTD_DEFAULT,           F, "Default",       CONFIG_STR,   "<Default>" },
-
-{ CREDIT_GROUP,           F, "[Credit]",      CONFIG_GROUP, "" },
-{ CREDIT_DRAIN_AMOUNT,    F, "DrainAmount",   CONFIG_INT,   "-1" },
-{ CREDIT_DRAIN_TIME,      F, "DrainTime",     CONFIG_INT,   "1" },
-{ CREDIT_WARN1,           F, "Warn1",         CONFIG_INT,   "5" },
-{ CREDIT_WARN2,           F, "Warn2",         CONFIG_INT,   "1" },
-{ CREDIT_INIT,            F, "Initial",       CONFIG_INT,   "0" },
-{ CREDIT_ADMIN,           T, "Admin",         CONFIG_INT,   "25" },
 
 { SESSION_GROUP,          F, "[Session]",     CONFIG_GROUP, "" },
 { SESSION_MAX_ACTIVE,     T, "MaxActive",     CONFIG_INT,   "300" },
@@ -203,8 +186,6 @@ config_table_type config_table[] =
 { ADVERTISE_URL2,         T, "Url2",          CONFIG_STR,   "https://www.meridiannext.com/phpbb3/" },
 
 { DEBUG_GROUP,            F, "[Debug]",       CONFIG_GROUP, "" },
-{ DEBUG_CANMOVEINROOM,    T, "CanMoveInRoom", CONFIG_BOOL,  "No" },
-{ DEBUG_CANMOVEINROOMHIGHRES,    T, "CanMoveInRoomHighRes", CONFIG_BOOL,  "No" },
 { DEBUG_HEAP,             T, "Heap",          CONFIG_BOOL,  "No" },
 { DEBUG_TRANSMITTED_BYTES,T, "TransmittedBytes",CONFIG_BOOL,"No" },
 { DEBUG_HASH,             T, "Hash",          CONFIG_BOOL,  "No" },

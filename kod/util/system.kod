@@ -75,6 +75,7 @@ resources:
    system_blank_resource = ""
    system_space_resource = " "
    system_unknown_resource = "Unknown"
+   system_newline_resource = "\n"
 
    // Templates for sending lots of description parts.
    system_rsc_template_1 = "%r"
@@ -1718,9 +1719,7 @@ messages:
       // Notify the event engine
       Send(EVENTENGINE_OBJECT,@UserKilled,#who=what,#killer=killer);
 
-      if IsClass(what,&Guest)
-         OR (killer = $)
-         OR IsClass(killer,&Guest)
+      if (killer = $)
       {
          return;
       }
@@ -1940,6 +1939,11 @@ messages:
    {
       poLastMurderer = $;
       return;
+   }
+
+   GetNodes()
+   {
+      return plNodes;
    }
 
    GetSpells()
@@ -2732,12 +2736,42 @@ messages:
       ///////////////////////////////////////////////
       // Temporary! One-time fix of old timestamps.
       // Newsglobes.
-      Send(&News,@FixPostTimestamps);
+      //Send(&News,@FixPostTimestamps);
       // Mails.
-      Send(&User,@FixMailTimestamps);
+      //Send(&User,@FixMailTimestamps);
       ///////////////////////////////////////////////
 
       return TRUE;
+   }
+
+   FixOldTimestamps(bAreYouSure = 0)
+   "Fixes old timestamps when time changes.  Some are already handled in "
+   "recreate, or by the old objects being deleted (rooms, mobs)."
+   {
+      local i;
+
+      // For safety.
+      if (bAreYouSure <> 11523)
+      {
+         return system_failure_rsc;
+      }
+
+      // Shrunken head silence timestamp.
+      Send(&ShrunkenHead,@UpdateTimeValues);
+
+      // Misc user/player timestamps.
+      Send(&User,@UpdateTimeValues);
+
+      // Sets new time of death.
+      Send(&DeadBody,@UpdateTimeValues);
+
+      // Guild hall raid time.
+      Send(&Guild,@UpdateTimeValues);
+
+      // News post times.
+      Send(&News,@UpdateTimeValues);
+
+      return system_success_rsc;
    }
 
    RecreateAllExits()
@@ -4322,37 +4356,49 @@ messages:
       {
          oUser = Nth(client_msg,2);
 
-         // Find any reason to fail the character creation now.
-
-         bLegal = TRUE;
+         if (oUser = $)
+         {
+            return;
+         }
 
          // Is this char actually available for creation?
-         if NOT Send(oUser, @IsFirstTime)          
+         if NOT Send(oUser,@IsFirstTime)
          {
-            bLegal = FALSE;
+            Debug(oUser, " tried to create char on non-empty slot!");
+            AddPacket(1,BP_CHARINFO_NOT_OK, 1, CC_NOT_FIRST_TIME);
+            SendPacket(session_id);
+
+            return;
          }
 
          // Validate name and description
          sName = Nth(client_msg,3);
 
          bLegal = Send(self,@ValidateUserName,#oUser=oUser,#sName=sName);
+         if (bLegal <> CC_OK)
+         {
+            AddPacket(1,BP_CHARINFO_NOT_OK, 1, bLegal);
+            SendPacket(session_id);
+
+            return;
+         }
 
          sDesc = Nth(client_msg,4);
          if StringLength(sDesc) > MAX_CHAR_DESCRIPTION_LEN
          {
-            Debug("Got description length out of range for user ", oUser);
-            bLegal = FALSE;
+            Debug("Got description length ", StringLength(sDesc),
+                  " out of range for user ", oUser);
+            AddPacket(1,BP_CHARINFO_NOT_OK, 1, CC_DESC_TOO_LONG);
+            SendPacket(session_id);
+
+            return;
          }
 
          iGender = Nth(client_msg,5);
          if iGender <> GENDER_MALE AND iGender <> GENDER_FEMALE 
          {
-            bLegal = FALSE;
-         }
-
-         if NOT bLegal
-         {
-            AddPacket(1,BP_CHARINFO_NOT_OK);
+            Debug(oUser," somehow ended up with invalid gender ",iGender);
+            AddPacket(1,BP_CHARINFO_NOT_OK, 1, CC_INVALID_GENDER);
             SendPacket(session_id);
 
             return;
@@ -4380,15 +4426,8 @@ messages:
 
          // From this point on, we're creating a new character.
 
-         AddPacket(1,BP_CHARINFO_OK);
-         AddPacket(4,oUser);
+         AddPacket(1,BP_CHARINFO_OK, 4,oUser);
          SendPacket(session_id);
-
-         if NOT isClass(oUser,&Guest)
-         {
-            Debug("User suicide",oUser,"from",Send(oUser,@GetTrueName),
-                  "to",sName);
-         }
 
          Send(self,@ChangeUserName,#oUser=oUser,#sName=sName);
 
@@ -4405,6 +4444,7 @@ messages:
       if liClient_cmd = BP_SEND_CHARINFO
       {
          Send(self,@SendCharInfo,#session_id=session_id);
+
          return;
       }
 
@@ -4414,7 +4454,13 @@ messages:
    AdminChangeUserName(oUser=$,sName=$)
    "Can be called by admin to both validate and change a user name."
    {
-      if (Send(self,@ValidateUserName,#oUser=oUser,#sName=sName))
+      if oUser = $
+         OR sName = $
+      {
+         return system_failure_rsc;
+      }
+
+      if (Send(self,@ValidateUserName,#oUser=oUser,#sName=sName) = CC_OK)
       {
          Send(self,@ChangeUserName,#oUser=oUser,#sName=sName);
 
@@ -4425,21 +4471,17 @@ messages:
    }
 
    ValidateUserName(oUser=$,sName=$)
+   "Returns error codes for failure depending on the cause. Zero return (CC_OK) "
+   "indicates success, failure is > 0."
    {
       local i, lBadNameContain, lBadNameIs, oLookup;
-
-      if oUser = $
-         OR sName = $
-      {
-         return FALSE;
-      }
 
       if StringLength(sName) < MIN_CHAR_NAME_LEN
          OR StringLength(sName) > MAX_CHAR_NAME_LEN
       {
          Debug("Got char name length out of range for user ", oUser);
 
-         return FALSE;
+         return CC_NAME_TOO_LONG;
       }
 
       if NOT StringConsistsOf(sName, 
@@ -4447,22 +4489,28 @@ messages:
       {
          Debug("Got char name with illegal characters for user ", oUser);
 
-         return FALSE;
+         return CC_NAME_BAD_CHARACTERS;
       }
 
       oLookup = Send(SYS,@FindUserByString,#string=sName);
       if oLookup <> $
          AND oLookup <> oUser
       {
-         return FALSE;
+         return CC_NAME_IN_USE;
       }
 
       // No using monster or NPC names.
       if Send(SYS,@FindMonsterByString,#string=sName) <> $
-         OR Send(SYS,@FindNPCByString,#string=sName) <> $
-         OR Send(SYS,@FindGuildByString,#string=sName) <> $
       {
-         return FALSE;
+         return CC_NO_MOB_NAME;
+      }
+      if Send(SYS,@FindNPCByString,#string=sName) <> $
+      {
+         return CC_NO_NPC_NAME;
+      }
+      if Send(SYS,@FindGuildByString,#string=sName) <> $
+      {
+         return CC_NO_GUILD_NAME;
       }
 
       // Check for people who put "a" or "an" in front of a monster name.
@@ -4482,7 +4530,7 @@ messages:
             if StringEqual(psTemp,"a")
                OR StringEqual(psTemp,"an")
             {
-               return FALSE;
+               return CC_NO_MOB_NAME;
             }
          }
       }
@@ -4500,14 +4548,15 @@ messages:
                      "Faren", "Shal'ille", "Qor", "Faren",
                      "Kraanan", "Riija", "Jala",
                      // Causes confusion.
-                     "You", system_hidden_admin
+                     "You", system_hidden_admin, "admin", "administrator"
                    ];
 
       foreach i in lBadNameContain
       {
          if StringContain(sName,i)
          {
-            return FALSE;
+            Debug(oUser," tried to make a naughty name: ",sName);
+            return CC_NO_BAD_WORDS;
          }
       }
 
@@ -4515,15 +4564,14 @@ messages:
       {
          if StringEqual(sName, i)
          {
-            return FALSE;
+            return CC_NO_CONFUSING_NAME;
          }
       }
 
-      // Pull the string from user.  This is the name we gmail to contact
-      //  our own guild.
+      // This is the name we gmail to contact our own guild.
       if StringEqual(sName, system_guild_rsc)
       {
-            return FALSE;
+         return CC_NO_CONFUSING_NAME;
       }
 
       // Name should be valid.
@@ -4533,11 +4581,11 @@ messages:
       {
          if StringEqual(sName, i)
          {
-            return FALSE;
+            return CC_RETIRED_NAME;
          }
       }
 
-      return TRUE;
+      return CC_OK;
    }
 
    ChangeUserName(oUser=$,sName=$)
@@ -6101,7 +6149,7 @@ messages:
       }
       else
       {
-         Send(poAssassin_game,@CleanUp);
+         Send(poAssassin_game,@Recreate);
       }
 
       return;
@@ -6479,8 +6527,11 @@ messages:
 
    ResetNaughtyWords()
    {
-      plNaughtyWords = ["fuck", "shit", "asshole", "cocksuck", "cunt", "penis",
-                        "vagina", "faggot", "nigger"
+      plNaughtyWords = [ SetString($,"fuck"), SetString($,"shit"),
+                         SetString($,"asshole"), SetString($,"cocksuck"),
+                         SetString($,"cunt"), SetString($,"penis"),
+                         SetString($,"vagina"), SetString($,"faggot"),
+                         SetString($,"nigger"), SetString($,"nigga")
                        ];
 
       return;
@@ -6488,56 +6539,12 @@ messages:
 
    ResetRetiredNames()
    {
-      plRetiredNames = [ "Zaphod", "Zandramas" ]; 
-
-      plRetiredNames = cons("Zjiria",plRetiredNames);
-      plRetiredNames = cons("Q",plRetiredNames);
-      plRetiredNames = cons("Lady Jane",plRetiredNames);
-      plRetiredNames = cons("Regifan Du Bukise",plRetiredNames);
-      plRetiredNames = cons("Rhinosharkus",plRetiredNames);
-      plRetiredNames = cons("Tonto",plRetiredNames);
-      plRetiredNames = cons("Zangus Dixon",plRetiredNames);
-      plRetiredNames = cons("Mosiah",plRetiredNames);
-      plRetiredNames = cons("Mocker",plRetiredNames);
-      plRetiredNames = cons("Satin",plRetiredNames);
-      plRetiredNames = cons("Greenwich",plRetiredNames);
-      plRetiredNames = cons("Xian",plRetiredNames);
-      plRetiredNames = cons("Gort",plRetiredNames);
-      plRetiredNames = cons("Aphasia",plRetiredNames);
-      plRetiredNames = cons("Tendar",plRetiredNames);
-      plRetiredNames = cons("Vertigo",plRetiredNames);
-      plRetiredNames = cons("Omar",plRetiredNames);
-      plRetiredNames = cons("Bromm",plRetiredNames);
-      plRetiredNames = cons("Cat",plRetiredNames);
-      plRetiredNames = cons("Henry V",plRetiredNames);
-      plRetiredNames = cons("King Richard",plRetiredNames);
-      plRetiredNames = cons("Altir",plRetiredNames);
-      plRetiredNames = cons("Zardos",plRetiredNames);
-      plRetiredNames = cons("Zendar",plRetiredNames);
-      plRetiredNames = cons("Zwei",plRetiredNames);
-      plRetiredNames = cons("Zarea",plRetiredNames);
-      plRetiredNames = cons("Gandalf",plRetiredNames);
-      plRetiredNames = cons("Zathras",plRetiredNames);
-      plRetiredNames = cons("Detson",plRetiredNames);
-      plRetiredNames = cons("Geist",plRetiredNames);
-      plRetiredNames = cons("Gemini",plRetiredNames);
-      plRetiredNames = cons("Kyrra",plRetiredNames);
-      plRetiredNames = cons("Kana",plRetiredNames);
-      plRetiredNames = cons("ReQuiem",plRetiredNames);
-      plRetiredNames = cons("Izual",plRetiredNames);
-      plRetiredNames = cons("Prego",plRetiredNames);
-      plRetiredNames = cons("Thumper",plRetiredNames);
-      plRetiredNames = cons("Da Man",plRetiredNames);
-      plRetiredNames = cons("Alix",plRetiredNames);
-      plRetiredNames = cons("Psychochild",plRetiredNames);
-      plRetiredNames = cons("Aythya",plRetiredNames);
-      plRetiredNames = cons("Sif",plRetiredNames);
-      plRetiredNames = cons("Jinx",plRetiredNames);
-      plRetiredNames = cons("Sher Kahn",plRetiredNames);
-      plRetiredNames = cons("Bael",plRetiredNames);
-      plRetiredNames = cons("Kimo",plRetiredNames);
-      plRetiredNames = cons("Sol",plRetiredNames);
-      plRetiredNames = cons("Corliss",plRetiredNames);
+      plRetiredNames = [ SetString($,"Zaphod"), SetString($,"Zandramas"),
+                         SetString($,"Zjiria"),  SetString($,"Rhinosharkus"),
+                         SetString($,"Regifan Du Bukise"), SetString($,"Q"),
+                         SetString($,"Zangus Dixon"), SetString($,"Mocker"),
+                         SetString($,"Greenwich"), SetString($,"Mocker"),
+                         SetString($,"Psychochild"), SetString($,"Sif") ];
 
       return;
    }
@@ -6546,7 +6553,14 @@ messages:
    {
       if string <> $
       {
-         plNaughtyWords = cons(string,plNaughtyWords);
+         if (IsString(string))
+         {
+            plNaughtyWords = Cons(string,plNaughtyWords);
+         }
+         else
+         {
+            plNaughtyWords = Cons(SetString($,string),plNaughtyWords);
+         }
       }
 
       return;
@@ -6888,6 +6902,11 @@ messages:
    AdminGetTime()
    {
       return GetTime();
+   }
+
+   AdminGetTickCount()
+   {
+      return GetTickCount();
    }
 
    AdminCreateList(iNum = 0, parm1 = $, parm2 = $, parm3 = $, parm4 = $,
@@ -7399,6 +7418,7 @@ messages:
    {
       switch(iNum)
       {
+         case 0: return system_blank_resource;
          case 1: return system_rsc_template_1;
          case 2: return system_rsc_template_2;
          case 3: return system_rsc_template_3;

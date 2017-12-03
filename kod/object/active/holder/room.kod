@@ -453,6 +453,14 @@ messages:
       return;
    }
 
+   SomethingChangedFlags(what = $)
+   "Override from Holder, optimised for Room."
+   {
+      SendList(plActive,1,@SomethingChangedFlags,#what=what);
+
+      return;
+   }
+
    EnableIllusions()
    {
       return;
@@ -890,11 +898,6 @@ messages:
    IsHometown()
    {
       return Send(self,@CheckRoomFlag,#flag=ROOM_HOMETOWN);
-   }
-
-   IsGuestRoom()
-   {
-      return Send(self,@CheckRoomFlag,#flag=ROOM_GUEST_AREA);
    }
 
    Teleport(what = $, mob_override = FALSE)

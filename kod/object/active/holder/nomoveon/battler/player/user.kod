@@ -760,6 +760,8 @@ messages:
    //  since performing a quest
    GetTimeLoggedIn()
    {
+      local iTime;
+
       if piLastLoginTime = 0
       {
          return 0;
@@ -767,7 +769,11 @@ messages:
 
       if pbLogged_on
       {
-         return (GetTime() - piLastLoginTime + piTimeLoggedIn);
+         iTime = GetTime() - piLastLoginTime + piTimeLoggedIn;
+         if (iTime >= 0)
+         {
+            return iTime;
+         }
       }
 
       return piTimeLoggedIn;
@@ -1639,6 +1645,7 @@ messages:
          iCol = Nth(client_msg,3);
          iSpeed = Nth(client_msg,4);
          oRoom = Nth(client_msg,5);
+         iAngle = Nth(client_msg,6);
 
          // Check if it's an outdated message, from a person going off side of
          //  room multiple times before they got their new room.
@@ -1650,6 +1657,8 @@ messages:
          Send(self,@UserMove,#new_row=iRow/FINENESS,#new_col=iCol/FINENESS,
               #fine_row=(iRow % FINENESS),#fine_col=(iCol % FINENESS),
               #speed=iSpeed);
+
+         Send(self,@UserTurn,#what=self,#new_angle=iAngle);
 
          return;
       }
@@ -2165,12 +2174,6 @@ messages:
       piXP_total = 0;
       piTraining_points = 0;
 
-      if pbLogged_on
-      {
-         AddPacket(1,BP_USERCOMMAND,1,UC_SEND_QUIT);
-         SendPacket(poSession);
-      }
-
       RecordStat(STAT_PLAYERSUICIDE, poSession, Send(self,@GetTrueName));
 
       // Change the name to a unique placeholder one.
@@ -2183,6 +2186,12 @@ messages:
       Send(SYS,@ChangeUserName,#oUser=self,#sName=sName);
 
       Send(self,@ResetCharacter);
+
+      if pbLogged_on
+      {
+         AddPacket(1,BP_USERCOMMAND,1,UC_SEND_QUIT);
+         SendPacket(poSession);
+      }
 
       return Send(SYS,@GetSuccessRsc);
    }
@@ -3107,14 +3116,66 @@ messages:
       return Send(SYS,@GetSuccessRsc);
    }
 
+   ToCliFlags(what=$)
+   "Sends just the ObjectFlags (OF, DF, MM, NC, OT, MT) for 'what'."
+   {
+      local iFlags, iEnemyKarma, iSelfKarma, iMinimapFlags, iDrawingFlags;
+
+      iDrawingFlags = Send(what,@GetDrawingEffects);
+      iFlags = Send(what,@GetObjectFlags,#what=self);
+      // If we can see the invisible object, remove its invis drawing flag
+      // and set it to flash instead (in object flags).
+      if (piFlags2 & PFLAG2_DETECT_INVIS)
+         AND (iDrawingFlags & DRAWFX_MASK) = DRAWFX_INVISIBLE
+      {
+         iDrawingFlags &= (~DRAWFX_MASK);
+         iFlags &= (~OF_FLICKERING);
+         iFlags |= OF_FLASHING;
+      }
+
+      if IsClass(what,&Battler)
+      {
+         iEnemyKarma = Send(what,@GetKarma,#detect=TRUE);
+         iSelfKarma = Send(self,@GetKarma);
+
+         if (piFlags2 & PFLAG2_DETECT_EVIL)
+            AND iSelfKarma > 0
+            AND iEnemyKarma < -10
+         {
+            iFlags &= (~OF_FLICKERING);
+            iFlags |= OF_FLASHING;
+         }
+
+         if (piFlags2 & PFLAG2_DETECT_GOOD)
+            AND iSelfKarma < 0
+            AND iEnemyKarma > 10
+         {
+            iFlags &= (~OF_FLICKERING);
+            iFlags |= OF_FLASHING;
+         }
+      }
+
+      iMinimapFlags = Send(self,@BuildMinimapDotFlag,#what=what);
+      if iMinimapFlags = $
+      {
+         Debug("Got $ minimapflags for self ",self,Send(self,@GetTrueName),
+            " for object ",what,Send(what,@GetTrueName));
+         iMinimapFlags = 0;
+      }
+
+      AddPacket(4,iFlags, 1,iDrawingFlags, 4,iMinimapFlags,
+                4,Send(what,@GetPlayerNameColor),
+                1,Send(what,@GetClientObjectType),
+                1,Send(what,@GetMoveOnType));
+
+      return;
+   }
+
    ToCliObject(what=$,show_type=SHOW_NORMAL,bShow_all=FALSE)
    "show_type is used to get the look or inventory animation and overlays "
    "instead of the normal animation and overlays."
    {
-      local iFlags, iEnemyKarma, iSelfKarma, iMinimapFlags, iDrawingFlags;
-
       // Send given object's id number, name, icon, and animation info
-
       if IsClass(what,&NumberItem)
       {
          AddPacket(NUMBER_OBJECT,what, 4,Send(what,@GetNumber),
@@ -3136,56 +3197,7 @@ messages:
          AddPacket(4,Send(what,@GetApparentName));
       }
 
-      iDrawingFlags = Send(what,@GetDrawingEffects);
-      iFlags = Send(what,@GetObjectFlags,#what=self);
-      // If we can see the invisible object, remove its invis drawing flag
-      // and set it to flash instead (in object flags).
-      if (piFlags2 & PFLAG2_DETECT_INVIS)
-         AND (iDrawingFlags & DRAWFX_MASK) = DRAWFX_INVISIBLE
-      {
-         iDrawingFlags = (iDrawingFlags & (~DRAWFX_MASK));
-         iFlags = (iFlags & (~OF_FLICKERING));
-         iFlags = (iFlags | OF_FLASHING);
-      }
-
-      if IsClass(what,&Battler)
-      {
-         iEnemyKarma = Send(what,@GetKarma,#detect=TRUE);
-         iSelfKarma = Send(self,@GetKarma);
-
-         if (piFlags2 & PFLAG2_DETECT_EVIL)
-            AND iSelfKarma > 0
-            AND iEnemyKarma < -10
-            AND (IsClass(what,&Player)
-                 OR (IsClass(what,&Monster) AND abs(iEnemyKarma) > iSelfKarma))
-         {
-            iFlags = (iFlags & (~OF_FLICKERING));
-            iFlags = (iFlags | OF_FLASHING);
-         }
-
-         if (piFlags2 & PFLAG2_DETECT_GOOD)
-            AND iSelfKarma < 0
-            AND iEnemyKarma > 10
-            AND (IsClass(what,&Player)
-                 OR (IsClass(what,&Monster) AND iEnemyKarma > abs(iSelfKarma)))
-         {
-            iFlags = (iFlags & (~OF_FLICKERING));
-            iFlags = (iFlags | OF_FLASHING);
-         }
-      }
-
-      iMinimapFlags = Send(self,@BuildMinimapDotFlag,#what=what);
-      if iMinimapFlags = $
-      {
-         Debug("Got $ minimapflags for self ",self,Send(self,@GetTrueName),
-            " for object ",what,Send(what,@GetTrueName));
-         iMinimapFlags = 0;
-      }
-
-      AddPacket(4,iFlags, 1,iDrawingFlags, 4,iMinimapFlags,
-                4,Send(what,@GetPlayerNameColor),
-                1,Send(what,@GetClientObjectType),
-                1,Send(what,@GetMoveOnType));
+      Send(self,@ToCliFlags,#what=what);
 
       // Send the lighting information.
       Send(what,@SendLightingInformation);
@@ -3516,6 +3528,238 @@ messages:
       return;
    }
 
+   ToCliGoodKarma()
+   {
+      local i, iEnemyKarma, iSelfKarma, each_obj, objs;
+
+      if (NOT pbLogged_on)
+      {
+         return;
+      }
+
+      objs = 0;
+
+      foreach i in Send(poOwner,@GetHolderActive)
+      {
+         each_obj = First(i);
+         if IsClass(each_obj,&Battler)
+         {
+            iEnemyKarma = Send(each_obj,@GetKarma,#detect=TRUE);
+            iSelfKarma = Send(self,@GetKarma);
+
+            if iSelfKarma < 0
+               AND iEnemyKarma > 10
+            {
+               ++objs;
+            }
+         }
+      }
+
+      AddPacket(1,BP_ROOM_CONTENTS_FLAGS, 4,poOwner, 2,objs);
+
+      foreach i in Send(poOwner,@GetHolderActive)
+      {
+         each_obj = First(i);
+         if IsClass(each_obj,&Battler)
+         {
+            iEnemyKarma = Send(each_obj,@GetKarma,#detect=TRUE);
+            iSelfKarma = Send(self,@GetKarma);
+
+            if iSelfKarma < 0
+               AND iEnemyKarma > 10
+            {
+               AddPacket(4,each_obj);
+               Send(self,@ToCliFlags,#what=each_obj);
+            }
+         }
+      }
+
+      return;
+   }
+
+   ToCliEvilKarma()
+   {
+      local i, iEnemyKarma, iSelfKarma, each_obj, objs;
+
+      if (NOT pbLogged_on)
+      {
+         return;
+      }
+
+      objs = 0;
+
+      foreach i in Send(poOwner,@GetHolderActive)
+      {
+         each_obj = First(i);
+         if IsClass(each_obj,&Battler)
+         {
+            iEnemyKarma = Send(each_obj,@GetKarma,#detect=TRUE);
+            iSelfKarma = Send(self,@GetKarma);
+
+            if iSelfKarma > 0
+               AND iEnemyKarma < -10
+            {
+               ++objs;
+            }
+         }
+      }
+
+      AddPacket(1,BP_ROOM_CONTENTS_FLAGS, 4,poOwner, 2,objs);
+
+      foreach i in Send(poOwner,@GetHolderActive)
+      {
+         each_obj = First(i);
+         if IsClass(each_obj,&Battler)
+         {
+            iEnemyKarma = Send(each_obj,@GetKarma,#detect=TRUE);
+            iSelfKarma = Send(self,@GetKarma);
+
+            if iSelfKarma > 0
+               AND iEnemyKarma < -10
+            {
+               AddPacket(4,each_obj);
+               Send(self,@ToCliFlags,#what=each_obj);
+            }
+         }
+      }
+
+      return;
+   }
+
+   ToCliInvisible()
+   "Send BP_ROOM_CONTENTS_FLAGS and the flags of each invisible room object.  "
+   "Called when DI is cast on us or when it wears off.  Faster than sending "
+   "a lot of unnecessary data."
+   {
+      local i, each_obj, objs;
+
+      if (NOT pbLogged_on)
+      {
+         return;
+      }
+
+      objs = 0;
+
+      foreach i in Send(poOwner,@GetHolderPassive)
+      {
+         each_obj = First(i);
+         if (Send(each_obj,@GetDrawingEffects) = DRAWFX_INVISIBLE)
+         {
+            ++objs;
+         }
+      }
+      foreach i in Send(poOwner,@GetHolderActive)
+      {
+         each_obj = First(i);
+
+         // Don't do stealthed DMs, only do invisible players.
+         if IsClass(each_obj,&DM)
+            AND Send(each_obj,@IsDMStealthed)
+            AND each_obj <> self
+         {
+            continue;
+         }
+
+         if (Send(each_obj,@GetDrawingEffects) = DRAWFX_INVISIBLE)
+         {
+            ++objs;
+         }
+      }
+
+      AddPacket(1,BP_ROOM_CONTENTS_FLAGS, 4,poOwner, 2,objs);
+
+      foreach i in Send(poOwner,@GetHolderActive)
+      {
+         each_obj = First(i);
+
+         // Don't do stealthed DMs.
+         if IsClass(each_obj,&DM)
+            AND Send(each_obj,@IsDMStealthed)
+            AND each_obj <> self
+         {
+            continue;
+         }
+         if (Send(each_obj,@GetDrawingEffects) = DRAWFX_INVISIBLE)
+         {
+            AddPacket(4,each_obj);
+            Send(self,@ToCliFlags,#what=each_obj);
+         }
+      }
+
+      foreach i in Send(poOwner,@GetHolderPassive)
+      {
+         each_obj = First(i);
+         if (Send(each_obj,@GetDrawingEffects) = DRAWFX_INVISIBLE)
+         {
+            AddPacket(4,each_obj);
+            Send(self,@ToCliFlags,#what=each_obj);
+         }
+      }
+
+      SendPacket(poSession);
+
+      return;
+   }
+
+   ToCliRoomContentsFlags()
+   "Sends BP_ROOM_CONTENTS_FLAGS for all objects in the room.  "
+   "Like ToCliRoomContents, but just for ObjectFlags."
+   {
+      local i, objs, oThing;
+
+      if NOT pbLogged_On
+      {
+         return;
+      }
+
+      objs = Length(Send(poOwner,@GetHolderPassive));
+
+      // We might not include all active.
+      foreach i in Send(poOwner,@GetHolderActive)
+      {
+         oThing = Send(poOwner,@HolderExtractObject,#data=i);
+
+         // Don't do stealthed DMs.
+         if IsClass(oThing,&DM)
+            AND Send(oThing,@IsDMStealthed)
+            AND oThing <> self
+         {
+            continue;
+         }
+
+         ++objs;
+      }
+
+      AddPacket(1,BP_ROOM_CONTENTS_FLAGS, 4,poOwner, 2,objs);
+
+      foreach i in Send(poOwner,@GetHolderActive)
+      {
+         oThing = Send(poOwner,@HolderExtractObject,#data=i);
+
+         // Don't do stealthed DMs.
+         if IsClass(oThing,&DM)
+            AND Send(oThing,@IsDMStealthed)
+            AND oThing <> self
+         {
+            continue;
+         }
+
+         AddPacket(4,oThing);
+         Send(self,@ToCliFlags,#what=oThing);
+      }
+
+      foreach i in Send(poOwner,@GetHolderPassive)
+      {
+         oThing = Send(poOwner,@HolderExtractObject,#data=i);
+         AddPacket(4,oThing);
+         Send(self,@ToCliFlags,#what=oThing);
+      }
+
+      SendPacket(poSession);
+
+      return;
+   }
+
    ToCliRoomContents()
    {
       local i, objs, oThing;
@@ -3713,10 +3957,12 @@ messages:
          iCount = 1;
          // Need to know how many completed quests in quest history.
          iQLength = Send(self,@GetCompletedQuestLength);
-         AddPacket(1,BP_STAT_GROUP, 1,group, 1,Length(plActiveQuests) + iQLength + 2);
+         // Add 3 at the end - 2 for headers, 1 for mana node quest.
+         AddPacket(1,BP_STAT_GROUP, 1,group, 1,Length(plActiveQuests) + iQLength + 3);
 
          // Send active quests.
          if plActiveQuests <> $
+            OR piNodeList < NODE_ALL
          {
             // Send the "Active Quests" header.
             AddPacket(1,0, 4,user_active_quests_header,
@@ -3735,6 +3981,7 @@ messages:
          ++iCount;
          // Send completed quests.
          if plQuestHistory <> $
+            OR piNodeList >= NODE_ALL
          {
             // Send the "Completed Quests" header.
             AddPacket(1,iCount, 4,user_completed_quests_header,
@@ -3816,6 +4063,15 @@ messages:
          ++iCount;
       }
 
+      // Mana node quest if player doesn't have all.
+      if (piNodeList < NODE_ALL)
+      {
+         oQObj = Send(oQE,@GetQuestTemplateObject,#index=QST_ID_MANA_NODE);
+         AddPacket(1,iCount, 4,Send(oQObj,@GetName), 1,STAT_LIST,
+                   4,oQObj, 4,QST_ID_MANA_NODE, 4,Send(oQObj,@GetIcon));
+         ++iCount;
+      }
+
       // Need to return the current count.
       return iCount;
    }
@@ -3826,6 +4082,15 @@ messages:
       local i, iQTemplate, oQE, oQObj, rQuestName;
 
       oQE = Send(SYS,@GetQuestEngine);
+
+      // Mana node quest first, if they have all nodes.
+      if (piNodeList >= NODE_ALL)
+      {
+         oQObj = Send(oQE,@GetQuestTemplateObject,#index=QST_ID_MANA_NODE);
+         AddPacket(1,iCount, 4,Send(oQObj,@GetName), 1,STAT_LIST,
+                   4,oQObj, 4,QST_ID_MANA_NODE, 4,Send(oQObj,@GetIcon));
+         ++iCount;
+      }
 
       foreach i in plQuestHistory
       {
@@ -4316,6 +4581,12 @@ messages:
       {
          Debug("User tried to turn object other than self: ",what);
          
+         return;
+      }
+
+      // new angle is equal to current one, nothing to do
+      if new_angle = Send(what,@GetAngle)
+      {
          return;
       }
 
@@ -6656,6 +6927,8 @@ messages:
 
       if poGuild = $
       {
+         Send(self,@MsgSendUser,#message_rsc=user_no_guild);
+
          return;
       }
 
@@ -8255,7 +8528,7 @@ messages:
          {
             AddPacket(1,BP_MOVE, 4,what,
                       2,new_row*FINENESS+fine_row, 2,new_col*FINENESS+fine_col,
-                      1,speed);
+                      1,speed,2,Send(what, @GetAngle));
             SendPacket(poSession);
 
             propagate;
@@ -8270,7 +8543,7 @@ messages:
    {
       AddPacket(1,BP_MOVE, 4,what,
                 2,new_row*FINENESS+fine_row, 2,new_col*FINENESS+fine_col,
-                1,speed);
+                1,speed,2,Send(what, @GetAngle));
 
       return;
    }
@@ -8622,6 +8895,28 @@ messages:
             AddPacket(1,BP_SAID, 4,what, 4,rName, 1,type, 4,rSay_format,
                       4,rName, 0,string);
          }
+
+         SendPacket(poSession);
+      }
+
+      propagate;
+   }
+
+   SomethingChangedFlags(what = $)
+   "Like SomethingChanged(), but only object ID and flags get sent."
+   {
+      if IsClass(what,&DM)
+         AND Send(what,@IsDMStealthed)
+         AND what <> self
+      {
+         return;
+      }
+
+      if pbLogged_on
+      {
+         AddPacket(1,BP_CHANGE_FLAGS, 4,what);
+
+         Send(self,@ToCliFlags,#what=what);
 
          SendPacket(poSession);
       }
@@ -9689,9 +9984,8 @@ messages:
    "Sends the user to their hometown, whether they're logged in or not!\n"
    "Called by constructor for initial placement as well"
    {
-      local oNew_Room,iRow,iCol,oRoom;
+      local oNew_Room, iRow, iCol, oRoom, oSpell;
 
-      oRoom = $;
       if piHomeroom <> $
       {
          oRoom = Send(SYS,@FindRoomByNum,#num=abs(piHomeroom));
@@ -9701,6 +9995,16 @@ messages:
       {
          Send(self,@SetRandomHomeroom);
          oRoom = Send(SYS,@FindRoomByNum,#num=piHomeroom);
+      }
+
+      // Remove damned string if rescuing from OoG.
+      if (Send(self,@IsPlayerDamned))
+      {
+         oSpell = Send(SYS,@FindSpellByNum,#num=SID_DAMN);
+         if (oSpell <> $)
+         {
+            Send(self,@RemoveHonorString,#string=Send(oSpell,@GetDamnedRsc));
+         }
       }
 
       piSave_room = piHomeroom;
@@ -9759,6 +10063,16 @@ messages:
       }
 
       return TRUE;
+   }
+
+   IsPlayerDamned()
+   {
+      if (poOwner <> $)
+      {
+         return Send(poOwner,@GetRoomNum) = RID_OOG;
+      }
+
+      return piSave_Room = RID_OOG;
    }
 
    TeleportToInitialLocation()
@@ -10494,13 +10808,32 @@ messages:
    UpdateTimeValues()
    "Sets all time variables to the current time.  Useful for when changing server time."
    {
+      local i, iTime;
+
       // Don't set piTimeNewsPosted to current time.  That'd potentially make
       //  people unable to post for a while.
       piTimeNewsPosted = 0;
-      piLastMoveUpdateTime = GetTickCount();
 
       // Eliminate logoff penalty time.  Just easier this way.
       Send(self,@RefreshPhaseTimeToBase);
+
+      iTime = GetTime();
+
+      // Set any 'future' mail to current time. Client uses the
+      // string timestamp, int one is just for deleting old mails.
+      foreach i in plNew_mail
+      {
+         if (Nth(i,2) > iTime)
+         {
+            SetNth(i,2,iTime);
+         }
+      }
+
+      // Can be 0 for non-created players. Set to current if not 0.
+      if (piLastLoginTime > 0)
+      {
+         piLastLoginTime = iTime;
+      }
 
       propagate;
    }

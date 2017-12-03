@@ -2649,7 +2649,7 @@ messages:
          AND NOT (viDefault_behavior & AI_NPC)
       {
          Send(self,@SetBehaviorFlag,#flag=AI_NPC,#value=FALSE);
-         Send(poOwner,@SomethingChanged,#what=self);
+         Send(poOwner,@SomethingChangedFlags,#what=self);
       }
 
       // Revoke temporary go through walls status if necessary.
@@ -3569,7 +3569,12 @@ messages:
       if poOwner <> $
       {
          iAngle = Send(SYS,@UtilGetAngleTowards,#row=drow,#col=dcol);
-         Send(poOwner,@SomethingTurned,#what=self,#new_angle=iAngle);
+
+         // only if new_angle is different
+         if iAngle <> Send(self,@GetAngle)
+         {
+            Send(poOwner,@SomethingTurned,#what=self,#new_angle=iAngle);
+         }
       }
 
       return;
@@ -7112,13 +7117,6 @@ messages:
             iTime = (14142 * iTime) / 10000;
          }
 
-         // finally we reduce the timer a bit (right now it's exact at ms)
-         // why? the client should get a new position before the last destination
-         // is reached. This prevents cases of stuttering if our message was a 
-         // bit late in transmission. the client has a dynamic playout which 
-         // will compensate this.
-         iTime -= 5;
-
          // make sure timer interval does not get negative
          // and also not like "run all the time"
          iTime = Bound(iTime, 10, 10000);
@@ -8266,7 +8264,7 @@ messages:
 
       if poOwner <> $
       {
-         Post(poOwner,@SomethingChanged,#what=self);
+         Post(poOwner,@SomethingChangedFlags,#what=self);
       }
 
       return;
@@ -8305,7 +8303,7 @@ messages:
                // This may happen when the player isn't even logged on.
                if poOwner <> $
                {
-                  Send(poOwner,@SomethingChanged,#what=self);
+                  Send(poOwner,@SomethingChangedFlags,#what=self);
                }
             }
          }
@@ -8334,7 +8332,7 @@ messages:
             // This may happen when the player isn't even logged on.
             if poOwner <> $
             {
-               Send(poOwner,@SomethingChanged,#what=self);
+               Send(poOwner,@SomethingChangedFlags,#what=self);
             }
          }
          // We won't take a new leader if we already got one. Return FALSE.
@@ -9667,7 +9665,7 @@ messages:
 
          // Notify the room that we changed our target. This allows
          // the Users' minimap dots to update accordingly.
-         Send(poOwner,@SomethingChanged,#what=self);
+         Send(poOwner,@SomethingChangedFlags,#what=self);
       }
 
       return;
@@ -9985,10 +9983,10 @@ messages:
       // ...or over time effects the monster may have.
       Send(self,@DeleteAllOverTimeEffects);
 
-      // Gramt temporary NPC status while returning to spawn.
+      // Grant temporary NPC status while returning to spawn.
       Send(self,@SetBehaviorFlag,#flag=AI_NPC,#value=TRUE);
       Send(self,@SetBehaviorFlag,#flag=AI_MOVE_WALKTHROUGH_WALLS,#value=TRUE);
-      Send(poOwner,@SomethingChanged,#what=self);
+      Send(poOwner,@SomethingChangedFlags,#what=self);
 
       // Start moving...
       Send(self,@EnterStateMove);
