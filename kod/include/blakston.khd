@@ -171,6 +171,10 @@
    LIR_SECTOR_NOMOVE  = 0x000080
    LIR_BLOCKED_OBJECT = 0x000100
 
+   // Query flags for GetDateAndTime
+   BTIME_UTC   = 0x00
+   BTIME_LOCAL = 0x01
+
    // Projectile and Light flags
 
    // Flags for spells/projectiles
@@ -932,6 +936,8 @@
    RID_RATCAVE1 = 2701
    RID_RATCAVE2 = 2702
    RID_RATCAVE3 = 2703
+
+   RID_QORMASLAND = 2751
 
    // "Historical" rooms 9000-10000
    // These are older rooms that we're throwing in for historical/nostalgia
@@ -1986,6 +1992,7 @@
    // Missile weapons ammo-type, determined by each missile weapon.
    AMMO_ARROW = 1
    AMMO_BOLT  = 2
+   AMMO_WEAPON = 3 // Weapon itself is the ammo (thrown)
 
    // Attack types
 
@@ -2019,6 +2026,7 @@
    // Special material types
    ATCK_WEAP_NERUDITE    = 0x10000
    ATCK_WEAP_SILVER      = 0x20000
+   ATCK_WEAP_COLD        = 0x40000
 
    // Spell attack types
    ATCK_SPELL_ALL        = 0x0001
@@ -2583,11 +2591,16 @@
    DMFLAG_ALLOW_SET_MORTAL       = 0x0800000
    // Allow modifying items
    DMFLAG_ALLOW_MODIFY_ITEMS     = 0x1000000
+   // Allow server-enforced ignore
+   DMFLAG_ALLOW_FORCE_IGNORE     = 0x2000000
+   // Allow listing players matching IP of query player.
+   DMFLAG_ALLOW_CHECK_IP         = 0x4000000
+   // Flag field is full.
 
    DMFLAG_SET_MODERATOR          = 0x0000000
    DMFLAG_SET_BARD               = 0x10414C0
    DMFLAG_SET_GUIDE              = 0x17D7EC0
-   DMFLAG_SET_ADMIN              = 0x17FFEC0
+   DMFLAG_SET_ADMIN              = 0x7FFFEC0
 
    // Special effect constants
    EFFECT_INVERT = 1

@@ -22,11 +22,25 @@ static HANDLE name_lookup_handle;
 
 static char   udpbuf[BUFFER_SIZE + HEADERBYTES]; // same size as bufpool buffers!
 static SOCKET udpsock = INVALID_SOCKET;
+static int last_udp_read_time = 0; // track this for errors.
 
 /* local function prototypes */
 void AcceptSocketConnections(int socket_port,int connection_type);
 void AcceptUDP(int socket_port);
 void AsyncEachSessionNameLookup(session_node *s);
+
+void ResetUDP(void)
+{
+   // Potential threading issues?
+   closesocket(udpsock);
+   // WSACleanup(); Not sure if we need to do this
+   AcceptUDP(ConfigInt(SOCKET_PORT));
+}
+
+int GetLastUDPReadTime(void)
+{
+   return last_udp_read_time;
+}
 
 void AsyncSocketStart(void)
 {
@@ -347,6 +361,9 @@ void AsyncSocketReadUDP(SOCKET sock)
    int          flags = 0;
    int          lplen = sizeof(senderaddr);
 
+   // Record time.
+   last_udp_read_time = GetTime();
+
    ///////////////////////////////////////////////////////////////////////
    // try to receive the new udp datagram from socket
    ///////////////////////////////////////////////////////////////////////
@@ -391,10 +408,14 @@ void AsyncSocketReadUDP(SOCKET sock)
    // checks #2
    ///////////////////////////////////////////////////////////////////////
 
+   // Print errors/info?
+   bool debug_udp = ConfigBool(DEBUG_UDP);
+
    // 1) invalid session or hangup
    if (!session || session->hangup)
    {
-      dprintf("AsyncSocketReadUDP error unknown session-Id or hangup session \n");
+      if (debug_udp)
+         dprintf("AsyncSocketReadUDP error unknown session-Id or hangup session \n");
       return;
    }
 
@@ -403,7 +424,8 @@ void AsyncSocketReadUDP(SOCKET sock)
    {
       if (session->conn.addr.u.Word[i] != senderaddr.sin6_addr.u.Word[i])
       {
-         eprintf("AsyncSocketReadUDP warning received session-Id from different IP\n");
+         if (debug_udp)
+            eprintf("AsyncSocketReadUDP warning received session-Id from different IP\n");
          return;
       }
    }
@@ -419,14 +441,16 @@ void AsyncSocketReadUDP(SOCKET sock)
    // 4) out of sequence order or duplicated UDP datagram
    if (seqno <= session->receive_seqno_udp)
    {
-      dprintf("AsyncSocketReadUDP discarding out of sequence UDP on Session %i \n", session->session_id);
+      if (debug_udp)
+         dprintf("AsyncSocketReadUDP discarding out of sequence UDP on Session %i \n", session->session_id);
       return;
    }
    else
    {
-      // log missed or malformed UDP (don't print, happens a bit too often live)
-      //if (seqno > session->receive_seqno_udp + 1)
-         //dprintf("AsyncSocketReadUDP detected lost or malformed UDP on Session %i", session->session_id);
+      // Don't print, happens a bit too often and as a result of normal packet loss.
+      // log missed or malformed UDP
+      // if (seqno > session->receive_seqno_udp + 1)
+      //    dprintf("AsyncSocketReadUDP detected lost or malformed UDP on Session %i", session->session_id);
 
       // update seqno
       session->receive_seqno_udp = seqno;
@@ -474,6 +498,9 @@ void AsyncSocketReadUDP(SOCKET sock)
    ///////////////////////////////////////////////////////////////////////
    // signal mainthread (blakserv) to process data (thread transition here)
    ///////////////////////////////////////////////////////////////////////
+
+   if (debug_udp)
+      dprintf("Signalling main thread with UDP read for session %i\n", session->session_id);
 
    SignalSession(session->session_id);
 }

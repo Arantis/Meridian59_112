@@ -676,13 +676,6 @@ messages:
 
    LoseHealth(amount = 0, precision = FALSE)
    {
-      if Send(self,@IsInCannotInteractMode)
-      {
-         Send(self,@NewHealth);
-
-         return 0;
-      }
-
       if NOT precision
       {
          amount *= 100;
@@ -696,12 +689,6 @@ messages:
       else
       {
          piHealth -= amount;
-      }
-
-      if (IsClass(self,&Player)
-         AND Send(self,@CheckPlayerFlag,#flag=PFLAG_TRANCE))
-      {
-         Send(self,@BreakTrance,#event=EVENT_DAMAGE);
       }
 
       Send(self,@NewHealth);
@@ -2080,7 +2067,9 @@ messages:
 
    DeleteAllOverTimeEffects()
    {
-      local i, oSpell;
+      local i, oSpell, bRemoved;
+
+      bRemoved = FALSE;
 
       foreach i in plOverTimeEffects
       {
@@ -2096,6 +2085,12 @@ messages:
          }
 
          plOverTimeEffects = DelListElem(plOverTimeEffects,i);
+         bRemoved = TRUE;
+      }
+
+      if bRemoved
+      {
+         Send(self,@UpdateRates);
       }
 
       return;
@@ -2520,6 +2515,32 @@ messages:
             }
 
             return battler_acid_fail;
+         }
+
+         // Repeat the cold spell words here
+         if (type & ATCK_WEAP_COLD)
+         {
+            if damage = $
+            {
+               return battler_cold_slay;
+            }
+
+            if damage > DAMAGE_THRESHOLD_DAMAGE
+            {
+               return battler_cold_damage;
+            }
+
+            if damage > DAMAGE_THRESHOLD_WOUND
+            {
+               return battler_cold_wound;
+            }
+
+            if damage > 99
+            {
+               return battler_cold_nick;
+            }
+
+            return battler_cold_fail;
          }
 
          if (type & ATCK_WEAP_PUNCH)
