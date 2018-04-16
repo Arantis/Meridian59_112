@@ -508,6 +508,24 @@ properties:
 
    plAttackTypes = $
    plSpellTypes = $
+
+   // Toggle to enable/disable autolog/phase tests.
+   pbAutologTestEnabled = TRUE
+
+   // Timer to trigger autolog test.
+   ptAutologTestTimer = $
+
+   // List of every player's honor points.
+   plHonorList = $
+   plOldHonorList = $
+   plOldHonorDate = $
+   psHonorListCopied = $
+
+   // List of DM/Admin objects that are informed every time a globe post
+   // is made. Purpose of this is to inform the IRC bot so that posts can
+   // be echoed to IRC.
+   plGlobeWatchers = $
+
 messages:
 
    GetName()
@@ -870,6 +888,106 @@ messages:
       return;
    }
 
+#region Autolog Testing
+   EnableAutologTests()
+   {
+      pbAutologTestEnabled = TRUE;
+
+      if (ptAutologTestTimer <> $)
+      {
+         DeleteTimer(ptAutologTestTimer);
+      }
+      ptAutologTestTimer = CreateTimer(self,@SystemAutologTestPhaseOne,
+                              Send(SETTINGS_OBJECT,@GetAutologTestSchedule) * 60000);
+
+      return;
+   }
+
+   DisableAutologTests()
+   {
+      pbAutologTestEnabled = FALSE;
+
+      if (ptAutologTestTimer <> $)
+      {
+         DeleteTimer(ptAutologTestTimer);
+         ptAutologTestTimer = $;
+      }
+
+      return;
+   }
+
+   SystemAutologTestPhaseOne(timer = $)
+   "Initialises an autolog test on all users.  This part triggers all online "
+   "players to receive a (fake) low-HP packet, and sets a timer for the next "
+   "part."
+   {
+      local iTestHP;
+
+      if (ptAutologTestTimer <> $
+         AND (timer = $
+            OR timer <> ptAutologTestTimer))
+      {
+         DeleteTimer(ptAutologTestTimer);
+      }
+      ptAutologTestTimer = $;
+
+      if (NOT pbAutologTestEnabled)
+      {
+         return;
+      }
+
+      // Get a test HP (%) to use.
+      iTestHP = Random(0,Random(25,50));
+
+      SendList(plUsers_logged_on,0,@AutologTest,#iPercent=iTestHP);
+
+      // Use a random duration.
+      ptAutologTestTimer = CreateTimer(self,@SystemAutologTestPhaseTwo,
+                              Send(SETTINGS_OBJECT,@GetAutologTestDuration));
+
+      return;
+   }
+
+   SystemAutologTestPhaseTwo(timer = $)
+   "This part of the autolog test sends a correct-HP packet to all users."
+   "Calls the next part in the test after 3000 ms."
+   {
+      if (ptAutologTestTimer <> $
+         AND (timer = $
+            OR timer <> ptAutologTestTimer))
+      {
+         DeleteTimer(ptAutologTestTimer);
+      }
+
+      SendList(plUsers_logged_on,0,@AutologTestReverse,#report=TRUE);
+
+      ptAutologTestTimer = CreateTimer(self,@SystemAutologTestPhaseThree,3000);
+
+      return;
+   }
+
+   SystemAutologTestPhaseThree(timer = $)
+   "This part of the test clears the test time on all users, and sets the "
+   "timer for the next automated test."
+   {
+      if (ptAutologTestTimer <> $
+         AND (timer = $
+            OR timer <> ptAutologTestTimer))
+      {
+         DeleteTimer(ptAutologTestTimer);
+      }
+
+      // Don't need to worry about logged-off users since test start,
+      // since they reset their own test times.
+      SendList(plUsers_logged_on,0,@ResetAutologTestTime);
+
+      ptAutologTestTimer = CreateTimer(self,@SystemAutologTestPhaseOne,
+                              Send(SETTINGS_OBJECT,@GetAutologTestSchedule) * 60000);
+
+      return;
+   }
+#endregion Autolog testing
+
    CheckUserTable()
    {
       local i, r;
@@ -1008,6 +1126,11 @@ messages:
    GarbageCollecting(type = $)
    {
       Send(self,@CleanReflectionList);
+
+      if Send(SETTINGS_OBJECT,@HonorSystemActive)
+      {
+         Send(self,@UpdateHonorList);
+      }
 
       SendList(plUsers_logged_on,0,@GarbageCollecting);
 
@@ -1451,6 +1574,50 @@ messages:
       }
 
       return;
+   }
+
+   AddGlobeWatcher(who = $)
+   {
+      if (who <> $
+         AND NOT IsClass(who,&DM))
+      {
+         Debug("Can only add DMs or higher to globe watchers list!");
+
+         return FALSE;
+      }
+
+      if (FindListElem(plGlobeWatchers, who))
+      {
+         Debug(Send(who,@GetTrueName)," is already watching the globes!");
+
+         return FALSE;
+      }
+
+      plGlobeWatchers = Cons(who,plGlobeWatchers);
+
+      return TRUE;
+   }
+
+   RemoveGlobeWatcher(who = $)
+   {
+      if (FindListElem(plGlobeWatchers,who))
+      {
+         plGlobeWatchers = DelListElem(plGlobeWatchers,who);
+
+         return TRUE;
+      }
+
+      return FALSE;
+   }
+
+   IsGlobeWatcher(who=$)
+   {
+      return FindListElem(plGlobeWatchers,who);
+   }
+
+   GetGlobeWatchers()
+   {
+      return plGlobeWatchers;
    }
 
    SystemNewNews(what = $)
@@ -1925,7 +2092,7 @@ messages:
 
    GetLastMurderer()
    {
-      if findListElem(plUsers,poLastMurderer)
+      if FindListElem(plUsers,poLastMurderer)
       {
          return poLastMurderer;
       }
@@ -2171,16 +2338,14 @@ messages:
       AddPacket(1,BP_CHARINFO);
 
       // 14 hair translations
-      AddPacket(1,14);
-      AddPacket(1,0, 1,PT_GRAY_TO_ORANGE, 1,PT_GRAY_TO_RED);
-      AddPacket(1,PT_GRAY_TO_SKIN1, 1,PT_GRAY_TO_SKIN2, 1,PT_GRAY_TO_SKIN3);
-      AddPacket(1,PT_GRAY_TO_SKIN4, 1,PT_GRAY_TO_SKIN5, 1,PT_GRAY_TO_PLATBLOND);
-      AddPacket(1,PT_GRAY_TO_KORANGE, 1,PT_GRAY_TO_KRED, 1,PT_GRAY_TO_KGRAY);
-      AddPacket(1,PT_GRAY_TO_BLACK, 1,PT_GRAY_TO_BLOND);
+      AddPacket(1,14, 1,0, 1,PT_GRAY_TO_ORANGE, 1,PT_GRAY_TO_RED,
+                1,PT_GRAY_TO_SKIN1, 1,PT_GRAY_TO_SKIN2, 1,PT_GRAY_TO_SKIN3,
+                1,PT_GRAY_TO_SKIN4, 1,PT_GRAY_TO_SKIN5, 1,PT_GRAY_TO_PLATBLOND,
+                1,PT_GRAY_TO_KORANGE, 1,PT_GRAY_TO_KRED, 1,PT_GRAY_TO_KGRAY,
+                1,PT_GRAY_TO_BLACK, 1,PT_GRAY_TO_BLOND);
 
       // 4 skin translations
-      AddPacket(1,4);
-      AddPacket(1,PT_BLUE_TO_SKIN1, 1,PT_BLUE_TO_SKIN2,
+      AddPacket(1,4, 1,PT_BLUE_TO_SKIN1, 1,PT_BLUE_TO_SKIN2,
                 1,PT_BLUE_TO_SKIN3, 1,PT_BLUE_TO_SKIN4);
 
       // Face options
@@ -2192,9 +2357,7 @@ messages:
 
       foreach i in plNewCharSpells
       {
-         AddPacket(4,Send(i,@GetSpellNum));
-         AddPacket(4,Send(i,@GetName));
-         AddPacket(4,Send(i,@GetIntro));
+         AddPacket(4,Send(i,@GetSpellNum), 4,Send(i,@GetName), 4,Send(i,@GetIntro));
 
          // Cost of spell
          if Send(i,@GetLevel) = 2
@@ -2228,9 +2391,7 @@ messages:
             continue;
          }
 
-         AddPacket(4,Send(i,@GetSkillNum));
-         AddPacket(4,Send(i,@GetName));
-         AddPacket(4,Send(i,@GetIntro));
+         AddPacket(4,Send(i,@GetSkillNum), 4,Send(i,@GetName), 4,Send(i,@GetIntro));
 
          if Send(i,@GetLevel) = 2
          {
@@ -2542,6 +2703,8 @@ messages:
       Send(self,@CreateOneRoomIfNew,#num=RID_GUILDH13,#class=&GuildHall13);
       Send(self,@CreateOneRoomIfNew,#num=RID_GUILDH14,#class=&GuildHall14);
       Send(self,@CreateOneRoomIfNew,#num=RID_GUILDH15,#class=&GuildHall15);
+      Send(self,@CreateOneRoomIfNew,#num=RID_GUILDH16,#class=&GuildHall16);
+      Send(self,@CreateOneRoomIfNew,#num=RID_GUILDH17,#class=&GuildHall17);
 
       Send(self,@CreateOneRoomIfNew,#num=RID_TEMPLE_KRAANAN,#class=&TempleKraanan);
       Send(self,@CreateOneRoomIfNew,#num=RID_TEMPLE_QOR,#class=&TempleQor);
@@ -2633,6 +2796,67 @@ messages:
       
       Send(self,@CreateOneRoomIfNew,#num=RID_QORMASLAND,#class=&QormasLand);
 
+      // BERG City
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_CITY,#class=&BergCity);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_VAULT,#class=&BergVault);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_SMITH,#class=&BergSmith);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_HALL,#class=&BergHall);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_STORE,#class=&BergStore);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_INN,#class=&BergInn);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_BANK,#class=&BergBank);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_AUC,#class=&BergAuc);
+
+      // Berg Monsroom
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_MG,#class=&BergMG);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_1,#class=&Berg1);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_2,#class=&Berg2);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_3,#class=&Berg3);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_3_CAVE,#class=&Berg3Cave);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_4,#class=&Berg4);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_5,#class=&Berg5);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_6,#class=&Berg6);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_7,#class=&Berg7);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_8,#class=&Berg8);
+      Send(self,@CreateOneRoomIfNew,#num=RID_SURVIVAL_ARENA,#class=&SurvivalArena);
+      Send(self,@CreateOneRoomIfNew,#num=RID_GOLEM_DUNGEON,#class=&GolemDungeon);
+
+      // Berg Room
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_JALA,#class=&BergJala);
+
+      // DeathValley
+      Send(self,@CreateOneRoomIfNew,#num=RID_DVALLEY_1,#class=&DValley1);
+      Send(self,@CreateOneRoomIfNew,#num=RID_DVALLEY_2,#class=&DValley2);
+      Send(self,@CreateOneRoomIfNew,#num=RID_DVALLEY_3,#class=&DValley3);
+      Send(self,@CreateOneRoomIfNew,#num=RID_DVALLEY_4,#class=&DValley4);
+      Send(self,@CreateOneRoomIfNew,#num=RID_DVALLEY_5,#class=&DValley5);
+      Send(self,@CreateOneRoomIfNew,#num=RID_DVALLEY_5B,#class=&DValley5B);
+
+      // Connect Queensway
+      Send(self,@CreateOneRoomIfNew,#num=RID_J3_1,#class=&OutdoorsJ3_1);
+      Send(self,@CreateOneRoomIfNew,#num=RID_J3_2,#class=&OutdoorsJ3_2);
+
+      // Jixa City
+      Send(self,@CreateOneRoomIfNew,#num=RID_JIXA,#class=&JixaCity);
+      Send(self,@CreateOneRoomIfNew,#num=RID_JIXA_INN,#class=&JixaInn);
+      Send(self,@CreateOneRoomIfNew,#num=RID_JIXA_DYE,#class=&JixaDye);
+      Send(self,@CreateOneRoomIfNew,#num=RID_JIXA_HALL,#class=&JixaHall);
+      Send(self,@CreateOneRoomIfNew,#num=RID_JIXA_SMITH,#class=&JixaSmith);
+
+      // Jixa Monsroom
+      Send(self,@CreateOneRoomIfNew,#num=RID_JIXA_1,#class=&Jixa1);
+      Send(self,@CreateOneRoomIfNew,#num=RID_JIXA_2,#class=&Jixa2);
+      Send(self,@CreateOneRoomIfNew,#num=RID_JIXA_3,#class=&Jixa3);
+      Send(self,@CreateOneRoomIfNew,#num=RID_JIXA_4,#class=&Jixa4);
+
+      // TosEast Area Monsroom
+      Send(self,@CreateOneRoomIfNew,#num=RID_TOSEAST_MG,#class=&MGToseast);
+      Send(self,@CreateOneRoomIfNew,#num=RID_EMGTOSWAMP,#class=&Emgtoswamp);
+      Send(self,@CreateOneRoomIfNew,#num=RID_SWAMPTOJIXA,#class=&Swamptojixa);
+      Send(self,@CreateOneRoomIfNew,#num=RID_SWAMP1,#class=&Swamp1);
+      Send(self,@CreateOneRoomIfNew,#num=RID_SWAMP2,#class=&Swamp2);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_MINE,#class=&BergMine);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BANDIT_CAMP,#class=&BanditCamp);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BANDIT_CAVE,#class=&BanditCave);
 
       if poRentableRoomMaintenance <> $  // After a clean build, for example.
       {
@@ -2850,7 +3074,6 @@ messages:
 
       return TRUE;
    }
-
 
    DeleteRoom(what = $)
    "Called by the room when it is deleted, so we can remove it from our list of rooms."
@@ -3379,6 +3602,7 @@ messages:
 
       Send(self,@CreateOneSpellIfNew,#num=SID_SHADOW_FORM,#class=&Shadowform);
       Send(self,@CreateOneSpellIfNew,#num=SID_ILLUSIONARY_FORM,#class=&Illusionaryform);
+      Send(self,@CreateOneSpellIfNew,#num=SID_STONESKIN,#class=&Stoneskin);
 
       Send(self,@CreateOneSpellIfNew,#num=SID_BONK,#class=&Bonk);
       Send(self,@CreateOneSpellIfNew,#num=SID_ARMAGEDDON,#class=&Armageddon);
@@ -4063,6 +4287,9 @@ messages:
       Create(&XeoNeruTreasure);
       Create(&XeoIllTreasure);
 
+      Create(&MinoTreasure);
+      Create(&ChupaTreasure);
+
       return;
    }
 
@@ -4473,10 +4700,18 @@ messages:
    {
       local i, lBadNameContain, lBadNameIs, oLookup;
 
-      if StringLength(sName) < MIN_CHAR_NAME_LEN
+      if sName = $
+         OR StringLength(sName) < MIN_CHAR_NAME_LEN
          OR StringLength(sName) > MAX_CHAR_NAME_LEN
       {
-         Debug("Got char name length out of range for user ", oUser);
+         if (sName = $)
+         {
+            Debug("ALERT: Got $ name for user ",oUser);
+         }
+         else
+         {
+            Debug("Got char name length out of range for user ", oUser);
+         }
 
          return CC_NAME_TOO_LONG;
       }
@@ -4848,6 +5083,13 @@ messages:
    {
       if hall <> $ AND IsClass(hall,&GuildHall)
       {
+         if (Send(hall,@GetRoomNum) > RID_GUILDH_MAX)
+         {
+            // Don't add halls above this number, could be
+            // inaccessible for now.
+            return TRUE;
+         }
+
          plGuild_halls = Cons(hall,plGuild_halls);
 
          return TRUE;
@@ -4870,6 +5112,14 @@ messages:
 
             return TRUE;
          }
+      }
+
+      if (hall <> $
+         AND Send(hall,@GetRoomNum) > RID_GUILDH_MAX)
+      {
+         // These ones are okay, inaccessible halls aren't added
+         // to plGuild_halls in the first place.
+         return TRUE;
       }
 
       Debug("Tried to remove a guild hall that was not in plGuild_halls!");
@@ -5477,6 +5727,7 @@ messages:
       plMonsterTemplates = cons(create(&NecromancerTroop,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = cons(create(&Necromancer,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = cons(create(&Follower,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Bandit,#template=TRUE),plMonsterTemplates);
 
       plMonsterTemplates = cons(create(&XeoFire,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = cons(create(&XeoWater,#template=TRUE),plMonsterTemplates);
@@ -5816,6 +6067,7 @@ messages:
       plItemTemplates = cons(create(&Pear),plItemTemplates);
       plItemTemplates = cons(create(&Orange),plItemTemplates);
       plItemTemplates = cons(create(&TeloFruit),plItemTemplates);
+      plItemTemplates = cons(create(&Truffle),plItemTemplates);
 
       plItemTemplates = cons(create(&EasterEgg),plItemTemplates);
 
@@ -5825,7 +6077,7 @@ messages:
       plItemTemplates = cons(create(&QormasHelm),plItemTemplates);
       plItemTemplates = cons(create(&IvyCirclet),plItemTemplates);
       plItemTemplates = cons(create(&Circlet),plItemTemplates);
-	  plItemTemplates = cons(create(&DaemonHelm),plItemTemplates);
+      plItemTemplates = cons(create(&DaemonHelm),plItemTemplates);
 
       // Shields
       plItemTemplates = cons(create(&GuildShield),plItemTemplates);
@@ -8214,6 +8466,223 @@ messages:
       }
 
       return $;
+   }
+
+   ResetGlobalHonor()
+   {
+      local i;
+
+      foreach i in plUsers
+      {
+         Send(i,@SetHonorPoints,#honor=Send(SETTINGS_OBJECT,@GetDefaultHonor));
+      }
+
+      Debug("Global honor reset.");
+      Send(self,@CreateHonorList);
+
+      return;
+   }
+
+   CreateHonorList()
+   {
+      local i;
+
+      plHonorList = $;
+
+      foreach i in plUsers
+      {
+         // Don't include DMs, event characters, ineligible characters
+         // or empty character slots.
+         if Send(i,@CanParticipateInHonorSystem)
+         {
+            if (NOT Send(i,@IsUserHonorInactive))
+            {
+               plHonorList = Cons([i, Send(i,@GetHonorPoints)], plHonorList);
+            }
+         }
+         else
+         {
+            // No ranks for people who dropped out of the honor system.
+            // (by losing HP, school levels, opting out of PvP etc.)
+            Send(i,@SetHonorRank,#rank=0);
+         }
+      }
+
+      Debug("Honor list created.");
+      Send(self,@UpdateHonorList);
+
+      return;
+   }
+
+   UpdateHonorList()
+   {
+      local i, each_obj;
+
+      if plHonorList = $
+      {
+         Debug("No honor list found.");
+
+         return;
+      }
+
+      foreach i in plHonorList
+      {
+         each_obj = First(i);
+         if Send(each_obj,@IsUserHonorInactive)
+            OR NOT Send(each_obj,@CanParticipateInHonorSystem)
+         {
+            plHonorList = DelListElem(plHonorList, i);
+         }
+         else
+         {
+            SetNth(i,2,Send(each_obj,@GetHonorPoints));
+         }
+      }
+
+      Send(self,@CalculateHonorRanks);
+
+      return;
+   }
+
+   UpdateHonorPoints(who=$)
+   {
+      local lPlayer;
+
+      if plHonorList = $
+      {
+         Debug("No honor list found.");
+         Send(self,@CreateHonorList);
+      }
+      if who = $
+      {
+         return;
+      }
+
+      lPlayer = GetListNode(plHonorList,1,who);
+      if lPlayer <> $
+      {
+         SetNth(lPlayer,2,0);
+      }
+      plHonorList = Send(self,@AddToSortedList,#what=who,#lList=plHonorList,
+                         #number=Send(who,@GetHonorPoints),#bIgnoreDuplicate=FALSE,
+                         #bReverse=FALSE);
+
+      Send(self,@CalculateHonorRanks);
+
+      return;
+   }
+
+   CalculateHonorRanks()
+   {
+      local iCount, iFirst, iSecond, iThird, iFourth, iPos, iCountMax,
+            oPlayer, lPlayer;
+
+      // How many players can hold a given rank.
+      iFirst = 1;
+      iSecond = 3;
+      iThird = 10;
+      iFourth = 30;
+
+      iCountMax = Length(plHonorList);
+
+      if plHonorList = $
+      {
+         Debug("No honor list found.");
+
+         return;
+      }
+
+      if Send(SETTINGS_OBJECT,@ScaleHonorRanks)
+      {
+         // Rank 1 for the best player, 2 for the best 10%, 3 for the best 10-30%,
+         // 4 for 30-80% and 5 for everyone else.
+         iFirst = 1;
+         iSecond = (iCountMax * 10) / 100;
+         iThird = (iCountMax * 20) / 100;
+         iFourth = (iCountMax * 50) / 100;
+      }
+
+      for (iPos = 1; iPos <= iCountMax; ++iPos)
+      {
+         lPlayer = Nth(plHonorList,iPos);
+         oPlayer = First(lPlayer);
+
+         if iPos >= 1
+            AND iPos <= iFirst
+         {
+            Send(oPlayer,@SetHonorRank,#rank=1);
+         }
+         else if iPos > iFirst
+                 AND iPos <= iSecond + iFirst
+         {
+            Send(oPlayer,@SetHonorRank,#rank=2);
+         }
+         else if iPos > iSecond + iFirst
+                 AND iPos <= iThird + iSecond + iFirst
+         {
+            Send(oPlayer,@SetHonorRank,#rank=3);
+         }
+         else if iPos > iThird + iSecond + iFirst
+                 AND iPos <= iFourth + iThird + iSecond + iFirst
+         {
+            Send(oPlayer,@SetHonorRank,#rank=4);
+         }
+         else
+         {
+            Send(oPlayer,@SetHonorRank,#rank=5);
+         }
+      }
+      //Debug("Honor ranks calculated.");
+
+      return;
+   }
+
+   CopyHonorList()
+   {
+      // Creates a copy of the current honor list to track score changes over
+      // a period of time. Useful for events etc.
+      local iYear, iMonth, iDay, iHour, iMinute;
+
+      // Create a current list.
+      Send(self,@UpdateHonorList);
+
+      if plHonorList = $
+      {
+         Debug("No honor list found.");
+         return;
+      }
+      plOldHonorList = ListCopy(plHonorList);
+      GetDateAndTime(BTIME_LOCAL, *iYear, *iMonth, *iDay, *iHour, *iMinute, $);
+      plOldHonorDate = Cons([iYear, iMonth, iDay, iHour, iMinute], plOldHonorDate);
+
+      return;
+   }
+
+   GetHonorList()
+   {
+      return plHonorList;
+   }
+
+   GetOldHonorList()
+   {
+      return plOldHonorList;
+   }
+
+   GetOldHonorDate()
+   {
+      return plOldHonorDate;
+   }
+
+   SetHonorListCopied(who=$)
+   {
+      psHonorListCopied = Send(who,@GetName);
+
+      return;
+   }
+
+   GetHonorListCopied()
+   {
+      return psHonorListCopied;
    }
 
 end

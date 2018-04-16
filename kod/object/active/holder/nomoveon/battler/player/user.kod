@@ -47,10 +47,6 @@ constants:
    //  accounts.
    USER_INACTIVE_TIME = 60 * 60 * 24 * 60
 
-   // What's the "speed" of movement for the client?
-   USER_WALKING_SPEED = 25
-   USER_RUNNING_SPEED = 50
-
    // How many packets incoming per second do we allow?
    INCOMING_PACKET_THROTTLE = 30
 
@@ -399,7 +395,6 @@ resources:
    user_say_start_guild_survival = "start guild survival"
    user_say_join_guild_survival = "join guild survival"
    // Extra survival arena options for DMs.
-   user_say_survival_opt_unnatural = "--unnatural"
    user_say_survival_opt_pvpon = "--pvpon"
    user_say_survival_opt_starthere = "--thisbase"
 
@@ -480,6 +475,15 @@ resources:
       "%s has regained physical touch with this reality."
    user_self_spectate_off = \
       "You have regained your physical connection to this place."
+   user_autolog_complete = "Autolog test complete!"
+   user_autophase_detected = \
+      "Autophase use detected! This event has been logged."
+
+   user_honor_gain_penalty = \
+      "You gain %i honor points from your victory over %s as they cowardly "
+      "flee the battlefield."
+   user_honor_loss_penalty = \
+      "You lose %i honor points as you retreat from the battlefield."
 
 classvars:
 
@@ -533,6 +537,9 @@ properties:
    // Keeps track of when mobs have last been alerted of our presence.
    piLastMoveNotification = 0
 
+   // Keeps track of when server last teleported this user inside the room
+   piLastServerTeleport = 0
+
    piCheaterLogs = 0
 
    // What order do you want your inventory sorted in?
@@ -552,6 +559,10 @@ properties:
 
    // List of user objects this user cannot receive communications from.
    plForcedIgnore = $
+
+   // Uses GetTickCount, must be reset after detection period ends.
+   piLastAutologTest = -1
+   piLastAutologHP = 0
 
 messages:
 
@@ -977,7 +988,22 @@ messages:
 
    UserLogoff()
    {
-      local i;
+      local i, iTime;
+
+      // Autolog time check.
+      if (piLastAutologTest >= 0)
+      {
+         iTime = GetTickCount() - piLastAutologTest;
+         if (iTime > 0
+            AND iTime <= Send(SETTINGS_OBJECT,@GetAutologDetectionPeriod))
+         {
+            Debug("ALERT: ", vrName, self, " potential autolog detected",
+                  " milliseconds since last test: ", iTime, "test HP: ",
+                  piLastAutologHP," room: ",Send(poOwner,@GetName));
+         }
+      }
+
+      piLastAutologTest = -1;
 
       piTimeLoggedIn = Send(self,@GetTimeLoggedIn);
       Send(self,@BreakTrance);
@@ -1046,6 +1072,7 @@ messages:
          // Don't let players stay in the Underworld with Death Rift
          Post(self,@AdminGoToSafety);
       }
+
       poOwner = $;
 
       // If we still have an evil twin at this stage, tell it to delete itself.
@@ -1154,7 +1181,8 @@ messages:
    "'what' is the calling object, i.e. logoff ghost, phase spell."
    {
       local iPenCount, iEquivDeath, iPointLoss, iItemLoss, oDrop,
-            iXPLoss, iNumItems, iNumSpellPts, iNumSkillPts, oSoldierShield;
+            iXPLoss, iNumItems, iNumSpellPts, iNumSkillPts, oSoldierShield,
+            iHonorLoss;
 
       // Check if we're eligible for a free pen.
       if (Send(SETTINGS_OBJECT,@GetFreeNoPvPPenActive,
@@ -1241,6 +1269,7 @@ messages:
       iNumSkillPts = Send(self,@PenaltyLoseSkillPoints,
                            #iNumPoints=iPointLoss,#iPenCount=iPenCount,
                            #iEquivDeath=iEquivDeath);
+      iHonorLoss = Send(self,@PenaltyLoseHonor,#where=oDrop);
 
       // Let the faction shield know of this person's naughtiness if we took a
       // penalty.
@@ -1261,10 +1290,129 @@ messages:
       {
          Send(what,@SendPenaltyInfo,#who=self,#iXPLost=iXPLoss,
                #iItemsLost=iNumItems,#iSpellPtLost=iNumSpellPts,
-               #iSkillPtLost=iNumSkillPts);
+               #iSkillPtLost=iNumSkillPts,#iHonorLost=iHonorLoss);
       }
 
       return;
+   }
+
+   PenaltyLoseHonor(where = $)
+   {
+      local i, j, iHonorLost, iNumHurters, iHonorEach, iLostTotal, oHurter,
+            oOwner, oHurterOwner, bIsNear;
+
+      if NOT Send(SETTINGS_OBJECT,@HonorSystemActive)
+      {
+         return 0;
+      }
+
+      // 'where' should be the user (logged on) or a logoff ghost (logged off).
+      // Account for $ room (try use poOwner) and room 'where' edge/future cases.
+      if (where = $)
+      {
+         oOwner = poOwner;
+      }
+      else if (IsClass(where,&LogoffGhost))
+      {
+         oOwner = Send(where,@GetOwner);
+      }
+      else if (IsClass(where,&Room))
+      {
+         oOwner = where;
+      }
+      else if (poOwner <> $)
+      {
+         oOwner = poOwner;
+      }
+
+      // No owner at this stage, log and return.
+      if (oOwner = $)
+      {
+         Debug("Tried to inflict honor penalty for player ",self," with no owner.");
+
+         return 0;
+      }
+
+      iHonorLost = 0;
+      iNumHurters = 0;
+      iHonorEach = Send(SETTINGS_OBJECT,@GetHonorLossPen);
+      iLostTotal = 0;
+
+      // Find out how many people attacked us recently. Don't count ourselves.
+      foreach i in plHurtMeRecently
+      {
+         oHurter = First(i);
+
+         if oHurter <> self
+            AND IsClass(oHurter,&Player)
+         {
+            ++iNumHurters;
+         }
+      }
+
+      // Penned without being attacked by a player.
+      if iNumHurters = 0
+      {
+         return 0;
+      }
+
+      iHonorEach = iHonorEach / iNumHurters;
+
+      // Attempt to give the honor points from the victim to the attacker(s).
+      foreach i in plHurtMeRecently
+      {
+         bIsNear = FALSE;
+         oHurter = First(i);
+
+         // Only count players that can fight.
+         if (oHurter = self
+            OR NOT IsClass(oHurter,&Player)
+            OR Send(oHurter,@IsOfflineOrCannotInteract))
+         {
+            continue;
+         }
+
+         oHurterOwner = Send(oHurter,@GetOwner);
+         if oOwner = oHurterOwner
+         {
+            bIsNear = TRUE;
+         }
+         else
+         {
+            // The attacker can fight but isn't in the same room as the victim.
+            // Check if they are in a nearby combat area since PvP involves movement.
+            foreach j in Send(oOwner,@GetYellZone)
+            {
+               if Send(SYS,@FindRoomByNum,#num=j) = oHurterOwner
+                  AND NOT Send(oHurterOwner,@CheckRoomFlag,#flag=ROOM_NO_COMBAT)
+                  AND NOT Send(oHurterOwner,@CheckRoomFlag,#flag=ROOM_NO_PK)
+                  AND NOT Send(oHurterOwner,@CheckRoomFlag,#flag=ROOM_SAFE_DEATH)
+               {
+                  bIsNear = TRUE;
+               }
+            }
+         }
+         if bIsNear
+         {
+            // The attacker is nearby and can participate in PvP. Give them the points.
+            iHonorLost = Send(self,@TransferHonorPoints,#who=self,
+                              #what=oHurter,#honor=iHonorEach);
+            iLostTotal += iHonorLost;
+            Send(oHurter,@MsgSendUser,#message_rsc=user_honor_gain_penalty,
+                  #parm1=iHonorLost,#parm2=Send(self,@GetName));
+         }
+      }
+
+      // Don't inform the player if they didn't lose any points. Reasons for
+      // this can include them not having any to give or all attackers having
+      // fled the battlefield.
+      if iLostTotal > 0
+      {
+         Send (self,@MsgSendUser,#message_rsc=user_honor_loss_penalty,
+               #parm1=iLostTotal);
+      }
+
+      return iLostTotal;
    }
 
    PenaltyLoseXP(iPenCount=0, iEquivDeath=0)
@@ -1503,6 +1651,44 @@ messages:
       return iPointsLost;
    }
 
+   InstantPenIfUnsafe()
+   "Causes an instant logoff pen if the user is phased or has a logoff ghost."
+   "Won't do anything to logged-on users who are not phased."
+   {
+      local oRoom, i, each_obj;
+
+      if (pbLogged_on)
+      {
+         if (piFlags & PFLAG_PHASED)
+         {
+            // End the phase timer prematurely, Phase spell handles penalty.
+            Send(self,@PhaseTimerEnd);
+
+            return;
+         }
+      }
+      else
+      {
+         oRoom = Send(SYS,@FindRoomByNum,#num=piSave_room);
+         if (oRoom <> $)
+         {
+            foreach i in Send(oRoom,@GetHolderActive)
+            {
+               each_obj = First(i);
+               if (IsClass(each_obj,&LogoffGhost)
+                  AND Send(each_obj,@GetGhostedPlayer) = self)
+               {
+                  // Logoff ghost will delete itself and handle penalties.
+                  Send(each_obj,@PenaltyTrigger);
+
+                  return;
+               }
+            }
+         }
+      }
+
+      return;
+   }
 #endregion Penalties
 
    AdminSystemMessage(string = $)
@@ -3008,7 +3194,8 @@ messages:
 
    UserLogonSetPosition()
    {
-      local i,oNew_room;
+      local i, oNew_room, iQflags, iRflags, iHeightF, iHeightFWD, iHeightC,
+            iServerID;
 
       if piSave_room <> $
       {
@@ -3020,6 +3207,23 @@ messages:
                   #fine_row=piSave_fine_row,
                   #fine_col=piSave_fine_col,
                   #new_angle=piSave_angle);
+
+            // query height at current location from ROO
+            iQflags = LIQ_GET_SECTORINFO;
+
+            if (NOT GetLocationInfoBSP(Send(oNew_room,@GetRoomData), iQflags,
+               piSave_row,piSave_col, piSave_fine_row, piSave_fine_col,
+               *iRflags, *iHeightF, *iHeightFWD, *iHeightC, *iServerID))
+            {
+               Debug("Failed to get location info in ",
+                     Send(oNew_room,@GetRoomData));
+            }
+
+            // save floor and ceiling heights and sector id
+            piHeightFWD = iHeightFWD;
+            piHeightC   = iHeightC;
+            piSectorID  = iServerID;
+            piHeight = piHeightFWD;
 
             return;
          }
@@ -4302,7 +4506,7 @@ messages:
          iQflags, iRflags, iHeightF, iHeightFWD, iHeightC, iServerID;
 
       //
-      // 1.1 Get current position values
+      // 1.1 Get current position values and current tick
       //
 
       iRow = piRow;
@@ -4310,26 +4514,26 @@ messages:
       iFineRow = piFine_row;
       iFineCol = piFine_col;
       iAngle = Send(self,@GetAngle);
+      iCurrentTime = GetTickCount();
 
-      // 
-      // 1.2 Get sectorinfo of destination
       //
-      iQflags = LIQ_GET_SECTORINFO;
-
-      if NOT GetLocationInfoBSP(
-                      Send(poOwner,@GetRoomData), iQflags, 
-                      new_row, new_col, fine_row, fine_col,
-                      *iRflags, *iHeightF, *iHeightFWD, *iHeightC, *iServerID)
+      // 1.2 Silently discard requests directly after server-teleports.
+      //     These would be incorrect by now... 
+      //     Also take care of rollover: The last teleport must be in the past, not future
+      //
+      if iCurrentTime > piLastServerTeleport AND iCurrentTime < piLastServerTeleport + 300
       {
-         debug("Failed to get location info in ", Send(poOwner,@GetRoomData));
-         iRflags = 0;
+         //Debug("Discarded move after teleport for ",Send(self,@GetTrueName),self);
+         return;
       }
 
       //
       // 2. Do not allow any moves if player is marked as not allowed to move or 
-      //    if destination is outside of the map or on sector with SF_NOMOVE.
+      //    if server-side move validation fails.
       //
-      if (piFlags & PFLAG_NO_MOVE) OR NOT (iRflags & LIR_SECTOR_INSIDE) OR (iRflags & LIR_SECTOR_NOMOVE)
+      if (piFlags & PFLAG_NO_MOVE) OR 
+	     NOT CanMoveInRoomBSP(Send(poOwner,@GetRoomData),piRow,piCol,piFine_row,
+            piFine_col,piHeight,new_row,new_col,fine_row,fine_col,piSpeed,self,FALSE,TRUE)
       {
          // Reset position
          Send(SYS,@UtilGoNearSquare,#what=self,#where=poOwner,
@@ -4338,22 +4542,19 @@ messages:
                #fine_row=iFineRow,
                #fine_col=iFineCol,
                #new_angle=iAngle);
+			   
+         Debug("ALERT!",Send(self,@GetTrueName),self,"illegal move denied");
 
          return;
       }
 
       //
-      // 3.1 Get current tick (ms resolution)
-      //
-      iCurrentTime = GetTickCount();
-
-      //
-      // 3.2 Get time-deltas
+      // 3.1 Get time-deltas
       //
       iDelta = iCurrentTime - piLastMoveUpdateTime;
 
       //
-      // 3.3 Bound time-deltas
+      // 3.2 Bound time-deltas
       //   These must not be too big for the calculations below
       //
       iDelta = Bound(iDelta,0,2000);
@@ -6016,10 +6217,6 @@ messages:
          oForceBaseRoom = $;
          if IsClass(self,&DM)
          {
-            if StringContain(string,user_say_survival_opt_unnatural)
-            {
-               lSurvivalOptions = Cons(OPT_NATURAL,lSurvivalOptions);
-            }
             if StringContain(string,user_say_survival_opt_pvpon)
             {
                lSurvivalOptions = Cons(OPT_PVP_ON,lSurvivalOptions);
@@ -6830,7 +7027,8 @@ messages:
 
    UserCast(oSpell=$,lTargets=$)
    {
-      local i, bFound, iSpell, iSpellNum, iSpellPower, lFinalTargets, iCost;
+      local i, bFound, iSpell, iSpellNum, iSpellPower, lFinalTargets, iCost,
+            iTime;
 
       // Check for valid spell first. This is mainly an issue during
       // system saves where a user might cast something with the wrong
@@ -6857,6 +7055,22 @@ messages:
       }
 
       iSpellNum = Send(oSpell,@GetSpellNum);
+
+      // Autophase check.
+      if (iSpellNum = SID_PHASE
+         AND piLastAutologTest >= 0)
+      {
+         iTime = GetTickCount() - piLastAutologTest;
+         if (iTime > 0
+            AND iTime <= Send(SETTINGS_OBJECT,@GetAutologDetectionPeriod))
+         {
+            Debug("ALERT: ", vrName, self, " potential autophase detected",
+                  " milliseconds since last test: ", iTime, "test HP: ",
+                  piLastAutologHP," room: ",Send(poOwner,@GetName));
+            Send(self,@MsgSendUser,#message_rsc=user_autophase_detected);
+         }
+         piLastAutologTest = -1;
+      }
 
       bFound = FALSE;
       foreach i in plSpells
@@ -9152,6 +9366,83 @@ messages:
                         plNew_mail);
 
       Send(self,@MsgSendUser,#message_rsc=user_new_nested_mail);
+
+      return;
+   }
+
+   AutologTestManual(iAmount = 15, iTime = 100)
+   "Sends health draws to client with low followed by correct health."
+   "Would cause autophase/loggers relying on the health bar or received "
+   "number to activate."
+   {
+      local t;
+
+      if (pbLogged_on
+         AND iAmount >= 0
+         AND iTime > 0)
+      {
+         AddPacket(1,BP_STAT,1,1, 1,1, 4,user_stat_health, 1,STAT_VALUE,
+                   1,STAT_INTEGER,4,iAmount, 4,0, 4,100, 4,piMax_health);
+         SendPacket(poSession);
+
+         // Local-stored timer, could be deleted on system save.
+         t = CreateTimer(self,@AutologTestReverse,iTime);
+      }
+
+      return;
+   }
+
+   AutologTest(iPercent = 15)
+   "Send the specified low-HP value to client.  Won't send if this value is "
+   "lower than the current HP value, or if the user is already phased."
+   {
+      local iHealth;
+
+      if (iPercent < 0
+         OR iPercent >= 100)
+      {
+         return;
+      }
+
+      iHealth = Send(self,@GetBaseMaxHealth) * iPercent / 100;
+
+      if (NOT (piFlags & PFLAG_PHASED)
+         AND pbLogged_on
+         AND iHealth < Send(self,@GetHealth))
+      {
+         AddPacket(1,BP_STAT,1,1, 1,1, 4,user_stat_health, 1,STAT_VALUE,
+                   1,STAT_INTEGER,4,iHealth, 4,0, 4,100, 4,piMax_health);
+         SendPacket(poSession);
+
+         // Record time/HP of test.
+         piLastAutologTest = GetTickCount();
+         piLastAutologHP = iHealth;
+      }
+
+      return;
+   }
+
+   AutologTestReverse(report = FALSE)
+   {
+      if (pbLogged_on)
+      {
+         AddPacket(1,BP_STAT,1,1, 1,1, 4,user_stat_health, 1,STAT_VALUE,
+                   1,STAT_INTEGER,4,Send(self,@GetHealth), 4,0, 4,100,
+                   4,piMax_health);
+         SendPacket(poSession);
+
+         if (report)
+         {
+            Send(self,@MsgSendUser,#message_rsc=user_autolog_complete);
+         }
+      }
+
+      return;
+   }
+
+   ResetAutologTestTime()
+   {
+      piLastAutologTest = -1;
 
       return;
    }
@@ -11620,6 +11911,12 @@ messages:
    GetUserTrail()
    {
       return plUserTrail;
+   }
+
+   SetLastServerTeleport()
+   {
+      piLastServerTeleport = GetTickCount();
+      return;
    }
 
 end

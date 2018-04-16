@@ -89,9 +89,11 @@ enum { MOVE_BLOCKED = 1, MOVE_OK, MOVE_CHANGED, };
 extern player_info player;
 extern room_type current_room;
 extern int sector_depths[];
+extern DWORD latency;
 
 static DWORD server_time = 0;           // Last time we informed server of our position
 static DWORD last_splash = 0;           // Time of the last play of the splash wading sound
+static DWORD last_go_time = 0;
 
 static Bool pos_valid = FALSE;          // True when server_x and server_y are valid
 static int  server_x = 0, server_y = 0; // Last position we've told server we are, in FINENESS units
@@ -130,6 +132,12 @@ BOOL	gbMouselook = FALSE;
 
 extern double gravityAdjust;
 
+void UserTryGo()
+{
+   // Record the time of the last go.
+   last_go_time = timeGetTime();
+   RequestGo();
+}
 /************************************************************************/
 void UserMovePlayer(int action)
 {
@@ -582,14 +590,15 @@ WallData *IntersectNode(BSPnode *node, int old_x, int old_y, int new_x, int new_
             below_height = sector_depths[SectorDepth(other_sector->flags)];
 
          // Can't step up too far; watch bumping your head; see if passable
-         if ((sidedef->below_bmap == NULL || 
+         if (other_sector != NULL &&
+            ((sidedef->below_bmap == NULL || 
             (sidedef->below_bmap != NULL && 
-            (wall->z1 - below_height - z) <= MAX_STEP_HEIGHT))
+            (GetFloorHeight(new_x, new_y, other_sector) - below_height - z) <= MAX_STEP_HEIGHT))
             &&
             (sidedef->above_bmap == NULL || 
-            (sidedef->above_bmap != NULL && wall->z2 - z >= player.height)) 
+            (sidedef->above_bmap != NULL && GetCeilingHeight(new_x, new_y, other_sector) - z >= player.height))
             &&
-            (sidedef->flags & WF_PASSABLE))
+            (sidedef->flags & WF_PASSABLE)))
             continue;
 
          // If distance to either vertex is > wall length, then destination of move is
@@ -820,10 +829,18 @@ void ServerMovedPlayer(void)
 void MoveUpdateServer(void)
 {
    DWORD now = timeGetTime();
+   DWORD latency_check = latency * 1.1f;
    int angle;
 
+   if (latency_check < 100)
+      latency_check = 100;
+   if (latency_check > 500)
+      latency_check = 500;
+
    // Inform server if necessary
-   if (now - server_time < MOVE_INTERVAL || !pos_valid)
+   if (now - server_time < MOVE_INTERVAL
+      || !pos_valid
+      || last_go_time + latency_check > now)
       return;
 
    // if position wasn't updated

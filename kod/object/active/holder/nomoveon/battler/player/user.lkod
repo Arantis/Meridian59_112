@@ -335,7 +335,6 @@ user_say_join_pub_survival = de "öffentliche Survival beitreten"
 user_say_start_guild_survival = de "starte Gilden Survival"
 user_say_join_guild_survival = de "Gilden Survival beitreten"
 
-user_say_survival_opt_unnatural = de "--unnatural"
 user_say_survival_opt_pvpon = de "--pvpon"
 user_say_survival_opt_starthere = de "--thisbase"
 
@@ -363,3 +362,12 @@ user_spectate_off = de \
    "%s hat den physischen Kontakt zur Realität wieder erhalten."
 user_self_spectate_off = de \
    "Du hast die physische Verbindung zu diesem Platz wieder erhalten."
+user_autolog_complete = de "Automatischer Log-Test abgeschlossen!"
+user_autophase_detected = de \
+   "Automatischen-Ausstieg erkannt!  Dieses Ereignis wurde protokolliert."
+
+user_honor_gain_penalty = de \
+   "Du erhältst %i Ehrenpunkte durch Deinen Sieg als %s feige das Schlachtfeld"
+   "verlässt."
+user_honor_loss_penalty = de \
+   "Du verlierst %i Ehrenpunkte durch Deinen Rückzug vom Schlachtfeld."

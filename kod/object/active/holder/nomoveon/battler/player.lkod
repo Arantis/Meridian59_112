@@ -194,6 +194,8 @@ player_citizen_marion = de "Stammt aus Marion"
 player_citizen_raza = de "Ist aus Raza"
 player_citizen_kocatan = de "Lebt in Ko'catan"
 player_citizen_unknown = de "Ist umhergestreift"
+player_citizen_berg = de "Stammt aus Berg"
+player_citizen_jixa = de "Stammt aus Jixa"
 player_of = de " von "
 player_for = de " seit "
 player_years = de " Jahren."
@@ -239,14 +241,11 @@ player_dead_female_name_rsc = de "Eine weibliche Leiche"
 player_token_death = de \
    "Du stirbst, bemerkst aber gerade noch, wie das Artefakt sanft aufglüht..."
 player_dance = de \
-   "Du schluckst Deinen Stolz herunter und kehrst zu dem Liedchen in Deinem "
-   "Kopf zurück."
+   "Du schluckst Deinen Stolz herunter und fängst an zu tanzen! "
 player_cant_dance = de \
-   "Du kannst nicht tanzen, da das ganze Zeug in deinen Händen deinen Style "
-   "verkrampfen lassen!"
+   "Mit dem ganzen Zeug in deinen Händen kannst du nicht tanzen. "
 player_cant_dance_resting = de \
-   "Du sitzt jetzt. Nimm diesen ganzen Kram mit dem 'zurückkehren' nicht "
-   "zu wörtlich, ok?"
+   "Du legst gerade eine Rast ein, wie sollst du denn dabei tanzen? "
 player_stop_dance = de \
    "Du kommst aus dem Takt und erwachst aus Deinem Tanzfieber."
 player_wave = de "Du winkst mit deiner Hand."
@@ -531,3 +530,26 @@ player_already_leader = de \
    "wieder ~Itrennen~I sollten, bevor du dir einen anderen Begleiter zulegst."
 player_bonus_tp = de \
    "Für deine beachtliche Leistung erhältst du ~B~k%i~v~B zusätzliche Trainingspunkte!"
+
+player_honor_gain_kill = de \
+   "Du erhältst %i Ehrenpunkte durch deinen Sieg über %s."
+player_honor_gain_assist = de \
+   "Du erhältst %i Ehrenpunkte für deinen Beitrag zu %ss Tod."
+player_honor_loss_death = de \
+   "Deine Niederlage kostet Dich %i Ehrenpunkte."
+
+player_honor_rank_1 = de "PvP Rang: General\n"
+player_honor_rank_2 = de "PvP Rang: Schwertmeister\n"
+player_honor_rank_3 = de "PvP Rang: Ritter\n"
+player_honor_rank_4 = de "PvP Rang: Knappe\n"
+player_honor_rank_5 = de "PvP Rang: Anwärter\n"
+
+player_honor_rank_1_alt = de "PvP Rang: Gevatter Tod\n"
+player_honor_rank_2_alt = de "PvP Rang: Schlächter\n"
+player_honor_rank_3_alt = de "PvP Rang: Witwenmacher\n"
+player_honor_rank_4_alt = de "PvP Rang: Messerstecher\n"
+player_honor_rank_5_alt = de "PvP Rang: Schläger\n"
+
+player_honor_title_on = de "Dein Ehren-Rang wird nun angezeigt."
+player_honor_title_off = de "Dein Ehren-Rang wird nicht mehr angezeigt."
+player_honor_title_alt = de "Dein alternativer Ehren-Rang wird nun angezeigt."
