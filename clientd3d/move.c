@@ -99,6 +99,8 @@ static Bool pos_valid = FALSE;          // True when server_x and server_y are v
 static int  server_x = 0, server_y = 0; // Last position we've told server we are, in FINENESS units
 static int  server_angle = 0;           // Last angle we've told server we have, in server angle units
 static int  last_move_action = 0;       // Last movement action; used to determine speed of motion
+static float speed_factor = 1.0f;       // slow down of base speed for various reasons (geometry/room)
+static int movespeed_pct  = 100;      // slow down of base speed for spell/item reasons
 
 static int  min_distance = 48;          // Minimum distance player is allowed to get to wall
 static int  min_distance2 = 48*48;  	// Minimum distance squared
@@ -132,11 +134,17 @@ BOOL	gbMouselook = FALSE;
 
 extern double gravityAdjust;
 
+/************************************************************************/
 void UserTryGo()
 {
    // Record the time of the last go.
    last_go_time = timeGetTime();
    RequestGo();
+}
+/************************************************************************/
+void SetMovementSpeedPct(int speed)
+{
+   movespeed_pct = speed;
 }
 /************************************************************************/
 void UserMovePlayer(int action)
@@ -202,14 +210,30 @@ void UserMovePlayer(int action)
 
    now = timeGetTime();
 
+   // Adjust movement due to item/spell modifiers (movespeed_pct
+   move_distance = move_distance * movespeed_pct / 100;
+
    // Wading slows player movement down.
    depth = GetPointDepth(player_obj->motion.x, player_obj->motion.y);
-   if (SF_DEPTH1 == depth)
-      move_distance = move_distance * 3/4;
+   if (SF_DEPTH0 == depth)
+   {
+      speed_factor = 1.0f;
+   }
+   else if (SF_DEPTH1 == depth)
+   {
+      move_distance = move_distance * 3 / 4;
+      speed_factor = 0.75f;
+   }
    else if (SF_DEPTH2 == depth)
+   {
       move_distance = move_distance / 2;
+      speed_factor = 0.5f;
+   }
    else if (SF_DEPTH3 == depth)
+   {
       move_distance = move_distance / 4;
+      speed_factor = 0.25f;
+   }
 
    // See if we're waiting for server to move us out of current location
    if (now < next_move_time)
@@ -527,6 +551,30 @@ BSPnode *FindIntersection(BSPnode *node, int xOld, int yOld, int xNew, int yNew,
    }
 }
 
+inline bool IntersectInfiniteLines(int P1_X, int P1_Y, int P2_X, int P2_Y, int Q1_X, int Q1_Y, int Q2_X, int Q2_Y, int *out_x, int *out_y)
+{
+   // variant 2
+   float denom = (P1_X - P2_X) * (Q1_Y - Q2_Y) - (P1_Y - P2_Y) * (Q1_X - Q2_X);
+
+   // parallel
+   if (denom > -0.001f && denom < 0.001f)
+   {
+      *out_x = 0.0f;
+      *out_y = 0.0f;
+      return false;
+   }
+
+   float num;
+
+   num = (P1_X * P2_Y - P1_Y * P2_X) * (Q1_X - Q2_X) - (P1_X - P2_X) * (Q1_X * Q2_Y - Q1_Y * Q2_X);
+   *out_x = num / denom;
+
+   num = (P1_X * P2_Y - P1_Y * P2_X) * (Q1_Y - Q2_Y) - (P1_Y - P2_Y) * (Q1_X * Q2_Y - Q1_Y * Q2_X);
+   *out_y = num / denom;
+
+   return true;
+}
+
 WallData *IntersectNode(BSPnode *node, int old_x, int old_y, int new_x, int new_y, int z)
 {
    BSPinternal *inode;
@@ -584,22 +632,30 @@ WallData *IntersectNode(BSPnode *node, int old_x, int old_y, int new_x, int new_
          if (sidedef == NULL)
             continue;
 
-         // Check for wading on far side of wall; reduce effective height of wall if found
          below_height = 0;
-         if (other_sector != NULL)
-            below_height = sector_depths[SectorDepth(other_sector->flags)];
 
          // Can't step up too far; watch bumping your head; see if passable
-         if (other_sector != NULL &&
-            ((sidedef->below_bmap == NULL || 
-            (sidedef->below_bmap != NULL && 
-            (GetFloorHeight(new_x, new_y, other_sector) - below_height - z) <= MAX_STEP_HEIGHT))
-            &&
-            (sidedef->above_bmap == NULL || 
-            (sidedef->above_bmap != NULL && GetCeilingHeight(new_x, new_y, other_sector) - z >= player.height))
-            &&
-            (sidedef->flags & WF_PASSABLE)))
-            continue;
+         if (other_sector != NULL)
+         {
+            // Check for wading on far side of wall; reduce effective height of wall if found
+            below_height = sector_depths[SectorDepth(other_sector->flags)];
+
+            // Get intersection point with wall.
+            int intersect_x, intersect_y;
+            if (!IntersectInfiniteLines(wall->x0, wall->y0, wall->x1, wall->y1, old_x, old_y, new_x, new_y, &intersect_x, &intersect_y))
+            {
+               // No intersection.
+               continue;
+            }
+
+            if ((sidedef->below_bmap == NULL || (sidedef->below_bmap != NULL && (GetFloorHeight(intersect_x, intersect_y, other_sector) - below_height - z) <= MAX_STEP_HEIGHT))
+               && (sidedef->above_bmap == NULL || (sidedef->above_bmap != NULL && GetCeilingHeight(intersect_x, intersect_y, other_sector) - z >= player.height))
+               && (sidedef->flags & WF_PASSABLE))
+            {
+               // Passes height checks, is passable.
+               continue;
+            }
+         }
 
          // If distance to either vertex is > wall length, then destination of move is
          // past end of wall; use distance to closer vertex as distance to line
@@ -865,7 +921,7 @@ void MoveUpdateServer(void)
 Bool MoveUpdatePosition(void)
 {
    int x, y;
-   BYTE speed;
+   int speed;
 
    x = player.x;
    y = player.y;
@@ -873,9 +929,6 @@ Bool MoveUpdatePosition(void)
    // don't send update if we didn't move
    if ((server_x - x) * (server_x - x) + (server_y - y) * (server_y - y) > MOVE_THRESHOLD)
    {
-      // debug output
-      debug(("MoveUpdatePosition: x (%d -> %d), y (%d -> %d)\n", server_x, x, server_y, y));
-   
       // the following speed values must match
       // the actual speed a player is moving
       // defined by MOVEUNITS and MOVE_DELAY
@@ -887,6 +940,13 @@ Bool MoveUpdatePosition(void)
       // run-speed (USER_RUNNING_SPEED from user.kod)
       if (IsMoveFastAction(last_move_action))
          speed = USER_RUNNING_SPEED;
+
+      speed = speed * movespeed_pct / 100;
+      // adjust according to speedfactor
+      speed = (BYTE)((float)speed * speed_factor);
+
+      // debug output
+      debug(("MoveUpdatePosition: x (%d -> %d), y (%d -> %d), speed (%d)\n", server_x, x, server_y, y, speed));
 
       // send update
       RequestMove(y, x, speed, player.room_id, ANGLE_CTOS(player.angle));
