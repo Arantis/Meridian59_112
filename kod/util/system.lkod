@@ -6,7 +6,7 @@ system_user_killed_outlaw = de \
    "~B~U~k[###]~n ~B~v%q war gesetzlos und ist ermordet worden. %s%q hat die gerechte Strafe "
    "ausgeführt."
 system_killed_self = de \
-   "~B~U~k[###]~n ~B~v%q ist durch eigene Dummheit an %s gestorben."
+   "~B~U~k[###]~n ~B~v%q ist durch eigene Dummheit gestorben.%s$0"
 system_user_killed_room = de \
    "~B~U~k[###]~n ~B~v%q hat ein unglückliches Ende in der Karte \"%s\" gefunden."
 system_user_killed_bridge_faith = de \
@@ -136,8 +136,8 @@ fire_damage_name = de "Feuer"
 cold_damage_name = de "Kälte"
 shock_damage_name = de "Schock"
 acid_damage_name = de "Säure"
-holy_damage_name = de "heiligen"
-unholy_damage_name = de "unheiligen"
+holy_damage_name = de "Heiligen"
+unholy_damage_name = de "Unheiligen"
 quake_damage_name = de "Erdbeben"
 nonmagic_damage_name = de "Normal"
 enchanted_damage_name = de "verzaubernden"

@@ -1,3 +1,26 @@
+swamp_terrain.ogg
+Author: LokiF
+(https://opengameart.org/content/swamp-environment-audio)
+License: https://creativecommons.org/publicdomain/zero/1.0/
+
+-----
+
+accept_quest.ogg / further_quest.oog
+Author: ViRiX (David McKee)
+(https://opengameart.org/content/ui-accept-or-forward)
+(https://opengameart.org/content/ui-decline-or-back)
+License: https://creativecommons.org/licenses/by/3.0/
+
+-----
+
+wind_berg1.ogg / wind_berg2.ogg
+Author: IgnasD
+www.crystalgames.space
+(https://opengameart.org/content/wind)
+License: https://creativecommons.org/licenses/by-sa/3.0/
+
+-----
+
 Creep.ogg
 Author: TokyoGeisha
 (https://opengameart.org/content/creepy)
@@ -65,3 +88,10 @@ Author: Johan Brodd
 hioa.oog
 Author: Trevor Lentz
 (https://opengameart.org/content/hidden-oasis)
+
+-----
+
+questadvance.ogg
+questcomplete.ogg
+Author: https://www.youtube.com/c/FreeSoundEffectsFX
+Adapted from video https://www.youtube.com/watch?v=XGcOsZrZNRk

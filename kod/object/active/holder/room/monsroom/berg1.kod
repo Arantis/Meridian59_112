@@ -37,7 +37,7 @@ classvars:
 
 properties:
 
-   viTerrain_type = TERRAIN_FOREST | TERRAIN_RIVER | TERRAIN_ROAD | TERRAIN_HILLS
+   viTerrain_type = TERRAIN_BERG | TERRAIN_RIVER | TERRAIN_ROAD
 
    prRoom = room_berg1
    piRoom_num = RID_BERG_1
@@ -69,12 +69,20 @@ messages:
       plEdge_Exits = Cons([ LEAVE_NORTH, RID_BERG_2, 20, 42, ROTATE_NONE, COL_IS_LESS_THAN, 44 ], plEdge_exits);  
       plEdge_Exits = Cons([ LEAVE_NORTH, RID_BERG_2, 20, 48, ROTATE_NONE, COL_IS_GREATER_THAN, 44 ], plEdge_exits);
 
+      plExits = Cons([ 9, 52, RID_GUILDH16, 12, 25, ROTATE_180 ],plExits);
+      plExits = Cons([ 9, 53, RID_GUILDH16, 12, 25, ROTATE_180 ],plExits);
+      plExits = Cons([ 10, 52, RID_GUILDH16, 12, 25, ROTATE_180 ],plExits);
+      plExits = Cons([ 10, 53, RID_GUILDH16, 12, 25, ROTATE_180 ],plExits);
+
+      plExits = Cons([ 13, 51, RID_GUILDH16, 9, 26, ROTATE_180 ],plExits);
+      plExits = Cons([ 14, 51, RID_GUILDH16, 9, 26, ROTATE_180 ],plExits);
+
       propagate;
    }
 
    Constructed()
    {
-      plMonsters = [ [&GiantRat, 60], [&Centipede, 40] ];
+      plMonsters = [ [&Beetle, 100] ];
 
       plGenerators = [ [4, 44], [11, 47], [11, 34], [10, 23], [8, 12],
                        [7, 4], [10, 42] ];

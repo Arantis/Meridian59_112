@@ -77,6 +77,17 @@
    OF_FLICKERING     = 0x00020000
    OF_FLASHING       = 0x00040000
    OF_PHASING        = 0x00080000
+   // Has a quest the user can start.
+   OF_NPCHASQUESTS   = 0x00100000
+   // Has a quest the user is currently completing.
+   OF_NPCACTIVEQUEST = 0x00200000
+   // Mob part of current kill quest for user.
+   OF_MOBKILLQUEST   = 0x00400000
+   // Has at least one quest that satisfies the following:
+   // 1. Has a quest the user can start.
+   // 2. Has a quest the user is currently completing.
+   // 3. Has a quest the user isn't eligible for, but could be in the future.
+   OF_NPCQUESTABLE   = 0x00800000
 
    // Client preference flags (stored in piPreferences in Player)
    // Default preferences - all on except safety (which is reverse)
@@ -124,6 +135,9 @@
    MM_AGGRO_SELF           = 0x00004000
    MM_AGGRO_OTHER          = 0x00008000
    MM_MERCENARY            = 0x00010000
+   MM_NPCHASQUEST          = 0x00020000
+   MM_NPCCURRENTQUEST      = 0x00040000
+   MM_MOBKILLQUEST         = 0x00080000
 
    // Player name color sent as hex RGB value. Define constants
    // for ease of use as needed. Requires OF_PLAYER boolean flag
@@ -150,6 +164,10 @@
    OT_SUPER        = 5   // Set if object is a "super DM".
    OT_MODERATOR    = 6   // Set if object is a "moderator".
    OT_EVENTCHAR    = 7   // Set if object is an event character.
+   // Used for Quest Template objects.
+   OT_QUESTACTIVE  = 8   // Quest in progress
+   OT_QUESTVALID   = 9   // Quest can be started
+   OT_QUESTINVALID = 10  // Quest cannot be started
 
    // query flags for GetLocationInfoBSP
    LIQ_GET_SECTORINFO    = 0x000001
@@ -972,6 +990,9 @@
    RID_J3_2 = 2820
    RID_SURVIVAL_ARENA = 2821
    RID_GOLEM_DUNGEON = 2822
+   RID_BERG_LEADER = 2823
+   RID_BERG_LEADER_HALL = 2824
+   RID_BERG_GRAVE = 2825
    
    // DeathValley Area 2850-2900
    RID_DVALLEY_1 = 2850
@@ -1259,7 +1280,7 @@
    TERRAIN_JUNGLE    = 0x0020000
    TERRAIN_TUNDRA    = 0x0040000
    TERRAIN_LAVA      = 0x0080000
-   TERRAIN_DESERT    = 0x0100000
+   TERRAIN_BERG      = 0x0100000
    TERRAIN_SWAMP     = 0x0200000
    TERRAIN_CAVES     = 0x0400000
    TERRAIN_MINES     = 0x0800000
@@ -1459,7 +1480,8 @@
    STYLE_LAST_MAN_STANDING = 2
    STYLE_GUILD_VS_GUILD = 3
    STYLE_LAST_GUILD_STANDING = 4
-   ARENA_STYLE_MAX = 4
+   STYLE_MONSTER_ARENA = 5
+   ARENA_STYLE_MAX = 5
 
    // Watcher IDs.
    // Keep min/max equal to lowest/highest valid IDs.
@@ -1468,7 +1490,8 @@
    WATCHER_TOS_ARENA   = 1
    WATCHER_BRAX_ARENA  = 2
    WATCHER_DEATH_ARENA = 3
-   WATCHER_ID_MAX      = 3
+   WATCHER_SURVIVAL    = 4
+   WATCHER_ID_MAX      = 4
 
    // Level of ground each end of the Riija bridge.
    BRIDGE_OF_FAITH_LEVEL = 384
@@ -1941,6 +1964,7 @@
    
    TID_MINO          = 76
    TID_CHUPA         = 77
+   TID_WOLF          = 78
 
    // English articles
 
@@ -2041,6 +2065,10 @@
    WA_GLOWING              = 69
    WA_PURGER               = 70
    WA_SIPHON               = 71
+   WA_BURN                 = 72
+   WA_BLEED                = 73
+   WA_FATIGUE              = 74
+   WA_SLOW                 = 75
 
    // Herald shields
 
@@ -3276,6 +3304,8 @@
    QT_ACTIVE_QUESTS     = 8
    QT_SCHEDULE_CHANCE   = 9
    QT_PLAYER_RESTRICT2  = 10
+   // Added Oct 2018, number of NPCs offering first node of quest.
+   QT_NUM_QUEST_GIVERS  = 11
 
    // Field names for a QuestNodeTemplate
    QNT_QNT_ID        = 1
@@ -3290,6 +3320,8 @@
    QNT_SUCCESS_HINT  = 10
    QNT_FAILURE_HINT  = 11
    QNT_TIME_LIMIT    = 12
+   // Added Oct 2018, reference to Quest Template ID.
+   QNT_QT_ID         = 13
 
    // Quest Template IDs
    QST_ID_NONE                   = 0
@@ -3369,6 +3401,7 @@
    QST_ID_REBEL_SOLDIER          = 74
    QST_ID_ABSTAIN_PVP            = 75
    QST_ID_MANA_NODE              = 76
+   QST_ID_RAZA_MUMMY             = 77
 
    // Quest Node Template IDs. Each quest has multple Quest Nodes.
    QNT_ID_DUKE_JOIN_ONE          = 1
@@ -3657,6 +3690,9 @@
    QNT_ID_ABSTAIN_PVP_TWO        = 218
 
    QNT_ID_MANA_NODE_ONE          = 219
+   
+   QNT_ID_RAZA_MUMMY_ONE         = 220
+   QNT_ID_RAZA_MUMMY_TWO         = 221
 
    // Quest misc constants
 
@@ -3714,6 +3750,7 @@
 
    // Does player have pvp enabled, i.e. not perma pvp off.
    Q_PLAYER_PVP_ENABLED          = 0x100000
+   Q_PLAYER_GUILDOFFICER         = 0x200000          // player is a guild officer, and guild has colors
 
    // quest player restrictions2
    //        used for restrictions which require parameter passing/setting
@@ -3736,17 +3773,18 @@
    QUEST_HISTORY_FAILURE           = 0x2000000
 
    // Quest node types
-   QN_TYPE_MESSAGE            = 0x01         // Deliver a message I give you
-   QN_TYPE_ITEM               = 0x02         // Deliver a specific item I give you
-   QN_TYPE_ITEMCLASS            = 0x03         // Deliver a newly created item of a particular class I give you
-   QN_TYPE_ITEMFINDCLASS      = 0x04         // Deliver any item of a particular class, one is not created, you must go and find one
-   QN_TYPE_SHOWUP               = 0x05         // Just show your face
-   QN_TYPE_CHESSMOVE            = 0x06         // Deliver a chess move message I give you
-   QN_TYPE_USERNAME            = 0x07         // Deliver the name of a user that I give you (NYI)
-   QN_TYPE_LOGGEDONNAME         = 0x08         // Deliver the name of an logged-on user that I give you (NYI)
-   QN_TYPE_MONSTER            = 0x09         // Kill a monster of a certain type
-   QN_TYPE_MONSTER_ITEMCLASS   = 0x10         // Kill a monster of a certain type, and deliver the newly created item you get after doing so
-   QN_TYPE_MONSTER_BRING      = 0x0A         // Bring a charmed monster of this type
+   QN_TYPE_NONE               = 0x00   // None (uninitialised)
+   QN_TYPE_MESSAGE            = 0x01   // Deliver a message I give you
+   QN_TYPE_ITEM               = 0x02   // Deliver a specific item I give you
+   QN_TYPE_ITEMCLASS          = 0x03   // Deliver a newly created item of a particular class I give you
+   QN_TYPE_ITEMFINDCLASS      = 0x04   // Deliver any item of a particular class, one is not created, you must go and find one
+   QN_TYPE_SHOWUP             = 0x05   // Just show your face
+   QN_TYPE_CHESSMOVE          = 0x06   // Deliver a chess move message I give you
+   QN_TYPE_USERNAME           = 0x07   // Deliver the name of a user that I give you (NYI)
+   QN_TYPE_LOGGEDONNAME       = 0x08   // Deliver the name of an logged-on user that I give you (NYI)
+   QN_TYPE_MONSTER            = 0x09   // Kill a monster of a certain type
+   QN_TYPE_MONSTER_ITEMCLASS  = 0x10   // Kill a monster of a certain type, and deliver the newly created dropped item
+   QN_TYPE_MONSTER_BRING      = 0x0A   // Bring a charmed monster of this type
 
    // Quest node status values
    QN_STATUS_UNINITIALIZED          = 0x0
@@ -3778,9 +3816,12 @@
    QN_PRIZETYPE_ESTABLISH_NECROGUILD      = 0x11      // Form the Order of Necromancers
    QN_PRIZETYPE_OUTLAW                    = 0x12      // Make the player an outlaw
    QN_PRIZETYPE_NPC_RESPONSE              = 0x13      // Let the QuestTemplate give different responses for each NPC.
-   QN_PRIZETYPE_TRAINING_POINTS           = 0x014      // Award training points.
-   QN_PRIZETYPE_EXPERIENCE_POINTS         = 0x015      // Award "experience points" (gain chance).
-   QN_PRIZETYPE_NO_PVP_FLAG               = 0x016      // Switch the player's pvp off
+   QN_PRIZETYPE_TRAINING_POINTS           = 0x014     // Award training points.
+   QN_PRIZETYPE_EXPERIENCE_POINTS         = 0x015     // Award "experience points" (gain chance).
+   QN_PRIZETYPE_NO_PVP_FLAG               = 0x016     // Switch the player's pvp off
+   // Has the form [QN_PRIZETYPE_ITEM_ENUM, ID] where ID is an enum value.
+   // Handles prizes with Constructor parameters which can't use QN_PRIZETYPE_ITEMCLASS.
+   QN_PRIZETYPE_ITEM_ENUM                 = 0x017
 
    // Quest node prize statistic types
    QN_PRIZE_STAT_MIGHT    = 0x0
@@ -3809,11 +3850,20 @@
 //   QN_PRIZE_BOON_KARMA    = 0xA     // Not implemented
 
    // Quest node prize boon types
-   QN_PRIZE_FACTION_UPDATE       = 0x0    // reset the faction timer (i.e. after loyalty is proven)
+   QN_PRIZE_FACTION_UPDATE     = 0x0    // reset the faction timer (i.e. after loyalty is proven)
    QN_PRIZE_FACTION_DUKE       = 0x1    // join the duke's faction
    QN_PRIZE_FACTION_PRINCESS   = 0x2    // join the princess' faction
    QN_PRIZE_FACTION_REBEL      = 0x3    // join the rebel faction
    QN_PRIZE_FACTION_NEUTRAL    = 0x4    // mainly for use as a penalty
+
+   // Quest node prize types for QN_PRIZETYPE_ITEM_ENUM
+   QN_PRIZE_ITEM_KRANROBE      = 0x0
+   QN_PRIZE_ITEM_SHALROBE      = 0x1
+   QN_PRIZE_ITEM_FARENROBE     = 0x2
+   QN_PRIZE_ITEM_QORROBE       = 0x3
+   QN_PRIZE_ITEM_RIIJAROBE     = 0x4
+   QN_PRIZE_ITEM_JALAROBE      = 0x5
+   QN_PRIZE_ITEM_DURABLESCIM   = 0x6
 
    // Quest node NPC selection modifiers
    QN_NPCMOD_NONE          = 0x0      // Choose any NPC in the list

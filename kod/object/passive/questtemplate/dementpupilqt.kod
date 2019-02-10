@@ -34,19 +34,22 @@ resources:
 
    // Quest description.
    dementpupilquest_icon_rsc = idement.bgf
-   dementpupilquest_name_rsc = "Afiera D'xor's pupil quest"
+   dementpupilquest_name_rsc = "Disciple Quest: Run You Fools!"
    dementpupilquest_desc_rsc = \
-      "Afiera D'xor has asked you to deliver some cargo.  Do so, and return "
-      "to him when you are done."
+      "Afiera D'xor is known to have mastered several powerful spells and "
+      "might be willing to pass his knowledge on to those who have earned his "
+      "trust.  Powerful mages who have mastered the elements may be taught how to "
+      "hurl mighty bolts of pure lightning while dedicated followers of the "
+      "trickster god may learn how to turn their enemies into gibbering fools."
    dementpupilquest_nodetwo_rsc = \
       "Afiera D'xor has asked you to deliver %s%s to %s."
    dementpupilquest_return_rsc = \
       "Return to Afiera D'xor and let him know the task has been "
       "completed."
    dementpupilquest_completed = \
-      "You have completed Afiera D'xor's pupil quest.  Afiera D'xor will now "
-      "teach you the spells Dement (level four Riija) and Lightning Bolt "
-      "(level five Faren)."
+      "You have earned Afiera D'xor's trust, and thus also his knowledge.  "
+      "Afiera D'xor will now teach you the spells Dement (level four Riija) "
+      "and Lightning Bolt (level five Faren)."
 
    // Quest resources.
    dementlearn_trigger = "pupil"
@@ -71,11 +74,12 @@ resources:
       "I hope you have not suffered too greatly from your contact with "
       "%SOURCE_NPC.  I understand the effects are only temporary.  "
       "Nevertheless, you have proved yourself worthy of my teachings.  "
-      "Come back when you want to learn the \"dement\" spell."
+      "Come back when you want to learn the \"dement\" and \"lightning bolt\" "
+      "spells."
    dementlearn_failure_3 = \
-      "Subject:  Dement spell\n"
+      "Subject:  Magical training\n"
       "I haven't heard back from you in a while, so I assume you are no "
-      "longer interested in learning it.  Come back later if you change "
+      "longer interested in learning my spells.  Come back later if you change "
       "your mind, friend."
 
 classvars:

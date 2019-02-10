@@ -26,6 +26,7 @@ constants:
 //   QT_ACTIVE_QUESTS     = 8
 //   QT_SCHEDULE_CHANCE   = 9
 //   QT_PLAYER_RESTRICT2  = 10
+//   QT_NUM_QUEST_GIVERS  = 11
 
 // Field names for a QuestNodeTemplate
 //   QNT_QNT_ID        = 1
@@ -40,6 +41,7 @@ constants:
 //   QNT_SUCCESS_HINT  = 10
 //   QNT_FAILURE_HINT  = 11
 //   QNT_TIME_LIMIT    = 12
+//   QNT_QT_ID         = 13
 
 resources:
 
@@ -104,7 +106,7 @@ properties:
 
    // Current status of this questnode
    piStatus = QN_STATUS_UNINITIALIZED   
-
+   piNodeType = 0
    poPreviousSourceNPC = $
    poSourceNPC = $
    poDestNPC = $
@@ -147,7 +149,7 @@ messages:
 
       // Don't want to do this twice!
       if passed_NPC = $
-      {                       
+      {
          // Remember the template index
          piQuestNodeTemplateIndex = index;
 
@@ -164,7 +166,7 @@ messages:
          // Record which quest this questnode is a part of.
          poQuest = owning_quest;
       }
-   
+
       // Setup dest NPC
       iNPCMod = Send(oQuestEngine,@GetQuestNodeNPCModifier,#index=index);
 
@@ -179,9 +181,9 @@ messages:
          poDestNPC = poSourceNPC;
          break;
       case QN_NPCMOD_NONE:
-         // pick a new random NPC from the list
-         poDestNPC = Send(oQuestEngine,@GetRandomNPCFromQuestNodeTemplate,
-                           #index=index);
+         // pick a new random NPC from the list that doesn't already have this quest.
+         poDestNPC = Send(oQuestEngine,@GetFreeNPCFromQuestNodeTemplate,
+                           #index=index,#qtIndex=Send(owning_quest,@GetQuestTemplateIndex));
          break;
       case QN_NPCMOD_DIFFERENT:
          // Pick a new random NPC from the list, not the same as the source NPC
@@ -221,17 +223,20 @@ messages:
       plIndefDescs = [ default_indef, default_indef, default_indef ];
       plDefDescs = [ default_def, default_def, default_def ];
 
+      // Cache node type.
+      piNodeType = Send(oQuestEngine,@GetQuestNodeType,#index=index);
+
       // Set status to reflect whether we're waiting for players, or ready to go
       if waiting_for_players
       {
          // Add self to dest NPC's list of active questnodes
-         Send(poDestNPC,@AddQuestNodeToActiveList,#node=self);
-   
+         Send(poDestNPC,@AddQuestNodeToActiveList,#node=self,#type=piNodeType);
+
          piStatus = QN_STATUS_WAITING_FOR_PLAYERS;
 
          // if the first node is a message type node, choose the message now.
          // TODO: allow ITEM, ITEMCLASS as first node type too?
-         if Send(oQuestEngine,@GetQuestNodeType,#index=index) = QN_TYPE_MESSAGE
+         if piNodeType = QN_TYPE_MESSAGE
          {
             // Choose cargo
             pCargo = Send(oQuestEngine,@GetRandomCargoFromQuestNodeTemplate,
@@ -438,7 +443,7 @@ messages:
    "(message/item/monster), starts deadline timer (called from "
    "Quest::AssignNextNode) Returns TRUE if successful, FALSE otherwise."
    {
-      local oQuester, oQuestEngine, iNodeType, lCargo, cItemClass, iAmount,
+      local oQuester, oQuestEngine, lCargo, cItemClass, iAmount,
             iQuestType, cMonsterClass, sSay, iTime;
 
       sSay = CreateString();
@@ -459,14 +464,12 @@ messages:
          return FALSE;
       }
 
-      iNodeType = Send(Send(SYS,@GetQuestEngine),@GetQuestNodeType,
-                       #index=piQuestNodeTemplateIndex);
       piStatus = QN_STATUS_IN_PROGRESS;
 
       oQuestEngine = Send(SYS,@GetQuestEngine);
 
-      if iNodeType <> QN_TYPE_MONSTER
-         AND iNodeType <> QN_TYPE_SHOWUP
+      if piNodeType <> QN_TYPE_MONSTER
+         AND piNodeType <> QN_TYPE_SHOWUP
       {
          // Choose cargo
          lCargo = Send(oQuestEngine,@GetRandomCargoFromQuestNodeTemplate,
@@ -474,7 +477,7 @@ messages:
       }
 
       // If message type, select it
-      if iNodeType = QN_TYPE_MESSAGE
+      if piNodeType = QN_TYPE_MESSAGE
       {
          pCargo = lCargo;
          // message is its own description
@@ -483,7 +486,7 @@ messages:
       }
 
       // If chessmove type, generate it
-      if iNodeType = QN_TYPE_CHESSMOVE
+      if piNodeType = QN_TYPE_CHESSMOVE
       {
          lCargo = Send(oQuestEngine,@GetRandomChessMove);
          pCargo = lCargo;
@@ -493,7 +496,7 @@ messages:
       }    
 
       // If username type, generate it
-      if iNodeType = QN_TYPE_USERNAME
+      if piNodeType = QN_TYPE_USERNAME
       {
          lCargo = Send(SYS,@GetRandomUser);
          SetNth(plDescs,3,Send(lCargo,@GetName));
@@ -501,7 +504,7 @@ messages:
       }
 
       // If loggedonname type, generate it
-      if iNodeType = QN_TYPE_LOGGEDONNAME
+      if piNodeType = QN_TYPE_LOGGEDONNAME
       {
          lCargo = Send(SYS,@GetRandomUserLoggedOn);
          SetNth(plDescs,3,Send(lCargo,@GetName));
@@ -509,10 +512,10 @@ messages:
       }
 
       // If item quest, create it and give to player(s) (if necessary)
-      if iNodeType = QN_TYPE_ITEM
-         OR iNodeType = QN_TYPE_ITEMCLASS
-         OR iNodeType = QN_TYPE_ITEMFINDCLASS
-         OR iNodeType = QN_TYPE_MONSTER_ITEMCLASS
+      if piNodeType = QN_TYPE_ITEM
+         OR piNodeType = QN_TYPE_ITEMCLASS
+         OR piNodeType = QN_TYPE_ITEMFINDCLASS
+         OR piNodeType = QN_TYPE_MONSTER_ITEMCLASS
       {
          // Cargo is a new item of given class (and amount)
          cItemClass = Nth(lCargo,2);
@@ -526,10 +529,10 @@ messages:
 
          // only give it to the player if it's ITEMCLASS,
          //  but create it either way so we can get its name (geez)
-         if iNodeType = QN_TYPE_ITEMCLASS
-            OR iNodeType = QN_TYPE_ITEM
+         if piNodeType = QN_TYPE_ITEMCLASS
+            OR piNodeType = QN_TYPE_ITEM
          {
-            if iNodeType = QN_TYPE_ITEM
+            if piNodeType = QN_TYPE_ITEM
             {
                Send(Send(SYS,@FindItemAttByNum,#num=IA_QUEST_CARGO),@AddToItem,
                     #oItem=pCargo,#oQuestnode=self,#oPlayer=oQuester,
@@ -567,15 +570,15 @@ messages:
 
          SetNth(plDefDescs,3,Send(pCargo,@GetDef));
 
-         if iNodeType = QN_TYPE_ITEMFINDCLASS
+         if piNodeType = QN_TYPE_ITEMFINDCLASS
          {
             Send(pCargo,@Delete);
          }
       }
 
-      if iNodeType = QN_TYPE_MONSTER
-         OR iNodeType = QN_TYPE_MONSTER_ITEMCLASS
-         OR iNodeType = QN_TYPE_MONSTER_BRING
+      if piNodeType = QN_TYPE_MONSTER
+         OR piNodeType = QN_TYPE_MONSTER_ITEMCLASS
+         OR piNodeType = QN_TYPE_MONSTER_BRING
       {
          cMonsterClass = Send(oQuestEngine,
                               @GetRandomMonsterFromQuestNodeTemplate,
@@ -594,20 +597,20 @@ messages:
          SetNth(plIndefDescs,1,Send(poMonster,@GetIndef));
          SetNth(plDefDescs,1,Send(poMonster,@GetDef));
 
-         if iNodeType <> QN_TYPE_MONSTER_BRING
+         if piNodeType <> QN_TYPE_MONSTER_BRING
          {
             piStatus = QN_STATUS_AWAITING_MONSTER_DEATH;
             Send(oQuestEngine,@AddQNToAwaitingMonsterDeathList,#QN=self);
          }
       }
-   
+
       // Add self to dest NPC's list of active questnodes
-      Send(poDestNPC,@AddQuestNodeToActiveList,#node=self);
+      Send(poDestNPC,@AddQuestNodeToActiveList,#node=self,#type=piNodeType);
 
       // Say assign hint
       if Send(oQuestEngine,@GetQuestNodeAssignHint,
               #index=piQuestNodeTemplateIndex) <> $
-      { 
+      {
          foreach oQuester in Send(poQuest,@GetQuesters)
          {
             // Have to substitute each time, in case player //NAME is
@@ -644,6 +647,86 @@ messages:
       }
 
       return TRUE;
+   }
+
+   CanPlayerStartQuest(who=$)
+   "Checks if a given player would be able to start this quest if they "
+   "triggered it.  Does not actually start the quest.  Only applicable for "
+   "initial quest nodes for a quest.  Distance between player and NPC not "
+   "checked."
+   {
+      local lQT;
+
+      // Quest must be available.
+      if piStatus <> QN_STATUS_WAITING_FOR_PLAYERS
+         AND piStatus <> QN_STATUS_WAITING_FOR_PLAYERS_TIMED
+      {
+         return FALSE;
+      }
+
+      // Can only 'start' the first quest node in sequence.
+      // TODO: This could be cached in the quest node.
+      lQT = Send(Send(SYS,@GetQuestEngine),@GetQuestTemplate,
+               #index=Send(poQuest,@GetQuestTemplateIndex));
+      if (First(Nth(lQT,QT_QUEST_NODES)) <> piQuestNodeTemplateIndex)
+      {
+         return FALSE;
+      }
+
+      return Send(poQuest,@CheckPlayerCriteria,#quester_wannabe=who);
+   }
+
+   CanPlayerEverStartQuest(who = $)
+   {
+      local lQT;
+
+      // Quest must be available.
+      if piStatus <> QN_STATUS_WAITING_FOR_PLAYERS
+         AND piStatus <> QN_STATUS_WAITING_FOR_PLAYERS_TIMED
+      {
+         return FALSE;
+      }
+
+      // Can only 'start' the first quest node in sequence.
+      // TODO: This could be cached in the quest node.
+      lQT = Send(Send(SYS,@GetQuestEngine),@GetQuestTemplate,
+               #index=Send(poQuest,@GetQuestTemplateIndex));
+      if (First(Nth(lQT,QT_QUEST_NODES)) <> piQuestNodeTemplateIndex)
+      {
+         return FALSE;
+      }
+
+      return Send(poQuest,@CanPlayerEverStartQuest,#who=who);
+   }
+
+   IsQuestOpenForPlayer(who = $)
+   {
+      local i;
+
+      foreach i in Send(poQuest,@GetQuesters)
+      {
+         if (i <> who)
+         {
+            return FALSE;
+         }
+      }
+
+      return TRUE;
+   }
+
+   IsPlayerQuester(who = $)
+   {
+      local i;
+
+      foreach i in Send(poQuest,@GetQuesters)
+      {
+         if (i = who)
+         {
+            return TRUE;
+         }
+      }
+
+      return FALSE;
    }
 
    CheckCompletionCriteria(who_tried = $, message = $, item_offered = $ )
@@ -742,7 +825,7 @@ messages:
             if Send(item_offered,@GetNumber) < Send(pCargo,@GetNumber)
             {
                iNumber = Send(pCargo,@GetNumber)-Send(item_offered,@GetNumber);
-               Send(who_tried,@MsgSenduser,
+               Send(who_tried,@MsgSendUser,
                     #message_rsc=questnode_not_enough_items,
                     #parm1=Send(poDestNPC,@GetCapDef),
                     #parm2=Send(poDestNPC, @GetName),
@@ -759,6 +842,11 @@ messages:
          }
          else
          {
+            if (NOT Send(item_offered,@CanBeUsedInQuests))
+            {
+               return FALSE;
+            }
+
             if iType = QN_TYPE_ITEM
             {
                if NOT Send(Send(SYS,@FindItemAttByNum,#num=IA_QUEST_CARGO),
@@ -773,6 +861,11 @@ messages:
             Send(item_offered,@Delete);
          }
       }
+      else if (item_offered <> $)
+      {
+         // If we have offered an item, don't check showup-type quests.
+         return FALSE;
+      }
 
       if iType = QN_TYPE_MONSTER_BRING
       {
@@ -780,7 +873,7 @@ messages:
          // First see if there are any charmed by the quester.
          foreach lMonster in Send(Send(who_tried,@GetOwner),@GetHolderActive)
          {
-            oMonster = first(lMonster);
+            oMonster = First(lMonster);
             if IsClass(oMonster,GetClass(poMonster))
                AND Send(oMonster,@GetMaster) = who_tried
             {
@@ -795,7 +888,7 @@ messages:
          {
             foreach lMonster in Send(Send(who_tried,@GetOwner),@GetHolderActive)
             {
-               oMonster = first(lMonster);
+               oMonster = First(lMonster);
                if IsClass(oMonster, GetClass(poMonster))
                   AND Send(oMonster,@GetMaster) = $
                {
@@ -827,6 +920,7 @@ messages:
             return FALSE;
          }
       }
+
 
       // Validate status and select quester(s) if needed
       if piStatus = QN_STATUS_WAITING_FOR_PLAYERS
@@ -937,8 +1031,6 @@ messages:
    SkipQuestNode()
    "Skips to next quest node without awarding anything."
    {
-      local iNodeType;
-
       poQuestActivated = $;
       piStatus = QN_STATUS_COMPLETED;
 
@@ -950,10 +1042,7 @@ messages:
       }
 
       // Delete cargo if it's a quest item.
-      iNodeType = Send(Send(SYS,@GetQuestEngine),@GetQuestNodeType,
-                        #index=piQuestNodeTemplateIndex);
-
-      if (iNodeType = QN_TYPE_ITEM
+      if (piNodeType = QN_TYPE_ITEM
          AND pCargo <> $)
       {
          // Remove quest attribute first, otherwise attribute calls
@@ -966,7 +1055,7 @@ messages:
          Send(pCargo,@Delete);
       }
 
-      Send(poQuest,@AssignNextNode,#current_NPC=poDestNPC);
+      Send(poQuest,@AssignNextNode,#current_NPC=poDestNPC,#bRecreate=TRUE);
 
       return;
    }
@@ -1244,7 +1333,85 @@ messages:
          SetNth(plDefDescs,2,Send(oPrize,@GetDef));
 
          return;
-      } 
+      }
+
+      if iPrizeType = QN_PRIZETYPE_ITEM_ENUM
+      {
+         iPrizeType = Nth(prize,2);
+         switch (iPrizeType)
+         {
+         case QN_PRIZE_ITEM_KRANROBE:
+            foreach oQuester in recipients
+            {
+               oPrize = Create(&DiscipleRobe,#school=SS_KRAANAN);
+               Send(oQuester,@NewHold,#what=oPrize);
+            }
+            break;
+         case QN_PRIZE_ITEM_SHALROBE:
+            foreach oQuester in recipients
+            {
+               oPrize = Create(&DiscipleRobe,#school=SS_SHALILLE);
+               Send(oQuester,@NewHold,#what=oPrize);
+            }
+            break;
+         case QN_PRIZE_ITEM_FARENROBE:
+            foreach oQuester in recipients
+            {
+               oPrize = Create(&DiscipleRobe,#school=SS_FAREN);
+               Send(oQuester,@NewHold,#what=oPrize);
+            }
+            break;
+         case QN_PRIZE_ITEM_QORROBE:
+            foreach oQuester in recipients
+            {
+               oPrize = Create(&DiscipleRobe,#school=SS_QOR);
+               Send(oQuester,@NewHold,#what=oPrize);
+            }
+            break;
+         case QN_PRIZE_ITEM_RIIJAROBE:
+            foreach oQuester in recipients
+            {
+               oPrize = Create(&DiscipleRobe,#school=SS_RIIJA);
+               Send(oQuester,@NewHold,#what=oPrize);
+            }
+            break;
+         case QN_PRIZE_ITEM_JALAROBE:
+            foreach oQuester in recipients
+            {
+               oPrize = Create(&DiscipleRobe,#school=SS_JALA);
+               Send(oQuester,@NewHold,#what=oPrize);
+            }
+            break;
+         case QN_PRIZE_ITEM_DURABLESCIM:
+            foreach oQuester in recipients
+            {
+               oPrize = Create(&Scimitar);
+               Send(Send(SYS,@FindItemAttByNum,#num=IA_DURABLE),@AddToItem,#oItem=oPrize);
+               Send(oPrize,@RevealHiddenAttributes);
+               Send(oQuester,@NewHold,#what=oPrize);
+            }
+            break;
+         }
+
+         if Send(oPrize,@IsStackable)
+         {
+            ClearTempString();
+            AppendTempString(iAmount);
+            AppendTempString(" ");
+            AppendTempString(Send(oPrize,@GetName));
+            SetNth(plDescs,2,CreateString());
+            SetString(Nth(plDescs,2),GetTempString());
+         }
+         else
+         {
+            SetNth(plDescs,2,Send(oPrize,@GetName));
+         }
+
+         SetNth(plIndefDescs,2,Send(oPrize,@GetIndef));
+         SetNth(plDefDescs,2,Send(oPrize,@GetDef));
+
+         return;
+      }
 
       if iPrizeType = QN_PRIZETYPE_STATISTIC
       {
@@ -1561,7 +1728,7 @@ messages:
             {
                Send(poDestNPC,@RemoveQuestNodeFromActiveList,#node=self);
                poDestNPC = oNewLich;
-               Send(poDestNPC,@AddQuestNodeToActiveList,#node=self);
+               Send(poDestNPC,@AddQuestNodeToActiveList,#node=self,#type=piNodeType);
             }
 
             Send(oLich,@EstablishNecromancerGuild,#master=First(recipients));
@@ -1611,6 +1778,64 @@ messages:
       return;
    }
 
+   QuestNodeDisplayNPCActive(who = $, what = $)
+   "Takes a user 'who' and NPC 'what'.  Returns TRUE if the user's client "
+   "should display this NPC as being part of an active quest.  Part of active "
+   "quest means they are the destination NPC for a current quest node, and "
+   "there isn't a more immediate NPC/monster to find first (i.e. kill quest)."
+   {
+      local i;
+
+      if (what = $)
+      {
+         return FALSE;
+      }
+
+      if (poMonster <> $)
+      {
+         if (piNodeType = QN_TYPE_MONSTER_BRING)
+         {
+            // If the user has the mob, NPC should be active.
+            foreach i in Send(who,@GetControlledMinions)
+            {
+               if (GetClass(i) = GetClass(poMonster))
+               {
+                  return poDestNPC = what;
+               }
+            }
+            return FALSE;
+         }
+         else
+         {
+            // Not active if user has to kill mob first. Check that monster
+            // isn't the NPC in case that ever comes up in the future.
+            return poMonster = what;
+         }
+      }
+
+      return poDestNPC = what;
+   }
+
+   QuestNodeDisplayMobActive(who = $, what = $)
+   "Takes a user 'who' and NPC 'what'.  Returns TRUE if the user's client "
+   "should display this mob as the target of a kill quest."
+   {
+      if (what = $
+         OR poMonster = $
+         OR Send(what,@GetMaster) <> $)
+      {
+         return FALSE;
+      }
+
+      if (GetClass(poMonster) = GetClass(what)
+         OR Send(what,@IsMonsterQuestEquivalent,#what=poMonster))
+      {
+         return TRUE;
+      }
+
+      return FALSE;
+   }
+
    GetQuesters()
    {
       return Send(poQuest,@GetQuesters);
@@ -1636,10 +1861,15 @@ messages:
       return poSourceNPC;
    }
 
+   GetOriginalNPC()
+   {
+      return Send(poQuest,@GetOriginalNPC);
+   }
+
    MonsterKilled(dead_monster = $, killing_player = $, corpse = $)
    "Returns TRUE if this was the one we were waiting for, FALSE otherwise."
    {
-      local oRoom, iRow, iCol, iType, oQuester, cClass;
+      local oRoom, iRow, iCol, oQuester, cClass;
 
       if piStatus <> QN_STATUS_AWAITING_MONSTER_DEATH
       {
@@ -1665,10 +1895,7 @@ messages:
          if killing_player = oQuester
          {
             // right monster class, right player
-            iType = Send(Send(SYS,@GetQuestEngine),@GetQuestNodeType,
-                         #index=piQuestNodeTemplateIndex);
-
-            if iType = QN_TYPE_MONSTER
+            if piNodeType = QN_TYPE_MONSTER
             {
                piStatus = QN_STATUS_IN_PROGRESS;
                Send(poMonster,@Delete);
@@ -1676,7 +1903,7 @@ messages:
                return TRUE;
             }
 
-            if iType <> QN_TYPE_MONSTER_ITEMCLASS
+            if piNodeType <> QN_TYPE_MONSTER_ITEMCLASS
             {
                Debug("Questnode of non-monster type processed monster death.");
                Send(poMonster,@Delete);
@@ -1707,7 +1934,7 @@ messages:
                poMonster = $;
                return TRUE;
             }
-            else   
+            else
             {
                // no room at corpse! (sorry, better kill another)
                Debug("No room at monster's corpse to place item.");
@@ -1753,15 +1980,13 @@ messages:
 
    DeadlineExpired()
    {
-      local oQuestEngine, sSay, oQuester, lPenalty, lQuesters, iNodeType;
+      local oQuestEngine, sSay, oQuester, lPenalty, lQuesters;
 
       oQuestEngine = Send(SYS,@GetQuestEngine);
-   
+
       // Get rid of our link to quest items
-      iNodeType = Send(oQuestEngine,@GetQuestNodeType,
-                       #index=piQuestNodeTemplateIndex);
       if pCargo <> $
-         AND iNodeType = QN_TYPE_ITEM
+         AND piNodeType = QN_TYPE_ITEM
       {
          if NOT Send(Send(SYS,@FindItemAttByNum,#num=IA_QUEST_CARGO),
                      @RemoveFromItem,#oItem=pCargo,#oQuestnode=self)
@@ -1814,16 +2039,16 @@ messages:
 
       // clear our memory of the quest we just activated
       poQuestActivated = $;
-   
+
       foreach oQuester in lQuesters
       {
          Send(oQuester,@AddQuestHistory,
               #index=Send(poQuest,@GetQuestTemplateIndex),
               #success=FALSE);
       }
-   
+
       Post(poQuest,@Cancel);
-   
+
       return;
    }
 
@@ -1832,10 +2057,25 @@ messages:
       return piQuestNodeTemplateIndex;
    }
 
+   GetQuestTemplateIndex()
+   {
+      return Send(poQuest,@GetQuestTemplateIndex);
+   }
+
+   GetQuestTemplateObject()
+   {
+      return Send(Send(SYS,@GetQuestEngine),@GetQuestTemplateObject,
+                  #index=Send(poQuest,@GetQuestTemplateIndex));
+   }
+
+   GetQuestName()
+   {
+      return Send(Send(Send(SYS,@GetQuestEngine),@GetQuestTemplateObject,
+                  #index=Send(poQuest,@GetQuestTemplateIndex)),@GetName);
+   }
+
    Delete()
    {
-      local iNodeType;
-
       poQuest = $;
       poPreviousSourceNPC = $;
       poSourceNPC = $;
@@ -1846,11 +2086,8 @@ messages:
 
       if pCargo <> $
       {
-         iNodeType = Send(Send(SYS,@GetQuestEngine),@GetQuestNodeType,
-                           #index=piQuestNodeTemplateIndex);
-
          // Intermediate quest items get deleted.
-         if (iNodeType = QN_TYPE_ITEM)
+         if (piNodeType = QN_TYPE_ITEM)
          {
             // Remove quest attribute first, otherwise attribute calls
             // DeadlineExpired to end the quest.

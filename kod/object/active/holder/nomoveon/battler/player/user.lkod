@@ -117,11 +117,15 @@ user_group_spells = de "Spells"
 user_group_skills = de "Skills"
 user_group_quests = de "Quests"
 
+user_no_quest_item = de \
+   "Du bist nicht im Besitz des benötigten Gegenstandes um diese Quest abzuschließen."
 user_active_quests_header = de "Aktive Quests: "
 user_no_active_quests_header = de "Keine aktiven Quests"
 user_completed_quests_header = de "Abgeschlossene Quests: "
 user_no_completed_quests_header = de "Keine abgeschlossenen Quests"
-
+user_failed_quests_header = de "Fehlgeschlagene Quests: "
+user_quest_log_updated = de \
+   "~IDein Quest-Logbuch wurde um einen Eintrag erweitert."
 
 user_got_offer = de "Du hast ein Angebot von %s%s."
 user_cant_offer = de "Du kannst %s%s nichts anbieten."

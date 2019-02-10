@@ -43,7 +43,9 @@ properties:
 
    piDirectional_percent = DIRECTIONAL_PERCENT_OUTDOORS
 
-   piOutside_factor = OUTDOORS_2
+   piOutside_factor = 8
+   
+   pbSnowGroundTexture = TRUE
 
    //piGen_percent = 80
 
@@ -67,7 +69,7 @@ messages:
 
    Constructed()
    {
-      plMonsters = [ [&Spider, 40], [&Ant, 60] ];
+      plMonsters = [ [&Spider, 40], [&BigSlime, 60] ];
 
       plGenerators = [ [35, 11], [43, 37], [23, 36], [7, 35], [24, 27], [24, 6], [43, 26] ];
 

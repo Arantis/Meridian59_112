@@ -58,7 +58,11 @@ static char colorinfo[][15] = {
    {"0,0,0" },        /* COLOR_INVNUMBGD */
    {"255,80,0"},      /* COLOR_ITEM_MAGIC_FG */
    {"0,196,50"},      /* COLOR_QUEST_HEADER */
-   {"150, 120, 120"}  /* COLOR_TIME_BORDER */
+   {"150, 120,120"},  /* COLOR_TIME_BORDER */
+   {"0,196,50"},      /* COLOR_QUEST_ACTIVE_FG */
+   {"255, 255, 0"},   /* COLOR_QUEST_VALID_FG */
+   {"0,100,10"},      /* COLOR_QUEST_ACTIVE_SEL_FG */
+   {"120, 120, 0"}    /* COLOR_QUEST_VALID_SEL_FG */
 };
 
 static char color_section[] = "Colors";  /* Section for colors in INI file */
@@ -416,26 +420,32 @@ HBRUSH DialogCtlColor(HWND hwnd, HDC hdc, HWND hwndChild, int type)
 *    Doesn't return color itself so that caller can use id to call GetBrush.
 *    Now colors magic items; any future item colors should be added here.
 */
-WORD GetItemListColor(HWND hwnd, int type, int flags)
+WORD GetItemListColor(HWND hwnd, int type, int obj_flags, int obj_type)
 {
-	if ((flags != NULL) && (GetItemFlags(flags) == (OF_ITEM_MAGIC | OF_GETTABLE)))
-		return COLOR_ITEM_MAGIC_FG;
-	else
-   {
-		switch(type)
-		{
-		case UNSEL_FGD:
-			return COLOR_LISTFGD;
-		case UNSEL_BGD:
-			return COLOR_LISTBGD;
-		case SEL_FGD:
-			return COLOR_LISTSELFGD;
-		case SEL_BGD:
-			return COLOR_LISTSELBGD;
-		}
-	}
+   if ((obj_flags != NULL) && (GetItemFlags(obj_flags) == (OF_ITEM_MAGIC | OF_GETTABLE)))
+      return COLOR_ITEM_MAGIC_FG;
 
-	return 0;
+   switch (type)
+   {
+   case UNSEL_FGD:
+      if (obj_type == OT_QUESTACTIVE)
+         return COLOR_QUEST_ACTIVE_FG;
+      if (obj_type == OT_QUESTVALID)
+         return COLOR_QUEST_VALID_FG;
+      return COLOR_LISTFGD;
+   case UNSEL_BGD:
+      return COLOR_LISTBGD;
+   case SEL_FGD:
+      if (obj_type == OT_QUESTACTIVE)
+         return COLOR_QUEST_ACTIVE_SEL_FG;
+      if (obj_type == OT_QUESTVALID)
+         return COLOR_QUEST_VALID_SEL_FG;
+      return COLOR_LISTSELFGD;
+   case SEL_BGD:
+      return COLOR_LISTSELBGD;
+   }
+
+   return 0;
 }
 
 /****************************************************************************/
@@ -471,4 +481,24 @@ COLORREF GetPlayerWhoNameColor(object_node* obj, char *name)
      b = (obj->namecolor & 0x0000FF);
 
       return PALETTERGB(r, g, b);
+}
+/****************************************************************************/
+/*
+ * GetQuestInfoColor:  Return color for quest info text based on object flags.
+ */
+COLORREF GetQuestInfoColor(object_node* obj)
+{
+   if ((obj->flags & OF_NPCACTIVEQUEST) == OF_NPCACTIVEQUEST)
+   {
+      return PALETTERGB(0, 255, 120);
+   }
+   else if ((obj->flags & OF_NPCHASQUESTS) == OF_NPCHASQUESTS)
+   {
+      return PALETTERGB(255, 255, 0);
+   }
+   else if ((obj->flags & OF_MOBKILLQUEST) == OF_MOBKILLQUEST)
+   {
+      return PALETTERGB(179, 0, 179);
+   }
+   return PALETTERGB(255, 255, 0);
 }

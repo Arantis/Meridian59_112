@@ -34,7 +34,7 @@ classvars:
 
 properties:
 
-   viTerrain_type = TERRAIN_ROAD | TERRAIN_HILLS
+   viTerrain_type = TERRAIN_ROAD | TERRAIN_FOREST
 
    prRoom = room_berg7
    piRoom_num = RID_BERG_7
@@ -69,7 +69,7 @@ messages:
 
    Constructed()
    {
-      plMonsters = [ [&Spider, 45], [&Ant, 55] ];
+      plMonsters = [ [&Wolf, 100] ];
 
       plGenerators = [ [6, 4], [11, 12], [19, 7], [24, 12] ];
 

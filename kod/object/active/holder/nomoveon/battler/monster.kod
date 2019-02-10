@@ -997,14 +997,21 @@ messages:
    {
       plActiveQuestNodes = $;
 
+      if (poOwner <> $)
+      {
+         Post(poOwner,@SomethingChanged,#what=self);
+      }
+
       return;
    }
 
    // This monster is the destination NPC for a questnode
    // Add the node to his list, so he can check completion criteria
    //  when someone enters, says something, or gives him something
-   AddQuestNodeToActiveList(node = $)
+   AddQuestNodeToActiveList(node = $, type = $)
    {
+      local i, iCount;
+
       if node = $
       {
          Debug("AddQuestNode: nil questnode.");
@@ -1012,7 +1019,36 @@ messages:
          return;
       }
 
-      plActiveQuestNodes = Cons(node, plActiveQuestNodes);
+      // Sort list by adding nodes with questers to front and showup-type
+      // quests to back. Insert other quest types after quests with active
+      // questers.
+      if (plActiveQuestNodes = $
+         OR Send(node,@GetQuesters) <> $)
+      {
+         plActiveQuestNodes = Cons(node, plActiveQuestNodes);
+      }
+      else if (type <> $ AND type = QN_TYPE_SHOWUP)
+      {
+         plActiveQuestNodes = AppendListElem(node, plActiveQuestNodes);
+      }
+      else
+      {
+         iCount = 1;
+         foreach i in plActiveQuestNodes
+         {
+            if (Send(node,@GetQuesters) = $)
+            {
+               break;
+            }
+            ++iCount;
+         }
+         plActiveQuestNodes = InsertListElem(plActiveQuestNodes, iCount, node);
+      }
+
+      if (poOwner <> $)
+      {
+         Post(poOwner,@SomethingChanged,#what=self);
+      }
 
       return;
    }
@@ -1040,6 +1076,11 @@ messages:
          }
       }
 
+      if (poOwner <> $)
+      {
+         Post(poOwner,@SomethingChanged,#what=self);
+      }
+
       // validate that we removed it
       if iLength > Length(plActiveQuestNodes)
       {
@@ -1049,6 +1090,119 @@ messages:
       Debug( "RemoveQuestNode: couldn't find questnode." );
 
       return;
+   }
+
+   GetActiveQuestForUser(who = $, index = 0)
+   "Preferentially return the quest node the user is on. If they haven't "
+   "started the quest yet, return a free one.  Have to iterate the whole "
+   "list to make sure we don't have one with the player already assigned."
+   {
+      local i, oQN;
+
+      foreach i in plActiveQuestNodes
+      {
+         if (Send(i,@GetQuestTemplateIndex) = index)
+         {
+            if (Send(i,@IsPlayerQuester,#who=who))
+            {
+               return i;
+            }
+            else if (Send(i,@IsQuestOpenForPlayer,#who=who))
+            {
+               oQN = i;
+            }
+         }
+      }
+
+      return oQN;
+   }
+
+   HasQuestsForUser(who = $)
+   {
+      local i;
+
+      if (who = $
+         OR NOT IsClass(who,&User))
+      {
+         return FALSE;
+      }
+
+      foreach i in plActiveQuestNodes
+      {
+         if (Send(i,@CanPlayerStartQuest,#who=who))
+         {
+            return TRUE;
+         }
+      }
+
+      return FALSE;
+   }
+
+   IsQuestableForUser(who = $)
+   {
+      local i, lQuests, oQT, lQT;
+
+      if (who = $
+         OR NOT IsClass(who,&User))
+      {
+         return FALSE;
+      }
+
+      foreach i in plActiveQuestNodes
+      {
+         oQT = Send(i,@GetQuestTemplateObject);
+
+         // Skip quests that already have someone else doing them.
+         if (NOT Send(i,@IsQuestOpenForPlayer,#who=who))
+         {
+            continue;
+         }
+
+         // Only true for quests that the player is already doing, or could
+         // possibly be eligible for.
+         if (Send(i,@IsPlayerQuester,#who=who)
+            OR Send(i,@CanPlayerEverStartQuest,#who=who))
+         {
+            return TRUE;
+         }
+      }
+
+      return FALSE;
+   }
+
+   GetQuestsForUser(who = $)
+   "Must remove quests waiting for other players, but can leave in quests that "
+   "are waiting for any player with this player not meeting the requirements."
+   "Returns a list of [quest template object, quest node object]."
+   {
+      local i, lQuests, oQT, lQT;
+
+      if (who = $
+         OR NOT IsClass(who,&User))
+      {
+         return FALSE;
+      }
+
+      foreach i in plActiveQuestNodes
+      {
+         oQT = Send(i,@GetQuestTemplateObject);
+
+         // Skip quests that already have someone else doing them.
+         if (NOT Send(i,@IsQuestOpenForPlayer,#who=who))
+         {
+            continue;
+         }
+
+         // Only show quests that the player is already doing, or could
+         // possibly be eligible for.
+         if (Send(i,@IsPlayerQuester,#who=who)
+            OR Send(i,@CanPlayerEverStartQuest,#who=who))
+         {
+            lQuests = Cons([oQT, i],lQuests);
+         }
+      }
+
+      return lQuests;
    }
 
    TryAddToLibrary()
@@ -1593,7 +1747,7 @@ messages:
       Send(self,@MobSeduceCheck,#what=what);
 
       // If there are active quest nodes, notify them -AJM
-      if plActiveQuestNodes <> $
+      /*if plActiveQuestNodes <> $
       {
          // make sure it's a player who entered
          if IsClass(what,&Player)
@@ -1606,7 +1760,7 @@ messages:
                }
             }
          }
-      } 
+      }*/
 
       propagate;
    }
@@ -3925,6 +4079,59 @@ messages:
                OR (who <> $ AND IsClass(who,&DM)));
    }
 
+   TryGiveQuestItem(what = $, item_list = $)
+   {
+      local i, oQuestNode;
+
+      if item_list = $
+      {
+         return;
+      }
+
+      // Check for if in the same room.
+      if Send(what,@GetOwner) <> poOwner
+      {
+         Debug("ALERT! ",Send(what,@GetTrueName),what,"offered items to NPC",
+               Send(self,@GetTrueName),"from distant RID",
+               Send(Send(what,@GetOwner),@GetRoomNum));
+         
+         return;
+      }
+
+      // If there are active quest nodes, notify them   -AJM
+      foreach i in item_list
+      {
+         // first, let's be sure the item CAN be given away.
+         if NOT Send(i,@CanBeGivenToNPC)
+            OR NOT Send(i,@CanBeUsedInQuests)
+         {
+            Post(self,@SayToOne,#target=what,#message_rsc=LS_cant_part,
+                 #parm1=Send(i,@GetIndef),#parm2=Send(i,@GetName));
+
+            return;
+         }
+
+         if NOT Send(what,@ReqLeaveHold,#what=i)
+         {
+            Post(what,@MsgSendUser,#message_rsc=Lm_cant_remove_item,
+                 #parm1=Send(i,@GetDef),#parm2=Send(i,@GetName));
+
+            return;
+         }
+
+         foreach oQuestNode in plActiveQuestNodes
+         {
+            if Send(oQuestNode,@CheckCompletionCriteria,#who_tried=what,
+                    #item_offered=i)
+            {
+               return;
+            }
+         }
+      }
+
+      return;
+   }
+
    ReqOffer(what = $, item_list = $)
    "Someone offered us something, figure out if we want it, etc. "
    "Return TRUE if the offer should go through, meaning that the monster will "
@@ -4999,7 +5206,7 @@ messages:
                   #flags=SOUND_RANDOM_PITCH);
          }
 
-         if NOT Send(poOwner,@IsArena)
+         if Send(poOwner,@CanDropMonsterLoot)
          {
             // Notify the quest engine, to check if a quest is affected -AJM
             Send(Send(SYS,@GetQuestEngine),@MonsterKilled,#dead_monster=self,
@@ -5071,7 +5278,6 @@ messages:
                   }
                }
             }
-                  
             Send(self,@CreateTreasure,#who=what,#corpse=oBody);
          }
 
@@ -8063,9 +8269,34 @@ messages:
       if (piBehavior & AI_NPC)
       {
          iFlags &= ~OF_ATTACKABLE;
+
+         if (what <> $
+            AND IsClass(what,&User))
+         {
+            if (Send(what,@UserDisplayNPCQuestActive,#what=self))
+            {
+               iFlags |= OF_NPCACTIVEQUEST | OF_NPCQUESTABLE;
+            }
+            // NPC might have a quest for this user.
+            else if (Send(self,@HasQuestsForUser,#who=what))
+            {
+               iFlags |= OF_NPCHASQUESTS | OF_NPCQUESTABLE;
+            }
+            else if (Send(self,@IsQuestableForUser,#who=what))
+            {
+               iFlags |= OF_NPCQUESTABLE;
+            }
+         }
+      }
+      else if (poMaster = $
+         AND what <> $
+         AND IsClass(what,&User)
+         AND Send(what,@UserDisplayMobQuestActive,#what=self))
+      {
+         iFlags |= OF_MOBKILLQUEST;
       }
 
-      if Send(Self,@MobIsSeller)
+      if Send(self,@MobIsSeller)
       {
          iFlags |= OF_BUYABLE;
       }
@@ -10082,6 +10313,11 @@ messages:
    GetBonusTP()
    {
       return viBonusTP;
+   }
+
+   IsArenaMonster()
+   {
+      return TRUE;
    }
 
 end

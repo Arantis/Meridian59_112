@@ -35,25 +35,24 @@ resources:
 
    // Quest description.
    scimprofquest_icon_rsc = scimico.bgf
-   scimprofquest_name_rsc = "Quintor's pupil quest"
+   scimprofquest_name_rsc = "Disciple Quest: His Majesty, the Scimitar!"
 
-   // This description is used if there is an error preventing the others
-   // from being displayed.
    scimprofquest_desc_rsc = \
-      "Quintor has sent you to slay a monster, so that he will teach you "
-      "scimitar wielding."
+      "Quintor can teach you the fine art of wielding a scimitar, if you can "
+      "prove to him that you are skilled enough to wield one.  Proving your "
+      "ability will also earn you a finely crafted, extra-durable scimitar as "
+      "well a generous amount of hatred for your tutor."
 
    scimprofquest_kill_rsc = \
       "Quintor will teach you how to use a scimitar, but first you must "
       "slay a %s. Complete this task and report back to him."
 
    scimprofquest_return_rsc = \
-      "Return to Quintor and let him know the task has been "
-      "completed."
+      "Return to Quintor and let him know the task has been completed."
 
    scimprofquest_completed = \
-      "You have completed Quintor's scimitar pupil quest.  Quintor will now "
-      "be willing to train you in the art of scimitar wielding."
+      "You have proven your worth to Quintor.  He will now be willing to "
+      "train you in the art of scimitar wielding."
 
    // Quest resources.
    scimitarlearn_trigger = "pupil"
@@ -183,6 +182,7 @@ messages:
       // QNT_ID_SCIMITAR_PUPIL_FOUR
       if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MONSTER,
                #NPC_modifier=QN_NPCMOD_SAME,#monsterlist=[&Yeti],
+               #prizelist=[ [ QN_PRIZETYPE_ITEM_ENUM, QN_PRIZE_ITEM_DURABLESCIM ] ],
                #timelimit=piTimeLimit,#quest_node_index=QNT_ID_SCIMITAR_PUPIL_FOUR)
       {
          Send(oQE,@SetQuestNodeAssignHint,#index=QNT_ID_SCIMITAR_PUPIL_FOUR,

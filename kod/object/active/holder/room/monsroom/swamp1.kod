@@ -30,7 +30,7 @@ classvars:
    viTeleport_row = 16
    viTeleport_col = 8
 
-   viTerrain_type = TERRAIN_NECROPOLIS | TERRAIN_LAKE | TERRAIN_FOREST
+   viTerrain_type = TERRAIN_SWAMP
 
 properties:
 
@@ -88,7 +88,7 @@ messages:
 
    Constructed()
    {
-      plMonsters = [ [&Frogman, 100] ];
+      plMonsters = [ [&Ranuculus, 100] ];
 
       plGenerators = [ [13, 13], [11, 29], [17, 31], [17, 25], [18, 36],
                        [26, 9], [28, 16], [32, 14], [35, 28], [29, 30] ];

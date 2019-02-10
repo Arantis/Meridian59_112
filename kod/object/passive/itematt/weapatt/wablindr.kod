@@ -31,10 +31,9 @@ resources:
 
    weapattblinder_desc = \
       " Q's insignia is emblazoned on the metal of the weapon."
-   blinder_fail_use = "You are not yet ready to use %s%s."
    blinder_worked = "%s%s stumbles away, screaming and clutching %s eyes!"
    blinder_dm = "blinder"
-   blinder_info_desc = "15%% chance to cast Blind on hit\n"
+   blinder_info_desc = "%i%% chance to cast Blind on hit\n"
 
 classvars:
 
@@ -45,34 +44,23 @@ classvars:
    viDifficulty = 9
    vrDM_trigger = blinder_dm
    vbAllowSpecialAttributes = FALSE
+   vbProcRequirement = TRUE
 
 properties:
 
-   piValue_modifier = 200   /// modify the object's price by 100//
+   // Modify the object's price by percent
+   piValue_modifier = 200
+
    piValue_power_modifier = 10
+
+   // Percent chance the effect procs
    piEffect_percent = 15
+   
+   piSpellPower = 50
 
 messages:
 
-   ItemReqUse(oItem=$,oPlayer=$)
-   {
-      /// This person needs 50// in the weapon's proficiency to use
-      if Send(oItem,@GetProf,#who=oPlayer) < 50
-      {
-         Send(oPlayer,@MsgSendUser,#message_rsc=blinder_fail_use,
-               #parm1=Send(oItem,@GetDef),#parm2=Send(oItem,@GetName));
-
-         return FALSE;
-      }
-
-      return TRUE;
-   }
-
-////////////////////////////////////////////////
-///
-///  Effect Functions
-///
-////////////////////////////////////////////////
+   // Effect Functions
 
    ModifyDamage(damage=0,target=$,wielder=$,lData=$)
    "Wielder has a 1% chance of blinding target with any hit."
@@ -93,7 +81,7 @@ messages:
          if NOT Send(target,@IsEnchanted,#what=oSpell)
          {
             Send(oSpell,@CastSpell,#who=wielder,#ltargets=[target],
-                  #iSpellPower=50,#bItemCast=TRUE);
+                  #iSpellPower=piSpellPower,#bItemCast=TRUE);
             Send(wielder,@MsgSendUser,#message_rsc=blinder_worked,
                  #parm1=Send(target,@GetCapDef),#parm2=Send(target,@GetName),
                  #parm3=Send(target,@GetHisher));
@@ -101,6 +89,23 @@ messages:
       }
 
       return Damage;
+   }
+
+   // Add the spell name to the description.
+   AppendDescInfo(oItem = $,compound = $, bShowAll = FALSE)
+   {
+      if (bShowAll
+         OR Send(oItem,@GetIDStatusFromCompound,#compound=compound))
+      {
+         AddPacket(4,vrInfoDesc, 4,piEffect_percent);
+      }
+      else
+      {
+         // Not identified, add nothing (blank resource).
+         AddPacket(4,system_blank_resource);
+      }
+
+      return;
    }
 
    IsMagicalEffect()

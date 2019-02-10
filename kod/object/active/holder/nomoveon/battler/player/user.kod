@@ -196,6 +196,7 @@ resources:
    user_no_active_quests_header = "No Active Quests"
    user_completed_quests_header = "Completed Quests: "
    user_no_completed_quests_header = "No Completed Quests"
+   user_failed_quests_header = "Failed Quests: "
 
    user_got_offer = "You have a trade offer from %s%s."
    user_cant_offer = "You can't offer to %s%s."
@@ -373,6 +374,12 @@ resources:
 
    user_safety_on_wav_rsc = safety_on.ogg
    user_safety_off_wav_rsc = safety_off.ogg
+   user_quest_advance_wav = questadvance.ogg
+   user_quest_complete_wav = questcomplete.ogg
+
+   user_quest_log_updated = "~IYour quest log has been updated."
+   user_no_quest_item = \
+      "You don't have the required item to complete this quest."
 
    // Guild MOTD user say commands.
    user_say_guild_motd = "motd"
@@ -2095,6 +2102,29 @@ messages:
          return;
       }
 
+      if liClient_cmd = BP_REQ_TRIGGER_QUEST
+      {
+         oWhat = Nth(client_msg,2);
+         if IsClass(oWhat,&Monster)
+         {
+            Send(self,@UserRequestTriggerQuest,#what=oWhat,
+                  #oQT=Nth(client_msg,3));
+         }
+
+         return;
+      }
+
+      if liClient_cmd = BP_REQ_NPC_QUESTS
+      {
+         oWhat = Nth(client_msg,2);
+         if IsClass(oWhat,&Monster)
+         {
+            Send(self,@UserRequestNPCQuests,#what=oWhat);
+         }
+
+         return;
+      }
+
       if liClient_cmd = BP_REQ_BUY_ITEMS
       {
          oWhat = Nth(client_msg,2);
@@ -3329,8 +3359,10 @@ messages:
       return Send(SYS,@GetSuccessRsc);
    }
 
-   ToCliFlags(what=$)
+   ToCliFlags(what=$,parm1=$)
    "Sends just the ObjectFlags (OF, DF, MM, NC, OT, MT) for 'what'."
+   "parm1 is optional parameter if more information is required to resolve "
+   "flag status."
    {
       local iFlags, iEnemyKarma, iSelfKarma, iMinimapFlags, iDrawingFlags;
 
@@ -3378,15 +3410,16 @@ messages:
 
       AddPacket(4,iFlags, 1,iDrawingFlags, 4,iMinimapFlags,
                 4,Send(what,@GetPlayerNameColor),
-                1,Send(what,@GetClientObjectType),
+                1,Send(what,@GetClientObjectType,#who=self,#parm1=parm1),
                 1,Send(what,@GetMoveOnType));
 
       return;
    }
 
-   ToCliObject(what=$,show_type=SHOW_NORMAL,bShow_all=FALSE)
+   ToCliObject(what=$,show_type=SHOW_NORMAL,bShow_all=FALSE,parm1=$)
    "show_type is used to get the look or inventory animation and overlays "
-   "instead of the normal animation and overlays."
+   "instead of the normal animation and overlays. parm1 is optional parameter "
+   "passed on to ToCliFlags."
    {
       // Send given object's id number, name, icon, and animation info
       if Send(what,@IsStackable)
@@ -3410,7 +3443,7 @@ messages:
          AddPacket(4,Send(what,@GetApparentName));
       }
 
-      Send(self,@ToCliFlags,#what=what);
+      Send(self,@ToCliFlags,#what=what,#parm1=parm1);
 
       // Send the lighting information.
       Send(what,@SendLightingInformation);
@@ -3586,8 +3619,24 @@ messages:
       {
          if Send(what,@GetBehavior) & AI_NPC
          {
-            // Draw dots for NPCs.
+            // Highlight quest-related NPCs.
+            // NPCs that are part of active quests
+            // override NPCs that have potential quests.
+            if (Send(self,@UserDisplayNPCQuestActive,#what=what))
+            {
+               return MM_NPC | MM_NPCCURRENTQUEST;
+            }
+            if (Send(what,@HasQuestsForUser,#who=self))
+            {
+               return MM_NPC | MM_NPCHASQUEST;
+            }
+
+            // Draw plain dots for non-quest NPCs.
             return MM_NPC;
+         }
+         else if (Send(self,@UserDisplayMobQuestActive,#what=what))
+         {
+            iFlags |= MM_MOBKILLQUEST;
          }
 
          oTarget = Send(what,@GetTarget);
@@ -3629,6 +3678,7 @@ messages:
          }
 
          if IsClass(poOwner,&SurvivalRoom)
+            OR IsClass(poOwner,&SurvivalArena)
          {
             // Survival room specific dots.
             if Send(poOwner,@IsMiniBoss,#what=what)
@@ -4084,7 +4134,7 @@ messages:
 
    ToCliStats(group = $)
    {
-      local i, oSpell, oSkill, iCount, lResists, iQLength;
+      local i, oSpell, oSkill, iCount, lResists, iQLength, iFailedQLength;
 
       if NOT pbLogged_on
       {
@@ -4167,12 +4217,24 @@ messages:
 
       if group = 5
       {
-         // Used for determining index in displayed quests.
-         iCount = 1;
-         // Need to know how many completed quests in quest history.
+         // Need to know how many completed + failed quests in quest history.
          iQLength = Send(self,@GetCompletedQuestLength);
-         // Add 3 at the end - 2 for headers, 1 for mana node quest.
-         AddPacket(1,BP_STAT_GROUP, 1,group, 1,Length(plActiveQuests) + iQLength + 3);
+         iFailedQLength = Send(self,@GetFailedQuestLength);
+         if (iFailedQLength > 0)
+         {
+            // Add 4 at the end - 3 for headers, 1 for mana node quest.
+            iCount = iQLength + iFailedQLength + Length(plActiveQuests) + 4;
+         }
+         else
+         {
+            // Add 3 at the end - 2 for headers, 1 for mana node quest.
+            iCount = iQLength + iFailedQLength + Length(plActiveQuests) + 3;
+         }
+
+         AddPacket(1,BP_STAT_GROUP, 1,group, 1,iCount);
+
+         // Reset, used for determining index in displayed quests.
+         iCount = 1;
 
          // Send active quests.
          if plActiveQuests <> $
@@ -4201,7 +4263,7 @@ messages:
             AddPacket(1,iCount, 4,user_completed_quests_header,
                       1,STAT_LIST, 4,0, 4,0, 4,0);
             // Followed by completed quests.
-            Send(self,@SendCompletedQuestData,#iCount=iCount);
+            iCount = Send(self,@SendCompletedQuestData,#iCount=iCount);
          }
          else
          {
@@ -4210,12 +4272,95 @@ messages:
                       1,STAT_LIST, 4,0, 4,0, 4,0);
          }
 
+         // Send failed quests if necessary.
+         if (iFailedQLength > 0)
+         {
+            // Increment count past any completed quests.
+            ++iCount;
+            // Send the "Failed Quests" header.
+            AddPacket(1,iCount, 4,user_failed_quests_header,
+                      1,STAT_LIST, 4,0, 4,0, 4,0);
+            // Followed by failed quests.
+            iCount = Send(self,@SendFailedQuestData,#iCount=iCount);
+         }
+
          SendPacket(poSession);
 
          return;
       }
 
       Debug("Invalid stat group number",group,"sent by client");
+
+      return;
+   }
+
+   UserDisplayNPCQuestActive(what = $)
+   {
+      local i, oQN;
+
+      if (what = $
+         OR plActiveQuests = $)
+      {
+         return FALSE;
+      }
+
+      foreach i in plActiveQuests
+      {
+         oQN = Nth(i,2);
+         if (Send(oQN,@QuestNodeDisplayNPCActive,#who=self,#what=what))
+         {
+            return TRUE;
+         }
+      }
+
+      return FALSE;
+   }
+
+   UserDisplayMobQuestActive(what = $)
+   {
+      local i, oQN;
+
+      if (what = $
+         OR plActiveQuests = $)
+      {
+         return FALSE;
+      }
+
+      foreach i in plActiveQuests
+      {
+         oQN = Nth(i,2);
+         if (Send(oQN,@QuestNodeDisplayMobActive,#who=self,#what=what))
+         {
+            return TRUE;
+         }
+      }
+
+      return FALSE;
+   }
+
+   UserUpdateQuestMobs(what=$)
+   "Trigger a flag update for any mobs that match the given quest mob."
+   {
+      local i, each_obj, cClass;
+
+      if (what = $
+         OR NOT pbLogged_on)
+      {
+         return;
+      }
+
+      cClass = GetClass(what);
+
+      foreach i in Send(poOwner,@GetHolderActive)
+      {
+         each_obj = First(i);
+         if (IsClass(each_obj,&Monster)
+            AND (GetClass(each_obj) = cClass
+               OR Send(each_obj,@IsMonsterQuestEquivalent,#what=what)))
+         {
+            Send(self,@SomethingChangedFlags,#what=each_obj);
+         }
+      }
 
       return;
    }
@@ -4240,6 +4385,35 @@ messages:
             }
 
             if Send(oQObj,@ShowCompletedQuest,#who=self,#lHistory=i)
+            {
+               ++iCount;
+            }
+         }
+      }
+
+      return iCount;
+   }
+
+   GetFailedQuestLength()
+   {
+      local i, iCount, iQTemplate, oQObj, oQE;
+
+      iCount = 0;
+
+      oQE = Send(SYS,@GetQuestEngine);
+      foreach i in plQuestHistory
+      {
+         if First(i) & QUEST_HISTORY_FAILURE
+         {
+            iQTemplate = (First(i) & QUEST_HISTORY_MASK);
+            oQObj = Send(oQE,@GetQuestTemplateObject,#index=iQTemplate);
+
+            if oQObj = $
+            {
+               continue;
+            }
+
+            if Send(oQObj,@ShowFailedQuest,#who=self,#lHistory=i)
             {
                ++iCount;
             }
@@ -4332,7 +4506,51 @@ messages:
 
          rQuestName = Send(oQObj,@GetName);
 
-         // List index, quest name, statistic type, quest object, value (//), icon.
+         // List index, quest name, stat type, quest object, quest index, icon.
+         AddPacket(1,iCount, 4,rQuestName, 1,STAT_LIST,
+                   4,oQObj, 4,iQTemplate, 4,Send(oQObj,@GetIcon));
+         ++iCount;
+      }
+
+      // Return so we can correctly place failed quests.
+      return iCount;
+   }
+
+   SendFailedQuestData(iCount=1)
+   "Returns the current index count."
+   {
+      local i, iQTemplate, oQE, oQObj, rQuestName;
+
+      oQE = Send(SYS,@GetQuestEngine);
+
+      foreach i in plQuestHistory
+      {
+         // Must have failed it.
+         if NOT (First(i) & QUEST_HISTORY_FAILURE)
+         {
+            continue;
+         }
+
+         iQTemplate = (First(i) & QUEST_HISTORY_MASK);
+         oQObj = Send(oQE,@GetQuestTemplateObject,#index=iQTemplate);
+
+         if oQObj = $
+         {
+            Debug("User ",Send(self,@GetTrueName),"couldn't get quest object for ",
+                  "quest template ",iQTemplate," quest is failed.");
+
+            continue;
+         }
+
+         // ShowFailedQuest checks recency.
+         if NOT Send(oQObj,@ShowFailedQuest,#who=self,#lHistory=i)
+         {
+            continue;
+         }
+
+         rQuestName = Send(oQObj,@GetName);
+
+         // List index, quest name, stat type, quest object, quest index, icon.
          AddPacket(1,iCount, 4,rQuestName, 1,STAT_LIST,
                    4,oQObj, 4,iQTemplate, 4,Send(oQObj,@GetIcon));
          ++iCount;
@@ -8088,11 +8306,120 @@ messages:
       return;
    }
 
+   UserRequestTriggerQuest(what = $, oQT = $)
+   "Client sends NPC and quest template object and wants to trigger that quest "
+   "for the given NPC. Need to find the appropriate quest node in that NPC's "
+   "quest list and trigger it server-side."
+   {
+      local i, oQN, iType, oItem, oCargo, sCargo;
+
+      oQN = Send(what,@GetActiveQuestForUser,#who=self,
+               #index=Send(oQT,@GetQuestID));
+      if (oQN = $)
+      {
+         Debug("User ",vrName," got $ oQN for index ",Send(oQT,@GetQuestID),
+            " from NPC ",Send(what,@GetName));
+
+         return;
+      }
+
+      // No point checking here? CheckCompletionCriteria should do this.
+      /*if (NOT Send(oQN,@CanPlayerStartQuest,#who=self))
+      {
+         // TODO: in production, give user a message.
+         Debug("User tried to start a quest they weren't qualified for!");
+
+         return;
+      }*/
+
+      iType = Send(Send(SYS,@GetQuestEngine),@GetQuestNodeType,
+                  #index=Send(oQN,@GetQuestNodeTemplateIndex));
+
+      switch(iType)
+      {
+      case QN_TYPE_MESSAGE:
+      case QN_TYPE_CHESSMOVE:
+      case QN_TYPE_USERNAME:
+      case QN_TYPE_LOGGEDONNAME:
+         // Make user say the message in cargo.
+         oCargo = Send(oQN,@GetCargo);
+         ClearTempString();
+         AppendTempString(oCargo);
+         // Echo only to user, not to room/NPC.
+         Send(self,@SomeoneSaid,#what=self,#type=SAY_NORMAL,
+               #string=GetTempString());
+         // Use the cargo directly - this bypasses any puzzle the user needs
+         // to figure out to complete the quest, but we'd have to exclude that
+         // type of quest from being completed via UI anyway (i.e. add a new
+         // quest type for it and not use QN_TYPE_MESSAGE).
+         Send(oQN,@CheckCompletionCriteria,#who_tried=self,#message=oCargo);
+         break;
+      case QN_TYPE_ITEM:
+         // Cargo is the same object the user is carrying.
+         oCargo = Send(oQN,@GetCargo);
+         if (Send(self,@IsHolding,#what=oCargo))
+         {
+            Send(what,@TryGiveQuestItem,#what=self,#item_list=[oCargo]);
+         }
+         else
+         {
+            Send(self,@MsgSendUser,#message_rsc=user_no_quest_item);
+         }
+         break;
+      case QN_TYPE_ITEMCLASS:
+      case QN_TYPE_ITEMFINDCLASS:
+      case QN_TYPE_MONSTER_ITEMCLASS:
+         // Give item to NPC, favor last items in inventory.
+         // Cargo is a duplicate of the item to give.
+         oCargo = Send(oQN,@GetCargo);
+         oItem = Send(self,@FindHoldingAP,#class=GetClass(oCargo),#sequence=1);
+         if (oItem <> $)
+         {
+            Send(what,@TryGiveQuestItem,#what=self,#item_list=[oItem]);
+         }
+         else
+         {
+            Send(self,@MsgSendUser,#message_rsc=user_no_quest_item);
+         }
+         break;
+      case QN_TYPE_SHOWUP:
+      case QN_TYPE_MONSTER:
+      case QN_TYPE_MONSTER_BRING:
+         // Just let NPC know we're here
+         Send(oQN,@CheckCompletionCriteria,#who_tried=self);
+         break;
+      }
+
+      return;
+   }
+
+   UserRequestNPCQuests(what = $)
+   {
+      local i, lQuests;
+
+      AddPacket(1,BP_NPC_QUEST_LIST);
+
+      Send(self,@ToCliObject,#what=what);
+
+      lQuests = Send(what,@GetQuestsForUser,#who=self);
+
+      AddPacket(2,Length(lQuests));
+
+      foreach i in lQuests
+      {
+         Send(self,@ToCliObject,#what=First(i),#parm1=Nth(i,2));
+         Send(First(i),@ShowQuestUIDesc,#who=self,#oNPC=what);
+      }
+
+      SendPacket(poSession);
+
+      return;
+   }
+
    UserBuy(what = $)
    {
       local i,lSaleItems;
 
-      lSaleItems = $;
       lSaleItems = Send(what,@GetForSale,#who=self);
       if lSaleItems = $
       {
@@ -8130,7 +8457,6 @@ messages:
    {
       local i,lSaleItems;
 
-      lSaleItems = $;
       lSaleItems = Send(what,@GetForSale,#who=self);
       if lSaleItems = $
       {
@@ -10997,6 +11323,10 @@ messages:
       // Add to the end, so quests are displayed in the order given.
       plActiveQuests = AppendListElem([template,node],plActiveQuests);
 
+      // Notice for quest log updating (added or advanced quest).
+      Send(self,@WaveSendUser,#what=self,#wave_rsc=user_quest_advance_wav);
+      Send(self,@MsgSendUser,#message_rsc=user_quest_log_updated);
+
       // Update the user's quest log.
       Send(self,@ToCliStats,#group=5);
 
@@ -11020,6 +11350,10 @@ messages:
             plActiveQuests = DelListElem(plActiveQuests,i);
          }
       }
+
+      // Notice for quest log updating (finished quest).
+      Send(self,@WaveSendUser,#what=self,#wave_rsc=user_quest_complete_wav);
+      Send(self,@MsgSendUser,#message_rsc=user_quest_log_updated);
 
       // Post this, so plQuestHistory can update first.
       Post(self,@ToCliStats,#group=5);

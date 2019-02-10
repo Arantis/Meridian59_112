@@ -34,7 +34,7 @@ resources:
    include truthendbranchqt.lkod
 
    // Quest description.
-   truthendbranch_name_rsc = "lying to Parrin"
+   truthendbranch_name_rsc = "Lying to Parrin"
    truthendbranch_desc_rsc = \
       "Tell Parrin how your performance really went."
 
@@ -89,6 +89,8 @@ messages:
       oQE = Send(SYS,@GetQuestEngine);
       oLib = Send(SYS,@GetLibrary);
 
+      // Note that this one doesn't seem to be needed at all.
+      /*
       // Template #29 is truth song quest, 'good' branch kickoff
       // QNT_ID_TRUTH_ENDBRANCH_ONE
       if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_SHOWUP,
@@ -105,6 +107,7 @@ messages:
       {
          Debug("Error building QN: QNT_ID_TRUTH_ENDBRANCH_ONE");
       }
+      */
 
       // Template #30 is truth song quest, 'good' branch
       // QNT_ID_TRUTH_ENDBRANCH_TWO

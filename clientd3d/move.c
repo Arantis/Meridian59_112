@@ -563,9 +563,16 @@ bool CanMoveInRoomTree(const room_type* Room, const BSPnode* Node, const V2* S, 
             WallData* wall = Node->u.internal.walls_in_plane;
             while (wall)
             {
-               // infinite intersection point must also be in bbox of wall
+               // OLD: infinite intersection point must also be in bbox of wall
                // otherwise no intersect
-               if (!ISINBOXINT(wall->x0, wall->y0, wall->x1, wall->y1, &q))
+               //if (!ISINBOXINT(wall->x0, wall->y0, wall->x1, wall->y1, &q))
+               // NEW: Check if the line of the wall intersects a circle consisting
+               // of player x, y and radius of min distance allowed to walls. Intersection
+               // includes the wall being totally inside the circle.
+               V2 P1, P2;
+               V2SET(&P1, wall->x0, wall->y0);
+               V2SET(&P2, wall->x1, wall->y1);
+               if (!IntersectOrInsideLineCircle(&q, (float)min_distance, &P1, &P2))
                {
                   wall = wall->next;
                   continue;
@@ -613,7 +620,7 @@ bool CanMoveInRoomTree(const room_type* Room, const BSPnode* Node, const V2* S, 
       else
       {
          // check only getting closer
-         if (fabs(distE) <= fabs(distS))
+         if (fabsf(distE) <= fabsf(distS))
          {
             // iterate finite segments (walls) in this splitter
             WallData* wall = Node->u.internal.walls_in_plane;
@@ -654,9 +661,11 @@ bool CanMoveInRoomTree(const room_type* Room, const BSPnode* Node, const V2* S, 
 
                   // flip normal if necessary (pick correct one of two)
                   if (distE > 0.0f)
+                  {
                      V2SCALE(&normal, -1.0f);
+                  }
 
-                  V2SCALE(&normal, fabs(distE)); // set length of normal to distance to line
+                  V2SCALE(&normal, fabsf(distE)); // set length of normal to distance to line
                   V2ADD(&q, E, &normal);         // q=E moved along the normal onto the line
                }
 
@@ -771,6 +780,13 @@ static bool CanMoveInRoom(V2 *S, V2 *E, float Height, float Speed, WallData **Bl
          heightModified += stepFall;
       }
 
+      // too far below sector
+      else if (heightModified < (hFloorSP - MAXSTEPHEIGHT))
+      {
+         *BlockWall = transit->Wall;
+         return false;
+      }
+
       // make sure we're at least at startsector's groundheight at Q when we reach Q from P
       // in case we stepped up or fell below it
       heightModified = max(hFloorSQ, heightModified);
@@ -840,6 +856,7 @@ static void VerifyMove(V3* Start, V2* End, V2* Move, float Speed)
    {
       V2SUB(&rot, End, &Start2D);
       V2ROTATE(&rot, -ANGLESTEP * i);
+      V2ROUND(&rot);
       V2ADD(Move, &Start2D, &rot);
 
       // no collision
@@ -851,6 +868,7 @@ static void VerifyMove(V3* Start, V2* End, V2* Move, float Speed)
 
       V2SUB(&rot, End, &Start2D);
       V2ROTATE(&rot, ANGLESTEP * i);
+      V2ROUND(&rot);
       V2ADD(Move, &Start2D, &rot);
 
       // no collision
@@ -888,8 +906,9 @@ static void SlideAlongWall(WallData *wall, V2 *Start, V2 *End)
 
    if (denom > 0.0f)
    {
-      End->X = Start->X + wall_delta.X * (num / denom);
-      End->Y = Start->Y + wall_delta.Y * (num / denom);
+      V2SCALE(&wall_delta, num / denom);
+      V2ROUND(&wall_delta);
+      V2ADD(End, Start, &wall_delta);
    }
 }
 

@@ -158,6 +158,12 @@ resources:
    room_forest_sound = ambcntry.ogg
    room_necro_sound = necloop2.ogg
    room_beach_sound = ocean.ogg
+   
+   room_bergwind1_sound = wind_berg1.ogg
+   room_bergwind2_sound = wind_berg2.ogg
+   room_birdchirping_sound = birdchirping.ogg
+   
+   room_swampterrain_sound = swamp_terrain.ogg
 
    room_rain_sound = rain.ogg
 
@@ -385,7 +391,7 @@ messages:
 
       // each looping sound is [wave_file, row, col, cutoff radius, maximum volume]
 
-      if (iTerrain & TERRAIN_BADLANDS) OR (iTerrain & TERRAIN_MOUNTAIN)
+      if (iTerrain & TERRAIN_BADLANDS) OR (iTerrain & TERRAIN_MOUNTAIN) OR (iTerrain & TERRAIN_BERG)
       {
          plLooping_sounds = Cons([ room_badmount_sound, 1, 1, 300, 100 ],
                                  plLooping_sounds);
@@ -688,7 +694,7 @@ messages:
          lTempSounds = [ room_forest_sound1, room_forest_sound2,
                          room_forest_sound3, room_forest_sound4,
                          room_forest_sound5, room_forest_sound6,
-                         room_forest_sound7
+                         room_forest_sound7, room_birdchirping_sound
                        ];
 
          foreach rSound in lTempSounds
@@ -710,10 +716,33 @@ messages:
          }
       }
 
-      piPeriodic_sounds = Bound(piPeriodic_sounds,2000,20000);
+      if (iTerrain & TERRAIN_BERG)
+      {
+         piPeriodic_sounds = piPeriodic_sounds / 2;
+         lTempSounds =  [ room_bergwind1_sound, room_bergwind1_sound,
+                          room_badmount_sound5, room_birdchirping_sound
+                        ];
+
+         foreach rSound in lTempSounds
+         {
+            plPeriodic_sounds = Cons(rSound, plPeriodic_sounds);
+         }
+      }
+
+      if (iTerrain & TERRAIN_SWAMP)
+      {
+         // We're only adding one sound, don't reduce piPeriodic_sounds.
+         lTempSounds = [ room_swampterrain_sound ];
+
+         foreach rSound in lTempSounds
+         {
+            plPeriodic_sounds = Cons(rSound, plPeriodic_sounds);
+         }
+      }
 
       return;
    }
+
 
    PeriodicSoundTimer()
    {
@@ -2251,6 +2280,10 @@ messages:
             }
          }
 
+         // Inform node attack that a user entered a screen, as rooms don't
+         // have any reference to whether a node attack is happening or not.
+         Send(Send(SYS,@GetNodeAttack),@UserEntered,#who=what,#where=self);
+
          if NOT pbUser_in_room
          {
             Send(self,@FirstUserEntered,#what=what,#new_row=Nth(new_pos,2),
@@ -3010,6 +3043,13 @@ messages:
       }
 
       SendList(plActive,1,@SomethingPhasedIn,#what=what,#bTeleport=bTeleport);
+
+      // Don't put room enchantments on if teleporting, since the teleport
+      // happens after phase is fully removed.
+      if (bTeleport)
+      {
+         return;
+      }
 
       // Add room enchantment effects.
       foreach i in plEnchantments
@@ -4788,6 +4828,7 @@ messages:
    }
 
    #region Arena Functions
+   
    IsArena()
    {
       return FALSE;
@@ -5174,7 +5215,7 @@ messages:
          return 10;
       }
 
-      if (iTerrain & TERRAIN_DESERT)
+      if (iTerrain & TERRAIN_BERG)
       {
          return 5;
       }
@@ -5267,7 +5308,7 @@ messages:
          iBonus = iBonus +  10;
       }
 
-      if (iTerrain & TERRAIN_DESERT)
+      if (iTerrain & TERRAIN_BERG)
       {
          iBonus = iBonus +  5;
       }
@@ -6073,6 +6114,11 @@ messages:
    GetTrailLength()
    {
       return piTrailLength;
+   }
+   
+   CanDropMonsterLoot()
+   {
+      return TRUE;
    }
 
 end

@@ -19,7 +19,7 @@ resources:
    include bergmg.lkod
 
    room_bergmg = bergmg.roo
-   room_name_bergmg = "The Maingate of Berg"
+   room_name_bergmg = "The Main Gate to the City of Berg"
    bergmg_music = walk8.ogg
 
 classvars:
@@ -36,7 +36,7 @@ classvars:
 
 properties:
 
-   viTerrain_type = TERRAIN_FOREST | TERRAIN_RIVER | TERRAIN_ROAD | TERRAIN_HILLS
+   viTerrain_type = TERRAIN_BERG | TERRAIN_RIVER | TERRAIN_ROAD
 
    prRoom = room_bergmg
    piRoom_num = RID_BERG_MG
@@ -80,7 +80,7 @@ messages:
 
    Constructed()
    {
-      plMonsters = [ [&GiantRat, 60], [&Centipede, 40] ];
+      plMonsters = [ [&GiantRat, 60], [&Centipede, 30] ];
 
       // Use Random Spawn
       // plGenerators = [ [4, 5], [10, 7], [15, 6], [21, 7], [23, 19],

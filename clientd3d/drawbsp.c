@@ -2773,7 +2773,8 @@ void doDrawWall(DrawWallStruct *wall, ViewCone *c)
    return;
 #endif
    
-   if (wall->side > 0)
+   if (wall->side > 0
+      || (wall->side == 0 && BSPwall->neg_sidedef == NULL))
    {
       sidedef = BSPwall->pos_sidedef;
       x0 = BSPwall->x0 - viewer_x;
@@ -2936,6 +2937,14 @@ void doDrawWall(DrawWallStruct *wall, ViewCone *c)
    if (/*wallflagtranslucent*/FALSE)
    {
       pBiXlat = FindStandardBiXlat(BIXLAT_BLEND50);
+   }
+
+   // TODO: find the cause for bmap being null. Likely related to the changes
+   // to sign handling in this file.
+   if (!bmap)
+   {
+      debug(("bitmap not found in doDrawWall\n"));
+      return;
    }
 
    d0 = GetDistance(x0,y0);
