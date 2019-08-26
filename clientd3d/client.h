@@ -51,7 +51,7 @@ typedef unsigned char Bool;
 enum {False = 0, True = 1};
 
 #define MAJOR_REV 50   /* Major version of client program */
-#define MINOR_REV 64   /* Minor version of client program; must be in [0, 99] */
+#define MINOR_REV 65   /* Minor version of client program; must be in [0, 99] */
 
 #define MAXAMOUNT 9     /* Max # of digits in a server integer */
 #define MAXSTRINGLEN 512 /* Max length of a string loaded from string table */
@@ -77,6 +77,7 @@ extern void GetGamePath( char *szGamePath );
 void StartWatch();
 double StopWatch();
 double GetMicroCountDouble();
+double GetMilliCountDouble();
 
 extern long CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 extern void ClearMessageQueue(void);
@@ -205,6 +206,7 @@ M59EXPORT void _cdecl dprintf(char *fmt,...);
 #include "pngstruct.h"
 #include "d3dtypes.h"
 #include "d3dcache.h"
+#include "d3dtexcache.h"
 #include "d3drender.h"
 #include "d3dlighting.h"
 #include "d3dparticle.h"

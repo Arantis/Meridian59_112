@@ -29,7 +29,6 @@ resources:
 
    reflection_dead_icon_rsc = amoebaX.bgf
    reflection_dead_name_rsc = "dead reflection"
-   reflection_weapon_rsc = scimov.bgf
 
    reflection_sound_hit = orc_atkh.ogg
    reflection_sound_miss = orc_atkm.ogg
@@ -53,7 +52,7 @@ classvars:
    viTreasure_type = TID_NONE
 
    viSpeed = SPEED_VERY_FAST
-   viAttack_type = ATCK_WEAP_SLASH
+   viAttack_type = ATK_TYPE_SLASH
    viAttributes = 0
    viLevel = 44
    viDifficulty = 4
@@ -551,21 +550,21 @@ messages:
       return iDamage * piDamagePercent / 100;
    }
 
-   GetDamageType(what=$,use_weapon=$)
+   GetAttackType(what=$,use_weapon=$)
    {
       if poOriginal = $
       {
          return viAttack_type;
       }
 
-      return Send(poOriginal,@GetDamageType,#what=what,#use_weapon=use_weapon);
+      return Send(poOriginal,@GetAttackType,#what=what,#use_weapon=use_weapon);
    }
 
    GetSpellType(what=$,use_weapon=$)
    {
       if poOriginal = $
       {
-         return viAttack_spell;
+         return viSpell_type;
       }
 
       return Send(poOriginal,@GetSpellType,#what=what,#use_weapon=use_weapon);
@@ -786,13 +785,14 @@ messages:
                }
             }
 
-            Send(poOwner,@SomethingShot,#who=self,#target=poTarget,#projectile=oAmmo);
+            Send(poOwner,@SomethingShot,#who=self,#target=poTarget,
+                  #projectile=oAmmo,#flags=PROJ_FLAG_LIGHT_SOURCE);
          }
          else if IsClass(oWeapon,&ThrownWeapon)
          {
             piAnimation = PANM_WEAPON_ATTACK;
             Send(poOwner,@SomethingShot,#who=self,#target=poTarget,
-                  #projectile=oWeapon);
+                  #projectile=oWeapon,#flags=PROJ_FLAG_LIGHT_SOURCE);
          }
          else
          {
@@ -806,7 +806,8 @@ messages:
          // If original fires a projectile, we send one too.
          if Send(poOriginal,@GetProjectileIcon) <> $
          {
-            Send(poOwner,@SomethingShot,#who=self,#target=poTarget,#projectile=poOriginal);
+            Send(poOwner,@SomethingShot,#who=self,#target=poTarget,
+                  #projectile=poOriginal,#flags=PROJ_FLAG_LIGHT_SOURCE);
          }
       }
 

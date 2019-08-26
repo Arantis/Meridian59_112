@@ -47,7 +47,7 @@ classvars:
    viWeaponType = WEAPON_TYPE_BLUDGEON
    viWeaponQuality = WEAPON_QUALITY_LOW
 
-   viProficiency_Needed = SKID_PROFICIENCY_BOW
+   viProficiency_Needed = SKID_PROFICIENCY_THROW_WEAPON
 
    viValue_average = 0
    viWeight = 8
@@ -64,7 +64,7 @@ classvars:
 
 properties:
 
-   piAttack_type = ATCK_WEAP_NONMAGIC + ATCK_WEAP_COLD
+   piAttack_type = ATK_TYPE_NONMAGIC + ATK_TYPE_COLD
 
 messages:
 

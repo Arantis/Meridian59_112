@@ -18,7 +18,7 @@ constants:
    UNUSED = 2
    ATTACKING = 3
 
-   WEAPON_TAKE_DAMAGE_PCT = 75
+   WEAPON_TAKE_DAMAGE_PCT = 75  //chance to be damaged
 
    // Weapon tuning factors
    //  Edit these constants to tune weapon power
@@ -150,7 +150,7 @@ classvars:
 properties:
 
    piAttack_type = 0
-   piAttack_spell = 0
+   piSpell_type = 0
 
    piDamageBonus = 0
    piHitBonus = 0
@@ -627,10 +627,9 @@ messages:
 
    WeaponHitTarget()
    {
-      // 75// chance to be damaged, currently.
-      if random(1,100) < WEAPON_TAKE_DAMAGE_PCT
+      if Random(1,100) < WEAPON_TAKE_DAMAGE_PCT
       {
-         piHits = piHits - 1;
+         piHits--;
       }
 
       if piHits <= 0
@@ -766,9 +765,9 @@ messages:
 
    //// Attack Type Functions (Enchanted weapons, Qor weapons, burning blades, etc.)
 
-   GetAttackSpell()
+   GetSpellType()
    {
-      return piAttack_spell;
+      return piSpell_type;
    }
 
    GetAttackType()
@@ -799,11 +798,11 @@ messages:
    {
       if value
       {
-         piAttack_spell = piAttack_spell | flag;
+         piSpell_type = piSpell_type | flag;
       }
       else
       {
-         piAttack_spell = piAttack_spell & ~flag;
+         piSpell_type = piSpell_type & ~flag;
       }
 
       return;
@@ -811,7 +810,7 @@ messages:
 
    CheckSpellFlag(flag=0)
    {
-      return (piAttack_spell & flag);
+      return (piSpell_type & flag);
    }
 
    //// Animation Functions
@@ -1051,8 +1050,8 @@ messages:
    {
       local i, oItemAtt, iSpell;
 
-      if piAttack_spell <> 0
-         OR Send(self,@CheckTypeFlag,#flag=ATCK_WEAP_MAGIC)
+      if piSpell_type <> 0
+         OR Send(self,@CheckTypeFlag,#flag=ATK_TYPE_MAGIC)
       {
          iSpell = Send(oSpell,@GetSpellNum);
          if iSpell = SID_HOLY_WEAPON or iSpell = SID_UNHOLY_WEAPON
@@ -1141,6 +1140,43 @@ messages:
       }
 
       return;
+   }
+
+   GetLightColor()
+   {
+      if Send(self,@HasAttribute,#ItemAtt=WA_GLOWING)
+      {
+         return LIGHT_BWHITE;
+      }
+
+      return viLightColor;
+   }
+
+   GetLightIntensity()
+   {
+      local iState;
+
+      if Send(self,@HasAttribute,#ItemAtt=WA_GLOWING)
+      {
+         iState = Send(self,@GetAttributeData,#ItemAtt=WA_GLOWING);
+         if (iState <> $)
+         {
+            return Nth(iState,3)*2;
+         }
+      }
+
+      return viBaseLightIntensity;
+   }
+
+   IsLightSource()
+   {
+      return Send(self,@HasAttribute,#ItemAtt=WA_GLOWING)
+         OR (viBaseLightIntensity > 0);
+   }
+   
+   CanDyeItem()
+   {
+      return TRUE;
    }
 
 end

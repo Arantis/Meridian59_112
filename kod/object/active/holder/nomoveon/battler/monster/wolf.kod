@@ -22,8 +22,10 @@ resources:
    wolf_name_rsc = "wolf"
    wolf_icon_rsc = wolf.bgf
    wolf_desc_rsc = \
-    "These creatures are likely intelligent and those who antagonize a pack "
-    "will have to deal with some advanced tactics. "
+    "This shaggy animal stares at you hungrily, baring its teeth and licking its chops.  "
+    "Its eerie howl sends a chill down your spine, as it prepares to pounce and attack.  "
+    "Since these beasts are quite intelligent, those who foolishly decide to take on a "
+    "pack of them will have to keep their backs covered to avoid being flanked."
    wolf_dead_icon_rsc = wolfX.bgf
    wolf_dead_name_rsc = "dead wolf"
 
@@ -42,7 +44,7 @@ classvars:
    vrDead_name = wolf_dead_name_rsc
 
    viSpeed = SPEED_VERY_FAST
-   viAttack_type = ATCK_WEAP_BITE
+   viAttack_type = ATK_TYPE_BITE
    viDefault_behavior = AI_FIGHT_AGGRESSIVE | AI_MOVE_FLEE_FRIGHTENERS
    viSocial = 1
    viLevel = 75
@@ -72,8 +74,8 @@ messages:
 
    Constructed()
    {
-      plResistances = [ [-ATCK_SPELL_UNHOLY, 50 ],
-                        [-ATCK_SPELL_HOLY, -25 ] ];
+      plResistances = [ [-SPL_TYPE_UNHOLY, 50 ],
+                        [-SPL_TYPE_HOLY, -25 ] ];
       propagate;
    }
 

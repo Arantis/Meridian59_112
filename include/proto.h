@@ -112,6 +112,7 @@ enum {
 
    BP_ACTION                = 90,
 
+   BP_REQ_PERFORM           = 97,
    BP_REQ_TRIGGER_QUEST     = 98,
    BP_REQ_NPC_QUESTS        = 99,
    BP_REQ_MOVE              = 100,
@@ -281,6 +282,8 @@ enum {
    UC_WITHDRAW = 36,
    UC_BALANCE = 37,
 
+   UC_GUILD_SHIELD_ERROR = 38,
+
    UC_APPEAL = 40,
    UC_REQ_RESCUE = 41,
 
@@ -317,6 +320,7 @@ enum {
 #define LF_MUSIC_ON          0x0004
 #define LF_DYNAMIC_LIGHTING  0x0008
 #define LF_WEATHER_EFFECTS   0x0010
+#define LF_WIREFRAME         0x0020
 
 // Login error action constants
 #define LA_NOTHING   0
@@ -558,9 +562,10 @@ enum {
    EFFECT_CLEARSAND     = 13,  // Stop sandstorm
    EFFECT_WAVER         = 14,  // Wavering sideways
    EFFECT_FLASHXLAT     = 15,  // Flashes screen with a given XLAT number
-   EFFECT_WHITEOUT	= 16,  // Got from full white and fade back to normal
-   EFFECT_XLATOVERRIDE	= 17,  // Use this xlat at end over the whole screen
-   EFFECT_FIREWORKS = 18,
+   EFFECT_WHITEOUT      = 16,  // Got from full white and fade back to normal
+   EFFECT_XLATOVERRIDE  = 17,  // Use this xlat at end over the whole screen
+   EFFECT_FIREWORKS     = 18,
+   EFFECT_CLEAVE        = 19,  // Effect used by cleave skill.
 };
 
 /* Room animation action codes */

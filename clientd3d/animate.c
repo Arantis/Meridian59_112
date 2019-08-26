@@ -33,7 +33,7 @@
 #define TIME_FLASH 1000
 
 static int  animation_timer = 0;   // id of animation timer, or 0 if none
-static DWORD timeLastFrame;
+static float timeLastFrame;
 
 #define TIME_FULL_OBJECT_PHASE 1800
 static int phaseStates[] = {
@@ -87,8 +87,9 @@ DWORD GetFrameTime(void)
 void AnimationTimerProc(HWND hwnd, UINT timer)
 {
    Bool need_redraw = False;
-   static DWORD last_animate_time = 0;
-   DWORD dt, now;
+   static double last_animate_time = 0;
+   double now;
+   float dt;
 
    PingTimerProc(hwnd, 0, 0, 0);
 
@@ -97,18 +98,18 @@ void AnimationTimerProc(HWND hwnd, UINT timer)
 
    if (last_animate_time == 0)
    {
-      last_animate_time = timeGetTime();
+      last_animate_time = GetMilliCountDouble();
       return;
    }
 
    config.quickstart = FALSE;
-   now = timeGetTime();
-   dt = now - last_animate_time;
+   now = GetMilliCountDouble();
+   dt = (float)(now - last_animate_time);
    last_animate_time = now;
    timeLastFrame = dt;
 
    /* Send event to modules */
-   ModuleEvent(EVENT_ANIMATE, dt);
+   ModuleEvent(EVENT_ANIMATE, (int)dt);
 
    /* Send event to non-module child windows */
    if (config.animate)
@@ -370,11 +371,15 @@ Bool AnimateSingle(Animate *a, int num_groups, int dt)
       break;
    }
 
-   if (a->group < 0 || (num_groups > 0 && a->group >= num_groups))
+   // group can be MAXWORD to signal end of animation for player overlays.
+   if (a->group != MAXWORD
+      && num_groups > 0
+      && a->group >= num_groups)
    {
       debug(("Animation produced out of bounds bitmap group %d\n", a->group));
-      // Don't fix it up; player overlays rely on group going negative to signal end
-      //      a->group = 0;
+
+      // End animation if groups are invalid.
+      a->group = MAXWORD;
    }
 
    return need_redraw;

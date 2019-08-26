@@ -33,8 +33,9 @@ inline DWORD F2DW( FLOAT f ) { return *((DWORD*)&f); }
 #define ZBIAS_WORLD				2
 #define ZBIAS_MASK				1
 
-#define D3DRENDER_REDRAW_UPDATE	0x00000001
-#define D3DRENDER_REDRAW_ALL	0x00000002
+#define D3DRENDER_REDRAW_UPDATE        0x00000001
+#define D3DRENDER_REDRAW_ALL           0x00000002
+#define D3DRENDER_REDRAW_STATIC_LIGHTS 0x00000004
 
 #define D3DRENDER_SET_ALPHATEST_STATE(_pDevice, _enable, _refValue, _compareFunc)	\
 	IDirect3DDevice9_SetRenderState(gpD3DDevice, D3DRS_ALPHATESTENABLE, _enable);	\
@@ -119,9 +120,6 @@ void				D3DRenderBegin(room_type *room, Draw3DParams *params);
 void				D3DRenderResizeDisplay(int left, int top, int right, int bottom);
 void				D3DRenderEnableToggle(void);
 int					D3DRenderIsEnabled(void);
-LPDIRECT3DTEXTURE9	D3DRenderTextureCreateFromBGF(PDIB pDib, BYTE xLat0, BYTE xLat1,
-												  BYTE effect);
-void				D3DRenderPaletteSet(UINT xlatID0, UINT xlatID1, BYTE flags);
 void				D3DRenderBackgroundSet2(ID background);
 d3d_render_packet_new *D3DRenderPacketFindMatch(d3d_render_pool_new *pPool, LPDIRECT3DTEXTURE9 pTexture,
 												PDIB pDib, BYTE xLat0, BYTE xLat1, BYTE effect);

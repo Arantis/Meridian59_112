@@ -52,11 +52,8 @@ classvars:
    viLayer = 1
 
 properties:
-   
-   piUsed = UNUSED
 
-   // The bonus to block afforded by the shield.
-   piBlockBonus = 0
+   piUsed = UNUSED
 
 messages:
 
@@ -91,7 +88,7 @@ messages:
    }
 
    // Shields only reduce damage if you make your block check.
-   ModifyDefenseDamage(who = $,what = $,damage = $,atype = 0,aspell = 0)
+   ModifyDefenseDamage(who = $,what = $,damage = $,atype = 0,stype= 0)
    {
       local oBlock;
 
@@ -275,6 +272,11 @@ messages:
       }
 
       propagate;
+   }
+   
+   CanDyeItem()
+   {
+      return TRUE;
    }
 
 end

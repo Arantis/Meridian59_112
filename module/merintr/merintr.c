@@ -38,6 +38,7 @@ static Bool HandleGuildList(char *ptr, long len);
 static Bool HandleGuildHalls(char *ptr, long len);
 static Bool HandleGuildShield(char *ptr, long len);
 static Bool HandleGuildShields(char *ptr, long len);
+static Bool HandleGuildShieldClaimError(char *ptr, long len);
 static Bool HandleLookPlayer(char *ptr, long len);
 static Bool HandleSendQuit(char *ptr, long len);
 static Bool HandleSpellSchools(char *ptr, long len);
@@ -79,6 +80,7 @@ static handler_struct user_handler_table[] = {
 { UC_GUILD_HALLS,          HandleGuildHalls, },
 { UC_GUILD_SHIELD,         HandleGuildShield, },
 { UC_GUILD_SHIELDS,        HandleGuildShields, },
+{ UC_GUILD_SHIELD_ERROR,   HandleGuildShieldClaimError, },
 { UC_LOOK_PLAYER,          HandleLookPlayer, },
 { UC_SEND_QUIT,            HandleSendQuit, },
 { UC_SPELL_SCHOOLS,        HandleSpellSchools, },
@@ -316,6 +318,10 @@ static TypedCommand commands[] = {
 { "beenden",            CommandQuit, },
 { "tell",               CommandTell, },
 { "telepathie",         CommandTell, },
+{ "cast",               CommandCast, },
+{ "zaubern",            CommandCast, },
+{ "perform",            CommandPerform, },
+{ "ausführen",          CommandPerform, },
 { "hel",                CommandHel, },
 { "hilf",               CommandHel, },
 { "help",               CommandHelp, },
@@ -346,8 +352,6 @@ static TypedCommand commands[] = {
 { "schauen",            CommandLook, },
 { "offer",              CommandOffer, },
 { "anbieten",           CommandOffer, },
-{ "cast",               CommandCast, },
-{ "zaubern",            CommandCast, },
 { "map",                CommandMap, },
 { "karte",              CommandMap, },
 { "wave",               CommandWave, },
@@ -765,7 +769,6 @@ void CustomConfigInit(void)
 		fprintf(pFile, "mouselookxscale/mouselookyscale:  Sets the mouse sensitivity.  Accepts any value from 1 to 30\n");
 		fprintf(pFile, "quickchat:  Set to true to have all alphabetic keys go instantly to chat (any later key binding using an alphabetic key will be ignored)\n");
 		fprintf(pFile, "alwaysrun:  Set to true to avoid having to hold the run key (default: shift) to run\n");
-		fprintf(pFile, "dynamiclighting:  Set to true to enable dynamic lighting.  Setting this to false may increase performance on some systems\n\n");
 		fprintf(pFile, "softwarerenderer:  Set to true to force the client to run in software graphics mode\n\n");
 		fprintf(pFile, "rendererfailedonce:  NOT USER EDITABLE.  The client will set this to true when it determines that your hardware/driver cannot run Meridian in Direct3D.  This will prevent any further error messages until you either delete this file or change video cards/drivers\n\n");
 
@@ -789,7 +792,6 @@ void CustomConfigInit(void)
 		WritePrivateProfileString("config", "quickchat", "false", "./config.ini");
 		WritePrivateProfileString("config", "alwaysrun", "true", "./config.ini");
 		WritePrivateProfileString("config", "attackontarget", "false", "./config.ini");
-		WritePrivateProfileString("config", "dynamiclighting", "true", "./config.ini");
 		WritePrivateProfileString("config", "softwarerenderer", "false", "./config.ini");
 
 		WritePrivateProfileString("keys", "forward", "w", "./config.ini");
@@ -884,16 +886,6 @@ void CustomConfigInit(void)
 		cinfo->config->bInvertMouse = FALSE;
 		cinfo->config->mouselookYScale = -cinfo->config->mouselookYScale;
 	}
-
-	// dynamic lighting
-	GetPrivateProfileString(config, "dynamiclighting", "error\n", string0,
-		255, file);
-
-	strupr(string0);
-	if (0 == strcmp(string0, "TRUE"))
-		cinfo->config->bDynamicLighting = TRUE;
-	else
-		cinfo->config->bDynamicLighting = FALSE;
 
 	// now key bindings
 	// first check to see if they want classic controls
@@ -1039,6 +1031,11 @@ skill *ExtractNewSkill(char **ptr)
    skill *s = (skill *) SafeMalloc(sizeof(skill));
    ZeroMemory(s,sizeof(skill));
    ExtractObject(ptr, &s->obj);
+   Extract(ptr, &s->num_targets, 1);
+   Extract(ptr, &s->school, 1);
+   Extract(ptr, &s->is_active, 1);
+   s->school -= 1;  // Convert to 0 based
+
    return s;
 }  
 /********************************************************************/
@@ -1126,9 +1123,14 @@ Bool HandleRemoveSpell(char *ptr, long len)
 
    if (len != SIZE_ID)
       return False;
-   Extract(&ptr, &spell_id, SIZE_ID);   
+
+   Extract(&ptr, &spell_id, SIZE_ID);
+
+   // Remove from Spells menu.
    RemoveSpell(spell_id);
-   
+   // And also from spells list box.
+   StatCacheRemoveListStat(STATS_SPELLS, spell_id);
+
    return True;
 }
 /********************************************************************/
@@ -1180,9 +1182,14 @@ Bool HandleRemoveSkill(char *ptr, long len)
 
    if (len != SIZE_ID)
       return False;
-   Extract(&ptr, &skill_id, SIZE_ID);   
+
+   Extract(&ptr, &skill_id, SIZE_ID);
+
+   // Remove from (not implemented) Skills menu.
    RemoveSkill(skill_id);
-   
+   // Remove from skills list box.
+   StatCacheRemoveListStat(STATS_SKILLS, skill_id);
+
    return True;
 }
 /********************************************************************/
@@ -1199,7 +1206,8 @@ Bool HandleStat(char *ptr, long len)
    len -= (ptr - start);
    if (len != 0)
       return False;
-   
+
+   // Can change an existing stat/list item, or add a new spell or skill.
    StatChange(group, &s);
    return True;
 }
@@ -1501,6 +1509,26 @@ Bool HandleGuildShields(char *ptr, long len)
    }
 
    GuildGotShields(shield_list);
+
+   return True;
+}
+/********************************************************************/
+Bool HandleGuildShieldClaimError(char *ptr, long len)
+{
+   char message[MAXMESSAGE];
+   char* desc = message;
+   ID resource_id;
+   char *start = ptr;
+
+   Extract(&ptr, &resource_id, SIZE_ID);
+
+   len -= (ptr - start);
+
+   // Error message text
+   if (!CheckServerMessage(&desc, &ptr, &len, resource_id))
+      return False;
+
+   GuildGotShieldError(desc);
 
    return True;
 }

@@ -70,7 +70,6 @@ resources:
 
    spell_failed_by_chance = "You were unsuccessful in casting %s."
 
-   spell_advanced = "You advanced in %s!  Your ability is now at %s."
    spell_no_pvp_flag = \
       "Shal'ille prevents the casting of this spell, as you have opted out of "
       "player versus player combat."
@@ -129,7 +128,15 @@ resources:
    spell_trance_begin = "You focus your whole will on casting %s."
    spell_trance_break = \
       "Your concentration is broken and the %s spell fizzles."
-   spell_trance_break_sound = spelfail.ogg
+   spell_trance_cancel = \
+      "You abandon your attempt to cast the %s spell."
+   spell_trance_complete = \
+      "You finish channeling your %s spell!"
+   spell_trance_fumble = \
+      "You struggle to shape your %s spell!"
+   spell_trance_begin_sound = spell_trance_begin.ogg
+   spell_trance_break_sound = spell_trance_break.ogg
+   spell_trance_cancel_sound = spell_trance_cancel.ogg
 
    spell_disabled = \
       "~g~BAn unseen force rips the words of the spell from your throat "
@@ -150,10 +157,6 @@ resources:
       "You cannot cast %s - this spell is still on cooldown!"
    cannot_cast_on_phased_out = \
       "You can't cast anything on %s while %s is phased out of existence!"
-   over_time_effect_wearing_off = \
-      "The sudden feeling passes."
-   over_time_effect_starting = \
-      "Suddenly, you feel a little different."
 
 classvars:
 
@@ -166,7 +169,7 @@ classvars:
    viDefinite = ARTICLE_NONE
 
    // Some spells and skills do not check your exertion.
-   vbCheck_Exertion = TRUE    
+   vbCheck_Exertion = TRUE
    viSpellExertion = 1
 
    viSpell_Num = $
@@ -244,6 +247,17 @@ classvars:
    viStartingPriority = $
    viPriorityAdjustment = $
 
+   // Damage over time effects don't usually kill players.
+   vbLethalDamageOverTime = FALSE
+
+   // What kind of light sould the spell emit while channeled?
+   // If no color is provided, uses standard class colors.
+   viLightColor = $
+   viBaseLightIntensity = 10
+   vbIsLightSource = FALSE
+
+   vbCanBreakTrance = TRUE
+
 properties:
 
    // Format of reagents:  Each element of plReagents is a list, describing a
@@ -255,7 +269,7 @@ properties:
    piCast_successes = 0
 
    // For successful casts
-   piAverage_spellpower = 0         
+   piAverage_spellpower = 0
    piCast_attempts_at_players = 0
 
    pbCanBeLearned = TRUE
@@ -266,6 +280,9 @@ properties:
    // to nerf spells that are being abused by under 30 HP mules.
    piMinHitPoints = 0
    piMeditate_ratio = 100
+
+   // How much threat do our non damage spells cause?
+   piSpellThreatPercentage = 100
 
 messages:      
 
@@ -1107,7 +1124,7 @@ messages:
          if NOT bItemCast
          {
             Send(self,@PayCosts,#who=who,#iSpellpower=iSpellpower,
-                  #lTargets=lTargets,#bFreeCast=bFreeCast);
+                  #lTargets=lTargets,#bFreeCast=bFreeCast,#bSuccess=TRUE);
             Send(who,@MsgSendUser,#message_rsc=spell_resisted,
                   #parm1=Send(i,@GetCapDef),#parm2=Send(i,@GetName));
          }
@@ -1244,8 +1261,8 @@ messages:
                return TRUE;
             }
 
-            // Check attacker interactions.
-            if (IsClass(oObject,&Battler)
+            // Check attacker interactions against player targets only.
+            if (IsClass(oObject,&Player)
                AND NOT Send(oObject,@CanBeAttackedByAnyHurter,#who=who))
             {
                Send(who,@MsgSendUser,#message_rsc=spell_cant_help,
@@ -1355,25 +1372,24 @@ messages:
       return TRUE;
    }
 
-   SpellFailed(who=$,iSpellpower=0)
-   "Different spells can have different penalties for spell failure."
-   "Standard penalty - half of spell's mana cost and half of exertion cost."
+   SpellCanceled(who=$)
+   "Canceling a spell will refund half of the spells cost."
    {
-      if iSpellpower = 0
+      local lReagent;
+
+      // Ignore any mana restrictions, else it'll wipe out any mana over max.
+      // Important for users w/ cryst mana active e.g. breaking a trance that
+      // triggers cryst mana leaving user with >10x their new max mana.
+      Send(who,@GainMana,#bCapped=FALSE,#bNoRestrict=TRUE,
+            #amount=Send(self,@GetManaCost,#who=who,#iSpellpower=SPELLPOWER_MAXIMUM)/2);
+      Send(who,@GainVigor,#precision=TRUE,#amount=(100*viSpellExertion)/2);
+
+      // Disabled for now as it can return regs that aren't spent, e.g. Arena.
+      /*foreach lReagent in plReagents
       {
-         Debug("Bad iSpellpower passed to SpellFailed");
-      }
-      
-      Send(who,@WaveSendUser,#wave_rsc=spell_fail_wav);
-      if NOT Send(who,@PlayerIsImmortal)
-      {
-         Send(who,@LoseMana,#amount=Send(self,@GetManaCost,#who=who,
-              #iSpellpower=iSpellPower)/2);
-         Send(who,@LoseVigor,#precision=TRUE,#amount=(100*viSpellExertion)/2);
-      }
-      
-      Send(who,@MsgSendUser,#message_rsc=spell_failed_by_chance,#Parm1=vrName);
-      
+         Send(who,@NewHold,#what=Create(First(lReagent),#number=Nth(lReagent,2)));
+      }*/
+
       return;
    }
 
@@ -1463,7 +1479,7 @@ messages:
       return TRUE;
    }
 
-   PayCosts(who=$,iSpellpower=0,lTargets=$,bFreeCast=FALSE)
+   PayCosts(who=$,iSpellpower=0,lTargets=$,bFreeCast=FALSE,bSuccess=TRUE)
    "Check for failed spell here.  A failed spell costs half the mana cost, "
    "half the exertion, and no reagents."
    {
@@ -1482,13 +1498,13 @@ messages:
          return TRUE;
       }
 
-      if NOT Send(self,@SuccessChance,#who=who,#iSpellpower=iSpellpower,
-                  #lTargets=lTargets)
+      if NOT (bSuccess OR Send(SETTINGS_OBJECT,@NoFizzles))
       {
          Send(self,@SpellFailed,#who=who,#iSpellpower=iSpellpower);
 
          return FALSE;
       }
+
 
       // Immortals don't use mana, vigor or reagents.
       if Send(who,@PlayerIsImmortal)
@@ -1500,7 +1516,9 @@ messages:
       Send(who,@LoseMana,#amount=Send(self,@GetManaCost,#who=who,
            #iSpellPower=iSpellpower));
 
-      // Spell casting requires exertion (which is in 10^-4 units)
+      // Spell casting requires exertion.
+      // Unlike skill exertion exertion, which represents 0.1 points of vigor,
+      // 1 point of spell exertion translates to one whole point of vigor.
       Send(who,@LoseVigor,#precision=TRUE,#amount=100*viSpellExertion);
 
       // Escaped Convict loses mana and vigor, but reagents are not required
@@ -1563,6 +1581,28 @@ messages:
       }
 
       return TRUE;
+   }
+
+   SpellFailed(who=$,iSpellpower=0)
+   "Different spells can have different penalties for spell failure."
+   "Standard penalty - half of spell's mana cost and half of exertion cost."
+   {
+      if iSpellpower = 0
+      {
+         Debug("Bad iSpellpower passed to SpellFailed");
+      }
+
+      Send(who,@WaveSendUser,#wave_rsc=spell_fail_wav);
+      if NOT Send(who,@PlayerIsImmortal)
+      {
+         Send(who,@LoseMana,#amount=Send(self,@GetManaCost,#who=who,
+              #iSpellpower=iSpellPower)/2);
+         Send(who,@LoseVigor,#precision=TRUE,#amount=(100*viSpellExertion)/2);
+      }
+
+      Send(who,@MsgSendUser,#message_rsc=spell_failed_by_chance,#Parm1=vrName);
+
+      return;
    }
 
    DoSpellEffects()
@@ -1747,6 +1787,8 @@ messages:
                // Notify the target that they've been attacked
                // by another player.
                if viHarmful
+                  AND who <> $
+                  AND IsClass(who,&User)
                {
                   Send(oTarget,@DoPvpNotify);
                }
@@ -1800,15 +1842,19 @@ messages:
          Send(oRoom,@SpellCast,#who=who,#oSpell=self,#lItems=lTargets,
                #bItemCast=bItemCast);
 
-         // Add hatred to our targets if we cast a non-damage aggressive
-         // spell. Also inform the room that this was an attack.
+         // Check if we need to add hatred to other battlers for being annoying.
          // Only done if caster was a battler.
          if (IsClass(who,&Battler))
          {
-            iAggro = Send(self,@CausesAggression,#iSpellpower=iSpellPower);
-            iAggro *= 100;
-            if (iAggro)
+            iAggro = Send(self,@CausesAggression,#iSpellpower=iSpellPower) * 100;
+
+            iAggro = iAggro * piSpellThreatPercentage / 100;
+
+            // Harmful spell. Causes aggression on our target and counts as an attack.
+            if (iAggro > 0)
             {
+               iAggro = iAggro * Send(SETTINGS_OBJECT,@GetHarmfulSpellThreatPercentage) / 100;
+
                foreach i in lTargets
                {
                   if IsClass(i,&Battler)
@@ -1816,6 +1862,19 @@ messages:
                      Send(i,@AddHurtMeRecently,#who=who,#amount=iAggro);
                      Send(oRoom,@SomethingAttacked,#what=who,#victim=i,
                            #use_weapon=self);
+                  }
+               }
+            }
+            // Helpful spell. While the target will approve, its enemies may not.
+            else if (iAggro < 0)
+            {
+               iAggro = iAggro * Send(SETTINGS_OBJECT,@GetHelpfulSpellThreatPercentage) / 100;
+
+               foreach i in lTargets
+               {
+                  if IsClass(i,&Battler)
+                  {
+                     Send(oRoom,@SomethingHelped,#what=who,#target=i,#oSpell=self,#iAmount=-iAggro);
                   }
                }
             }
@@ -2248,13 +2307,23 @@ messages:
       return TRUE;
    }
 
-   BeginCastingTrance(who = $, lTargets = $, iSpellPower = 0)
+   BeginCastingTrance(who=$,lTargets=$,iSpellPower=0,bFreeCast=FALSE,bSuccess=TRUE)
    {
       local oTrance, oObject, oOwner, i, oTarget, lFinalTargets, iCastTime;
 
       oOwner = Send(who,@GetOwner);
 
       iCastTime = Send(self,@GetTranceTime,#iSpellpower=iSpellpower,#who=who);
+
+      //If we fumble, we increase cast time by viPostCast_Time
+      if NOT bSuccess
+         AND Send(SETTINGS_OBJECT,@NoFizzles)
+      {
+         iCastTime += viPostCast_Time*1000;
+
+         Send(who,@MsgSendUser,#message_rsc=spell_trance_fumble,
+            #parm1=Send(self,@GetName));
+      }
 
       // Give casting message to people nearby.
       foreach i in Send(oOwner,@GetHolderActive)
@@ -2294,7 +2363,7 @@ messages:
             Send(self,@CastSpell,#who=who,#lTargets=lFinalTargets,
                  #iSpellpower=iSpellpower);
          }
-         
+
          return;
       }
       
@@ -2307,30 +2376,39 @@ messages:
       Send(who,@MsgSendUser,#message_rsc=spell_trance_begin,
            #parm1=Send(self,@GetName));
 
-      Send(oTrance,@BeginCastingTrance,#what=self,#who=who,#lTargets=lTargets,
-           #time=iCastTime);
-           
+      Send(who,@WaveSendUser,#wave_rsc=spell_trance_begin_sound);
+
+      Send(oTrance,@BeginTrance,#what=self,#who=who,#lTargets=lTargets,
+           #time=iCastTime,#bFreeCast=bFreeCast,#power=iSpellpower);
+
+      // If our cast time is the result of a fumble, increase post cast delay
+      // by trance time.
+      if NOT viCast_time
+      {
+         Send(who,@SetAttackTime,#time=iCastTime,#bAdd=TRUE);
+      }
+
       return;
    }
 
    GetTranceTime(iSpellpower=0,who=$)
    {
       local iPercent;
-      
+
       if iSpellpower = 0
       {
          Debug("Bad iSpellpower passed to GetTranceTime");
       }
-      
+
       if viCast_time = 0
          OR (IsClass(who,&DM) AND Send(who,@PlayerIsImmortal))
       {
          return 0;
       }
 
-      // 51// for high, 149// for low
-      iPercent = 150 - iSpellPower;   
-      
+      // 51% for high, 149% for low
+      iPercent = 150 - iSpellPower;
+
       return (viCast_time*iPercent)/100;
    }
 
@@ -2389,9 +2467,7 @@ messages:
    }
 
    BreakTrance(who=$,state=$,event=$)
-   "Handles any conditions that would prevent the trance from being broken.  "
-   "Most spells are not trances and don't do anything as a result of this, and "
-   "just return TRUE."
+   "Determines when a maintained ability (mana focus etc.) can be disrupted."
    {
       if event = EVENT_OOM AND viManaDrain = 0
       {
@@ -2401,6 +2477,12 @@ messages:
       Send(self,@TranceEnding,#who=who,#state=state);
 
       return TRUE;
+   }
+
+   CanBreakTrance(who=$,state=$,event=1,disruption=0)
+   "Determines if the casting trance (&Trance) can be disrupted."
+   {
+      return vbCanBreakTrance;
    }
 
    TranceEnding()
@@ -2606,11 +2688,12 @@ messages:
          iSecondaryBonus = Abs(Send(who,@GetKarma)/10);
 
          // Forces of Light boosts Shal'ille
-         if Send(oRoom,@IsEnchanted,#what=SID_FORCES_OF_LIGHT)
+         oModifierSpell = Send(SYS,@FindSpellByNum,#num=SID_FORCES_OF_LIGHT);
+         if Send(oRoom,@IsEnchanted,#what=oModifierSpell)
          {
             // Add a function of the spellpower.
             iAbilityGain = First(Send(oRoom,@GetEnchantmentState,
-                                 #what=SID_FORCES_OF_LIGHT));
+                                    #what=oModifierSpell));
             iAbilityGain /= 10;
             iSecondaryBonus += iAbilityGain;
          }
@@ -2623,11 +2706,12 @@ messages:
          iSecondaryBonus = Abs(Send(who,@GetKarma)/10);
 
          // Darkness boosts Qor
-         if Send(oRoom,@IsEnchanted,#what=SID_DARKNESS)
+         oModifierSpell = Send(SYS,@FindSpellByNum,#num=SID_DARKNESS);
+         if Send(oRoom,@IsEnchanted,#what=oModifierSpell)
          {
             // This reconstructs the darkness spellpower.
             iAbilityGain = First(Send(oRoom,@GetEnchantmentState,
-                                 #what=SID_DARKNESS));
+                                    #what=oModifierSpell));
             iAbilityGain = -(iAbilityGain - 25);
             iAbilityGain /= 10;
             iSecondaryBonus += iAbilityGain;
@@ -2658,7 +2742,7 @@ messages:
       else if viSchool = SS_KRAANAN
       {
          // Kraanan favors adversity and armies.  More people in a room, the better.
-         iPrimaryBonus = Length(Send(oRoom,@GetHolderActive));
+         iPrimaryBonus = Send(oRoom,@CountMonsters,#class=&Battler);
          // Kraanan also favors the healthy warrior.  Full hps = more bonus.
          iSecondaryBonus = (Send(who,@GetHealth)*10)/Send(who,@GetMaxHealth);
 
@@ -2781,11 +2865,46 @@ messages:
       return viSchool = SS_RIIJA;
    }
 
-   TranceBroken(oCaster=$)
+
+   TranceBroken(who=$,state=$,event=$)
    {
-      Send(oCaster,@MsgSendUser,#message_rsc=spell_trance_break,
+      if (event = EVENT_CAST) OR (event = EVENT_ATTACK)
+      {
+      // Reset attack timer to allow instant switching without recast.
+         Send(who,@SetAttackTime);
+      }
+      else
+      {
+         Send(who,@SetAttackTime,#time=viPostCast_Time*1000,#bAdd=TRUE);
+      }
+
+      Send(who,@MsgSendUser,#message_rsc=spell_trance_break,
            #parm1=Send(self,@GetName));
-      Send(oCaster,@WaveSendUser,#wave_rsc=spell_trance_break_sound);
+      Send(who,@WaveSendUser,#wave_rsc=spell_trance_break_sound);
+
+      return;
+   }
+
+
+   TranceCanceled(who=$,state=$)
+   {
+      Send(who,@MsgSendUser,#message_rsc=spell_trance_cancel,
+           #parm1=Send(self,@GetName));
+      Send(who,@WaveSendUser,#wave_rsc=spell_trance_cancel_sound);
+
+      if state <> $
+         AND NOT Nth(state,5)
+      {
+         Send(self,@SpellCanceled,#who=who);
+      }
+
+      return;
+   }
+
+   TranceCompleted(who=$)
+   {
+      Send(who,@MsgSendUser,#message_rsc=spell_trance_complete,
+           #parm1=Send(self,@GetName));
 
       return;
    }
@@ -2927,16 +3046,42 @@ messages:
       return FALSE;
    }
 
-   OverTimeEffectWearingOff(who=$,overtimeeffect=$,report=TRUE)
+   OverTimeEffectWearingOff(who=$,overtimeeffect=$,bReport=TRUE)
    "Just a dummy catching over time effects without message."
    {
       return;
    }
 
-   OverTimeEffectStarting(who=$,overtimeeffect=$,report=TRUE)
+   OverTimeEffectStarting(who=$,overtimeeffect=$,bReport=TRUE)
    "Just a dummy catching over time effects without message."
    {
       return;
+   }
+
+   IsLethal(who=$)
+   {
+      local oRoom, bSafe;
+
+      if (who = $)
+         OR NOT IsClass(who,&Player)
+      {
+         return vbLethalDamageOverTime;
+      }
+
+      oRoom = Send(who,@GetOwner);
+
+      // Don't kill players in safe rooms.
+      if (oRoom <> $)
+      {
+         bSafe = Send(oRoom,@CheckRoomFlag,#flag=ROOM_NO_COMBAT);
+      }
+      else
+      {
+         bSafe = Send(Send(SYS,@FindRoomByNum,#num=Send(who,@GetSaveRoomLoggedOn)),
+                     @CheckRoomFlag,#flag=ROOM_NO_COMBAT);
+      }
+
+      return (NOT bSafe) AND vbLethalDamageOverTime;
    }
 
    // Most spells don't have a range limitation. Return MAX_KOD_INT.
@@ -2945,10 +3090,11 @@ messages:
       return MAX_KOD_INT;
    }
 
-   // Harmful spells tend to cause aggression. Some exceptions though.
+   // Harmful spells tend to cause aggression. Spells cause more hatred
+   // when they are high level and potent.
    CausesAggression(iSpellpower=0)
    {
-      return viHarmful;
+      return viHarmful*viSpell_level*iSpellpower/20;
    }
 
    GetCombatType()
@@ -2990,6 +3136,59 @@ messages:
    GetMonsterExertion()
    {
       return viSpellExertion;
+   }
+
+   GetPeriodicSound()
+   {
+      return;
+   }
+
+   GetLightColor(state=$)
+   {
+      if viLightColor = $
+      {
+         if viSchool = SS_JALA
+         {
+            return LIGHT_JALA;
+         }
+
+         if viSchool = SS_SHALILLE
+         {
+            return LIGHT_SHALILLE;
+         }
+
+         if viSchool = SS_QOR
+         {
+            return LIGHT_QOR;
+         }
+
+         if viSchool = SS_KRAANAN
+         {
+            return LIGHT_KRAANAN;
+         }
+
+         if viSchool = SS_FAREN
+         {
+            return LIGHT_FAREN;
+         }
+
+         if viSchool = SS_RIIJA
+         {
+            return LIGHT_RIIJA;
+         }
+      }
+
+      return viLightColor;
+   }
+
+   GetLightIntensity(state=$)
+   {
+      return viBaseLightIntensity*viSpell_level;
+   }
+
+   IsLightSource()
+   {
+      return vbIsLightSource;
    }
 
 end

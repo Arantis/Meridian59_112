@@ -174,6 +174,17 @@ user_someone_logoff = de "~B~U~k[###]~n %s hat das Spiel verlassen."
 user_guildmate_logon = de "~IBegrüße Dein Gildenmitglied %s!"
 user_guildmate_logoff = de \
    "~IDein Gildenmitglied %s hat sich gerade verabschiedet."
+user_guild_shield_error_time = de \
+   "Du kannst in %i %s ein neues Muster für die Gildenschilder deiner "
+   "Gilde festlegen."
+user_guild_shield_error_disabled = de \
+   "Du kannst derzeit kein anderes Muster für die Gildenschilder deiner "
+   "Gilde festlegen – du besitzt bereits eines."
+user_time_days = de "Tage"
+user_time_hours = de "Stunden"
+user_time_minutes = de "Minuten"
+user_time_seconds = de "Sekunden"
+user_time_second = de "Sekunde"
 user_safety_on = de \
    "### Deine Sicherung ist ~B~gAKTIVIERT~n: Du kannst keine Unschuldigen "
    "angreifen."
@@ -271,7 +282,7 @@ user_news_squelched = de \
    "Deine Fähigkeiten Nachrichten zu schreiben wurden dir genommen."
 user_news_toobig = de \
    "Wow Kumpel!! Atme mal tief durch, die Nachricht ist zu lang!"
-user_news_los = de "Du kannst die Nachrichtenkugel von hier aus nicht sehen."
+user_news_los = de "Du kannst die Nachrichtenkugel von deiner Position aus nicht richtig sehen."
 user_guildofficer_rsc = de "guildofficer"
 user_default_url = de "http://www.Meridian59.de"
 user_autocombine_on = de "Du entscheidest dich, die Gegenstände zu kombinieren."
@@ -294,8 +305,6 @@ survival_err_already_public = de \
 survival_no_public_rooms = de \
    "Es ist noch keine öffentliche Arena gestartet worden."
 survival_no_guild_rooms = de "Deine Gilde hat derzeit keine Arena gestartet."
-survival_err_cant_join = de \
-   "Die Survival Arena hat bereits begonnen. Du kannst nicht mehr beitreten"
 phased_out_cant_drop = de \
    "Du kannst keine Gegenstände wegwerfen, während du ausgestiegen bist."
 user_reagentbag_on = de "Reagenzienbeutel AN"

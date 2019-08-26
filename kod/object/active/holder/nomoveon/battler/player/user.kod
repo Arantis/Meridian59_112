@@ -54,6 +54,13 @@ constants:
    // What's the maximum number of times we should log a violation?
    MAX_LOGGED_THRESHOLD = 50
 
+   // Constants for stat groups sent in ToCliStats.
+   STAT_GROUP_MAIN = 1
+   STAT_GROUP_STATS = 2
+   STAT_GROUP_SPELLS = 3
+   STAT_GROUP_SKILLS = 4
+   STAT_GROUP_QUESTS = 5
+
 resources:
 
    include user.lkod
@@ -109,6 +116,7 @@ resources:
    user_emote_str_morphed = "~n%s%s %q" 
 
    user_no_cast = "You find yourself unable to cast a spell."
+   user_no_perform = "You find yourself unable to perform this action."
    user_no_fight = "You find yourself unable to lift your weapon."
    user_cant_mail_to = "Can't mail to nonexistent user %s."
    user_mail_to = "Sending mail."
@@ -240,6 +248,17 @@ resources:
    user_someone_logoff = "~B~U~k[###]~n ~B~vAu revoir to %s."
    user_guildmate_logon = "~IHail your guildmate %s!"
    user_guildmate_logoff = "~IYour guildmate %s has just departed."
+   user_guild_shield_error_time = \
+      "You will be able to claim a new design for your guild's herald "
+      "shield in %i %s."
+   user_guild_shield_error_disabled = \
+      "Your guild is unable to claim a different heraldic design at this "
+      "time – you have already claimed one."
+   user_time_days = "days"
+   user_time_hours = "hours"
+   user_time_minutes = "minutes"
+   user_time_seconds = "seconds"
+   user_time_second = "second"
 
    user_safety_on = \
       "~B~U~k[###]~n ~B~vYour safety is now ~I~gON~n~B:  You can no longer "
@@ -332,11 +351,6 @@ resources:
    user_doesnt_know_stroke = "You do not know how to %s!"
    user_doesnt_know_spell = "You have not yet learned the spell '%s'!"
 
-   user_wave_welcome = welcome.ogg
-   user_wave_killed = killed1.ogg
-
-   user_midi_killed = killed1.ogg
-
    user_interface_module = merintr.dll
    user_mailnews_module = mailnews.dll
    user_statchange_module = stats.dll
@@ -409,7 +423,7 @@ resources:
       "Your guild is already running a survival room. You will have to wait."
    public_survival_too_late = \
       "A public survival room is already running. You will have to wait."
-   
+
    survival_err_not_safe = \
       "You have to be somewhere safe to join a survival arena!"
    survival_err_no_guild = \
@@ -422,9 +436,6 @@ resources:
       "There are no public survival rooms currently running."
    survival_no_guild_rooms = \
       "Your guild has no survival rooms running at this time."
-      
-   survival_err_cant_join = \
-      "That survival arena has already begun, and you cannot join."
 
    phased_out_cant_drop = "You can't drop items while phased out of existence."
                                
@@ -510,7 +521,6 @@ properties:
 
    poOffer_who = $
    plOffer_items = $
-   pbOffer_OtherAccepted = FALSE
 
    piSave_room = $
    piSave_row = 0
@@ -1420,8 +1430,11 @@ messages:
       // fled the battlefield.
       if iLostTotal > 0
       {
-         Send (self,@MsgSendUser,#message_rsc=user_honor_loss_penalty,
+         Send(self,@MsgSendUser,#message_rsc=user_honor_loss_penalty,
                #parm1=iLostTotal);
+
+         // System message that points were lost (but not to whom, due to spam).
+         Send(SYS,@UserLostHonorPoints,#who=self);
       }
 
       return iLostTotal;
@@ -1791,7 +1804,7 @@ messages:
    "It is dynamically allocated each time (wasting list nodes)."
    {
       local liClient_cmd, oWhat, oRoom, iRow, iCol, lUsers, iAngle, sBody,
-            iSpeed, i, sStr_said;
+            iSpeed, i, sStr_said, bCancel;
 
       // This checks to see if the user is trying to Send too many packets
       //  per second.  If they are, then we mark them as a spammer and
@@ -2084,9 +2097,26 @@ messages:
          return;
       }
 
+      // The <space> key doubles as room enter and cancel cast hotkey.
       if liClient_cmd = BP_REQ_GO
       {
-         Send(self,@UserGo);
+         bCancel = FALSE;
+
+         // This is purely for cancelling currently channeled spells.
+         // Maintained spells are unaffected.
+         if Send(self,@GetTranceAbility) <> $
+         {
+            oWhat = Send(SYS,@FindSpellByNum,#num=SID_TRANCE);
+
+            // Send this directly to &Trance, not self. We don't want
+            // any other trance effects to be affected.
+            Send(oWhat,@BreakTrance,#event=EVENT_CANCEL,#who=self,
+               #state=Send(self,@GetEnchantedState,#what=oWhat));
+
+            bCancel = TRUE;
+         }
+
+         Send(self,@UserGo,#bCancel=bCancel);
 
          return;
       }
@@ -2197,6 +2227,14 @@ messages:
       if liClient_cmd = BP_REQ_CAST
       {
          Send(self,@UserCast,#oSpell=Nth(client_msg,2),
+               #lTargets=Nth(client_msg,3));
+
+         return;
+      }
+
+      if liClient_cmd = BP_REQ_PERFORM
+      {
+         Send(self,@UserPerform,#oSkill=Nth(client_msg,2),
                #lTargets=Nth(client_msg,3));
 
          return;
@@ -2896,13 +2934,65 @@ messages:
          AND Nth(client_msg,5) <> FALSE
          AND Send(poGuild,@GetRank,#who=self) = RANK_MASTER
       {
-         Send(poGuild,@SetGuildColors,#color1=Nth(client_msg,2),
-               #color2=Nth(client_msg,3),#shape=Nth(client_msg,4));
+         if (NOT Send(poGuild,@SetGuildColors,#who=self,#color1=Nth(client_msg,2),
+                     #color2=Nth(client_msg,3),#shape=Nth(client_msg,4)))
+         {
+            // Don't need to update shield if this fails.
+            return;
+         }
+         // Set our guild as the owner of the shield.
+         oGuild = poGuild;
       }
 
       Send(self,@UserGuildSendShieldInfo,#oguild=oGuild,
             #color1=Nth(client_msg,2),#color2=Nth(client_msg,3),
             #shape=Nth(client_msg,4));
+
+      return;
+   }
+
+   UserGuildSendShieldError(iTime = 0)
+   {
+      local rTime;
+
+      if (iTime <= 0)
+      {
+         // Send a resource saying shields can't be changed.
+         AddPacket(1,BP_USERCOMMAND, 1,UC_GUILD_SHIELD_ERROR,
+                   4,user_guild_shield_error_disabled);
+      }
+      else
+      {
+         if (iTime > DAY * 2)
+         {
+            rTime = user_time_days;
+            iTime /= DAY;
+         }
+         else if (iTime > HOUR * 2)
+         {
+            rTime = user_time_hours;
+            iTime /= HOUR;
+         }
+         else if (iTime > MINUTE * 2)
+         {
+            rTime = user_time_minutes;
+            iTime /= MINUTE;
+         }
+         else if (iTime = 1)
+         {
+            rTime = user_time_second;
+         }
+         else
+         {
+            rTime = user_time_seconds;
+         }
+
+         // Send a resource with the time string.
+         AddPacket(1,BP_USERCOMMAND, 1,UC_GUILD_SHIELD_ERROR,
+                   4,user_guild_shield_error_time, 4,iTime, 4,rTime);
+      }
+
+      SendPacket(poSession);
 
       return;
    }
@@ -4141,7 +4231,7 @@ messages:
          return;
       }
 
-      if group = 1
+      if group = STAT_GROUP_MAIN
       {
          AddPacket(1,BP_STAT_GROUP, 1,group, 1,4);
          Send(self,@SendStatHealth);
@@ -4153,7 +4243,7 @@ messages:
          return;
       }
 
-      if group = 2
+      if group = STAT_GROUP_STATS
       {
          AddPacket(1,BP_STAT_GROUP, 1,group, 1,27);
 
@@ -4185,7 +4275,7 @@ messages:
          return;
       }
 
-      if group = 3
+      if group = STAT_GROUP_SPELLS
       {
          AddPacket(1,BP_STAT_GROUP, 1,group,1, Length(plSpells));
          iCount = 1;
@@ -4200,7 +4290,7 @@ messages:
          return;
       }
 
-      if group = 4
+      if group = STAT_GROUP_SKILLS
       {
          AddPacket(1,BP_STAT_GROUP, 1,group, 1,Length(plSkills));
          iCount = 1;
@@ -4215,7 +4305,7 @@ messages:
          return;
       }
 
-      if group = 5
+      if group = STAT_GROUP_QUESTS
       {
          // Need to know how many completed + failed quests in quest history.
          iQLength = Send(self,@GetCompletedQuestLength);
@@ -4613,7 +4703,7 @@ messages:
          }
 
          SendPacket(poSession);
-         Send(self,@ToCliStats,#group=3);
+         Send(self,@ToCliStats,#group=STAT_GROUP_SPELLS);
       }
 
       return;
@@ -4631,31 +4721,59 @@ messages:
             oSkill = Send(SYS,@FindSkillByNum,#num=Send(self,@DecodeSkillNum,
                                                         #compound=i));
             Send(self,@ToCliObject,#what=oSkill);
+            AddPacket(1,Send(oSkill,@GetNumSkillTargets),
+                      1,Send(oSkill,@GetSchool),
+                      1,Send(oSkill,@IsActiveSkill));
          }
 
          SendPacket(poSession);
-         Send(self,@ToCliStats,#group=4);
+         Send(self,@ToCliStats,#group=STAT_GROUP_SKILLS);
       }
 
       return;
    }
 
-   ToCliAddSpell(oSpell = $)
+   ToCliAddSpell(oSpell = $, iSID = 0, iNum = 0)
    {
+      local i, bFound;
+
       if pbLogged_on
       {
+         // Caller should send a valid iNum, but if they don't we can try
+         // get it here (probably unnecessary safety measure).
+         if (iNum = 0)
+         {
+            bFound = FALSE;
+            foreach i in plSpells
+            {
+               iNum++;
+               if (iSID = Send(self,@DecodeSpellNum,#compound=i))
+               {
+                  bFound = TRUE;
+
+                  break;
+               }
+            }
+            if (NOT bFound)
+            {
+               Debug(vrName, " had ToCliAddSpell called with missing spell ",
+                     Send(oSpell,@GetName));
+
+               return;
+            }
+         }
+
          AddPacket(1, BP_SPELL_ADD);
-         
+
          Send(self,@ToCliObject,#what=oSpell);
          AddPacket(1,Send(oSpell,@GetNumSpellTargets),
                    1,Send(oSpell,@GetSchool));
          SendPacket(poSession);
 
-         Send(self,@ToCliStats,#group=3);
+         Send(self,@DrawStatSpell,#index=iNum);
       }
 
       return;
-
    }
 
    ToCliRemoveSpell(oSpell = $)
@@ -4669,11 +4787,45 @@ messages:
       return;
    }
 
-   ToCliAddSkill(oSkill = $)
+   ToCliAddSkill(oSkill = $, iSKID = 0, iNum = 0)
    {
+      local i, bFound;
+
       if pbLogged_on
       {
-         Send(self,@ToCliStats,#group=4);
+         // Caller should send a valid iNum, but if they don't we can try
+         // get it here (probably unnecessary safety measure).
+         if (iNum = 0)
+         {
+            bFound = FALSE;
+            foreach i in plSkills
+            {
+               iNum++;
+               if (iSKID = Send(self,@DecodeSkillNum,#compound=i))
+               {
+                  bFound = TRUE;
+
+                  break;
+               }
+            }
+            if (NOT bFound)
+            {
+               Debug(vrName, " had ToCliAddSkill called with missing skill ",
+                     Send(oSkill,@GetName));
+
+               return;
+            }
+         }
+
+         AddPacket(1, BP_SKILL_ADD);
+
+         Send(self,@ToCliObject,#what=oSkill);
+         AddPacket(1,Send(oSkill,@GetNumSkillTargets),
+                   1,Send(oSkill,@GetSchool),
+                   1,Send(oSkill,@IsActiveSkill));
+         SendPacket(poSession);
+
+         Send(self,@DrawStatSkill,#index=iNum);
       }
 
       return;
@@ -4683,7 +4835,8 @@ messages:
    {
       if pbLogged_on
       {
-         Send(self,@ToCliStats,#group=4);
+         AddPacket(1, BP_SKILL_REMOVE, 4, oSkill);
+         SendPacket(poSession);
       }
 
       return;
@@ -4916,7 +5069,7 @@ messages:
 
       // 2.3.1 Validate move against room geometry and (not recently moved) objects
       if NOT CanMoveInRoomBSP(Send(poOwner,@GetRoomData),piRow,piCol,piFine_row,
-             piFine_col,piHeight,new_row,new_col,fine_row,fine_col,speed,self,FALSE,TRUE)
+             piFine_col,piHeight,new_row,new_col,fine_row,fine_col,speed,self,CANMOVE_IS_PLAYER)
       {
          Debug("ALERT! ",Send(self,@GetTrueName),self," illegal move denied in room ",
                Send(poOwner,@GetName), "S: ",piRow,piCol,piFine_row,piFine_col,
@@ -4972,12 +5125,6 @@ messages:
       // 
       if (speed > USER_WALKING_SPEED)
       {
-         // Break trance
-         if (piFlags & PFLAG_TRANCE)
-         {
-            Send(self,@BreakTrance,#event=EVENT_RUN);
-         }
-
          // Stop dance
          if (piFlags2 & PFLAG2_DANCING)
          {
@@ -5337,39 +5484,39 @@ messages:
       return;
    }
 
-   DamageTypeFlashEffect(aspell=0, duration=800)
+   DamageTypeFlashEffect(stype=0, duration=800)
    {
-      if aspell & ATCK_SPELL_QUAKE
+      if stype & SPL_TYPE_QUAKE
       {
          Send(self,@EffectSendUserDurationAndXlat,#effect=EFFECT_FLASHXLAT,
                #duration=duration,#xlat=65);
       }
-      else if aspell & ATCK_SPELL_HOLY
+      else if stype & SPL_TYPE_HOLY
       {
          Send(self,@EffectSendUserDurationAndXlat,#effect=EFFECT_FLASHXLAT,
                #duration=duration,#xlat=116);
       }
-      else if aspell & ATCK_SPELL_UNHOLY
+      else if stype & SPL_TYPE_UNHOLY
       {
          Send(self,@EffectSendUserDurationAndXlat,#effect=EFFECT_FLASHXLAT,
                #duration=duration,#xlat=112);
       }
-      else if aspell & ATCK_SPELL_ACID
+      else if stype & SPL_TYPE_ACID
       {
          Send(self,@EffectSendUserDurationAndXlat,#effect=EFFECT_FLASHXLAT,
                #duration=duration,#xlat=86);
       }
-      else if aspell & ATCK_SPELL_COLD
+      else if stype & SPL_TYPE_COLD
       {
          Send(self,@EffectSendUserDurationAndXlat,#effect=EFFECT_FLASHXLAT,
                #duration=duration,#xlat=85);
       }
-      else if aspell & ATCK_SPELL_SHOCK
+      else if stype & SPL_TYPE_SHOCK
       {
          Send(self,@EffectSendUserDurationAndXlat,#effect=EFFECT_FLASHXLAT,
                #duration=duration,#xlat=82);
       }
-      else if aspell & ATCK_SPELL_FIRE
+      else if stype & SPL_TYPE_FIRE
       {
          Send(self,@EffectSendUserDurationAndXlat,#effect=EFFECT_FLASHXLAT,
                #duration=duration,#xlat=81);
@@ -7247,6 +7394,7 @@ messages:
       if stroke_id <> SKID_PUNCH
          AND stroke_ID <> SKID_SLASH
          AND stroke_ID <> SKID_FIRE 
+         AND stroke_ID <> SKID_THROW 
       {
          if NOT Send(self,@HasSkill,#num=stroke_id)
          {
@@ -7296,7 +7444,7 @@ messages:
    UserCast(oSpell=$,lTargets=$)
    {
       local i, bFound, iSpell, iSpellNum, iSpellPower, lFinalTargets, iCost,
-            iTime;
+            iTime, bSuccess, bFreeCast;
 
       // Check for valid spell first. This is mainly an issue during
       // system saves where a user might cast something with the wrong
@@ -7307,9 +7455,26 @@ messages:
          return;
       }
 
+      // PFLAG_TRANCE can stem from...
+      // 1) ...&Trance when a spell with cast time is being cast
+      // such as fire wall, or a steered spell like elusion.
+      // 2) ...any kind of maintained spell that can be disrupted,
+      // such as mana focus or a song.
       if piFlags & PFLAG_TRANCE
       {
-         Send(self,@BreakTrance,#event=EVENT_CAST,#what=oSpell);
+         // GetTranceAbility returns the spell that &Trance is preparing
+         // to cast. If we are already preparing to cast the same spell,
+         // don't interrupt our cast.
+         if Send(self,@GetTranceAbility) = oSpell
+         {
+            return;
+         }
+         // We are trying to cast a different spell or not casting at all.
+         // Either way, our cast may disrupt &Trance or a maintained spell.
+         else
+         {
+            Send(self,@BreakTrance,#event=EVENT_CAST,#what=oSpell);
+         }
       }
 
       if ((piFlags & PFLAG_NO_MAGIC)
@@ -7370,33 +7535,40 @@ messages:
 
       iCost = Send(oSpell,@GetMeditateRatio);
 
-      // Check if it's a free cast.
-      pbFree_cast = (iCost <= Send(self,@GetUnboundEnergy)
-                     AND iCost > 0
-                     AND send(oSpell,@IsFreeCastable));
-
       // Get the spell power
       iSpellPower = Send(oSpell,@GetSpellPower,#who=self);
 
-      // Free casts get a bonus.
-      if pbFree_cast
+      // Check if it's a free cast.
+      if (iCost <= Send(self,@GetUnboundEnergy)
+         AND iCost > 0
+         AND Send(oSpell,@IsFreeCastable))
       {
+         bFreeCast = TRUE;
+         // Free casts get a spellpower bonus.
          iSpellPower = Bound(iSpellPower + 20,SPELLPOWER_MINIMUM,SPELLPOWER_MAXIMUM);
+      }
+      else
+      {
+         bFreeCast = FALSE;
       }
 
       // First make sure user has enough magic points, reagents, etc.
       if NOT Send(oSpell,@CanPayCosts,#who=self,#lTargets=lFinalTargets,
-                  #iSpellpower=iSpellpower,#bFreeCast=pbFree_cast)
+                  #iSpellpower=iSpellpower,#bFreeCast=bFreeCast)
       {
          // Player failed some sort of internal check
          return;
       }
 
+      bSuccess = bFreeCast OR Send(oSpell,@SuccessChance,#who=self,
+               #iSpellpower=iSpellpower,#lTargets=lFinalTargets);
+
       if Send(oSpell,@PayCosts,#who=self,#iSpellPower=iSpellPower,
-               #lTargets=lFinalTargets,#bFreeCast=pbFree_cast)
+               #lTargets=lFinalTargets,#bFreeCast=bFreeCast,
+               #bSuccess=bSuccess)
       {
          // If we had a free cast, deduct points from our unbound energy.
-         if pbFree_cast
+         if bFreeCast
          {
             Send(self,@AddUnboundEnergy,#iAmount=-iCost);
          }
@@ -7406,7 +7578,86 @@ messages:
 
          // Alright, cast that spell already.
          Send(oSpell,@BeginCastingTrance,#who=self,#lTargets=lFinalTargets,
-               #iSpellPower=iSpellPower);
+               #iSpellPower=iSpellPower,#bFreeCast=bFreeCast,
+               #bSuccess=bSuccess);
+      }
+
+      return;
+   }
+
+   UserPerform(oSkill=$,lTargets=$)
+   {
+      local i, bFound, iSkill, iSkillNum, iSpellPower, lFinalTargets, iCost,
+            iTime, bSuccess;
+
+      // Check for valid skill first. This is mainly an issue during
+      // system saves where a user might perform something with the wrong
+      // object ID.
+      if oSkill = $
+         OR NOT IsClass(oSkill,&ActiveSkill)
+      {
+         return;
+      }
+
+      if piFlags & PFLAG_TRANCE
+      {
+         if Send(self,@GetTranceAbility) = oSkill
+         {
+            return;
+         }
+         else
+         {
+            Send(self,@BreakTrance,#event=EVENT_ATTACK,#what=oSkill);
+         }
+      }
+
+      if Send(self,@IsInCannotInteractMode)
+      {
+         Send(self,@MsgSendUser,#message_rsc=user_no_perform);
+
+         return;
+      }
+
+      iSkillNum = Send(oSkill,@GetSkillNum);
+
+      bFound = FALSE;
+      foreach i in plSkills
+      {
+         iSkill = Send(self,@DecodeSkillNum,#compound=i);
+         if iSkillNum = iSkill
+         {
+            bFound = TRUE;
+
+            break;
+         }
+      }
+
+      if NOT bFound
+      {
+         // We don't know the skill.  Bail out.
+         return;
+      }
+
+      // Do we need a specific set of targets?
+      lFinalTargets = Send(oSkill,@GetTargets,#who=self,#lTargets=lTargets);
+
+      // First make sure user has enough magic points, reagents, etc.
+      if NOT Send(oSkill,@CanPayCosts,#who=self,#lTargets=lFinalTargets)
+      {
+         // Player failed some sort of internal check
+         return;
+      }
+
+      bSuccess = Send(oSkill,@SuccessChance,#who=self,#lTargets=lFinalTargets);
+
+      if Send(oSkill,@PayCosts,#who=self,#lTargets=lFinalTargets,#bSuccess=bSuccess)
+      {
+         // Set flag so that wall elements can affect us.
+         Send(self,@SetPlayerFlag,#flag=PFLAG_MOVED_SINCE_ENTRY,#value=TRUE);
+
+         // Alright, perform that skill already.
+         Send(oSkill,@BeginPerformPreparation,#who=self,#lTargets=lFinalTargets,
+            #bSuccess=bSuccess);
       }
 
       return;
@@ -7700,7 +7951,7 @@ messages:
       {
          if GetClass(i) = GetClass(ToBeRemoved)
          {
-            if how_many > Send(i,@getnumber)
+            if how_many > Send(i,@GetNumber)
             {
                Debug("Not enough of those numberitems!");
 
@@ -7998,7 +8249,7 @@ messages:
 
       SendPacket(poSession);
 
-      pbOffer_OtherAccepted = TRUE;
+      piFlags2 |= PFLAG2_OFFER_OTHER_ACPT;
 
       return TRUE;
    }
@@ -8135,7 +8386,7 @@ messages:
          return;
       }
 
-      if NOT pbOffer_OtherAccepted
+      if NOT (piFlags2 & PFLAG2_OFFER_OTHER_ACPT)
       {
          Debug("ALERT!  Player ",Send(self,@GetTrueName),self," tried "
                "complete an offer without the other person accepting.");
@@ -8145,7 +8396,7 @@ messages:
       }
       else
       {
-         pbOffer_OtherAccepted = FALSE;
+         piFlags2 &= ~PFLAG2_OFFER_OTHER_ACPT;
       }
 
       if NOT Send(self,@CheckOfferStuff)
@@ -8272,35 +8523,32 @@ messages:
       return TRUE;
    }
 
-   UserGo()
+   UserGo(bCancel=FALSE)
    {
       local bCanGo;
 
-      if (piFlags & PFLAG_NO_MOVE)
-         OR Send(self,@IsEnchanted,#byClass=&Blind)
-      {         
-         Send(self,@MsgSendUser,#message_rsc=user_cant_go);
-         Send(self, @WaveSendUser, #what = self,
-              #wave_rsc = user_cant_go_wav_rsc);
-         return;
-      }
-
-      bCanGo = Send(poOwner,@SomethingTryGo,#what=self,#row=piRow,#col=piCol,
-                    #fine_row=piFine_row,#fine_col=piFine_col);
-
-      if bCanGo = $ OR (NOT bCanGo)
+      if NOT ((piFlags & PFLAG_NO_MOVE)
+         OR Send(self,@IsEnchanted,#byClass=&Blind))
       {
+         bCanGo = Send(poOwner,@SomethingTryGo,#what=self,#row=piRow,
+            #col=piCol,#fine_row=piFine_row,#fine_col=piFine_col);
+
          if bCanGo = $
          {
             Debug("SomethingTryGo not properly set for room ",
-                  Send(poOwner,@GetTrueName));
+               Send(poOwner,@GetTrueName));
          }
+         else if bCanGo
+         {
+            return;
+         }
+      }
 
+      if NOT bCancel
+      {
          Send(self,@MsgSendUser,#message_rsc=user_cant_go);
          Send(self, @WaveSendUser, #what = self,
-              #wave_rsc = user_cant_go_wav_rsc);
-
-         return;
+            #wave_rsc = user_cant_go_wav_rsc);
       }
 
       return;
@@ -8818,13 +9066,18 @@ messages:
    NewOwner(what = $)
    "A user has a new owner when they enter a new room."
    {
-      local i, oOldRoom;
+      local i, oOldRoom, iNewRoomNum;
 
       Send(self,@CancelIfOffer);
 
+      if (what <> $)
+      {
+         iNewRoomNum = Send(what,@GetRoomNum);
+      }
+
       // Count right now as the last time we moved.
       piLastMoveUpdateTime = GetTickCount();
-      
+
       // This is here because it has to be done before poOwner is changed.
 
       // If newbie is entering a kill zone, warn him.  If he is leaving
@@ -8852,7 +9105,7 @@ messages:
       // This is stuff that would be executed on propagation, but we gotta
       // execute this stuff before Sending new info to client
 
-      if Send(what,@GetRoomNum) = RID_UNDERWORLD
+      if iNewRoomNum = RID_UNDERWORLD
          AND (piflags & PFLAG_DEATH_RIFTING)
       {
          // Deliverance people who somehow got to the Underworld
@@ -8882,7 +9135,7 @@ messages:
          {
             if Send(poOwner,@CheckRoomFlag,#flag=ROOM_SAFELOGOFF)
             {
-               piLastSafeRoom = Send(poOwner,@GetRoomNum);
+               piLastSafeRoom = iNewRoomNum;
 
                // Recharge user's rods.
                if (Send(SETTINGS_OBJECT,@CanInnsRechargeRods))
@@ -8910,6 +9163,7 @@ messages:
       // so that they don't appear in the middle of a wall spell.
       if oOldRoom <> $
          AND (piFlags & PFLAG_PKILL_ENABLE)
+         AND Send(SETTINGS_OBJECT,@ShouldDeleteWallsOnPlayerEntry)
          AND Send(poOwner,@AllowGuildAttack,#what=self)
          AND NOT IsClass(self,&DM)
       {
@@ -8917,12 +9171,26 @@ messages:
       }
 
       // This removes Death Rift's protection when the user enters any
-      // non-Underworld room
-      if Send(poOwner,@GetRoomNum) <> RID_UNDERWORLD
-         AND (piflags & PFLAG_DEATH_RIFTING)
+      // non-Underworld room. Does the same for death arena killed flag.
+      if iNewRoomNum <> RID_UNDERWORLD
       {
-         Send(self,@SetDeathRiftProtection,#value=FALSE);
-         piLastSafeRoom = Send(self,@GetHomeRoom);
+         if (piflags & PFLAG_DEATH_RIFTING)
+         {
+            Send(self,@SetDeathRiftProtection,#value=FALSE);
+            if (NOT Send(poOwner,@CheckRoomFlag,#flag=ROOM_SAFELOGOFF))
+            {
+               piLastSafeRoom = Send(self,@GetHomeRoom);
+            }
+         }
+         else if (piFlags2 & PFLAG2_DARENA_DEATH)
+         {
+            piFlags2 &= ~PFLAG2_DARENA_DEATH;
+            // Closest safe room to Arena.
+            if (NOT Send(poOwner,@CheckRoomFlag,#flag=ROOM_SAFELOGOFF))
+            {
+               piLastSafeRoom = RID_TOS_HALL;
+            }
+         }
       }
 
       // Draw defense to handle buffs that change
@@ -10191,7 +10459,7 @@ messages:
 
       if num = 1
       {
-         lRes = GetListNode(lCurrentResistances, 1, ATCK_WEAP_ALL);
+         lRes = GetListNode(lCurrentResistances, 1, ATK_TYPE_ALL);
          if (lRes <> $)
          {
             AddPacket(1,14, 4,user_resist_weapons, 1,STAT_VALUE,
@@ -10205,7 +10473,7 @@ messages:
       }
       else if num = 2
       {
-         lRes = GetListNode(lCurrentResistances, 1, ATCK_WEAP_THRUST);
+         lRes = GetListNode(lCurrentResistances, 1, ATK_TYPE_THRUST);
          if (lRes <> $)
          {
             AddPacket(1,15, 4,user_resist_thrust, 1,STAT_VALUE,
@@ -10219,7 +10487,7 @@ messages:
       }
       else if num = 3
       {
-         lRes = GetListNode(lCurrentResistances, 1, ATCK_WEAP_BLUDGEON);
+         lRes = GetListNode(lCurrentResistances, 1, ATK_TYPE_BLUDGEON);
          if (lRes <> $)
          {
             AddPacket(1,16, 4,user_resist_bludgeon, 1,STAT_VALUE,
@@ -10233,7 +10501,7 @@ messages:
       }
       else if num = 4
       {
-         lRes = GetListNode(lCurrentResistances, 1, ATCK_WEAP_SLASH);
+         lRes = GetListNode(lCurrentResistances, 1, ATK_TYPE_SLASH);
          if (lRes <> $)
          {
             AddPacket(1,17, 4,user_resist_slash, 1,STAT_VALUE,
@@ -10247,7 +10515,7 @@ messages:
       }
       else if num = 5
       {
-         lRes = GetListNode(lCurrentResistances, 1, ATCK_WEAP_PIERCE);
+         lRes = GetListNode(lCurrentResistances, 1, ATK_TYPE_PIERCE);
          if (lRes <> $)
          {
             AddPacket(1,18, 4,user_resist_pierce, 1,STAT_VALUE,
@@ -10261,7 +10529,7 @@ messages:
       }
       else if num = 6
       {
-         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_ALL);
+         lRes = GetListNode(lCurrentResistances, 1, -SPL_TYPE_ALL);
          if (lRes <> $)
          {
             AddPacket(1,19, 4,user_resist_magic, 1,STAT_VALUE,
@@ -10275,7 +10543,7 @@ messages:
       }
       else if num = 7
       {
-         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_FIRE);
+         lRes = GetListNode(lCurrentResistances, 1, -SPL_TYPE_FIRE);
          if (lRes <> $)
          {
             AddPacket(1,20, 4,user_resist_fire, 1,STAT_VALUE,
@@ -10289,7 +10557,7 @@ messages:
       }
       else if num = 8
       {
-         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_SHOCK);
+         lRes = GetListNode(lCurrentResistances, 1, -SPL_TYPE_SHOCK);
          if (lRes <> $)
          {
             AddPacket(1,21, 4,user_resist_shock, 1,STAT_VALUE,
@@ -10303,7 +10571,7 @@ messages:
       }
       else if num = 9
       {
-         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_COLD);
+         lRes = GetListNode(lCurrentResistances, 1, -SPL_TYPE_COLD);
          if (lRes <> $)
          {
             AddPacket(1,22, 4,user_resist_cold, 1,STAT_VALUE,
@@ -10317,7 +10585,7 @@ messages:
       }
       else if num = 10
       {
-         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_ACID);
+         lRes = GetListNode(lCurrentResistances, 1, -SPL_TYPE_ACID);
          if (lRes <> $)
          {
             AddPacket(1,23, 4,user_resist_acid, 1,STAT_VALUE,
@@ -10331,7 +10599,7 @@ messages:
       }
       else if num = 11
       {
-         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_HOLY);
+         lRes = GetListNode(lCurrentResistances, 1, -SPL_TYPE_HOLY);
          if (lRes <> $)
          {
             AddPacket(1,24, 4,user_resist_holy, 1,STAT_VALUE,
@@ -10345,7 +10613,7 @@ messages:
       }
       else if num = 12
       {
-         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_UNHOLY);
+         lRes = GetListNode(lCurrentResistances, 1, -SPL_TYPE_UNHOLY);
          if (lRes <> $)
          {
             AddPacket(1,25, 4,user_resist_unholy, 1,STAT_VALUE,
@@ -10359,7 +10627,7 @@ messages:
       }
       else if num = 13
       {
-         lRes = GetListNode(lCurrentResistances, 1, -ATCK_SPELL_QUAKE);
+         lRes = GetListNode(lCurrentResistances, 1, -SPL_TYPE_QUAKE);
          if (lRes <> $)
          {
             AddPacket(1,26, 4,user_resist_quake, 1,STAT_VALUE,
@@ -11328,7 +11596,7 @@ messages:
       Send(self,@MsgSendUser,#message_rsc=user_quest_log_updated);
 
       // Update the user's quest log.
-      Send(self,@ToCliStats,#group=5);
+      Send(self,@ToCliStats,#group=STAT_GROUP_QUESTS);
 
       return;
    }
@@ -11356,7 +11624,7 @@ messages:
       Send(self,@MsgSendUser,#message_rsc=user_quest_log_updated);
 
       // Post this, so plQuestHistory can update first.
-      Post(self,@ToCliStats,#group=5);
+      Post(self,@ToCliStats,#group=STAT_GROUP_QUESTS);
 
       return;
    }
@@ -11544,7 +11812,7 @@ messages:
          plQuestHistory = $;
          if pbLogged_on
          {
-            Send(self,@ToCliStats,#group=5);
+            Send(self,@ToCliStats,#group=STAT_GROUP_QUESTS);
          }
 
          return;
@@ -11594,7 +11862,7 @@ messages:
             
             if pbLogged_on
             {
-               Send(self,@ToCliStats,#group=5);
+               Send(self,@ToCliStats,#group=STAT_GROUP_QUESTS);
             }
 
             return TRUE;
@@ -11726,6 +11994,11 @@ messages:
       }
 
       return;
+   }
+
+   GetSaveRoomLoggedOn()
+   {
+      return piSave_room;
    }
 
    GetSaveRoom()
@@ -11872,6 +12145,17 @@ messages:
       if (pbLogged_on)
       {
          plIPAddress = GetSessionIP(poSession);
+      }
+
+      return;
+   }
+
+   AdminClearIP()
+   "Clears plIPAddress for non-logged in users."
+   {
+      if (NOT pbLogged_on)
+      {
+         plIPAddress = $;
       }
 
       return;

@@ -283,8 +283,8 @@ classvars:
    vrDead_icon = $
    vrDead_name = $
 
-   viAttack_type = ATCK_WEAP_HIT
-   viAttack_spell = 0
+   viAttack_type = ATK_TYPE_HIT
+   viSpell_type = 0
    viMerchant_markup = MERCHANT_NORMAL
    viCancel_offer_time = 30000
    // Default to teleport if there's no move anim, also used for movement timer
@@ -545,8 +545,6 @@ properties:
    poMaster = $
    // Who is our leader, if we have one.
    poLeader = $
-   // Flag used for minion moves around master
-   piKeepWalkingSteps = 0
    // Player who has turned us.
    poHolySymbolCaster = $
    // Timer to expire turning.
@@ -1306,6 +1304,7 @@ messages:
 
       plActions = $;
       poMaster = $;
+      poObject = $;
       poHolySymbolCaster = $;
 
       if ptUnturn <> $
@@ -1708,6 +1707,19 @@ messages:
       propagate;
    }
 
+   SomethingHelped(what = $, target = $, oSpell = $, iAmount = 0)
+   "Something in the room has helped someone. We might want to respond"
+   "by aiding them or dispatching of them pesky healers."
+   {
+      if poBrain <> $
+      {
+         Send(poBrain,@SomethingHelped,#mob=self,#state=piState,
+               #what=what,#target=target,#oSpell=oSpell,#iAmount=iAmount);
+      }
+
+      propagate;
+   }
+
    RecordTimeAttacked(who=$)
    "This records the last time the monster attacked someone, "
    "and the player or monster it attacked."
@@ -1822,6 +1834,12 @@ messages:
             // SetLeader sets leader to nil if none is passed.
             Send(self,@SetLeader);
          }
+      }
+      
+      // Cannot find trigger our object, we are no longer are interested in it.
+      if poObject <> $ AND Send(poObject,@GetOwner) = $
+      {
+         poObject = $;
       }
 
       if poBrain <> $
@@ -2682,7 +2700,7 @@ messages:
    "Uses path-aware MoveTowardsCoords to perform the step."
    {
       local iDist2;
-	  
+     
       // get squared 3d distance to poObject
       iDist2 = Send(self, @SquaredFineDistanceTo3D, #what=poObject);
 
@@ -2717,9 +2735,9 @@ messages:
 
          // Move to the most recent location the user has been in that we can reach.
          if CanMoveInRoomBSP(Send(poOwner,@GetRoomData),piRow,piCol,piFine_row,
-            piFine_col,piHeight,iRow,iCol,iFineRow,iFineCol,piSpeed,self,FALSE,FALSE)
+            piFine_col,piHeight,iRow,iCol,iFineRow,iFineCol,piSpeed,self,CANMOVE_NO_FLAG)
             OR (CanMoveInRoomBSP(Send(poOwner,@GetRoomData),iRow,iCol,
-            iFineRow,iFineCol,piHeight,piRow,piCol,piFine_row,piFine_col,piSpeed,self,FALSE,FALSE)
+            iFineRow,iFineCol,piHeight,piRow,piCol,piFine_row,piFine_col,piSpeed,self,CANMOVE_NO_FLAG)
                AND IsClass(self,&Follower))
          {
             // We already checked for a valid move. Move freely.
@@ -3053,7 +3071,7 @@ messages:
    }
 
    // This is the type of damage done.
-   GetDamageType(what = $)
+   GetAttackType(what = $)
    {
       return viAttack_type;
    }
@@ -3061,7 +3079,7 @@ messages:
    // This is the magical type of damage done.
    GetSpellType(what = $)
    {
-      return viAttack_spell;
+      return viSpell_type;
    }
 
    IsRangedAttack()
@@ -3079,7 +3097,7 @@ messages:
    // calculations. Most notably, damage from attackspells and melee is now 
    // handled with high precision. Eventually, all damage calculations should 
    // be handled in high precision mode.
-   AssessDamage(what=$,damage=$,atype=0,aspell=0,bonus=0,scalefactor=1000,
+   AssessDamage(what=$,damage=$,atype=0,stype=0,bonus=0,scalefactor=1000,
       absolute=FALSE,precision=FALSE)
    {
       local iDamage, iResist, iPercentClass, i, each_obj;
@@ -3100,8 +3118,8 @@ messages:
       if NOT absolute
       {
          iDamage = Send(self,@ArmorCheck,#what=what,#bonus=bonus,#atype=atype,
-            #aspell=aspell,#damage=damage);
-         iResist = Send(self,@ResistanceCheck,#atype=atype,#aspell=aspell);
+            #stype=stype,#damage=damage);
+         iResist = Send(self,@ResistanceCheck,#atype=atype,#stype=stype);
          iDamage = Send(self,@GetDamageFromResistance,#what=iDamage,#value=iResist);
          iDamage += bonus;
          iDamage = iDamage * scalefactor / 1000;
@@ -3116,13 +3134,6 @@ messages:
 
       // Make sure we don't deal negative damage.
       iDamage = Bound(iDamage,0,$);
-      
-      // I hate my target more if he hits me.
-      if what = poTarget
-      {
-         // Should scale based on damage?
-         ++piHatred;
-      }
 
       piHealth -= iDamage;
 
@@ -3235,14 +3246,14 @@ messages:
 
    // Allows monsters to have armor not related to specific equipped items. 
    // Based on piArmor and viBonusArmor.
-   ArmorCheck(what=$,damage=0,atype=0,aspell=0,bonus=0)
+   ArmorCheck(what=$,damage=0,atype=0,stype=0,bonus=0)
    {
       local iArmor, oAttribute;
 
       foreach oAttribute in plObject_attributes
       {
          damage = Send(oAttribute,@ModifyDefenseDamage,#who=self,#what=what,
-            #damage=damage,#atype=atype,#aspell=aspell);
+            #damage=damage,#atype=atype,#stype=stype);
       }
 
       // piArmor may be adjusted situationally (e.g. survival room)
@@ -3252,7 +3263,7 @@ messages:
       iArmor = Bound(Random(iArmor*33,iArmor*100),0,damage);
 
       // Armor is only fully effective against physical attacks.
-      if aspell <> 0
+      if stype<> 0
       {
          // Reduce damage if part of the damage is spell
          if atype <> 0
@@ -3529,7 +3540,7 @@ messages:
 
    //// Movement messages
 
-   MoveTowards(oTarget = $, face_target=FALSE, face_away=FALSE,pass_walls=FALSE)
+   MoveTowards(oTarget = $, face_target=FALSE, face_away=FALSE,pass_walls=FALSE,bEngage=FALSE)
    "Tries to immediately move the monster exactly one step towards oTarget"
    "Uses MoveTowardsCoords to perform the step."
    {
@@ -3547,7 +3558,8 @@ messages:
                    #iFineCol=Send(oTarget,@GetFineCol),
                    #face_target=face_target,
                    #face_away=face_away,
-                   #pass_walls=pass_walls);
+                   #pass_walls=pass_walls,
+                   #bEngage=bEngage);
    }
 
    MoveAway(oTarget = $, face_target=FALSE, face_away=FALSE)
@@ -3734,7 +3746,7 @@ messages:
 
       return;
    }
-   
+
    ReconsiderMoveDestination()
    "Called if too many steps by heuristic"
    {
@@ -3753,12 +3765,12 @@ messages:
          return FALSE;
          //Debug("Discarded SPAWN return location!!");
       }
-	   
+
       return TRUE;
    }
-   
+
    MoveTowardsCoords(iRow=$,iCol=$,iFineRow=FINENESS_HALF,iFineCol=FINENESS_HALF,
-                     face_target=FALSE,face_away=FALSE,pass_walls=FALSE)
+                     face_target=FALSE,face_away=FALSE,pass_walls=FALSE,bEngage=FALSE)
    "Tries to immediately move the monster exactly one step towards the location specified in arguments."
    "The performed step can be straight towards the location or a step on a astar path or"
    "a step determined by the move-heuristic. Raises @ReconsiderMoveDestination if two steps in a row"
@@ -3799,17 +3811,25 @@ messages:
 
          // stores if we reconsidered our move destination
          iStillGo = TRUE;
-		 
+
          // check if this was a 'good' step (=on a path or directly towards)
          if (iState & STATE_MOVE_PATH) OR (iState & STATE_MOVE_DIRECT)
          {
             // reset badstep counter
-            piBadSteps = 0;		
+            piBadSteps = 0;
          }
          else
          {
             // increment bad step counter
             piBadSteps = piBadSteps + 1;
+
+            // Unreachable targets are lowered on the hate list.
+            if bEngage
+            {
+               Send(self,@ModifyHurtMeRecently,#who=poTarget,
+                  #iPercentage=Send(poBrain,@GetAggroPercentageLoss));
+               Send(self,@SetTarget,#what=Send(self,@GetTopHurter));
+            }
 
             // too many heuristic steps, consider going elsewhere
             if (piBadSteps % 2 = 0)
@@ -3817,8 +3837,8 @@ messages:
                iStillGo = Send(self,@ReconsiderMoveDestination);
             }
          }
-		 
-		 if iStillGo AND Send(self,@ReqMonsterMove,#new_row=iRow,#new_col=iCol,
+
+         if iStillGo AND Send(self,@ReqMonsterMove,#new_row=iRow,#new_col=iCol,
                   #new_finerow=iFineRow,#new_finecol=iFineCol)
          {
             Send(self,@MonsterOrient,#new_row=iRow,#new_col=iCol,
@@ -4458,7 +4478,7 @@ messages:
       }
 
       // Maybe it was just a simple speech trigger. So, we check and parse.
-      lActionList = Send(oLibrary,@SearchSpeechLib,#mob=self,#string=string);
+      lActionList = Send(oLibrary,@SearchSpeechLib,#target=what,#mob=self,#string=string);
       if lActionList <> $
       {
          Post(oLibrary,@ParseAction,#action=First(lActionList),
@@ -4510,7 +4530,7 @@ messages:
 
       iLevel = Send(Send(SYS,@GetLore),@CheckLevelString,#string=string);
 
-      if iLevel = $
+      if iLevel = 0
       {
          return FALSE;
       }
@@ -7489,23 +7509,21 @@ messages:
          return FALSE;
       }
 
-      if (NOT bSkill) AND IsClass(self,&Temples)
-         AND Send(oAbility,@GetLevel) > 2
-         AND NOT Send(self,@HasDoneLearnQuest,#who=who)
+      if IsClass(self,&Temples)
       {
-         // Player needs to do a quest for the priestess to gain this spell or
-         //  skill.
-         Send(poOwner,@SomeoneSaid,#type=SAY_RESOURCE,#what=self,
-              #string=vrTeach_quest_needed,#parm1=Send(oAbility,@GetName));
+         if (NOT bSkill)
+            AND Send(oAbility,@GetLevel) > 2
+            AND NOT Send(self,@HasDoneLearnQuest,#who=who)
+         {
+            // Player needs to do a quest for the priestess to gain this spell or
+            //  skill.
+            Send(poOwner,@SomeoneSaid,#type=SAY_RESOURCE,#what=self,
+                  #string=vrTeach_quest_needed,#parm1=Send(oAbility,@GetName));
 
-         return FALSE;
+            return FALSE;
+         }
       }
-
-      // KLUDGE: This should be handled in the individual subclasses.
-      //         This makes baby Jesus cry.
-      if (IsClass(self,&JasperBlacksmith) OR IsClass(self,&JasperElder)
-          OR IsClass(self,&BarloqueApothecary) OR IsClass(self,&Minstrel))
-         AND NOT Send(self,@HasDoneLearnQuest,#who=who)
+      else if NOT Send(self,@HasDoneLearnQuest,#who=who)
       {
          // Player needs to do a quest for the seller to gain this spell or
          //  skill.
@@ -9055,7 +9073,7 @@ messages:
       return FALSE;
    }
 
-   GetTopHurter()
+   GetTopHurter(oExclude=$)
    {
       local oTop, oHurter, oBodyType, iHurt, iTop, i,
          oIllusion, iStealth;
@@ -9073,7 +9091,8 @@ messages:
 
          // We usually don't hold much of a grudge against ourselves,
          // inanimate objects, or the dead.
-         if (oHurter = self)
+         if (oHurter = oExclude)
+            OR (oHurter = self)
             OR (NOT IsClass(oHurter,&Battler))
             OR (Send(oHurter,@GetOwner) = $)
          {
@@ -9104,25 +9123,6 @@ messages:
          if NOT Send(self,@CanReach,#what=oHurter,#bRanged=TRUE)
          {
             iHurt /= 2;
-         }
-
-         // If the hurter was stealthy, we might not notice him.
-         iStealth = Send(oHurter,@GetStealth,#what=self);
-         iHurt = Bound((iHurt*(300-iStealth)/300)-1000,0,$);
-
-         // If the pain was negligible and the hurter wasn't
-         // noticed, remove him from our list.
-         if (iHurt = 0)
-         {
-            if IsTimer(Nth(i,3))
-            {
-               DeleteTimer(Nth(i,3));
-            }
-
-            SetFirst(i,$);
-            SetNth(i,3,$);
-
-            plHurtMeRecently = DelListElem(plHurtMeRecently,i);
          }
 
          if iHurt > iTop
@@ -9184,6 +9184,18 @@ messages:
    GetHatred()
    {
       return piHatred;
+   }
+
+   SetHatred(bForce=FALSE,iHatred=0)
+   {
+      if bForce OR piHatred < iHatred
+      {
+         piHatred = iHatred;
+
+         return TRUE;
+      }
+
+      return FALSE;
    }
 
    TargetSwitch(what=$, iHatred = 0)
@@ -9738,19 +9750,10 @@ messages:
       return;
    }
 
-   ZeroHealth()
-   "Uh oh! Are we in trouble?"
-   {
-      // You sure are, evil monster! Time to die!
-      Send(self,@DeathOverTime);
-
-      return;
-   }
-
    DeathOverTime()
    "Monster is dying to damage over time."
    {
-      local iStrength, use_weapon, what, i, each_obj;
+      local iStrength, use_weapon, oKiller, i, each_obj;
 
       // The strength of the DoT. We are looking at
       // negative values here.
@@ -9759,18 +9762,25 @@ messages:
       // The source of the dot as well as the associated spell.
       // If no source/spell have been associated with the dot,
       // 0 - not nil - is passed.
-      what = 0;
+      oKiller = 0;
       use_weapon = 0;
 
       // Let's check 'what' pained the monster most.
       foreach i in Send(self,@GetOverTimeEffects)
       {
          if Nth(i,3) < iStrength
+            AND Nth(i,10) = FALSE         // Illusions don't count.
          {
-            what = Nth(i,6);
+            oKiller = Nth(i,6);
             use_weapon = Nth(i,5);
             iStrength = Nth(i,3);
          }
+      }
+
+      // Looks like we only had a mild case of death after all...
+      if iStrength = 0
+      {
+         return;
       }
 
       // Convert 0 to regular nil for further processing.
@@ -9780,16 +9790,16 @@ messages:
          use_weapon = $;
       }
 
-      if what = 0
+      if oKiller = 0
       {
-         what = $;
+         oKiller = $;
       }
 
       foreach i in Send(poOwner,@GetHolderActive)
       {
          each_obj = First(i);
          if IsClass(each_obj,&User)
-            AND each_obj <> what
+            AND each_obj <> oKiller
             AND Send(each_obj,@GetKillTarget) = self
          {
             Send(each_obj,@MsgSendUser,#what=self,
@@ -9799,9 +9809,9 @@ messages:
          }
       }
 
-      if what <> $
+      if oKiller <> $
       {
-         Send(what,@KilledSomething,#what=self,#use_weapon=use_weapon);
+         Send(oKiller,@KilledSomething,#what=self,#use_weapon=use_weapon);
       }
       else
       {
@@ -10292,6 +10302,12 @@ messages:
    {
       return poObject;
    }
+   
+   SetTriggerObject(oObject=$)
+   {
+      poObject = oObject;
+      return;
+   }
 
    // Called when the mercenary is injured beyond a threshold.
    MercenaryInjured(iThreshold=$)
@@ -10319,6 +10335,7 @@ messages:
    {
       return TRUE;
    }
+
 
 end
 ////////////////////////////////////////////////////////////////////////////////

@@ -55,9 +55,6 @@ classvars:
 
 properties:
 
-   piMana_change = 0
-   piHealth_change = 0
-
 messages:
 
    GetOverlay(animation = $)
@@ -68,8 +65,8 @@ messages:
 
    GetResistanceModifiers()
    {
-      return [ [-ATCK_SPELL_FIRE,-10],
-               [-ATCK_SPELL_UNHOLY,-20]
+      return [ [-SPL_TYPE_FIRE,-10],
+               [-SPL_TYPE_UNHOLY,-20]
              ];
    }
 
@@ -98,6 +95,11 @@ messages:
       }
 
       return 0;
+   }
+   
+   CanDyeItem()
+   {
+      return FALSE;
    }
 
 end

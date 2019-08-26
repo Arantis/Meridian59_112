@@ -104,7 +104,7 @@ messages:
 
       Send(who,@MsgSendUser,#message_rsc=Meditate_begin_trance);
 
-      Send(oTrance,@BeginCastingTrance,#what=self,#who=who,
+      Send(oTrance,@BeginTrance,#what=self,#who=who,
             #lTargets=$,#time=TRANCE_TIME);
 
       propagate;
@@ -257,6 +257,13 @@ messages:
    }
 
    TranceBlocksSay()
+   {
+      return TRUE;
+   }
+
+   // This spell handles trance differently. Return TRUE here to allow
+   // it to be canceled like other trance spells.
+   GetRawTranceTime()
    {
       return TRUE;
    }

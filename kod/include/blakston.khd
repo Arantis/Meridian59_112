@@ -186,13 +186,19 @@
    LIR_SECTOR_INSIDE    = 0x000010
    LIR_SECTOR_HASFTEX   = 0x000020
    LIR_SECTOR_HASCTEX   = 0x000040
-   LIR_SECTOR_NOMOVE    = 0x000080  
+   LIR_SECTOR_NOMOVE    = 0x000080
    LIR_SECTOR_DEPTHMASK = 0x000300
    LIR_SECTOR_DEPTH0    = 0x000000
    LIR_SECTOR_DEPTH1    = 0x000100
    LIR_SECTOR_DEPTH2    = 0x000200
    LIR_SECTOR_DEPTH3    = 0x000300
    LIR_BLOCKED_OBJECT   = 0x000400
+
+   // Parameter flags for CanMoveInRoomBSP
+   CANMOVE_NO_FLAG          = 0x00000000
+   CANMOVE_IS_PLAYER        = 0x00000001
+   CANMOVE_MOVE_OUTSIDE_BSP = 0x00000002
+   CANMOVE_IGNORE_BLOCKERS  = 0x00000004
 
    // Query flags for GetDateAndTime
    BTIME_UTC   = 0x00
@@ -214,7 +220,7 @@
    LIGHT_FLAG_HIGHLIGHT = 0x0008
 
    // Color constants for dynamic lights, in hexidecimal form.
-   // Bright colors, 100// saturation
+   // Bright colors, 100% saturation
    LIGHT_BWHITE  = 0x7FFF
    LIGHT_BRED    = 0x7C00
    LIGHT_BORANGE = 0x7E40
@@ -222,7 +228,7 @@
    LIGHT_BGREEN  = 0x03E0
    LIGHT_BBLUE   = 0x001F
    LIGHT_BPURPLE = 0x481F
-   // Average colors, 66// saturation
+   // Average colors, 66% saturation
    LIGHT_WHITE   = 0x5294
    LIGHT_RED     = 0x5000
    LIGHT_ORANGE  = 0x5180
@@ -230,7 +236,7 @@
    LIGHT_GREEN   = 0x0280
    LIGHT_BLUE    = 0x0014
    LIGHT_PURPLE  = 0x3014
-   // Dull colors, 33// saturation
+   // Dull colors, 33% saturation
    LIGHT_DWHITE  = 0x294A
    LIGHT_DRED    = 0x2800
    LIGHT_DORANGE = 0x28C0
@@ -242,7 +248,7 @@
    // Special colors
    // Lightning is a bluish white.
    LIGHT_LIGHTNING = 0x3DFF
-   // Blood is a deep (50//) red.
+   // Blood is a deep (50%) red.
    LIGHT_BLOOD     = 0x3C00
    // Fire is a yellowish-orange fire color
    LIGHT_FIRE      = 0x7F06
@@ -253,6 +259,18 @@
    LIGHT_NEWSGLOBE = 0x3DFF
    // Very dim white, with blue tint, for the Tos Fountain generally.
    LIGHT_FOUNTAIN  = 0x0C6C
+   // Used in acid arrow, very dark green.
+   LIGHT_ACID      = 0x00A0
+
+   // School colors
+   // Used for trance glow.
+   LIGHT_SHALILLE =     0x7FB5
+   LIGHT_QOR =          0x01DF
+   LIGHT_KRAANAN =      0x001F
+   LIGHT_FAREN =        0x7C00
+   LIGHT_RIIJA =        0x601F
+   LIGHT_JALA =         0x03E0
+   LIGHT_SKILL =        0x7E43
 
    // Used for shirts/pants on players and humans.
    SHIRT_MASK = 0x00ff
@@ -403,8 +421,8 @@
    PT_MET_RED        = 0x004D       // metallic red #77
    PT_MET_BLUE       = 0x004E       // metallic blue #78
    PT_MET_GREEN      = 0x004F       // metallic green #79
-   PT_FRST_WHT1      = 0x0073		
-   PT_FRST_WHT2      = 0x0075		
+   PT_FRST_WHT1      = 0x0073      
+   PT_FRST_WHT2      = 0x0075      
    PT_FRST_WHT3      = 0x0076       // Frosted White = Grading white from normal to PT_ALLWHITE
    PT_FRST_WHT4      = 0x0077
    
@@ -1661,6 +1679,29 @@
    LIBRES_MOOD_NOT_NEUTRAL = 0x00500
    LIBRES_MOOD_NOT_BAD     = 0x00300
 
+   // Set bits for any HT flag
+   LIBRES_HT_MASK          = 0xFF000
+
+   LIBRES_HT_MARION        = 0x01000
+   LIBRES_HT_RAZA          = 0x02000
+   LIBRES_HT_JASPER        = 0x03000
+   LIBRES_HT_CORNOTH       = 0x04000
+   LIBRES_HT_BARLOQUE      = 0x05000
+   LIBRES_HT_TOS           = 0x06000
+   LIBRES_HT_JIXA          = 0x07000
+   LIBRES_HT_BERG          = 0x08000
+   LIBRES_HT_KOCATAN       = 0x09000
+
+   LIBRES_HT_NOTMARION     = 0x10000
+   LIBRES_HT_NOTRAZA       = 0x20000
+   LIBRES_HT_NOTJASPER     = 0x30000
+   LIBRES_HT_NOTCORNOTH    = 0x40000
+   LIBRES_HT_NOTBARLOQUE   = 0x50000
+   LIBRES_HT_NOTTOS        = 0x60000
+   LIBRES_HT_NOTJIXA       = 0x70000
+   LIBRES_HT_NOTBERG       = 0x80000
+   LIBRES_HT_NOTKOCATAN    = 0x90000
+
    // Reasons for a mood change, used by AffectMood
    MOODMOD_ACCEPT_ITEM        = 1
    MOODMOD_ACCEPT_RENT        = 2
@@ -1965,6 +2006,8 @@
    TID_MINO          = 76
    TID_CHUPA         = 77
    TID_WOLF          = 78
+   TID_VITKHUL       = 79
+   TID_LOSTSOUL       = 80
 
    // English articles
 
@@ -2042,6 +2085,7 @@
    IA_DM_CREATED           = 21
    IA_XP_KILL_BONUS        = 22
    IA_MOVESPEED            = 23
+   IA_DYED                 = 24
 
    // Weapon Attributes.  These are attributes only applied to weapons.
    WA_TRAINING             = 51
@@ -2081,6 +2125,8 @@
    SHIELDSHAPE_LOW    = 1
    SHIELDSHAPE_HIGH   = 4
 
+   INSIG_NONE = 0
+   INSIG_MINIMUM = 1
    INSIG_RIIJA = 1
    INSIG_QOR = 2
    INSIG_KRAANAN = 3
@@ -2090,7 +2136,8 @@
    INSIG_DUKE = 7
    INSIG_SHALILLE = 8
    INSIG_REBEL = 9
-   INSIG_NONE = 10
+   INSIG_KALIOR = 10
+   INSIG_MAXIMUM = 10 // increment with new additions
 
    // Weapons
 
@@ -2122,49 +2169,49 @@
    // Used for resistances and damage messages.
 
    // Physial attack types
-   ATCK_WEAP_ALL         = 0x00001
+   ATK_TYPE_ALL         = 0x00001
    // Every weapon is either magic or nonmagic.
-   ATCK_WEAP_NONMAGIC    = 0x00002
-   ATCK_WEAP_MAGIC       = 0x00004
-   // ATCK_WEAP_HIT means no weapon wielded (default value)
-   ATCK_WEAP_HIT         = 0x00008
+   ATK_TYPE_NONMAGIC    = 0x00002
+   ATK_TYPE_MAGIC       = 0x00004
+   // ATK_TYPE_HIT means no weapon wielded (default value)
+   ATK_TYPE_HIT         = 0x00008
    // bludgeon/pierce/thrust/slash are mundane weapon types
-   ATCK_WEAP_BLUDGEON    = 0x00010
-   ATCK_WEAP_PIERCE      = 0x00020
-   ATCK_WEAP_THRUST      = 0x00040
-   ATCK_WEAP_SLASH       = 0x00080
-   ATCK_WEAP_WHIP        = 0x00100
+   ATK_TYPE_BLUDGEON    = 0x00010
+   ATK_TYPE_PIERCE      = 0x00020
+   ATK_TYPE_THRUST      = 0x00040
+   ATK_TYPE_SLASH       = 0x00080
+   ATK_TYPE_WHIP        = 0x00100
 
    // Monster attacks
-   ATCK_WEAP_CLAW        = 0x00200
-   ATCK_WEAP_BITE        = 0x00400
-   ATCK_WEAP_STING       = 0x00800
-   ATCK_WEAP_ACID        = 0x01000
+   ATK_TYPE_CLAW        = 0x00200
+   ATK_TYPE_BITE        = 0x00400
+   ATK_TYPE_STING       = 0x00800
+   ATK_TYPE_ACID        = 0x01000
 
    // Unarmed
-   ATCK_WEAP_UNARMED     = 0x02000
-   ATCK_WEAP_PUNCH       = 0x04000
-   ATCK_WEAP_KICK        = 0x08000
+   ATK_TYPE_UNARMED     = 0x02000
+   ATK_TYPE_PUNCH       = 0x04000
+   ATK_TYPE_KICK        = 0x08000
 
    // Special material types
-   ATCK_WEAP_NERUDITE    = 0x10000
-   ATCK_WEAP_SILVER      = 0x20000
-   ATCK_WEAP_COLD        = 0x40000
+   ATK_TYPE_NERUDITE    = 0x10000
+   ATK_TYPE_SILVER      = 0x20000
+   ATK_TYPE_COLD        = 0x40000
 
    // Spell attack types
-   ATCK_SPELL_ALL        = 0x0001
-   ATCK_SPELL_FIRE       = 0x0002
+   SPL_TYPE_ALL        = 0x0001
+   SPL_TYPE_FIRE       = 0x0002
    // for any electrical attack
-   ATCK_SPELL_SHOCK      = 0x0004
+   SPL_TYPE_SHOCK      = 0x0004
    // for any cold/ice attack
-   ATCK_SPELL_COLD       = 0x0008
-   ATCK_SPELL_HOLY       = 0x0010
-   ATCK_SPELL_UNHOLY     = 0x0020
-   ATCK_SPELL_ACID       = 0x0040
-   ATCK_SPELL_QUAKE      = 0x0080
+   SPL_TYPE_COLD       = 0x0008
+   SPL_TYPE_HOLY       = 0x0010
+   SPL_TYPE_UNHOLY     = 0x0020
+   SPL_TYPE_ACID       = 0x0040
+   SPL_TYPE_QUAKE      = 0x0080
 
    // For hunter swords
-   ATCK_SPELL_HUNTERSWORD= 0x0100
+   SPL_TYPE_HUNTERSWORD= 0x0100
 
    // These are the ATTACK types sent by client.
    STROKE_NORMAL = 1
@@ -2194,6 +2241,7 @@
    REMOVE_NONE = 0
    REMOVE_PLAYER = 1
    REMOVE_INTERNAL = 2
+   REMOVE_AT_MAX = 3
 
    // Unique skill constants
    // Don't create any lower than 400 - conflict with spells (1-399).
@@ -2214,6 +2262,7 @@
 
    // Missile weapon strokes here.
    SKID_FIRE = 425
+   SKID_THROW = 426
 
    // Unarmed combat moves start here.
    SKID_PUNCH = 430
@@ -2231,6 +2280,10 @@
    SKID_PROFICIENCY_SHORT_SWORD = 457
    // Duplicate, for the easily confused.
    SKID_PROFICIENCY_SHORTSWORD = 457
+   SKID_PROFICIENCY_THROW_WEAPON = 458
+
+   // Active skills
+   SKID_CLEAVE = 470
 
    // Unique spell constants
 
@@ -2442,6 +2495,17 @@
    SID_COOLDOWN_SPOREBURST = 203
    SID_STONESKIN = 204
    SID_SLOW = 205
+   SID_SOUL_BIND = 206
+   SID_FLAME_WAVE = 207
+   SID_FREEZE = 208
+   SID_ELECTRIFY = 209
+   SID_ARCTIC_BREATH = 210
+   SID_METEOR = 211
+
+   SID_SHARP = 212
+   SID_STRONG = 213
+   SID_NIMBLE = 214
+   SID_TOUGH = 215
 
    // Depreciated spell IDs
    SID_LIGHTNING = 1                   // use SID_LIGHTNING_BOLT
@@ -2635,7 +2699,7 @@
 
    // Second set of player flags (in piFlags2)
    // A mask of flags that are unaffected by ResetPlayerFlagList
-   PFLAG2_MASK             = 0x037F80
+   PFLAG2_MASK             = 0x1F7F80
 
    PFLAG2_HASTED           = 0x000001
    PFLAG2_DANCING          = 0x000002
@@ -2660,6 +2724,12 @@
    // Keep 0x8000 free for future squelch flag.
    PFLAG2_DARENA_DEATH     = 0x010000
    PFLAG2_BETA_POTION      = 0x020000
+   // Set if crystalize mana active.
+   PFLAG2_CRYST_MANA_SURGE = 0x040000
+   // Set if player is NOT informed on receiving training points.
+   PFLAG2_NO_INFORM_TP     = 0x080000
+   // Set if other party accepted our trade offer.
+   PFLAG2_OFFER_OTHER_ACPT = 0x100000
 
    // Third set of player flags (in piFlags3)
    // piFlags3 can now be used as a proper bitfield, and no longer
@@ -2746,6 +2816,7 @@
    EFFECT_WHITEOUT = 16
    EFFECT_XLATOVERRIDE = 17
    EFFECT_FIREWORKS = 18
+   EFFECT_CLEAVE = 19
 
    // Effect flashes
    FLASH_NONE = 0
@@ -3320,8 +3391,8 @@
    QNT_SUCCESS_HINT  = 10
    QNT_FAILURE_HINT  = 11
    QNT_TIME_LIMIT    = 12
-   // Added Oct 2018, reference to Quest Template ID.
-   QNT_QT_ID         = 13
+   // Added Oct 2018, list of Quest Template IDs this node is used in.
+   QNT_QT_ID_LIST    = 13
 
    // Quest Template IDs
    QST_ID_NONE                   = 0
@@ -3402,6 +3473,7 @@
    QST_ID_ABSTAIN_PVP            = 75
    QST_ID_MANA_NODE              = 76
    QST_ID_RAZA_MUMMY             = 77
+   QNT_ID_RAT_KING_QUEST         = 78
 
    // Quest Node Template IDs. Each quest has multple Quest Nodes.
    QNT_ID_DUKE_JOIN_ONE          = 1
@@ -3693,6 +3765,9 @@
    
    QNT_ID_RAZA_MUMMY_ONE         = 220
    QNT_ID_RAZA_MUMMY_TWO         = 221
+   
+   QNT_ID_RAT_KING_QUEST_ONE     = 222
+   QNT_ID_RAT_KING_QUEST_TWO     = 223
 
    // Quest misc constants
 

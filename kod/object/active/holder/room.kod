@@ -41,8 +41,6 @@ resources:
    room_move_req_no = "You're unable to change rooms."
 
    room_no_attack = "You can't fight here."
-   room_no_harmful = \
-      "You cannot cast harmful spells here when someone else is present."
    room_no_pk_allowed = "You cannot attack another player here."
    room_guild_combat = "Only those in guilds may attack each other here."
    room_no_mob_attack = "You cannot attack monsters here."
@@ -74,6 +72,7 @@ resources:
    background_night_sky = 2skyd.bgf
 
    // Unlike the rest of these, this is actually a stormy sky.
+   // Missing a matching .bsf file so not in use, sadly.
    background_stormy_sky = 3sky.bgf
 
    creaky_door_sound = doropen1.ogg
@@ -350,6 +349,9 @@ properties:
 
    // Some zones may require a longer trail than others.
    piTrailLength = 10
+
+   // Current number of active wallelements.
+   piActiveSummons = 0
 
 messages:
 
@@ -719,7 +721,7 @@ messages:
       if (iTerrain & TERRAIN_BERG)
       {
          piPeriodic_sounds = piPeriodic_sounds / 2;
-         lTempSounds =  [ room_bergwind1_sound, room_bergwind1_sound,
+         lTempSounds =  [ room_bergwind1_sound, room_bergwind2_sound,
                           room_badmount_sound5, room_birdchirping_sound
                         ];
 
@@ -1299,6 +1301,14 @@ messages:
       {
          // Add depth changes.
          Send(self,@ChangeSectorFlag,#id=First(i),#depth=Nth(i,2));
+      }
+
+      // Add in any changed sectors with speed 0.
+      // Handles stuff like Duke's feast hall door.
+      foreach i in plSector_changes
+      {
+         Send(self,@SetSector,#sector=First(i),#animation=Nth(i,2),
+               #height=Nth(i,3),#speed=0);
       }
 
       return;
@@ -2544,6 +2554,263 @@ messages:
       return $;
    }
 
+   // This returns the difference in fine_col to move 1 step in angle's direction.
+   GetXFineStep(angle=0)
+   "Filthy beast of a function that returns the cosine values based on angle."
+   {
+      // Cosine values are returned in FINENESS (-64 to +64) while angles are entered
+      // as values between 0 and 4096.
+      // We want every sector to be centered around its corresponding cosine value.
+      // E.g. angles between 4064 and 32 should be assigned a cosine value of 64, which
+      // perfectly matches an angle of 4096 = 0.
+
+      // Let's make sure our angle stays within bounds.
+      angle = angle % MAX_ANGLE;
+
+      // Since cosine(x) = cosine(2pi-x), let's only deal with angles between 0 and 2048.
+      // Equivalent to transforming angles beyond 180° to their corresponding negative values,
+      // then treating them the same as positive angles for cosine considerations.
+      if angle > MAX_ANGLE/2
+      {
+         angle = MAX_ANGLE - angle;
+      }
+
+      // Now let's center the angle between sectors. We want an angle of 33 to land
+      // in the second sector, so we'll give it a little push.
+      angle += MAX_ANGLE/128;
+
+      if (angle < MAX_ANGLE/4)
+      {
+         if angle < MAX_ANGLE/8
+         {
+            if angle < MAX_ANGLE/16
+            {
+               if angle < MAX_ANGLE/32
+               {
+                  if angle < MAX_ANGLE/64
+                  {
+                     return FINENESS;
+                  }
+                  else
+                  {
+                     return FINENESS*995/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 3*MAX_ANGLE/64
+                  {
+                     return FINENESS*981/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*957/1000;
+                  }
+               }
+            }
+            else
+            {
+               if angle < 3*MAX_ANGLE/32
+               {
+                  if angle < 5*MAX_ANGLE/64
+                  {
+                     return FINENESS*924/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*882/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 7*MAX_ANGLE/64
+                  {
+                     return FINENESS*831/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*773/1000;
+                  }
+               }
+            }
+         }
+         else
+         {
+            if angle < 3*MAX_ANGLE/16
+            {
+               if angle < 5*MAX_ANGLE/32
+               {
+                  if angle < 9*MAX_ANGLE/64
+                  {
+                     return FINENESS*707/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*634/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 11*MAX_ANGLE/64
+                  {
+                     return FINENESS*556/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*471/1000;
+                  }
+               }
+            }
+            else
+            {
+               if angle < 7*MAX_ANGLE/32
+               {
+                  if angle < 13*MAX_ANGLE/64
+                  {
+                     return FINENESS*383/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*290/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 15*MAX_ANGLE/64
+                  {
+                     return FINENESS*195/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*98/1000;
+                  }
+               }
+            }
+         }
+      }
+      else if angle < MAX_ANGLE/2
+      {
+         if angle < 3*MAX_ANGLE/8
+         {
+            if angle < 5*MAX_ANGLE/16
+            {
+               if angle < 9*MAX_ANGLE/32
+               {
+                  if angle < 17*MAX_ANGLE/64
+                  {
+                     return 0;
+                  }
+                  else
+                  {
+                     return -FINENESS*98/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 19*MAX_ANGLE/64
+                  {
+                     return -FINENESS*195/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*290/1000;
+                  }
+               }
+            }
+            else
+            {
+               if angle < 11*MAX_ANGLE/32
+               {
+                  if angle < 21*MAX_ANGLE/64
+                  {
+                     return -FINENESS*383/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*471/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 23*MAX_ANGLE/64
+                  {
+                     return -FINENESS*556/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*634/1000;
+                  }
+               }
+            }
+         }
+         else
+         {
+            if angle < 7*MAX_ANGLE/16
+            {
+               if angle < 13*MAX_ANGLE/32
+               {
+                  if angle < 25*MAX_ANGLE/64
+                  {
+                     return -FINENESS*707/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*773/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 27*MAX_ANGLE/64
+                  {
+                     return -FINENESS*831/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*882/1000;
+                  }
+               }
+            }
+            else
+            {
+               if angle < 15*MAX_ANGLE/32
+               {
+                  if angle < 29*MAX_ANGLE/64
+                  {
+                     return -FINENESS*924/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*957/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 31*MAX_ANGLE/64
+                  {
+                     return -FINENESS*981/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*995/1000;
+                  }
+               }
+            }
+         }
+      }
+      else
+      {
+         return -FINENESS;
+      }
+
+      return;
+   }
+
+   // This returns the difference in fine_row to move 1 step in angle's direction.
+   GetYFineStep(angle=0)
+   {
+      return Send(self,@GetXFineStep,#angle=angle+3*MAX_ANGLE/4);
+   }
+
    ReqSomethingUse(what = $, use_item = $)
    {
       propagate;
@@ -2560,7 +2827,7 @@ messages:
    "<server_validate> is set to false for user moves, which have already been "
    "checked by client (HAHA!)."
    {
-      local i, each_obj, iRow, iCol, iFineRow, iFineCol, iHeight, iSpeed, iLOS, bMoveOffBSP;
+      local i, each_obj, iRow, iCol, iFineRow, iFineCol, iHeight, iSpeed, iLOS, iFlags;
 
       if new_row > piRows OR new_row < 1 OR new_col > piCols OR new_col < 1
       {
@@ -2660,16 +2927,16 @@ messages:
 
       if server_validate
       {
-         bMoveOffBSP = FALSE;
+         iFlags = CANMOVE_NO_FLAG;
 
          if (IsClass(what,&Monster)
             AND (Send(what,@GetBehavior) & AI_MOVE_WALKTHROUGH_WALLS))
          {
-            bMoveOffBSP = TRUE;
+            iFlags |= CANMOVE_MOVE_OUTSIDE_BSP;
          }
 
          if NOT CanMoveInRoomBSP(prmRoom,iRow,iCol,iFineRow,iFineCol,iHeight,new_row,
-                     new_col,new_finerow,new_finecol,iSpeed,what,bMoveOffBSP,FALSE)
+                     new_col,new_finerow,new_finecol,iSpeed,what,iFlags)
          {
             return FALSE;
          }
@@ -2772,6 +3039,9 @@ messages:
          end_row, end_col, end_finerow, end_finecol, end_height);
    }
 
+   // non_monsters_only param used to avoid sending monster move info to
+   // other monsters. This behavior might not be wanted if we want mobs to
+   // respond to other mob movements, but leaving it in for now.
    SomethingMoved(what = $, new_row = $, new_col = $, fine_row = FINENESS/2,
                   fine_col = FINENESS/2, cause = CAUSE_UNKNOWN, speed = 0,
                   non_monsters_only = FALSE)
@@ -2912,7 +3182,7 @@ messages:
          {
             if what = each_obj
                OR NOT non_monsters_only
-               OR NOT IsClass(each_obj,&Monster)
+               OR NOT (IsClass(each_obj,&Monster) AND NOT IsClass(each_obj,&Brambles))
             {
                if packet_built
                {
@@ -3305,7 +3575,7 @@ messages:
          // this will repeat itself until all moves are done
          Send(self, @UpdateSectorHeightTimer);
       }
-	  
+     
       // now deal with objects/users
       // tell everyone in the room at the moment about the change
       // we'll tell them the endheight and speed, not increments!
@@ -3454,7 +3724,7 @@ messages:
          }
       }
 
-      // recreate timer if not all moves are finished	  
+      // recreate timer if not all moves are finished     
       if NOT all_done
       {
          ptSectorUpdate = CreateTimer(self,@UpdateSectorHeightTimer,100);
@@ -5132,20 +5402,8 @@ messages:
          if Send(each_obj,@IsIllusion)
             AND Random(1,100) <= iChance
          {
-            if IsClass(each_obj,&PassiveWallofFire)
-            {
-               oTarget = Send(each_obj,@GetCaster);
-               if Send(who,@AllowBattlerAttack,#victim=oTarget,
-                        #stroke_obj=stroke_obj)
-               {
-                  Send(each_obj,@Delete);
-               }
-            }
-            else
-            {
-               // Delete any unhandled illusions without a safety check
-               Send(each_obj,@Delete);
-            }
+            // Delete any unhandled illusions without a safety check
+            Send(each_obj,@Delete);
          }
       }
 
@@ -5582,6 +5840,36 @@ messages:
       return;
    }
 
+   TestGenSuccess()
+   {
+      local iCount;
+
+      iCount = Send(self,@GetGenSuccessPercent);
+
+      Debug(vrName, "had a random point gen failure rate of ",
+            iCount / 100, iCount % 100,"%");
+
+      return;
+   }
+
+   GetGenSuccessPercent()
+   "Returns the % success rate of calling GetRandomPointBSP() in this room."
+   "Number returned is % * 100."
+   {
+      local i, iCount, iMRow, iMCol, iMRowFine, iMColFine;
+
+      iCount = 0;
+      for (i = 0; i < 10000; ++i)
+      {
+         if (NOT GetRandomPointBSP(prmRoom, 32, viSpawnRadius, *iMRow, *iMCol, *iMRowFine, *iMColFine))
+         {
+            ++iCount;
+         }
+      }
+
+      return iCount;
+   }
+
    GenerateMonster(oMonster=$, iRow=0, iCol=0, bStack=FALSE, bRandom=FALSE)
    "Pulled outside the function to be callable outside of the function. "
    "Can generate a monster at a specific location, or you can let it be "
@@ -5631,7 +5919,7 @@ messages:
             // (a) inside ThingsBox  (b) inside a sector with a texture set
             // (c) not blocked by another object
             // (d) a step with specified length can be made in all directions 
-            if NOT GetRandomPointBSP(prmRoom, 24, viSpawnRadius, *iMRow, *iMCol, *iMRowFine, *iMColFine)
+            if NOT GetRandomPointBSP(prmRoom, 32, viSpawnRadius, *iMRow, *iMCol, *iMRowFine, *iMColFine)
             {
                Debug("failed to place monster ",oMonster,Send(oMonster,@GetName),
                      " in room ",self,Send(self,@GetName));
@@ -5660,6 +5948,8 @@ messages:
             iSpawnLoc = Send(self,@FindFreeGenerator);
             if NOT iSpawnLoc
             {
+               Send(oMonster,@Delete);
+
                return FALSE;
             }
 
@@ -5878,20 +6168,6 @@ messages:
          }
       }
 
-      // Separate check through plPassive for passive wall elements
-      foreach i in plPassive
-      {
-         each_obj = Send(self,@HolderExtractObject,#data=i);
-         if IsClass(each_obj,&PassiveWallofFire)
-            OR IsClass(each_obj,&PassiveWallofLightning)
-         {
-            if Send(who,@SquaredDistanceTo,#what=each_obj)
-               <= (WALL_DELETE_RADIUS * WALL_DELETE_RADIUS)
-            {
-               Post(each_obj,@Delete);
-            }
-         }
-      }
       return;
    }
 
@@ -6115,10 +6391,51 @@ messages:
    {
       return piTrailLength;
    }
-   
+
    CanDropMonsterLoot()
    {
       return TRUE;
+   }
+
+   ResetActiveSummons()
+   {
+      if piActiveSummons = 0
+      {
+         return FALSE;
+      }
+
+      piActiveSummons = 0;
+
+      return TRUE;
+   }
+
+   GetActiveSummons()
+   {
+      return piActiveSummons;
+   }
+
+   AddActiveSummons(i=1)
+   {
+      piActiveSummons += i;
+
+      return;
+   }
+
+   RemoveActiveSummons(i=1)
+   {
+      piActiveSummons -= i;
+
+      return;
+   }
+
+   CanSummon(bHalf=FALSE)
+   {
+      if bHalf
+      {
+         return (piActiveSummons*2 < Send(SETTINGS_OBJECT,@GetRoomSummoningLimit));
+      }
+
+      return (piActiveSummons < Send(SETTINGS_OBJECT,@GetRoomSummoningLimit));
    }
 
 end

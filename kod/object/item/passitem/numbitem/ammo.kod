@@ -37,16 +37,21 @@ classvars:
    viAmmo_type = AMMO_ARROW
 
    viGround_group = 2
-   viInventory_group = 1   
+   viInventory_group = 1
 
    viMinDamage = 1
    viMaxDamage = 5
 
+   // Projectile lighting information (none normally).
+   viProjectileLightFlags = LIGHT_FLAG_NONE
+   viProjectileLightIntensity = 0
+   viProjectileLightColor = 0
+
 properties:
 
    piNumber = 20
-   piAttack_type = ATCK_WEAP_PIERCE
-   piAttack_spell = 0
+   piAttack_type = ATK_TYPE_PIERCE
+   piSpell_type = 0
 
    viObject_flags = OF_GETTABLE
 
@@ -54,18 +59,14 @@ messages:
 
    ReqUseSomething(what = $)
    {
-      if IsClass(what, &Ammo)
+      if IsClass(what,&Ammo)
       {
-         if Send(poOwner,@TryUnuseItem,#what=self)
+         if NOT Send(poOwner,@TryUnuseItem,#what=self)
          {
-            propagate;
-         }
-         else
-         {
-             return FALSE;
+            return FALSE;
          }
       }
-      
+
       propagate;
    }
 
@@ -88,8 +89,17 @@ messages:
 
    GetProjectileLightFlags()
    {
-      // No lighting information.
-      return LIGHT_FLAG_NONE;
+      return viProjectileLightFlags;
+   }
+
+   GetProjectileLightIntensity()
+   {
+      return viProjectileLightIntensity;
+   }
+
+   GetProjectileLightColor()
+   {
+      return viProjectileLightColor;
    }
 
    GetDamage()
@@ -111,12 +121,12 @@ messages:
    {
       return viMaxDamage;
    }
-   
+
    GetMinSpecialDamage()
    {
       return 0;
    }
-   
+
    GetMaxSpecialDamage()
    {
       return 0;
@@ -126,9 +136,9 @@ messages:
 // Magic Arrow Stuff          //
 ///////////////////////////////
 
-   GetAttackSpell()
+   GetSpellType()
    {
-      return piAttack_spell;
+      return piSpell_type;
    }
 
    GetAttackType()
@@ -146,7 +156,7 @@ messages:
       {
          piAttack_type = piAttack_type & ~flag;
       }
-      
+
       return;
    }
 
@@ -159,21 +169,20 @@ messages:
    {
       if value = True
       {
-         piAttack_spell = piAttack_spell | flag;
+         piSpell_type = piSpell_type | flag;
       }
       else
       {
-         piAttack_spell = piAttack_spell & ~flag;
+         piSpell_type = piSpell_type & ~flag;
       }
-      
+
       return;
    }
 
    CheckSpellFlag(flag = 0)
    {
-      return  (piAttack_spell & flag);
+      return  (piSpell_type & flag);
    }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

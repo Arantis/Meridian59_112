@@ -46,8 +46,7 @@ classvars:
    viHits_init_min = 1 // Stackable
    viHits_init_max = 1 // Stackable
 
-   // Use fire/arch for now.
-   viProficiency_Needed = SKID_PROFICIENCY_BOW
+   viProficiency_Needed = SKID_PROFICIENCY_THROW_WEAPON
 
    viHit_roll_modifier = 0
    viSpell_modifier = 0
@@ -65,7 +64,7 @@ classvars:
 
 properties:
 
-   piAttack_Type = ATCK_WEAP_NONMAGIC + ATCK_WEAP_PIERCE
+   piAttack_Type = ATK_TYPE_NONMAGIC + ATK_TYPE_PIERCE
 
    // NumberItem stuff.
    piNumber = 1
@@ -112,7 +111,7 @@ messages:
    GetDefaultStrokeNumber()
    {
       // Use fire/arch for now.
-      return SKID_FIRE;
+      return SKID_THROW;
    }
 
    GetAmmoType()

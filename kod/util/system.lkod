@@ -1,4 +1,6 @@
 system_user_killed = de "~B~U~k[###]~n ~B~v%q ist gerade gestorben. %s%q war zu stark."
+system_user_killed_angel = de \
+   "~B~U~k[###]~n ~B~vShal'ille nimmt sich %q an, bevor %s%q größeren Schaden anrichten kann."
 system_user_killed_by_pker = de "~B~U~k[###]~n ~B~v%q ist kaltblütig umgebracht worden."
 system_user_killed_pker = de \
    "~B~U~k[###]~n ~B~v%q ist als Mörder getötet worden! %s%q war im Kampf siegreich."
@@ -17,19 +19,14 @@ system_user_killed_arena = de \
 system_user_killed_shield = de "~B~U~k[###]~n ~B~v%q wurde vom Fraktionsrivalen %s%q besiegt."
 system_user_killed_guild = de \
    "~B~U~k[###]~n ~B~v%q (%s%q) wurde von %s%q (%s%q) im Gildenkampf niedergestreckt."
+system_user_lost_honor = de \
+   "~B~U~k[###]~n ~B~v%q hat durch seine Flucht des Schlachtfeldes an Ehre verloren."
 guildwar_kill_title1 = de " has slaughtered "
 guildwar_kill_body1 = de "Let it be known that "
 guildwar_kill_body2 = de " of the "
 guildwar_kill_body3 = de " has been slaughtered by "
 guildwar_kill_body4 = de " in guild combat."
 system_admin_message = de "%q"
-charinfo_might_name = de "Stärke"
-charinfo_intellect_name = de "Klugheit"
-charinfo_agility_name = de "Gewandheit"
-charinfo_stamina_name = de "Konstitution"
-charinfo_mysticism_name = de "Magie"
-charinfo_aim_name = de "Genauigkeit"
-charinfo_hair_name = de "Haare"
 system_swear_symbols = de "#@$%!"
 system_ordinal_0 = de "nullte"
 system_ordinal_1 = de "erste"

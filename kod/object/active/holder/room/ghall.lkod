@@ -1,7 +1,3 @@
-guildhall_hotplate_firstpass = de "Spieler hat die erste Prüfung bestanden."
-guildhall_hotplate = de "Spieler hat Kochplatte #%i gefunden."
-guildhall_entered_legally = de \
-   "Gildenhalle wurde gerade auf legale Weise betreten."
 guildhall_muffled = de "Du hörst eine gedämpfte Unterhaltung."
 guildhall_cant_flip = de \
    "Trotz Deiner Bemühungen zeigt dieser Gegenstand keine Funktion."
@@ -48,5 +44,4 @@ cannot_conveyance_msg = de \
    "Die Verteidigung der Gildenhalle behindert dich dabei, den Zauber Transport anzuwenden."
 guildhall_new_occupants = de "~B%s wird an neue Besitzer vermietet."
 guildhall_someone_rented = de "Diese Gildenhalle ist bereits vermietet."
-guildhall_newsball = de "Nachrichten"
 guildhall_newsdesc = de "Aktuelle Gildennachrichten."

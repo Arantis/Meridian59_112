@@ -15,21 +15,35 @@ constants:
    include blakston.khd
 
    SECTOR_DOOR = 1
+   SEC_PRISM_ZONE = 99
 
 resources:
 
    include berg_grave.lkod
 
    room_berg_grave = berg_grave.roo
-   room_name_berg_grave = "The Crypt of Berg"
+   room_name_berg_grave = "Clandestine Tombs"
 
    berg_grave_music = ksong.ogg
 
-   berg_grave_key_disappears = "Your key disappears into thin air!"
-   berg_grave_locked_door = "The door appears to be firmly locked."
-   
    berg_grave_updoor_sound = doorrsup.ogg
    berg_grave_downdoor_sound = doordown.ogg
+   berg_grave_no_statues_sound = lich_awr.ogg
+
+   berg_grave_voice_enter = \
+      "~kAn eerie voice echoes, \"~I...the life of the dead is placed in the "
+      "memory of the living...~k\""
+   berg_grave_voice_door_locked = \
+      "~kAn eerie voice echoes, \"~I...I always felt it was unpleasant to be "
+      "locked out; but it might be worse, perhaps, to be locked in..."
+   berg_grave_voice_door_unlocked = \
+      "~kAn eerie voice echoes, \"~I...there's something about the shadows... "
+      "...what lurks in them depends a lot on who is peering into them..."
+   berg_grave_voice_no_statues = \
+      "~kAn eerie voice echoes, \"~I~...they will discard you, too..."
+
+   berg_grave_projectile = lightnin.bgf
+   berg_grave_prism_wav = portal.ogg
 
 classvars:
 
@@ -37,10 +51,12 @@ classvars:
 
    viTeleport_row = 9
    viTeleport_col = 5
-      
+
    viWeatherZone = WEATHER_ZONE_BERG
 
    viSeconds_til_close = 10
+
+   vrPrismProjectile = berg_grave_projectile
 
 properties:
 
@@ -49,20 +65,23 @@ properties:
    prRoom = room_berg_grave
    piRoom_num = RID_BERG_GRAVE
    prMusic = berg_grave_music
-   
+
    piBaseLight = LIGHT_DARK
 
-   piInit_count_min = 3
+   piOutside_factor = OUTDOORS_NONE
+
+   piInit_count_min = 4
    piInit_count_max = 6
 
    piMonster_count_max = 10
 
    pbDoorOpen = FALSE
-   
+
    // What locations do we want to spawn states at?  Each element is a
    //  [row, col, finerow, finecol, direction] triplet.
    plStatueLocations = $
-   
+   plBraziers = $
+
 messages:
 
    CreateStandardExits()
@@ -73,72 +92,44 @@ messages:
 
       propagate;
    }
-   
+
    Constructed()
    {
-      plMonsters = [ [&TuskedSkeleton, 100] ];
+      plMonsters = [ [&LostSoul, 100] ];
 
       // [row, col, finerow, finecol, angle]
-      plStatueLocations = [ [9, 15, 28, 0, ANGLE_NORTH],
-                            [9, 22, 28, 32, ANGLE_NORTH],
+      plStatueLocations = [ [ 9, 15, 28,  0, ANGLE_NORTH],
+                            [ 9, 22, 28, 32, ANGLE_NORTH],
                             [14, 10, 22, 12, ANGLE_NORTH],
                             [14, 16, 54, 12, ANGLE_NORTH],
                             [14, 18, 55, 56, ANGLE_NORTH],
                             [14, 21, 55, 28, ANGLE_NORTH],
-                            [14, 33, 0, 44, ANGLE_WEST],
-                            [8, 30, 40, 28, ANGLE_NORTH],
-                            [4, 30, 24, 28, ANGLE_SOUTH],
-                            [6, 28, 32, 36, ANGLE_EAST],
-                            [6, 32, 32, 24, ANGLE_WEST]
+                            [14, 33,  0, 44, ANGLE_WEST],
+                            [ 8, 30, 40, 28, ANGLE_NORTH],
+                            [ 4, 30, 24, 28, ANGLE_SOUTH],
+                            [ 6, 28, 32, 36, ANGLE_EAST],
+                            [ 6, 32, 32, 24, ANGLE_WEST]
                           ];
 
       propagate;
    }
-   
+
    SetMonsterGenPoints()
    {
-      plGenerators = [ [5, 15], [8, 16], [6, 19],
-                       [8, 21], [8, 23], [13, 16],
+      plGenerators = [ [ 5, 15], [ 8, 16], [ 6, 19],
+                       [ 8, 21], [ 8, 23], [13, 16],
                        [15, 20], [14, 22], [13, 27],
                        [15, 31], [13, 33], [10, 28],
-                       [8, 32], [5, 27], [2, 29],
-                       [3, 33], [7, 35]
+                       [ 8, 32], [ 5, 27], [ 2, 29],
+                       [ 3, 33], [ 7, 35]
                      ];
 
       return;
    }
-   
+
    CreateStandardObjects()
    {
-      Send(self,@NewHold,#what=Create(&Brazier),
-            #new_row=7,#new_col=4,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
-      Send(self,@NewHold,#what=Create(&Brazier),
-            #new_row=10,#new_col=4,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
-      Send(self,@NewHold,#what=Create(&Brazier),
-            #new_row=13,#new_col=4,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
-      Send(self,@NewHold,#what=Create(&Brazier),
-            #new_row=16,#new_col=4,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
-      Send(self,@NewHold,#what=Create(&Brazier),
-            #new_row=19,#new_col=4,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
-
-      Send(self,@NewHold,#what=Create(&Brazier),
-            #new_row=19,#new_col=6,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
-      Send(self,@NewHold,#what=Create(&Brazier),
-            #new_row=16,#new_col=6,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
-      Send(self,@NewHold,#what=Create(&Brazier),
-            #new_row=13,#new_col=6,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
-      Send(self,@NewHold,#what=Create(&Brazier),
-            #new_row=7,#new_col=6,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
-
-      Send(self,@NewHold,#what=Create(&Brazier),
-            #new_row=10,#new_col=7,#fine_row=32,#fine_col=32,#new_angle=ANGLE_EAST);
-      Send(self,@NewHold,#what=Create(&Brazier),
-            #new_row=8,#new_col=7,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
-
-      Send(self,@NewHold,#what=Create(&Brazier),
-            #new_row=22,#new_col=6,#fine_row=32,#fine_col=32,#new_angle=ANGLE_EAST);
-      Send(self,@NewHold,#what=Create(&Brazier),
-            #new_row=21,#new_col=6,#fine_row=16,#fine_col=32,#new_angle=ANGLE_EAST);
+      Send(self,@PlaceBraziers);
 
       Send(self,@NewHold,#what=Create(&Brazier),
             #new_row=5,#new_col=49,#fine_row=16,#fine_col=0,#new_angle=ANGLE_EAST);
@@ -159,7 +150,6 @@ messages:
             #new_row=11,#new_col=28,#fine_row=8,#fine_col=0,#new_angle=ANGLE_EAST);
       Send(self,@NewHold,#what=Create(&Brazier),
             #new_row=11,#new_col=33,#fine_row=8,#fine_col=48,#new_angle=ANGLE_EAST);
-
 
       Send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_FIRE,#iIntensity=20),
          #new_row=6,#new_col=16,#fine_row=36,#fine_col=28);
@@ -194,85 +184,78 @@ messages:
 
       propagate;
    }
-   
-   SomethingTryGo(what=$,row=$,col=$)
+
+   Delete()
    {
-      local i, lPassive, each_obj;
-      
-      if isClass(what,&User) AND NOT pbDoorOpen
+      plBraziers = $;
+
+      propagate;
+   }
+
+   SomethingTryGo(what = $,row = $,col = $)
+   {
+      if (row = 9 AND (col=7 OR col=8))
+        AND pbDoorOpen = FALSE
       {
-         if row = 9 AND (col=7 OR col=8)
-         {
-            lPassive = send(what,@GetHolderPassive);
-            foreach i in lPassive
-            {
-               each_obj = send(what,@HolderExtractObject,#data=i);
-               if isClass(each_obj,&Key)
-               {
-                  send(each_obj,@Delete);
-                  send(what,@MsgSendUser,#message_rsc=berg_grave_key_disappears);
-                  pbDoorOpen = TRUE;
-                  send(self,@OpenDoor);
-
-                  return TRUE ;
-               }
-            }
-
-            send(what,@MsgSendUser,#message_rsc=berg_grave_locked_door);
-
-            return TRUE;
-         }
+         Send(what,@MsgSendUser,#message_rsc=berg_grave_voice_door_locked);
+         return TRUE;
       }
-   propagate;
+
+      propagate;
    }
 
    OpenDoor()
    {
+      Send(self,@SomethingWaveRoom,#wave_rsc=berg_grave_updoor_sound);
+
+      Send(self,@SomeoneSaid,#type=SAY_MESSAGE,#string=berg_grave_voice_door_unlocked,#what=self);
+
       // Door
-      send(self,@SetSector,#sector=SECTOR_DOOR,#animation=ANIMATE_FLOOR_LIFT,
-           #height=208,#speed=150);
-      send(self,@SomethingWaveRoom,#wave_rsc=berg_grave_updoor_sound);
+      Send(self,@SetSector,#sector=SECTOR_DOOR,#animation=ANIMATE_FLOOR_LIFT,
+           #height=208,#speed=30);
+
+      pbDoorOpen = TRUE;
 
       return;
    }
-   
+
    CloseDoor()
    {
       // Door
-      send(self,@SetSector,#sector=SECTOR_DOOR,#animation=ANIMATE_FLOOR_LIFT,
+      Send(self,@SetSector,#sector=SECTOR_DOOR,#animation=ANIMATE_FLOOR_LIFT,
            #height=272,#speed=150);
-      
+
+      pbDoorOpen = FALSE;
       return;
    }
-   
+
    CanHavePlayerPortal()
    {
       // Don't allow portals into this room, bypassing puzzle
       return FALSE;
    }
-   
+
    FirstUserEntered(what = $)
    {
+      Send(self,@ResetBraziers);
       Send(self,@PlaceStatues);
-      pbDoorOpen = FALSE;
-      send(self,@CloseDoor);
+      Send(self,@CloseDoor);
 
       propagate;
    }
-   
+
    SomethingKilled(what = $,victim = $)
    {
       if IsClass(victim,&LivingStatue)
          AND Send(self,@FindHoldingActive,#class=&LivingStatue,#sequence=2) = $
       {
-         pbDoorOpen = FALSE;
-         send(self,@SomethingWaveRoom,#wave_rsc=berg_grave_downdoor_sound);
-         send(self,@CloseDoor);
+         Send(self,@CloseDoor);
+         Send(self,@SpawnVitkhul);
       }
 
       propagate;
    }
-   
+
    PlaceStatues()
    {
       local oStatue, lLocation;
@@ -288,14 +271,152 @@ messages:
          oStatue = Create(&LivingStatue);
 
          Send(self,@NewHold,#what=oStatue,
-              #new_row=Nth(lLocation,1),#new_col=Nth(lLocation,2),#fine_row=Nth(lLocation,3),#fine_col=Nth(lLocation,4));
+            #new_row=Nth(lLocation,1),#new_col=Nth(lLocation,2),
+            #fine_row=Nth(lLocation,3),#fine_col=Nth(lLocation,4));
          Send(self,@SomethingTurned,#what=oStatue,#new_angle=Nth(lLocation,5));
+      }
+
+      Send(self,@SomeoneSaid,#type=SAY_MESSAGE,#string=berg_grave_voice_enter,#what=self);
+      plMonsters = [ [&LostSoul, 100] ];
+
+      return;
+   }
+
+   PlaceBraziers()
+   {
+      local lBrazier1, lBrazier2, lBrazier3, lBrazier4, 
+            lBrazier5, lBrazier6, lBrazier7;
+
+      lBrazier1 = Create(&BrazierSwitch);
+      Send(self,@NewHold,#what=lBrazier1,
+            #new_row=7,#new_col=4,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
+      lBrazier2 = Create(&BrazierSwitch);
+      Send(self,@NewHold,#what=lBrazier2,
+            #new_row=10,#new_col=4,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
+      lBrazier3 = Create(&BrazierSwitch);
+      Send(self,@NewHold,#what=lBrazier3,
+            #new_row=7,#new_col=6,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
+      lBrazier4 = Create(&BrazierSwitch);
+      Send(self,@NewHold,#what=lBrazier4,
+            #new_row=10,#new_col=7,#fine_row=32,#fine_col=32,#new_angle=ANGLE_EAST);
+      lBrazier5 = Create(&BrazierSwitch);
+      Send(self,@NewHold,#what=lBrazier5,
+            #new_row=8,#new_col=7,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
+      lBrazier6 = Create(&BrazierSwitch);
+      Send(self,@NewHold,#what=lBrazier6,
+            #new_row=13,#new_col=6,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
+      lBrazier7 = Create(&BrazierSwitch);
+      Send(self,@NewHold,#what=lBrazier7,
+            #new_row=13,#new_col=4,#fine_row=4,#fine_col=32,#new_angle=ANGLE_EAST);
+
+      plBraziers = [ lBrazier1, lBrazier2, lBrazier3, lBrazier4, 
+                     lBrazier5, lBrazier6, lBrazier7 ];
+      return;
+   }
+
+   ResetBraziers()
+   {
+      SendList(plBraziers,0,@SetFlame,#has_flame=FALSE);
+
+      return;
+   }
+
+   BrazierLit(what=$,who=$,bIsLit=FALSE)
+   {
+      Send(self,@ResetBraziers);
+
+      propagate;
+   }
+
+   SpawnVitkhul()
+   {
+      // start spawning Vitkhul
+      plMonsters = [ [&Vitkhul, 30], [&LostSoul, 70] ];
+
+      Send(self,@SomethingWaveRoom,#wave_rsc=berg_grave_no_statues_sound);
+      Send(self,@SomeoneSaid,#type=SAY_MESSAGE,#string=berg_grave_voice_no_statues,#what=self);
+
+      return TRUE;
+   }
+
+   NewHoldObject(what = $, new_pos = $)
+   {
+      local iSectorID;
+
+      if (what = $
+         OR new_pos = $
+         OR NOT IsClass(what,&Prism))
+      {
+         propagate;
+      }
+
+      iSectorID = Send(self,@GetSectorIDAtLocation,#row=Nth(new_pos,2),
+                        #col=Nth(new_pos,3),#fine_row=Nth(new_pos,4),
+                        #fine_col=Nth(new_pos,5));
+      Post(self,@PrismSectorCheck,#what=what,#iSectorID=iSectorID);
+
+      propagate;
+   }
+
+   PrismSectorCheck(iSectorID = 0, what = $)
+   {
+      local lBrazier;
+
+      if NOT pbDoorOpen AND
+         Send(what,@GetSectorIDAtObject) = SEC_PRISM_ZONE AND
+         Send(what,@GetNumSides) >= 7
+      {
+            foreach lBrazier in plBraziers
+            {
+               Send(self,@SomethingShot,#who=what,#target=lBrazier,
+                     #projectile=self,
+                     #flags=PROJ_FLAG_LIGHT_SOURCE);
+               Send(lBrazier,@SetFlame,#has_flame=TRUE);
+            }
+            Send(self,@SomethingWaveRoom,#what=self,
+                  #wave_rsc=berg_grave_prism_wav);
+            Send(self,@OpenDoor);
       }
 
       return;
    }
-   
-   
-   
+
+   #region Projectile
+   GetProjectileIcon()
+   {
+      return vrPrismProjectile;
+   }
+
+   SendProjectileAnimation()
+   {
+      // 40ms between animations
+      AddPacket(1, ANIMATE_CYCLE, 4, 40, 2, 1, 2, 2);
+
+      return;
+   }
+
+   GetProjectileLightColor()
+   {
+      return LIGHT_BLUE;
+   }
+
+   GetProjectileLightFlags()
+   {
+      // General lighting information.
+      return LIGHT_FLAG_ON | LIGHT_FLAG_DYNAMIC;
+   }
+
+   GetProjectileLightIntensity()
+   {
+      // Medium light radius for projectiles.  Out of 255 levels.
+      return 100;
+   }
+
+   GetProjectileSpeed()
+   {
+      return 12;
+   }
+   #endregion
+
 end
 ////////////////////////////////////////////////////////////////////////////////

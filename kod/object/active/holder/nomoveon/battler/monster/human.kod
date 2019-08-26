@@ -132,7 +132,7 @@ classvars:
    viTreasure_type = TID_NONE
 
    viSpeed = SPEED_FASTER
-   viAttack_type = ATCK_WEAP_SLASH
+   viAttack_type = ATK_TYPE_SLASH
    viAttributes = 0
    viDefault_behavior = AI_FIGHT_NEWBIESAFE
 
@@ -283,14 +283,32 @@ messages:
 
    AddEquipmentObject(what=$)
    {
+      local cClass, oItem;
+
       if what = $
       {
          return;
       }
 
+      // Thrown weapons can combine if the mob is already holding some.
+      // If we want the mob to use this item, they need to find it by class
+      // after potential combining.
+      if (IsClass(what,&ThrownWeapon))
+      {
+         cClass = GetClass(what);
+      }
+
       Send(self,@NewHold,#what=what);
 
-      if NOT Send(self,@TryUseItem,#what=what)
+      if (cClass <> $)
+      {
+         oItem = Send(self,@FindHolding,#class=cClass);
+         if oItem <> $
+         {
+            Send(self,@TryUseItem,#what=oItem);
+         }
+      }
+      else if NOT Send(self,@TryUseItem,#what=what)
       {
          Send(what,@Delete);
       }
@@ -887,7 +905,7 @@ messages:
       return GetListElemByClass(plUsing,class);
    }
 
-   GetDamageType(what = $, use_weapon = $)
+   GetAttackType(what = $, use_weapon = $)
    {
       local oWeapon;
 
@@ -903,7 +921,7 @@ messages:
       if oWeapon = $
       {
          // No weapon means we are punching
-         return ATCK_WEAP_UNARMED + ATCK_WEAP_PUNCH;
+         return ATK_TYPE_UNARMED + ATK_TYPE_PUNCH;
       }
 
       return Send(oWeapon,@GetAttackType);
@@ -928,7 +946,7 @@ messages:
          return 0;
       }
 
-      return Send(oWeapon,@GetAttackSpell);
+      return Send(oWeapon,@GetSpellType);
    }
 
    DoMeleeAnimation(what = $)
@@ -980,7 +998,7 @@ messages:
       if (what <> $)
       {
          Send(poOwner,@SomethingShot,#who=self,#target=poTarget,
-               #projectile=what);
+               #projectile=what,#flags=PROJ_FLAG_LIGHT_SOURCE);
       }
 
       return;
@@ -1042,13 +1060,14 @@ messages:
             }
          }
 
-         Send(poOwner,@SomethingShot,#who=self,#target=poTarget,#projectile=oAmmo);
+         Send(poOwner,@SomethingShot,#who=self,#target=poTarget,
+               #projectile=oAmmo,#flags=PROJ_FLAG_LIGHT_SOURCE);
       }
       else if IsClass(oWeapon,&ThrownWeapon)
       {
          piAnimation = PANM_WEAPON_ATTACK;
          Send(poOwner,@SomethingShot,#who=self,#target=poTarget,
-               #projectile=oWeapon);
+               #projectile=oWeapon,#flags=PROJ_FLAG_LIGHT_SOURCE);
       }
       else
       {
@@ -1442,115 +1461,6 @@ messages:
       }
 
       return;
-   }
-
-   SetFlickerFlag()
-   {
-      piDrawEffectFlag |= OF_FLICKERING;
-
-      return;
-   }
-
-   RecalcFlickerFlag()
-   "Called by anything that sets the flag when it wants to unset it. "
-   "Checks if we still have anything that still requires the flag."
-   {
-      local i;
-
-      // Unset flag.
-      piDrawEffectFlag &= ~OF_FLICKERING;
-
-      // Check torches and glow enchantment.
-      foreach i in plUsing
-      {
-         if IsClass(i,&Torch)
-            OR IsClass(i,&DaemonHelm)
-            OR ((IsClass(i,&Weapon) OR IsClass(i,&Lute))
-               AND Send(i,@HasAttribute,#ItemAtt=WA_GLOWING))
-         {
-            piDrawEffectFlag |= OF_FLICKERING;
-
-            return;
-         }
-      }
-
-      // Check radius enchantments.
-      foreach i in plRadiusEnchantments
-      {
-         if (Send(Nth(i,2),@GetSource,#state=Nth(i,3)) = self)
-         {
-            piDrawEffectFlag |= OF_FLICKERING;
-
-            return;
-         }
-      }
-
-      if (poOwner <> $)
-      {
-         Send(poOwner,@SomethingChanged,#what=self);
-      }
-
-      return;
-   }
-
-   SendLightingInformation()
-   {
-      local i, oLightObject, iColor, iIntensity;
-
-      // Bitflag check, don't need to check anything if not set.
-      if NOT (piDrawEffectFlag & OF_FLICKERING)
-      {
-         propagate;
-      }
-
-      iIntensity = 0;
-      iColor = 0;
-      // Check each lighting effect, strongest one wins.
-      // TODO: these should be additive, and the client should produce
-      // a combined lighting effect. Also, if more lighting effects are added
-      // this should probably query everything, just in case.
-
-      // Check torches and glow enchantment only here, hardcoded color/intensity.
-      foreach i in plUsing
-      {
-         if IsClass(i,&Torch)
-            OR ((IsClass(i,&Weapon) OR IsClass(i,&Lute))
-               AND Send(i,@HasAttribute,#ItemAtt=WA_GLOWING))
-         {
-            iIntensity = 60;
-            iColor = LIGHT_FIRE;
-
-            break;
-         }
-      }
-
-      // Overrides torch/glow weapons.
-      if (GetListElemByClass(plUsing,&DaemonHelm))
-      {
-         iIntensity = 100;
-         iColor = LIGHT_BLOOD;
-      }
-
-      foreach i in plRadiusEnchantments
-      {
-         oLightObject = Nth(i,2);
-         if (Send(oLightObject,@GetSource,#state=Nth(i,3)) = self
-            AND Send(oLightObject,@GetLightIntensity) >= iIntensity)
-         {
-            iIntensity = Send(oLightObject,@GetLightIntensity);
-            iColor = Send(oLightObject,@GetLightColor);
-         }
-      }
-
-      if iIntensity > 0
-      {
-         AddPacket(2,(LIGHT_FLAG_ON | LIGHT_FLAG_DYNAMIC),
-                   1,iIntensity, 2,iColor);
-
-         return;
-      }
-
-      propagate;
    }
 
    SetPlayerIcon(what = $,new_icon = $,translation = $, alldone = TRUE)
@@ -2357,20 +2267,20 @@ messages:
    }
 
    // Allows humans to enjoy armor from items.
-   ArmorCheck(what=$,damage=0,atype=0,aspell=0,bonus=0)
+   ArmorCheck(what=$,damage=0,atype=0,stype=0,bonus=0)
    {
       local i, iArmor, oAttribute;
 
       foreach oAttribute in plObject_attributes
       {
          damage = Send(oAttribute,@ModifyDefenseDamage,#who=self,#what=what,
-            #damage=damage,#atype=atype,#aspell=aspell);
+            #damage=damage,#atype=atype,#stype=stype);
       }
 
       foreach i in plDefense_modifiers
       {
          damage = Send(i,@ModifyDefenseDamage,#who=self,#what=what,
-            #damage=damage,#atype=atype,#aspell=aspell);
+            #damage=damage,#atype=atype,#stype=stype);
       }
 
       // piArmor may be adjusted situationally (e.g. survival room)
@@ -2380,7 +2290,7 @@ messages:
       iArmor = Bound(Random(iArmor*33,iArmor*100),0,damage);
 
       // Armor is only fully effective against physical attacks.
-      if aspell <> 0
+      if stype<> 0
       {
          // Reduce damage if part of the damage is spell
          if atype <> 0

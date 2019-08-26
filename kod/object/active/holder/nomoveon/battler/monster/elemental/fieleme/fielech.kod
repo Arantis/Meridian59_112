@@ -20,9 +20,11 @@ resources:
    
    fielem_champion_name_rsc = "Inferno"
    fielem_champion_desc_rsc = \
-      "This gigantic golem seems to be made entirely out of fire. "
+      "As living embodiment of destruction unleashed, Inferno, Lord of Fire, presides "
+      "over his realm with unrivaled ferocity, granting no mercy to would-be intruders "
+      "but a quick, fiery death."
 
-   fielem_champion_dead_name_rsc = "The corpse of Inferno"
+   fielem_champion_dead_name_rsc = "dead Inferno"
 
 classvars:
 
@@ -60,10 +62,10 @@ messages:
    {
       plActions = [ [SID_FIRE_STORM,0,0,MAX_KOD_INT,0,1000,99,COMBAT_ACTION_HARM] ];
    
-      plResistances = [ [-ATCK_SPELL_COLD, -80 ],
-                        [-ATCK_SPELL_ALL, 90 ],
-                        [ATCK_WEAP_THRUST, -50],
-                        [ATCK_WEAP_ALL, 60 ] ];
+      plResistances = [ [-SPL_TYPE_COLD, -80 ],
+                        [-SPL_TYPE_ALL, 90 ],
+                        [ATK_TYPE_THRUST, -50],
+                        [ATK_TYPE_ALL, 60 ] ];
 
       propagate;
    }

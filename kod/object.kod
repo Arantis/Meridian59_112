@@ -625,6 +625,11 @@ messages:
       return TRUE;
    }
 
+   CanBeTangled()
+   {
+      return TRUE;
+   }
+
    SomethingTryGo(what = $,row = $,col = $)
    {
       return FALSE;
@@ -970,6 +975,11 @@ messages:
    }
 
    SomethingAttacked(what = $,victim = $,use_weapon = $)
+   {
+      return;
+   }
+
+   SomethingHelped(what = $, target = $, oSpell = $, iAmount = 0)
    {
       return;
    }

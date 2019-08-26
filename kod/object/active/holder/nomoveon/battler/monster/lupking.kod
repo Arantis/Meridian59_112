@@ -42,11 +42,11 @@ resources:
    lupoggking_sound_miss = lup_atkm.ogg
    lupoggking_sound_death = lup_dth.ogg
    lupoggking_sound_aware = lup_awr.ogg
+   lupoggking_cast_sound = bsp_dth.ogg
+   lupoggking_spit = gob.bgf
 
    lupoggking_cast_spell = \
       "The lupogg king covers you in a foul paralyzing slime!"
-   lupoggking_cast_sound = bsp_dth.ogg
-
    lupoggking_death_blow = \
       "Your last attack ends the lupogg king's reign!"
    lupoggking_single_killer = \
@@ -55,16 +55,6 @@ resources:
       "The lupogg king is dead, thanks to you and your comrade!"
    lupoggking_helper_killer = \
       "The lupogg king is dead, thanks to you and your comrades!"
-   lupoggking_no_truce = \
-      "The evil in this place eliminates the possibility of any truce."
-   lupoggking_no_illusion = \
-      "Your illusions have no effect on the mighty lupogg king!"
-   lupoggking_no_firewall = \
-      "You cannot place a wall of fire here."
-   lupoggking_no_lwall = \
-      "You cannot place a wall of lightning here."
-   lupoggking_spit = gob.bgf
-   
    angered_by_wall_element_msg = \
       "Enraged by %s%s, the lupogg king stomps down hard!"
 
@@ -77,7 +67,7 @@ classvars:
 
    viTreasure_type = TID_LUPOGG_KING
    viSpeed = SPEED_SLOW
-   viAttack_type = ATCK_WEAP_CLAW
+   viAttack_type = ATK_TYPE_CLAW
    viLevel = 200
    viDifficulty = 9
    viVisionDistance = 40
@@ -128,14 +118,14 @@ messages:
       // piHealth uses high-precision numbers, so multiply by 100.
       piHealth = piMax_Health * 100;
 
-      plResistances = [ [ATCK_WEAP_ALL, 40 ],
-                        [ATCK_WEAP_PIERCE, 90 ],
-                        [-ATCK_SPELL_COLD, 90 ],
-                        [-ATCK_SPELL_SHOCK, 90],
-                        [-ATCK_SPELL_ACID, -20 ],
-                        [-ATCK_SPELL_FIRE, -20 ],
-                        [-ATCK_SPELL_QUAKE, 100 ],
-                        [ATCK_WEAP_NERUDITE, -40 ]
+      plResistances = [ [ATK_TYPE_ALL, 40 ],
+                        [ATK_TYPE_PIERCE, 90 ],
+                        [-SPL_TYPE_COLD, 90 ],
+                        [-SPL_TYPE_SHOCK, 90],
+                        [-SPL_TYPE_ACID, -20 ],
+                        [-SPL_TYPE_FIRE, -20 ],
+                        [-SPL_TYPE_QUAKE, 100 ],
+                        [ATK_TYPE_NERUDITE, -40 ]
                       ];
 
       plActions =  [ [SID_HOLD,0,0,147456,500,0,99,COMBAT_ACTION_HARM],
@@ -151,7 +141,7 @@ messages:
       propagate;
    }
 
-   AssessDamage(what = $,damage = $,atype = 0, aspell = 0,bonus = 0)
+   AssessDamage(what = $,damage = $,atype = 0, stype= 0,bonus = 0)
    "This is called when something causes damage to us"
    {
       local i;

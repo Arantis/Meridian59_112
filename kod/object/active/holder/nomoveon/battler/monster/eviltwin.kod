@@ -25,7 +25,6 @@ resources:
 
    EvilTwin_dead_icon_rsc = amoebaX.bgf
    EvilTwin_dead_name_rsc = "dead evil twin"
-   EvilTwin_weapon_rsc = scimov.bgf
 
    EvilTwin_sound_hit = orc_atkh.ogg
    EvilTwin_sound_miss = orc_atkm.ogg
@@ -51,7 +50,7 @@ classvars:
    viTreasure_type = TID_NONE
 
    viSpeed = SPEED_FAST
-   viAttack_type = ATCK_WEAP_SLASH
+   viAttack_type = ATK_TYPE_SLASH
    viAttributes = 0
    viLevel = 20
    viDifficulty = 8
@@ -144,9 +143,18 @@ messages:
          oRoom = Send(who,@GetOwner);
          oDestObj = who;
       }
-      Send(oRoom,@NewHold,#what=self,#new_row=Send(oDestObj,@GetRow),
-            #new_col=Send(oDestObj,@GetCol),#fine_row=Send(oDestObj,@GetFineRow),
-            #fine_col=Send(oDestObj,@GetFineCol));
+
+      // Attempt to place the ET near but not on top of the target/master.
+      if (NOT Send(SYS,@UtilGoRandomNear,#what=self,#where=oRoom,
+            #new_row=Send(oDestObj,@GetRow),#new_col=Send(oDestObj,@GetCol),
+            #fine_row=Send(oDestObj,@GetFineRow),#fine_col=Send(oDestObj,@GetFineCol),
+            #iMinDist=32))
+      {
+         // Random placement failed, place on top of target/master.
+         Send(oRoom,@NewHold,#what=self,#new_row=Send(oDestObj,@GetRow),
+               #new_col=Send(oDestObj,@GetCol),#fine_row=Send(oDestObj,@GetFineRow),
+               #fine_col=Send(oDestObj,@GetFineCol));
+      }
 
       // Do nothing further if original captured us.
       if (poMaster = poOriginal)
@@ -740,21 +748,21 @@ messages:
       return iDamage * piDamagePercent / 100;
    }
 
-   GetDamageType(what=$,use_weapon=$)
+   GetAttackType(what=$,use_weapon=$)
    {
       if poOriginal = $
       {
          return viAttack_type;
       }
 
-      return Send(poOriginal,@GetDamageType,#what=what,#use_weapon=use_weapon);
+      return Send(poOriginal,@GetAttackType,#what=what,#use_weapon=use_weapon);
    }
 
    GetSpellType(what=$,use_weapon=$)
    {
       if poOriginal = $
       {
-         return viAttack_spell;
+         return viSpell_type;
       }
 
       return Send(poOriginal,@GetSpellType,#what=what,#use_weapon=use_weapon);
@@ -964,13 +972,14 @@ messages:
                }
             }
 
-            Send(poOwner,@SomethingShot,#who=self,#target=poTarget,#projectile=oAmmo);
+            Send(poOwner,@SomethingShot,#who=self,#target=poTarget,
+                  #projectile=oAmmo,#flags=PROJ_FLAG_LIGHT_SOURCE);
          }
          else if IsClass(oWeapon,&ThrownWeapon)
          {
             piAnimation = PANM_WEAPON_ATTACK;
             Send(poOwner,@SomethingShot,#who=self,#target=poTarget,
-                  #projectile=oWeapon);
+                  #projectile=oWeapon,#flags=PROJ_FLAG_LIGHT_SOURCE);
          }
          else
          {
@@ -984,7 +993,8 @@ messages:
          // If original fires a projectile, we send one too.
          if Send(poOriginal,@GetProjectileIcon) <> $
          {
-            Send(poOwner,@SomethingShot,#who=self,#target=poTarget,#projectile=poOriginal);
+            Send(poOwner,@SomethingShot,#who=self,#target=poTarget,
+                  #projectile=poOriginal,#flags=PROJ_FLAG_LIGHT_SOURCE);
          }
       }
 

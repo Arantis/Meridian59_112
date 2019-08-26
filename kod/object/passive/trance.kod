@@ -20,11 +20,15 @@ resources:
 
    trance_begin = "You focus your whole will on casting %s."
    trance_break = "Your concentration is broken and the %s spell fizzles."
+   trance_disturbed = "You manage to retain your concentration."
    trance_break_sound = spelfail.ogg
 
 classvars:
 
 properties:
+
+   piMovementSpeedReduction = 50
+   vbIsLightSource = FALSE
 
 messages:
 
@@ -33,7 +37,7 @@ messages:
       return SID_TRANCE;
    }
 
-   BeginCastingTrance( what = $, who = $, lTargets = $, time = 0 )
+   BeginTrance(what=$,who=$,lTargets=$,time=0,bFreeCast=FALSE,power=0)
    {
       local lState, iPower;
 
@@ -46,7 +50,9 @@ messages:
       }
 
       Send(who,@StartEnchantment,#what=self,#time=time,#addicon=FALSE,
-           #state=[what,who,lTargets,TRUE]);
+           #state=[what,who,lTargets,TRUE,bFreeCast,100,power]);
+
+      Send(who,@AddMovementSpeedPercent,#iSpeed=-piMovementSpeedReduction);
 
       return;
    }
@@ -63,58 +69,96 @@ messages:
    " 1) Casting time expires, time to call CastSpell"
    " 2) Spell expires"
    {
-      local oSpell, oCaster, lTargets, iSpellPower;
+      local oAbility, lTargets, iSpellPower;
 
-      oSpell = First(state);
-      oCaster = Nth(state,2);
+      oAbility = First(state);
       lTargets = Nth(state,3);
-      Send(oCaster,@ClearTranceFlag);
+
+      // Let's clear up our trance related effects before proceeding further.
+      Send(who,@AddMovementSpeedPercent,#iSpeed=piMovementSpeedReduction);
 
       // Double-check to get valid targets.  Don't report 'cause we've already 
       //  spammed them during the first check.
-      lTargets = Send(oSpell,@GetGoodTargets,#who=oCaster,#lTargets=lTargets,
+      lTargets = Send(oAbility,@GetGoodTargets,#who=who,#lTargets=lTargets,
                       #report=FALSE);
 
-      iSpellPower = Send(oSpell,@GetSpellPower,#who=oCaster);
-      if Send(oSpell,@DoubleCheckAfterTrance,#who=oCaster,#lTargets=lTargets,
-              #iSpellPower=iSpellPower)
+      if IsClass(oAbility,&Spell)
       {
-         if lTargets <> $
-            AND isClass(First(lTargets),&Battler)
-            AND Send(First(lTargets),@TryDeflect,#what=oSpell,#caster=oCaster)
+         iSpellPower = Send(oAbility,@GetSpellPower,#who=who);
+
+         if Send(oAbility,@DoubleCheckAfterTrance,#who=who,#lTargets=lTargets,
+                 #iSpellPower=iSpellPower)
          {
-            Send(oSpell,@CastSpell,#who=oCaster,#lTargets=[oCaster],
-                 #iSpellPower=iSpellPower/2);
+            Send(oAbility,@TranceCompleted,#who=who,#state=state);
+
+            if lTargets <> $
+               AND isClass(First(lTargets),&Battler)
+               AND Send(First(lTargets),@TryDeflect,#what=oAbility,#caster=who)
+            {
+               Post(oAbility,@CastSpell,#who=who,#lTargets=[who],
+                    #iSpellPower=iSpellPower/2);
+            }
+            else
+            {
+               Post(oAbility,@CastSpell,#who=who,#lTargets=lTargets,
+                    #iSpellPower=iSpellPower);
+            }
          }
-         else
+      }
+      else
+      {
+         if Send(oAbility,@DoubleCheckAfterTrance,#who=who,#lTargets=lTargets)
          {
-            Send(oSpell,@CastSpell,#who=oCaster,#lTargets=lTargets,
-                 #iSpellPower=iSpellPower);
+            Send(oAbility,@TranceCompleted,#who=who,#state=state);
+
+            Post(oAbility,@PerformSkill,#who=who,#lTargets=lTargets);
          }
       }
 
       return;
    }
 
-   BreakTrance(who = $, state = $, event = 1)
+   BreakTrance(who=$,state=$,event=1,disruption=0)
    {
-      local oSpell, oCaster;
+      local oAbility, iTime;
 
       if event = EVENT_OOM
       {
          return;
       }
 
-      oSpell = First(state);
-      oCaster = Nth(state,2);
-      Send(oCaster,@ClearTranceFlag);
+      oAbility = First(state);
+
+      if NOT Send(oAbility,@CanBreakTrance,#who=who,#state=state,#event=event,
+         #disruption=disruption)
+      {
+         return;
+      }
 
       if event <> EVENT_STEER
       {
-         Send(oSpell,@TranceBroken,#oCaster=oCaster,#state=state);
+         if event = EVENT_CANCEL
+         {
+            Send(oAbility,@TranceCanceled,#who=who,#state=state);
+         }
+         else if (event = EVENT_DAMAGE)
+            AND Send(who,@SetTranceFocus,#focus=-disruption,#bAdd=TRUE)
+         {
+            iTime = Send(oAbility,@GetRawTranceTime);
+            iTime = iTime * disruption / 100;
+            Send(who,@SetTranceTime,#time=iTime,#bAdd=TRUE);
+            Send(who,@MsgSendUser,#message_rsc=trance_disturbed);
+
+            return;
+         }
+         else
+         {
+            Send(oAbility,@TranceBroken,#who=who,#state=state,#event=event);
+         }
       }
 
-      Send(oCaster,@RemoveEnchantment,#what=self);
+      Send(who,@AddMovementSpeedPercent,#iSpeed=piMovementSpeedReduction);
+      Send(who,@RemoveEnchantment,#what=self);
 
       return;
    }
@@ -144,6 +188,21 @@ messages:
    ModifyResistance(resistance_list=$)
    {
       return resistance_list;
+   }
+
+   IsLightSource()
+   {
+      return vbIsLightSource;
+   }
+
+   GetLightColor(state=$)
+   {
+      return Send(First(state),@GetLightColor);
+   }
+
+   GetLightIntensity(state=$)
+   {
+      return 100;
    }
 
 end

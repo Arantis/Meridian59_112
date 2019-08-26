@@ -46,6 +46,9 @@ resources:
    include system.lkod
 
    system_user_killed = "~B~U~k[###]~n ~B~v%q was just killed by %s%q."
+   system_user_killed_angel = \
+      "~B~U~k[###]~n ~B~vShal'ille has come to the aid of %q, who has met "
+      "defeat while battling %s%q."
    system_user_killed_by_pker = "~B~U~k[###]~n ~B~v%q has been murdered in cold blood."
    system_user_killed_pker = \
       "~B~U~k[###]~n ~B~vThe notorious murderer, %q, has been killed by %s%q."
@@ -63,17 +66,19 @@ resources:
    system_user_killed_shield = "~B~U~k[###]~n ~B~v%q was bested by faction rival %s%q."
    system_user_killed_guild = \
       "~B~U~k[###]~n ~B~v%q of %s%q has been slaughtered by %s%q of %s%q in guild combat."
-      
+   system_user_lost_honor = \
+      "~B~U~k[###]~n ~B~v%q has lost honor by fleeing the battlefield."
+
    guildwar_kill_title1 = " has slaughtered "
    guildwar_kill_body1 = "Let it be known that "
    guildwar_kill_body2 = " of the "
    guildwar_kill_body3 = " has been slaughtered by "
    guildwar_kill_body4 = " in guild combat."
 
+   system_nothing_rsc = " "
    system_admin_message = "%q"
    system_admin_message_bang = "~B~U~k[###]~n ~B%q"
    system_blank_resource = ""
-   system_space_resource = " "
    system_unknown_resource = "Unknown"
    system_newline_resource = "\n"
 
@@ -106,25 +111,6 @@ resources:
    system_char_module = char.dll
 
    // charinfo stuff
-
-   charinfo_might_icon = light.bgf
-   charinfo_might_name = "Might"
-
-   charinfo_intellect_icon = light.bgf
-   charinfo_intellect_name = "Intellect"
-
-   charinfo_agility_icon = light.bgf
-   charinfo_agility_name = "Agility"
-
-   charinfo_stamina_icon = light.bgf
-   charinfo_stamina_name = "Stamina"
-
-   charinfo_mysticism_icon = light.bgf
-   charinfo_mysticism_name = "Mysticism"
-
-   charinfo_aim_icon = light.bgf
-   charinfo_aim_name = "Aim"
-
    charinfo_head_ax_icon = phax.bgf
    charinfo_head_kx_icon = phkx.bgf
 
@@ -152,8 +138,6 @@ resources:
    charinfo_nose_kx_icon = pnkx.bgf
    charinfo_nose_lx_icon = pnlx.bgf
    charinfo_nose_mx_icon = pnmx.bgf
-
-   charinfo_hair_name = "Hair"
 
    charinfo_hair_ac_icon = ptac.bgf  // Hercules male long hair look
    charinfo_hair_ba_icon = ptba.bgf  // Tower of Power
@@ -254,7 +238,6 @@ resources:
        "give you %s%s!"
 
    system_mail_template_rsc = "Subject: %q\n%q\n"
-   system_nothing_rsc = " "
    system_automated_rsc = "(Automated Message)"
 
    system_guildshield_sample_sash = gshA.bgf
@@ -1974,6 +1957,10 @@ messages:
       {
          rMessage = system_user_killed_arena;
       }
+      else if (Send(what,@DoesPlayerTakeNewbieDeath))
+      {
+         rMessage = system_user_killed_angel;
+      }
       else
       {
          // Outlaw or murderer was killed?
@@ -2084,6 +2071,25 @@ messages:
                #parm2=param2,#parm3=param3,#parm4=param4,#parm5=param5,
                #parm6=param6,#parm7=param7,#type3=STRING_RESOURCE,
                #type5=type5,#type7=type7);
+         Send(i,@WaveSendUser,#wave_rsc=system_message_sound,#what=self);
+      }
+
+      return;
+   }
+
+   UserLostHonorPoints(who = $)
+   {
+      local i;
+
+      if (who = $)
+      {
+         return;
+      }
+
+      foreach i in plUsers_logged_on
+      {
+         Send(i,@MsgSendUser,#message_rsc=system_user_lost_honor,
+            #parm1=Send(who,@GetTrueName),#type1=STRING_RESOURCE);
          Send(i,@WaveSendUser,#wave_rsc=system_message_sound,#what=self);
       }
 
@@ -2411,6 +2417,42 @@ messages:
    TestAllRoomExits()
    {
       SendList(plRooms,0,@TestRoomExits);
+
+      return;
+   }
+
+   TestAllRoomRandomGen(num=500)
+   "Prints the percentage of failures when attempting to obtain valid random "
+   "coordinates in a room. By default reports any rooms with more than 5% "
+   "failure rate (num / 100)."
+   {
+      local i, iCount, lRooms;
+
+      // Safety check for live servers, this test takes a few seconds to run.
+      if (Length(plUsers_logged_on) > 3)
+      {
+         Debug("Can't test room random gen % with users online!");
+
+         return;
+      }
+
+      foreach i in plRooms
+      {
+         iCount = Send(i,@GetGenSuccessPercent);
+         if (iCount >= num)
+         {
+            lRooms = Send(self,@AddToSortedList,#what=i,#lList=lRooms,
+                           #number=iCount);
+
+         }
+      }
+
+      // Print descending, probably care more about the worst offenders.
+      foreach i in lRooms
+      {
+         Debug(Send(First(i),@GetName), " had a random point gen failure rate of ",
+               Nth(i,2) / 100, Nth(i,2) % 100,"%");
+      }
 
       return;
    }
@@ -3596,6 +3638,8 @@ messages:
       Send(self,@CreateOneSpellIfNew,#num=SID_SIPHON,#class=&Siphon);
       Send(self,@CreateOneSpellIfNew,#num=SID_FATIGUE,#class=&Fatigue);
       Send(self,@CreateOneSpellIfNew,#num=SID_BURN,#class=&Burn);
+      Send(self,@CreateOneSpellIfNew,#num=SID_FREEZE,#class=&Freeze);
+      Send(self,@CreateOneSpellIfNew,#num=SID_ELECTRIFY,#class=&Electrify);
       Send(self,@CreateOneSpellIfNew,#num=SID_LULLABY,#class=&Lullaby);
 
       Send(self,@CreateOneSpellIfNew,#num=SID_NODEBURST,#class=&Nodeburst);
@@ -3640,6 +3684,9 @@ messages:
       Send(self,@CreateOneSpellIfNew,#num=SID_RESIST_POISON,#class=&ResistPoison);
       Send(self,@CreateOneSpellIfNew,#num=SID_ILLUSIONARY_FIREWALL,#class=&IllusionaryFirewall);
       Send(self,@CreateOneSpellIfNew,#num=SID_FIREWALL,#class=&Firewall);
+      Send(self,@CreateOneSpellIfNew,#num=SID_FLAME_WAVE,#class=&FlameWave);
+      Send(self,@CreateOneSpellIfNew,#num=SID_ARCTIC_BREATH,#class=&ArcticBreath);
+      Send(self,@CreateOneSpellIfNew,#num=SID_METEOR,#class=&Meteor);
       Send(self,@CreateOneSpellIfNew,#num=SID_GAZE_OF_THE_BASILISK,#class=&Paralyze);
 
       Send(self,@CreateOneSpellIfNew,#num=SID_SPORE_BURST,#class=&SporeBurst);
@@ -3733,6 +3780,12 @@ messages:
       Send(self,@CreateOneSpellIfNew,#num=SID_PHASE,#class=&Phase);
       
       Send(self,@CreateOneSpellIfNew,#num=SID_CREATE_SCROLL,#class=&CreateScroll);
+      Send(self,@CreateOneSpellIfNew,#num=SID_SOUL_BIND,#class=&SoulBind);
+
+      Send(self,@CreateOneSpellIfNew,#num=SID_SHARP,#class=&Sharp);
+      Send(self,@CreateOneSpellIfNew,#num=SID_STRONG,#class=&Strong);
+      Send(self,@CreateOneSpellIfNew,#num=SID_NIMBLE,#class=&Nimble);
+      Send(self,@CreateOneSpellIfNew,#num=SID_TOUGH,#class=&Tough);
 
       // Trance may be searched for frequently, leave at end of list
       Send(self,@CreateOneSpellIfNew,#num=SID_TRANCE,#class=&Trance);
@@ -3758,6 +3811,7 @@ messages:
       // Keep arranged somewhat in order from rarest to most common,
       //  with cursed and castable spell types (like enchanted weapon) at the end
 
+      Send(self,@CreateOneItemAttIfNew,#num=IA_DYED,#class=&ItemAttDyed);
       Send(self,@CreateOneItemAttIfNew,#num=IA_DM_CREATED,#class=&ItemAttDMCreated);
       Send(self,@CreateOneItemAttIfNew,#num=WA_SPELLCASTER,#class=&WeapAttSpellCaster);
       Send(self,@CreateOneItemAttIfNew,#num=WA_EXPERT,#class=&WeapAttExpert);
@@ -3959,10 +4013,15 @@ messages:
        Send(self,@CreateOneSKillIfNew,#num=SKID_FIRE,#class=&Fire);
        Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_BOW,#class=&Archery);
 
+       Send(self,@CreateOneSKillIfNew,#num=SKID_THROW,#class=&Throw);
+       Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_THROW_WEAPON,#class=&ThrowWeaponProficiency);
+
        Send(self,@CreateOneSKillIfNew,#num=SKID_BLOCK,#class=&Block);
 
        Send(self,@CreateOneSKillIfNew,#num=SKID_SECOND_WIND,#class=&SecondWind);
        Send(self,@CreateOneSKillIfNew,#num=SKID_DISARM,#class=&Disarm);
+
+       Send(self,@CreateOneSKillIfNew,#num=SKID_CLEAVE,#class=&Cleave);
 
        return;
    }
@@ -4304,6 +4363,8 @@ messages:
       Create(&MinoTreasure);
       Create(&ChupaTreasure);
       Create(&WolfTreasure);
+      Create(&VitkhulTreasure);
+      Create(&LostSoulTreasure);
 
       return;
    }
@@ -5735,6 +5796,8 @@ messages:
       plMonsterTemplates = cons(create(&NarthylWorm,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = cons(create(&DeathSpider,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = cons(create(&GiantEye,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&Vitkhul,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = cons(create(&LostSoul,#template=TRUE),plMonsterTemplates);
 
       plMonsterTemplates = cons(create(&GroundWorm,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = cons(create(&GroundWormLarva,#template=TRUE),plMonsterTemplates);
@@ -5800,6 +5863,8 @@ messages:
       plItemTemplates = $;
 
       // Misc
+      plItemTemplates = cons(create(&DyeBottle),plItemTemplates);
+      
       plItemTemplates = cons(create(&SwordShardA),plItemTemplates);
       plItemTemplates = cons(create(&SwordShardB),plItemTemplates);
       plItemTemplates = cons(create(&SwordShardC),plItemTemplates);
@@ -6096,11 +6161,13 @@ messages:
       plItemTemplates = cons(create(&Helm),plItemTemplates);
       plItemTemplates = cons(create(&SimpleHelm),plItemTemplates);
       plItemTemplates = cons(create(&QormasHelm),plItemTemplates);
+      plItemTemplates = cons(create(&ThornedCirclet),plItemTemplates);
       plItemTemplates = cons(create(&IvyCirclet),plItemTemplates);
       plItemTemplates = cons(create(&Circlet),plItemTemplates);
       plItemTemplates = cons(create(&DaemonHelm),plItemTemplates);
 
       // Shields
+      plItemTemplates = cons(create(&TowerShield),plItemTemplates);
       plItemTemplates = cons(create(&GuildShield),plItemTemplates);
       plItemTemplates = cons(create(&OrcShield),plItemTemplates);
       plItemTemplates = cons(create(&KnightShield),plItemTemplates);
@@ -6154,6 +6221,7 @@ messages:
       plItemTemplates = cons(create(&LongSword),plItemTemplates);
       plItemTemplates = cons(create(&ShortSword),plItemTemplates);
       plItemTemplates = cons(create(&Axe),plItemTemplates);
+      plItemTemplates = cons(create(&Maul),plItemTemplates);
       plItemTemplates = cons(create(&Hammer),plItemTemplates);
       plItemTemplates = cons(create(&Mace),plItemTemplates);
       plItemTemplates = cons(create(&Snowball),plItemTemplates);
@@ -8031,60 +8099,60 @@ messages:
       return plBanks;
    }
 
-   GetResistanceName(type=ATCK_WEAP_ALL)
+   GetResistanceName(type=ATK_TYPE_ALL)
    {
       switch (type)
       {
-      case ATCK_WEAP_ALL: return weapon_resistance_name;
-      case ATCK_WEAP_PIERCE: return pierce_resistance_name;
-      case ATCK_WEAP_SLASH: return slash_resistance_name;
-      case ATCK_WEAP_THRUST: return thrust_resistance_name;
-      case ATCK_WEAP_BLUDGEON: return bludgeon_resistance_name;
-      case ATCK_WEAP_COLD: return cold_resistance_name;
-      case -ATCK_SPELL_ALL: return magic_resistance_name;
-      case -ATCK_SPELL_FIRE: return fire_resistance_name;
-      case -ATCK_SPELL_COLD: return cold_resistance_name;
-      case -ATCK_SPELL_SHOCK: return shock_resistance_name;
-      case -ATCK_SPELL_ACID: return acid_resistance_name;
-      case -ATCK_SPELL_HOLY: return holy_resistance_name;
-      case -ATCK_SPELL_UNHOLY: return unholy_resistance_name;
-      case -ATCK_SPELL_QUAKE: return quake_resistance_name;
+      case ATK_TYPE_ALL: return weapon_resistance_name;
+      case ATK_TYPE_PIERCE: return pierce_resistance_name;
+      case ATK_TYPE_SLASH: return slash_resistance_name;
+      case ATK_TYPE_THRUST: return thrust_resistance_name;
+      case ATK_TYPE_BLUDGEON: return bludgeon_resistance_name;
+      case ATK_TYPE_COLD: return cold_resistance_name;
+      case -SPL_TYPE_ALL: return magic_resistance_name;
+      case -SPL_TYPE_FIRE: return fire_resistance_name;
+      case -SPL_TYPE_COLD: return cold_resistance_name;
+      case -SPL_TYPE_SHOCK: return shock_resistance_name;
+      case -SPL_TYPE_ACID: return acid_resistance_name;
+      case -SPL_TYPE_HOLY: return holy_resistance_name;
+      case -SPL_TYPE_UNHOLY: return unholy_resistance_name;
+      case -SPL_TYPE_QUAKE: return quake_resistance_name;
       }
 
       return unknown_resistance_name;
    }
 
-   GetAttackDamageTypeName(type=ATCK_WEAP_ALL)
+   GetAttackDamageTypeName(type=ATK_TYPE_ALL)
    {
       switch (type)
       {
-      case ATCK_WEAP_ALL: return weapon_damage_name;
-      case ATCK_WEAP_NERUDITE: return nerudite_damage_name;
-      case ATCK_WEAP_SILVER: return silver_damage_name;
-      case ATCK_WEAP_MAGIC: return enchanted_damage_name;
-      case ATCK_WEAP_NONMAGIC: return nonmagic_damage_name;
-      case ATCK_WEAP_PIERCE: return pierce_damage_name;
-      case ATCK_WEAP_SLASH: return slash_damage_name;
-      case ATCK_WEAP_THRUST: return thrust_damage_name;
-      case ATCK_WEAP_BLUDGEON: return bludgeon_damage_name;
-      case ATCK_WEAP_COLD: return cold_damage_name;
+      case ATK_TYPE_ALL: return weapon_damage_name;
+      case ATK_TYPE_NERUDITE: return nerudite_damage_name;
+      case ATK_TYPE_SILVER: return silver_damage_name;
+      case ATK_TYPE_MAGIC: return enchanted_damage_name;
+      case ATK_TYPE_NONMAGIC: return nonmagic_damage_name;
+      case ATK_TYPE_PIERCE: return pierce_damage_name;
+      case ATK_TYPE_SLASH: return slash_damage_name;
+      case ATK_TYPE_THRUST: return thrust_damage_name;
+      case ATK_TYPE_BLUDGEON: return bludgeon_damage_name;
+      case ATK_TYPE_COLD: return cold_damage_name;
       }
 
       return unknown_damage_name;
    }
 
-   GetSpellDamageTypeName(type=ATCK_SPELL_ALL)
+   GetSpellDamageTypeName(type=SPL_TYPE_ALL)
    {
       switch (type)
       {
-      case ATCK_SPELL_ALL: return magic_damage_name;
-      case ATCK_SPELL_FIRE: return fire_damage_name;
-      case ATCK_SPELL_COLD: return cold_damage_name;
-      case ATCK_SPELL_SHOCK: return shock_damage_name;
-      case ATCK_SPELL_ACID: return acid_damage_name;
-      case ATCK_SPELL_HOLY: return holy_damage_name;
-      case ATCK_SPELL_UNHOLY: return unholy_damage_name;
-      case ATCK_SPELL_QUAKE: return quake_damage_name;
+      case SPL_TYPE_ALL: return magic_damage_name;
+      case SPL_TYPE_FIRE: return fire_damage_name;
+      case SPL_TYPE_COLD: return cold_damage_name;
+      case SPL_TYPE_SHOCK: return shock_damage_name;
+      case SPL_TYPE_ACID: return acid_damage_name;
+      case SPL_TYPE_HOLY: return holy_damage_name;
+      case SPL_TYPE_UNHOLY: return unholy_damage_name;
+      case SPL_TYPE_QUAKE: return quake_damage_name;
       }
 
       return unknown_damage_name;
@@ -8104,26 +8172,26 @@ messages:
 
    RecreateDamageTypeLists()
    {
-      plSpellTypes = [ ATCK_SPELL_QUAKE,
-                       ATCK_SPELL_UNHOLY,
-                       ATCK_SPELL_HOLY,
-                       ATCK_SPELL_ACID,
-                       ATCK_SPELL_SHOCK,
-                       ATCK_SPELL_COLD,
-                       ATCK_SPELL_FIRE,
-                       ATCK_SPELL_ALL
+      plSpellTypes = [ SPL_TYPE_QUAKE,
+                       SPL_TYPE_UNHOLY,
+                       SPL_TYPE_HOLY,
+                       SPL_TYPE_ACID,
+                       SPL_TYPE_SHOCK,
+                       SPL_TYPE_COLD,
+                       SPL_TYPE_FIRE,
+                       SPL_TYPE_ALL
                      ];
 
-      plAttackTypes = [ ATCK_WEAP_PIERCE,
-                        ATCK_WEAP_SLASH,
-                        ATCK_WEAP_BLUDGEON,
-                        ATCK_WEAP_THRUST,
-                        ATCK_WEAP_NONMAGIC,
-                        ATCK_WEAP_MAGIC,
-                        ATCK_WEAP_NERUDITE,
-                        ATCK_WEAP_SILVER,
-                        ATCK_WEAP_COLD,
-                        ATCK_WEAP_ALL
+      plAttackTypes = [ ATK_TYPE_PIERCE,
+                        ATK_TYPE_SLASH,
+                        ATK_TYPE_BLUDGEON,
+                        ATK_TYPE_THRUST,
+                        ATK_TYPE_NONMAGIC,
+                        ATK_TYPE_MAGIC,
+                        ATK_TYPE_NERUDITE,
+                        ATK_TYPE_SILVER,
+                        ATK_TYPE_COLD,
+                        ATK_TYPE_ALL
                       ];
 
       return;

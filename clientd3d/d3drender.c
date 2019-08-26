@@ -88,7 +88,7 @@ BYTE               gViewerLight = 0;
 int                  gNumObjects;
 int                  gNumVertices;
 int                  gNumDPCalls;
-PALETTEENTRY         gPalette[256];
+
 unsigned int         gFrame = 0;
 int                  gScreenWidth;
 int                  gScreenHeight;
@@ -123,7 +123,6 @@ AREA               gD3DView;
 Bool               gD3DRedrawAll = FALSE;
 int                  gTemp = 0;
 Bool               gWireframe;      // this is really bad, I'm sorry
-int                numMipMaps = 5;
 
 extern player_info      player;
 extern long            viewer_height;
@@ -132,7 +131,6 @@ extern PDIB            background;         /* Pointer to background bitmap */
 extern ObjectRange      visible_objects[];    /* Where objects are on screen */
 extern int            num_visible_objects;
 extern Draw3DParams      *p;
-extern int            gNumCalls;
 extern room_type      current_room;
 extern long            shade_amount;
 extern int            sector_depths[];
@@ -255,10 +253,7 @@ unsigned char gSkyboxBGRA[] =
 };
 
 void            D3DRenderBackgroundsLoad(char *pFilename, int index);
-LPDIRECT3DTEXTURE9   D3DRenderTextureCreateFromResource(BYTE *ptr, int width, int height);
 void            D3DRenderWorldDraw(room_type *room, Draw3DParams *params);
-void            D3DRenderPaletteSet(UINT xlatID0, UINT xlatID1, BYTE flags);
-void            D3DRenderPaletteSetNew(UINT xlatID0, UINT xlatID1, BYTE flags);
 void            D3DRenderNamesDraw3D(d3d_render_cache_system *pCacheSystem, d3d_render_pool_new *pPool,
                   room_type *room, Draw3DParams *params, font_3d *pFont);
 void            D3DRenderQuestInfoDraw3D(d3d_render_cache_system *pCacheSystem, d3d_render_pool_new *pPool,
@@ -271,7 +266,7 @@ void            D3DGetBackgroundOverlayPosition(BackgroundOverlay *pOverlay, Dra
 Bool            D3DComputePlayerOverlayArea(PDIB pdib, char hotspot, AREA *obj_area);
 
 // new render stuff
-void               GeometryUpdate(d3d_render_pool_new *pPool, d3d_render_cache_system *pCacheSystem);
+void               GeometryUpdate(d3d_render_pool_new *pPool);
 void               D3DRenderPoolInit(d3d_render_pool_new *pPool, int size, int packetSize);
 void               D3DRenderPoolShutdown(d3d_render_pool_new *pPool);
 void               D3DRenderPoolReset(d3d_render_pool_new *pPool, void *pMaterialFunc);
@@ -300,18 +295,18 @@ void               D3DRenderFloorMaskAdd(BSPnode *pNode, d3d_render_pool_new *pP
 void               D3DRenderCeilingMaskAdd(BSPnode *pNode, d3d_render_pool_new *pPool,
                                     Bool bDynamic);
 
-void               D3DGeometryBuildNew(room_type *room, d3d_render_pool_new *pPool, Draw3DParams *params);
-
+void               D3DGeometryBuildNew(room_type *room);
+void               D3DGeometryBuildNewStaticLMaps(room_type *room);
 void               D3DPostOverlayEffects(d3d_render_pool_new *pPool);
-LPDIRECT3DTEXTURE9      D3DRenderFramebufferTextureCreate(LPDIRECT3DTEXTURE9   pTex0,
+LPDIRECT3DTEXTURE9 D3DRenderFramebufferTextureCreate(LPDIRECT3DTEXTURE9   pTex0,
                                         LPDIRECT3DTEXTURE9   pTex1,
                                         float width, float height);
 void               *D3DRenderMalloc(unsigned int bytes);
 
 // externed stuff
 extern int         FindHotspotPdib(PDIB pdib, char hotspot, POINT *point);
-extern Bool         ComputePlayerOverlayArea(PDIB pdib, char hotspot, AREA *obj_area);
-extern void         UpdateRoom3D(room_type *room, Draw3DParams *params);
+extern Bool        ComputePlayerOverlayArea(PDIB pdib, char hotspot, AREA *obj_area);
+extern void        UpdateRoom3D(room_type *room, Draw3DParams *params);
 
 inline void *D3DRenderMalloc(unsigned int bytes)
 {
@@ -376,12 +371,6 @@ HRESULT D3DRenderInit(HWND hWnd)
    // Set AA mode
    hr = IDirect3DDevice9_SetRenderState(gpD3DDevice, D3DRS_MULTISAMPLEANTIALIAS, config.aaMode > 0);
    
-   // Number of mipmaps/texture levels. Config is a boolean, pick 5 (on) or 1 (off).
-   if (config.mipMaps)
-      numMipMaps = 5;
-   else
-      numMipMaps = 1;
-
    hr = IDirect3DDevice9_SetRenderState(gpD3DDevice, D3DRS_CULLMODE, D3DCULL_NONE);
    hr = IDirect3DDevice9_SetRenderState(gpD3DDevice, D3DRS_LIGHTING, FALSE);
    hr = IDirect3DDevice9_SetRenderState(gpD3DDevice, D3DRS_CLIPPING, FALSE);
@@ -399,17 +388,19 @@ HRESULT D3DRenderInit(HWND hWnd)
 
    //   DX_FUNC_CALL(gpD3DDevice->lpVtbl->SetRenderState(gpD3DDevice, D3DRS_FILLMODE, D3DFILL_WIREFRAME), gD3DError);
 
-    D3DCacheSystemInit(&gLMapCacheSystem, gD3DDriverProfile.texMemLMapDynamic);
-    D3DCacheSystemInit(&gLMapCacheSystemStatic, gD3DDriverProfile.texMemLMapStatic);
-    D3DRenderPoolInit(&gLMapPool, POOL_SIZE, PACKET_SIZE);
-    D3DRenderPoolInit(&gLMapPoolStatic, POOL_SIZE, PACKET_SIZE);
+   D3DCacheSystemInit(&gLMapCacheSystem);
+   D3DCacheSystemInit(&gLMapCacheSystemStatic);
+   D3DRenderPoolInit(&gLMapPool, POOL_SIZE, PACKET_SIZE);
+   D3DRenderPoolInit(&gLMapPoolStatic, POOL_SIZE, PACKET_SIZE);
 
-   D3DCacheSystemInit(&gObjectCacheSystem, gD3DDriverProfile.texMemObjects);
-   D3DCacheSystemInit(&gWorldCacheSystem, gD3DDriverProfile.texMemWorldDynamic);
-   D3DCacheSystemInit(&gWorldCacheSystemStatic, gD3DDriverProfile.texMemWorldStatic);
-   D3DCacheSystemInit(&gWallMaskCacheSystem, 2000000);
-   D3DCacheSystemInit(&gEffectCacheSystem, 1000000);
-   D3DCacheSystemInit(&gParticleCacheSystem, 1000000);
+   D3DTexCacheInit();
+
+   D3DCacheSystemInit(&gObjectCacheSystem);
+   D3DCacheSystemInit(&gWorldCacheSystem);
+   D3DCacheSystemInit(&gWorldCacheSystemStatic);
+   D3DCacheSystemInit(&gWallMaskCacheSystem);
+   D3DCacheSystemInit(&gEffectCacheSystem);
+   D3DCacheSystemInit(&gParticleCacheSystem);
 
    D3DRenderPoolInit(&gObjectPool, POOL_SIZE, PACKET_SIZE);
    D3DRenderPoolInit(&gWorldPool, POOL_SIZE / 2, PACKET_SIZE);
@@ -426,9 +417,6 @@ HRESULT D3DRenderInit(HWND hWnd)
    gWallMaskPool.pMaterialFctn = &D3DMaterialWallMaskPool;
    gEffectPool.pMaterialFctn = &D3DMaterialEffectPool;
    gParticlePool.pMaterialFctn = &D3DMaterialParticlePool;
-   
-   
-   D3DRenderPaletteSet(0, 0, 0);
 
    IDirect3DDevice9_SetSamplerState(gpD3DDevice, 0, D3DSAMP_MAGFILTER, gD3DDriverProfile.magFilter);
    IDirect3DDevice9_SetSamplerState(gpD3DDevice, 0, D3DSAMP_MINFILTER, gD3DDriverProfile.minFilter);
@@ -530,15 +518,13 @@ void D3DRenderShutDown(void)
 
    if (!gD3DDriverProfile.bSoftwareRenderer)
    {
-      if (config.bDynamicLighting)
-      {
-         D3DCacheSystemShutdown(&gLMapCacheSystem);
-         D3DCacheSystemShutdown(&gLMapCacheSystemStatic);      
-         D3DRenderPoolShutdown(&gLMapPool);
-         D3DRenderPoolShutdown(&gLMapPoolStatic);
-      }
+      D3DCacheSystemShutdown(&gLMapCacheSystem);
+      D3DCacheSystemShutdown(&gLMapCacheSystemStatic);
+      D3DRenderPoolShutdown(&gLMapPool);
+      D3DRenderPoolShutdown(&gLMapPoolStatic);
 
       D3DParticleSystemShutdown();
+      D3DTexCacheShutdown();
 
       D3DCacheSystemShutdown(&gObjectCacheSystem);
       D3DCacheSystemShutdown(&gWorldCacheSystem);
@@ -733,17 +719,22 @@ void D3DRenderBegin(room_type *room, Draw3DParams *params)
 
    if (gD3DRedrawAll & D3DRENDER_REDRAW_ALL)
    {
-      D3DGeometryBuildNew(room, &gWorldPoolStatic, params);
+      D3DGeometryBuildNew(room);
       gD3DRedrawAll = FALSE;
    }
    else if (gD3DRedrawAll & D3DRENDER_REDRAW_UPDATE)
    {
-      GeometryUpdate(&gWorldPoolStatic, &gWorldCacheSystemStatic);
+      GeometryUpdate(&gWorldPoolStatic);
+      gD3DRedrawAll = FALSE;
+   }
+   else if (gD3DRedrawAll & D3DRENDER_REDRAW_STATIC_LIGHTS)
+   {
+      D3DGeometryBuildNewStaticLMaps(room);
       gD3DRedrawAll = FALSE;
    }
    else if (gD3DDriverProfile.bFogEnable == FALSE)
    {
-      GeometryUpdate(&gWorldPoolStatic, &gWorldCacheSystemStatic);
+      GeometryUpdate(&gWorldPoolStatic);
    }
 
    /***************************************************************************/
@@ -753,7 +744,8 @@ void D3DRenderBegin(room_type *room, Draw3DParams *params)
    IDirect3DDevice9_Clear(gpD3DDevice, 0, NULL, D3DCLEAR_TARGET |
                           D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0, 0);
 
-   D3DRenderPaletteSet(0, 0, 0);
+   // Shouldn't be needed - palette gets set appropriately later.
+   //D3DRenderPaletteSet(0, 0, 0);
 
    IDirect3DDevice9_BeginScene(gpD3DDevice);
 
@@ -799,7 +791,7 @@ void D3DRenderBegin(room_type *room, Draw3DParams *params)
    D3DCacheSystemReset(&gObjectCacheSystem);
    D3DCacheSystemReset(&gLMapCacheSystem);
    D3DCacheSystemReset(&gWorldCacheSystem);
-   
+
    UpdateRoom3D(room, params);
 
    // Go through all node and mark them as unseen. Used to determine
@@ -880,8 +872,6 @@ void D3DRenderBegin(room_type *room, Draw3DParams *params)
 
       IDirect3DDevice9_SetRenderState(gpD3DDevice, D3DRS_CULLMODE, D3DCULL_CW);
 
-      gNumCalls = 0;
-
       D3DRENDER_SET_ALPHATEST_STATE(gpD3DDevice, TRUE, TEMP_ALPHA_REF, D3DCMP_GREATEREQUAL);
       D3DRENDER_SET_ALPHABLEND_STATE(gpD3DDevice, FALSE, D3DBLEND_ONE, D3DBLEND_ONE);
 
@@ -948,7 +938,7 @@ void D3DRenderBegin(room_type *room, Draw3DParams *params)
       // this pass is a gigantic hack used to cover up the cracks
       // caused by all the t-junctions in the old geometry.  the entire world is drawn
       // in wireframe, with zwrite disabled.  welcome to my hell
-      if (1)
+      if (config.drawWireframe)
       {
          gWireframe = TRUE;
          IDirect3DDevice9_SetRenderState(gpD3DDevice, D3DRS_ZWRITEENABLE, FALSE);
@@ -1011,7 +1001,7 @@ void D3DRenderBegin(room_type *room, Draw3DParams *params)
    /*                          POST LIGHTMAPS                                 */
    /***************************************************************************/
    
-   if (draw_world && config.bDynamicLighting)
+   if (draw_world && config.dynamicLights)
    {
       timeLMaps = timeGetTime();
       IDirect3DDevice9_SetSamplerState(gpD3DDevice, 1, D3DSAMP_MAGFILTER, gD3DDriverProfile.magFilter);
@@ -1505,11 +1495,80 @@ void D3DRenderWorldDraw(room_type *room, Draw3DParams *params)
    }
 }
 
-void D3DGeometryBuildNew(room_type *room, d3d_render_pool_new *pPool, Draw3DParams *params)
+void D3DGeometryBuildNewStaticLMaps(room_type *room)
 {
-   int         count;
-   BSPnode      *pNode = NULL;
-   WallData   *pWall;
+   BSPnode *pNode = NULL;
+   WallData *pWall;
+
+   debug(("D3DGeometryBuildNewStaticLMaps: number of nodes is %i\n", room->num_nodes));
+
+   if (config.dynamicLights)
+   {
+      D3DCacheSystemReset(&gLMapCacheSystemStatic);
+      D3DRenderPoolReset(&gLMapPoolStatic, &D3DMaterialLMapDynamicPool);
+      for (int count = 0; count < room->num_nodes; count++)
+      {
+         for (int numLights = 0; numLights < gDLightCache.numLights; numLights++)
+         {
+            d_light *light = &gDLightCache.dLights[numLights];
+
+            // If the light doesn't reach this bounding box, skip to the next one.
+            pNode = &room->nodes[count];
+            if (pNode->bbox.x0 >= light->maxX
+               || pNode->bbox.x1 <= light->minX
+               || pNode->bbox.y0 >= light->maxY
+               || pNode->bbox.y1 <= light->minY)
+               continue;
+            switch (pNode->type)
+            {
+            case BSPinternaltype:
+               for (pWall = pNode->u.internal.walls_in_plane; pWall != NULL; pWall = pWall->next)
+               {
+                  if (!(pWall->pos_sidedef || pWall->neg_sidedef))
+                     continue;
+
+                  // Skip if no draw flag or not inside light radius.
+                  if ((!(pWall->seen & WF_CANDRAWMASK)) || !WallInsideRadius(light, pWall))
+                     continue;
+
+                  if (pWall->seen & WF_CANDRAWNORMAL)
+                  {
+                     D3DRenderLMapPostWallAdd(pWall, &gLMapPoolStatic, D3DRENDER_WALL_NORMAL, 1, light, FALSE);
+                     D3DRenderLMapPostWallAdd(pWall, &gLMapPoolStatic, D3DRENDER_WALL_NORMAL, -1, light, FALSE);
+                  }
+
+                  if (pWall->seen & WF_CANDRAWBELOW)
+                  {
+                     D3DRenderLMapPostWallAdd(pWall, &gLMapPoolStatic, D3DRENDER_WALL_BELOW, 1, light, FALSE);
+                     D3DRenderLMapPostWallAdd(pWall, &gLMapPoolStatic, D3DRENDER_WALL_BELOW, -1, light, FALSE);
+                  }
+
+                  if (pWall->seen & WF_CANDRAWABOVE)
+                  {
+                     D3DRenderLMapPostWallAdd(pWall, &gLMapPoolStatic, D3DRENDER_WALL_ABOVE, 1, light, FALSE);
+                     D3DRenderLMapPostWallAdd(pWall, &gLMapPoolStatic, D3DRENDER_WALL_ABOVE, -1, light, FALSE);
+                  }
+               }
+
+               break;
+
+            case BSPleaftype:
+               D3DRenderLMapPostFloorAdd(pNode, &gLMapPoolStatic, light, FALSE);
+               D3DRenderLMapPostCeilingAdd(pNode, &gLMapPoolStatic, light, FALSE);
+               break;
+
+            default:
+               break;
+            }
+         }
+      }
+      D3DCacheFill(&gLMapCacheSystemStatic, &gLMapPoolStatic, 2);
+   }
+}
+void D3DGeometryBuildNew(room_type *room)
+{
+   BSPnode *pNode = NULL;
+   WallData *pWall;
 
    D3DCacheSystemReset(&gWorldCacheSystemStatic);
    D3DCacheSystemReset(&gWallMaskCacheSystem);
@@ -1517,9 +1576,9 @@ void D3DGeometryBuildNew(room_type *room, d3d_render_pool_new *pPool, Draw3DPara
    D3DRenderPoolReset(&gWorldPoolStatic, &D3DMaterialWorldPool);
    D3DRenderPoolReset(&gWallMaskPool, &D3DMaterialWallMaskPool);
 
-   debug(("number of nodes is %i\n", room->num_nodes));
+   debug(("D3DGeometryBuildNew: number of nodes is %i\n", room->num_nodes));
 
-   for (count = 0; count < room->num_nodes; count++)
+   for (int count = 0; count < room->num_nodes; count++)
    {
       pNode = &room->nodes[count];
 
@@ -1576,74 +1635,14 @@ void D3DGeometryBuildNew(room_type *room, d3d_render_pool_new *pPool, Draw3DPara
       }
    }
 
-   if (config.bDynamicLighting)
-   {
-      D3DCacheSystemReset(&gLMapCacheSystemStatic);
-      D3DRenderPoolReset(&gLMapPoolStatic, &D3DMaterialLMapDynamicPool);
-      for (count = 0; count < room->num_nodes; count++)
-      {
-         for (int numLights = 0; numLights < gDLightCache.numLights; numLights++)
-         {
-            d_light *light = &gDLightCache.dLights[numLights];
-            
-            // If the light doesn't reach this bounding box, skip to the next one.
-            pNode = &room->nodes[count];
-            if (pNode->bbox.x0 >= light->maxX
-               || pNode->bbox.x1 <= light->minX
-               || pNode->bbox.y0 >= light->maxY
-               || pNode->bbox.y1 <= light->minY)
-             continue;
-            switch (pNode->type)
-            {
-            case BSPinternaltype:
-               for (pWall = pNode->u.internal.walls_in_plane; pWall != NULL; pWall = pWall->next)
-               {
-                  if (!(pWall->pos_sidedef || pWall->neg_sidedef))
-                     continue;
-
-                  // Skip if no draw flag or not inside light radius.
-                  if ((!(pWall->seen & WF_CANDRAWMASK)) || !WallInsideRadius(light, pWall))
-                     continue;
-
-                  if (pWall->seen & WF_CANDRAWNORMAL)
-                  {
-                       D3DRenderLMapPostWallAdd(pWall, &gLMapPoolStatic, D3DRENDER_WALL_NORMAL, 1, light, FALSE);
-                       D3DRenderLMapPostWallAdd(pWall, &gLMapPoolStatic, D3DRENDER_WALL_NORMAL, -1, light, FALSE);
-                  }
-
-                  if (pWall->seen & WF_CANDRAWBELOW)
-                  {
-                       D3DRenderLMapPostWallAdd(pWall, &gLMapPoolStatic, D3DRENDER_WALL_BELOW, 1, light, FALSE);
-                       D3DRenderLMapPostWallAdd(pWall, &gLMapPoolStatic, D3DRENDER_WALL_BELOW, -1, light, FALSE);
-                  }
-
-                  if (pWall->seen & WF_CANDRAWABOVE)
-                  {
-                       D3DRenderLMapPostWallAdd(pWall, &gLMapPoolStatic, D3DRENDER_WALL_ABOVE, 1, light, FALSE);
-                       D3DRenderLMapPostWallAdd(pWall, &gLMapPoolStatic, D3DRENDER_WALL_ABOVE, -1, light, FALSE);
-                  }
-               }
-
-               break;
-
-            case BSPleaftype:
-               D3DRenderLMapPostFloorAdd(pNode, &gLMapPoolStatic, light, FALSE);
-               D3DRenderLMapPostCeilingAdd(pNode, &gLMapPoolStatic, light, FALSE);
-               break;
-
-            default:
-               break;
-            }
-         }
-      }
-      D3DCacheFill(&gLMapCacheSystemStatic, &gLMapPoolStatic, 2);
-   }
-
    D3DCacheFill(&gWorldCacheSystemStatic, &gWorldPoolStatic, 1);
    D3DCacheFill(&gWallMaskCacheSystem, &gWallMaskPool, 1);
+
+   // Static light maps
+   D3DGeometryBuildNewStaticLMaps(room);
 }
 
-void GeometryUpdate(d3d_render_pool_new *pPool, d3d_render_cache_system *pCacheSystem)
+void GeometryUpdate(d3d_render_pool_new *pPool)
 {
    u_int            curPacket, curChunk;
    u_int            i, numPackets;
@@ -3057,11 +3056,13 @@ void D3DRenderNamesDraw3D(d3d_render_cache_system *pCacheSystem, d3d_render_pool
 
             if (pRNode->obj.drawingtype == DRAWFX_SECONDTRANS)
             {
+               pChunk->alphaRef = TEMP_ALPHA_REF;
                pChunk->xLat0 = 0;
                pChunk->xLat1 = pRNode->obj.secondtranslation;
             }
             else if (pRNode->obj.drawingtype == DRAWFX_DOUBLETRANS)
             {
+               pChunk->alphaRef = TEMP_ALPHA_REF;
                pChunk->xLat0 = pRNode->obj.translation;
                pChunk->xLat1 = pRNode->obj.secondtranslation;
             }
@@ -3360,401 +3361,6 @@ void D3DRenderQuestInfoDraw3D(d3d_render_cache_system *pCacheSystem, d3d_render_
    }
 }
 
-// Texture loader for BGF files. No longer need to load rotated textures separately,
-// uv coords are flipped for floor/wall/ceilings.
-LPDIRECT3DTEXTURE9 D3DRenderTextureCreateFromBGF(PDIB pDib, BYTE xLat0, BYTE xLat1,
-                                      BYTE effect)
-{
-   D3DLOCKED_RECT      lockedRect;
-   LPDIRECT3DTEXTURE9   pTexture = NULL;
-   LPDIRECT3DTEXTURE9   pTextureFinal = NULL;
-   unsigned char      *pBits = NULL;
-   unsigned int      w, h;
-   unsigned short      *pPixels16;
-   int               si, sj, di, dj;
-   int               k, l, newWidth,   newHeight, diffWidth, diffHeight;
-   int               skipValW, skipValH, pitchHalf;
-   Color            lastColor;
-
-   lastColor.red = 128;
-   lastColor.green = 128;
-   lastColor.blue = 128;
-
-   D3DRenderPaletteSetNew(xLat0, xLat1, effect);
-   skipValW = skipValH = 1;
-
-   // convert to power of 2 texture, rounding down
-   w = h = 0x80000000;
-
-   while (!(w & pDib->width))
-      w = w >> 1;
-
-   while (!(h & pDib->height))
-      h = h >> 1;
-
-   // if either dimension is less than 256 pixels, round it back up
-   if (pDib->width < D3DRENDER_TEXTURE_THRESHOLD)
-   {
-      if (w != pDib->width)
-         w <<= 1;
-
-      newWidth = w;
-      diffWidth = newWidth - pDib->width;
-      skipValW = -1;
-   }
-   else
-   {
-      newWidth = w;
-      diffWidth = pDib->width - newWidth;
-      skipValW = 1;
-   }
-
-   if (pDib->height < D3DRENDER_TEXTURE_THRESHOLD)
-   {
-      if (h != pDib->height)
-         h <<= 1;
-
-      newHeight = h;
-      diffHeight = newHeight - pDib->height;
-      skipValH = -1;
-   }
-   else
-   {
-      newHeight = h;
-      diffHeight = pDib->height - newHeight;
-      skipValH = 1;
-   }
-
-   pBits = DibPtr(pDib);
-
-   int reqMipMaps = numMipMaps;
-   if (reqMipMaps > 1 && (newWidth < 16 || newHeight < 16))
-      reqMipMaps = 1;
-
-   if (gD3DDriverProfile.bManagedTextures)
-      IDirect3DDevice9_CreateTexture(gpD3DDevice, newWidth, newHeight, reqMipMaps, 0,
-                                     D3DFMT_A1R5G5B5, D3DPOOL_MANAGED, &pTexture, NULL);
-   else
-      IDirect3DDevice9_CreateTexture(gpD3DDevice, newWidth, newHeight, reqMipMaps, 0,
-                                     D3DFMT_A1R5G5B5, D3DPOOL_SYSTEMMEM, &pTexture, NULL);
-
-   if (pTexture == NULL)
-      return NULL;
-
-   // If we are using mipmaps, need to modify each texture level.
-   int pNewHeight = newHeight;
-   int pNewWidth = newWidth;
-   int levelAdd = 1;
-   for (DWORD iLevel = 0; iLevel < pTexture->GetLevelCount(); ++iLevel, levelAdd *= 2)
-   {
-      k = -pNewWidth;
-      l = -pNewHeight;
-
-      IDirect3DTexture9_LockRect(pTexture, iLevel, &lockedRect, NULL, 0);
-
-      pitchHalf = lockedRect.Pitch / 2;
-      pPixels16 = (unsigned short *)lockedRect.pBits;
-
-      for (si = 0, di = 0; di < newHeight; si += levelAdd, di++)
-      {
-         if (diffHeight)
-            if ((l += diffHeight) >= 0)
-            {
-               si += skipValH;
-               l -= pNewHeight;
-            }
-
-         for (dj = 0, sj = 0; dj < newWidth; dj++, sj += levelAdd)
-         {
-            if (diffWidth)
-               if ((k += diffWidth) >= 0)
-               {
-                  sj += skipValW;
-                  k -= pNewWidth;
-               }
-
-            // 16bit 1555 textures
-            if (gPalette[pBits[si * pDib->width + sj]].peFlags != 0)
-            {
-               pPixels16[di * pitchHalf + dj] =
-                  (gPalette[pBits[si * pDib->width + sj]].peBlue >> 3) |
-                  ((gPalette[pBits[si * pDib->width + sj]].peGreen >> 3) << 5) |
-                  ((gPalette[pBits[si * pDib->width + sj]].peRed >> 3) << 10);
-               pPixels16[di * pitchHalf + dj] |=
-                  gPalette[pBits[si * pDib->width + sj]].peFlags ? (1 << 15) : 0;
-
-               lastColor.red = gPalette[pBits[si * pDib->width + sj]].peRed;
-               lastColor.green = gPalette[pBits[si * pDib->width + sj]].peGreen;
-               lastColor.blue = gPalette[pBits[si * pDib->width + sj]].peBlue;
-            }
-            else
-            {
-               pPixels16[di * pitchHalf + dj] =
-                  (lastColor.blue >> 3) |
-                  ((lastColor.green >> 3) << 5) |
-                  ((lastColor.red >> 3) << 10);
-               pPixels16[di * pitchHalf + dj] |=
-                  gPalette[pBits[si * pDib->width + sj]].peFlags ? (1 << 15) : 0;
-            }
-         }
-      }
-
-      IDirect3DTexture9_UnlockRect(pTexture, iLevel);
-      newWidth /= 2;
-      newHeight /= 2;
-      skipValW *= 2;
-      skipValH *= 2;
-   }
-
-   if (gD3DDriverProfile.bManagedTextures == FALSE)
-   {
-      IDirect3DDevice9_CreateTexture(gpD3DDevice, pNewWidth, pNewHeight, reqMipMaps, 0,
-                                     D3DFMT_A1R5G5B5, D3DPOOL_DEFAULT, &pTextureFinal, NULL);
-
-      if (pTextureFinal)
-      {
-         IDirect3DTexture9_AddDirtyRect(pTextureFinal, NULL);
-         IDirect3DDevice9_UpdateTexture(
-            gpD3DDevice, (IDirect3DBaseTexture9 *) pTexture,
-            (IDirect3DBaseTexture9 *) pTextureFinal);
-      }
-      IDirect3DDevice9_Release(pTexture);
-
-      return pTextureFinal;
-   }
-   else
-      return pTexture;
-}
-
-LPDIRECT3DTEXTURE9 D3DRenderTextureCreateFromResource(BYTE *ptr, int width, int height)
-{
-   D3DLOCKED_RECT      lockedRect;
-   LPDIRECT3DTEXTURE9   pTexture = NULL;
-   LPDIRECT3DTEXTURE9   pTextureFinal = NULL;
-   unsigned char      *pBits = NULL;
-   unsigned int      w, h;
-   unsigned short      *pPixels16;
-   int               si, sj, di, dj;
-   int               k, l, newWidth,   newHeight, diffWidth, diffHeight;
-   int               skipValW, skipValH, pitchHalf;
-
-   D3DRenderPaletteSetNew(0, 0, 0);
-
-   skipValW = skipValH = 1;
-
-   // convert to power of 2 texture, rounding down
-   w = h = 0x80000000;
-
-   while (!(w & width))
-      w = w >> 1;
-
-   while (!(h & height))
-      h = h >> 1;
-
-   // if either dimension is less than 256 pixels, round it back up
-   if (width < D3DRENDER_TEXTURE_THRESHOLD)
-   {
-      if (w != width)
-         w <<= 1;
-
-      newWidth = w;
-      diffWidth = newWidth - width;
-      skipValW = -1;
-   }
-   else
-   {
-      newWidth = w;
-      diffWidth = width - newWidth;
-      skipValW = 1;
-   }
-
-   if (height < D3DRENDER_TEXTURE_THRESHOLD)
-   {
-      if (h != height)
-         h <<= 1;
-
-      newHeight = h;
-      diffHeight = newHeight - height;
-      skipValH = -1;
-   }
-   else
-   {
-      newHeight = h;
-      diffHeight = height - newHeight;
-      skipValH = 1;
-   }
-
-   k = -newWidth;
-   l = -newHeight;
-
-   pBits = ptr;
-
-   if (gD3DDriverProfile.bManagedTextures)
-      IDirect3DDevice9_CreateTexture(gpD3DDevice, newHeight, newWidth, 1, 0,
-         D3DFMT_A1R5G5B5, D3DPOOL_MANAGED, &pTexture, NULL);
-   else
-      IDirect3DDevice9_CreateTexture(gpD3DDevice, newHeight, newWidth, 1, 0,
-         D3DFMT_A1R5G5B5, D3DPOOL_SYSTEMMEM, &pTexture, NULL);
-   
-   if (NULL == pTexture)
-      return NULL;
-
-   IDirect3DTexture9_LockRect(pTexture, 0, &lockedRect, NULL, 0);
-
-   pitchHalf = lockedRect.Pitch / 2;
-
-   pPixels16 = (unsigned short *)lockedRect.pBits;
-
-//   for (dj = 0, sj = 0; dj < newHeight; dj++, sj++)
-   for (dj = newHeight - 1, sj = 0; dj >= 0; dj--, sj++)
-   {
-      if (diffHeight)
-         if ((l += diffHeight) >= 0)
-         {
-            sj += skipValH;
-            l -= newHeight;
-         }
-
-      for (si = 0, di = 0; di < newWidth; si++, di++)
-      {
-         if (diffWidth)
-            if ((k += diffWidth) >= 0)
-            {
-               si += skipValW;
-               k -= newWidth;
-            }
-
-         // 16bit 1555 textures
-         pPixels16[dj * pitchHalf + di] =
-            (gPalette[pBits[(sj * width) + si]].peBlue >> 3) |
-            ((gPalette[pBits[(sj * width) + si]].peGreen >> 3) << 5) |
-            ((gPalette[pBits[(sj * width) + si]].peRed >> 3) << 10);
-         pPixels16[dj * pitchHalf + di] |=
-            gPalette[pBits[(sj * width) + si]].peFlags ? (1 << 15) : 0;
-      }
-   }
-
-   IDirect3DTexture9_UnlockRect(pTexture, 0);
-
-   if (gD3DDriverProfile.bManagedTextures == FALSE)
-   {
-      IDirect3DDevice9_CreateTexture(gpD3DDevice, newHeight, newWidth, 1, 0,
-                                     D3DFMT_A1R5G5B5, D3DPOOL_DEFAULT, &pTextureFinal, NULL);
-
-      if (pTextureFinal)
-      {
-         IDirect3DTexture9_AddDirtyRect(pTextureFinal, NULL);
-         IDirect3DDevice9_UpdateTexture(
-                     gpD3DDevice, (IDirect3DBaseTexture9 *) pTexture,
-                     (IDirect3DBaseTexture9 *) pTextureFinal);
-      }
-      IDirect3DDevice9_Release(pTexture);
-
-      return pTextureFinal;
-   }
-   else
-      return pTexture;
-}
-
-LPDIRECT3DTEXTURE9 D3DRenderTextureCreateFromPNG(char *pFilename)
-{
-   FILE   *pFile;
-   png_structp   pPng = NULL;
-   png_infop   pInfo = NULL;
-   png_infop   pInfoEnd = NULL;
-   png_bytepp   rows;
-
-   D3DLOCKED_RECT      lockedRect;
-   LPDIRECT3DTEXTURE9   pTexture = NULL;
-   unsigned char      *pBits = NULL;
-   unsigned int      w, h, b;
-   int               pitchHalf, bytePP, stride;
-
-   pFile = fopen(pFilename, "rb");
-   if (pFile == NULL)
-      return NULL;
-
-   pPng = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-   if (NULL == pPng)
-   {
-      fclose(pFile);
-      return NULL;
-   }
-
-   pInfo = png_create_info_struct(pPng);
-   if (NULL == pInfo)
-   {
-      png_destroy_read_struct(&pPng, NULL, NULL);
-      fclose(pFile);
-      return NULL;
-   }
-
-   pInfoEnd = png_create_info_struct(pPng);
-   if (NULL == pInfoEnd)
-   {
-      png_destroy_read_struct(&pPng, &pInfo, NULL);
-      fclose(pFile);
-      return NULL;
-   }
-
-   if (setjmp(png_jmpbuf(pPng)))
-   {
-      png_destroy_read_struct(&pPng, &pInfo, &pInfoEnd);
-      fclose(pFile);
-      return NULL;
-   }
-
-   png_init_io(pPng, pFile);
-   png_read_png(pPng, pInfo, PNG_TRANSFORM_IDENTITY, NULL);
-   rows = png_get_rows(pPng, pInfo);
-
-   bytePP = pPng->pixel_depth / 8;
-   stride = pPng->width * bytePP - bytePP;
-
-   {
-      int   i;
-      png_bytep   curRow;
-
-      for (i = 0; i < 6; i++)
-      {
-         IDirect3DDevice9_CreateTexture(gpD3DDevice, pPng->width, pPng->height, 1, 0,
-            D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &pTexture, NULL);
-
-         IDirect3DTexture9_LockRect(pTexture, 0, &lockedRect, NULL, 0);
-
-         pitchHalf = lockedRect.Pitch / 2;
-
-         pBits = (unsigned char *)lockedRect.pBits;
-
-         for (h = 0; h < pPng->height; h++)
-         {
-            curRow = rows[h];
-
-            for (w = 0; w < pPng->width; w++)
-            {
-               for (b = 0; b < 4; b++)
-               {
-                  if (b == 3)
-                     pBits[h * lockedRect.Pitch + w * 4 + b] = 255;
-                  else
-                     pBits[h * lockedRect.Pitch + w * 4 + (3 - b)] =
-                        curRow[(w * bytePP) + b];
-//                     pBits[h * lockedRect.Pitch + w * 4 + b] =
-//                        curRow[(stride) - (w * bytePP) + b];
-               }
-            }
-         }
-
-         IDirect3DTexture9_UnlockRect(pTexture, 0);
-      }
-   }
-
-   png_destroy_read_struct(&pPng, &pInfo, &pInfoEnd);
-   fclose(pFile);
-
-   return pTexture;
-}
-
 void D3DRenderResizeDisplay(int left, int top, int right, int bottom)
 {
    gD3DRect.left = left;
@@ -3777,296 +3383,6 @@ void D3DRenderEnableToggle(void)
 int D3DRenderIsEnabled(void)
 {
    return gD3DEnabled;
-}
-
-void D3DRenderPaletteSet(UINT xlatID0, UINT xlatID1, BYTE flags)
-{
-   xlat   *pXLat0, *pXLat1, *pXLatGrey;
-   Color   *pPalette;
-   int      i;
-
-   return;
-
-   pXLat0 = FindStandardXlat(xlatID0);
-   pXLat1 = FindStandardXlat(xlatID1);
-
-   pPalette = base_palette;
-
-   switch (flags)
-   {
-      case DRAWFX_DRAW_PLAIN:
-      case DRAWFX_DOUBLETRANS:
-      case DRAWFX_BLACK:
-         for (i = 0; i < 256; i++)
-         {
-            gPalette[i].peRed = pPalette[fastXLAT(fastXLAT(i, pXLat0), pXLat1)].red;
-            gPalette[i].peGreen = pPalette[fastXLAT(fastXLAT(i, pXLat0), pXLat1)].green;
-            gPalette[i].peBlue = pPalette[fastXLAT(fastXLAT(i, pXLat0), pXLat1)].blue;
-
-            if (i == 254)
-               gPalette[i].peFlags = 0;
-            else
-               gPalette[i].peFlags = 255;
-         }
-      break;
-
-      case DRAWFX_TRANSLUCENT25:
-      case DRAWFX_TRANSLUCENT50:
-      case DRAWFX_TRANSLUCENT75:
-         for (i = 0; i < 256; i++)
-         {
-            gPalette[i].peRed = pPalette[fastXLAT(i, pXLat0)].red;
-            gPalette[i].peGreen = pPalette[fastXLAT(i, pXLat0)].green;
-            gPalette[i].peBlue = pPalette[fastXLAT(i, pXLat0)].blue;
-
-            if (i == 254)
-               gPalette[i].peFlags = 0;
-            else
-               gPalette[i].peFlags = 255;
-         }
-      break;
-
-      case DRAWFX_INVISIBLE:
-      break;
-
-      case DRAWFX_TRANSLATE:
-      break;
-
-      case DRAWFX_DITHERINVIS:
-         for (i = 0; i < 256; i++)
-         {
-            gPalette[i].peRed = pPalette[fastXLAT(i, pXLat0)].red;
-            gPalette[i].peGreen = pPalette[fastXLAT(i, pXLat0)].green;
-            gPalette[i].peBlue = pPalette[fastXLAT(i, pXLat0)].blue;
-
-            if (i == 254)
-               gPalette[i].peFlags = 0;
-            else
-               gPalette[i].peFlags = 255;
-         }
-      break;
-
-      case DRAWFX_DITHERGREY:
-         pXLatGrey = FindStandardXlat(XLAT_FILTERWHITE90);
-         for (i = 0; i < 256; i++)
-         {
-            gPalette[i].peRed = pPalette[fastXLAT(i, pXLatGrey)].red;
-            gPalette[i].peGreen = pPalette[fastXLAT(i, pXLatGrey)].green;
-            gPalette[i].peBlue = pPalette[fastXLAT(i, pXLatGrey)].blue;
-
-            if (i == 254)
-               gPalette[i].peFlags = 0;
-            else
-               gPalette[i].peFlags = 255;
-         }
-      break;
-
-      case DRAWFX_DITHERTRANS:
-         if ((0 == xlatID1) || (xlatID0 == xlatID1))
-         {
-            for (i = 0; i < 256; i++)
-            {
-               gPalette[i].peRed = pPalette[fastXLAT(i, pXLat0)].red;
-               gPalette[i].peGreen = pPalette[fastXLAT(i, pXLat0)].green;
-               gPalette[i].peBlue = pPalette[fastXLAT(i, pXLat0)].blue;
-
-               if (i == 254)
-                  gPalette[i].peFlags = 0;
-               else
-                  gPalette[i].peFlags = 255;
-            }
-         }
-         else
-         {
-            for (i = 0; i < 256; i++)
-            {
-               gPalette[i].peRed = pPalette[fastXLAT(i, pXLat1)].red;
-               gPalette[i].peGreen = pPalette[fastXLAT(i, pXLat1)].green;
-               gPalette[i].peBlue = pPalette[fastXLAT(i, pXLat1)].blue;
-
-               if (i == 254)
-                  gPalette[i].peFlags = 0;
-               else
-                  gPalette[i].peFlags = 255;
-            }
-         }
-      break;
-
-      case DRAWFX_SECONDTRANS:
-         for (i = 0; i < 256; i++)
-         {
-            gPalette[i].peRed = pPalette[fastXLAT(i, pXLat1)].red;
-            gPalette[i].peGreen = pPalette[fastXLAT(i, pXLat1)].green;
-            gPalette[i].peBlue = pPalette[fastXLAT(i, pXLat1)].blue;
-
-            if (i == 254)
-               gPalette[i].peFlags = 0;
-            else
-               gPalette[i].peFlags = 255;
-         }
-      break;
-
-      default:
-         for (i = 0; i < 256; i++)
-         {
-            gPalette[i].peRed = pPalette[fastXLAT(fastXLAT(i, pXLat0), pXLat1)].red;
-            gPalette[i].peGreen = pPalette[fastXLAT(fastXLAT(i, pXLat0), pXLat1)].green;
-            gPalette[i].peBlue = pPalette[fastXLAT(fastXLAT(i, pXLat0), pXLat1)].blue;
-
-            if (i == 254)
-               gPalette[i].peFlags = 0;
-            else
-               gPalette[i].peFlags = 255;
-         }
-      break;
-   }
-
-   IDirect3DDevice9_SetPaletteEntries(gpD3DDevice, 0, gPalette);
-
-   IDirect3DDevice9_SetCurrentTexturePalette(gpD3DDevice, 0);
-}
-
-void D3DRenderPaletteSetNew(UINT xlatID0, UINT xlatID1, BYTE flags)
-{
-   xlat   *pXLat0, *pXLat1, *pXLatGrey;
-   Color   *pPalette;
-   int      i;
-   BYTE   effect;
-
-   pXLat0 = FindStandardXlat(xlatID0);
-   pXLat1 = FindStandardXlat(xlatID1);
-
-   pPalette = base_palette;
-   effect = flags;
-
-   switch (effect)
-   {
-      case DRAWFX_DRAW_PLAIN:
-      case DRAWFX_DOUBLETRANS:
-      case DRAWFX_BLACK:
-         for (i = 0; i < 256; i++)
-         {
-            gPalette[i].peRed = pPalette[fastXLAT(fastXLAT(i, pXLat0), pXLat1)].red;
-            gPalette[i].peGreen = pPalette[fastXLAT(fastXLAT(i, pXLat0), pXLat1)].green;
-            gPalette[i].peBlue = pPalette[fastXLAT(fastXLAT(i, pXLat0), pXLat1)].blue;
-
-            if (i == 254)
-               gPalette[i].peFlags = 0;
-            else
-               gPalette[i].peFlags = 255;
-         }
-      break;
-
-      case DRAWFX_TRANSLUCENT25:
-      case DRAWFX_TRANSLUCENT50:
-      case DRAWFX_TRANSLUCENT75:
-         for (i = 0; i < 256; i++)
-         {
-            gPalette[i].peRed = pPalette[fastXLAT(i, pXLat0)].red;
-            gPalette[i].peGreen = pPalette[fastXLAT(i, pXLat0)].green;
-            gPalette[i].peBlue = pPalette[fastXLAT(i, pXLat0)].blue;
-
-            if (i == 254)
-               gPalette[i].peFlags = 0;
-            else
-               gPalette[i].peFlags = 255;
-         }
-      break;
-
-      case DRAWFX_INVISIBLE:
-      break;
-
-      case DRAWFX_TRANSLATE:
-      break;
-
-      case DRAWFX_DITHERINVIS:
-         for (i = 0; i < 256; i++)
-         {
-            gPalette[i].peRed = pPalette[fastXLAT(i, pXLat0)].red;
-            gPalette[i].peGreen = pPalette[fastXLAT(i, pXLat0)].green;
-            gPalette[i].peBlue = pPalette[fastXLAT(i, pXLat0)].blue;
-
-            if (i == 254)
-               gPalette[i].peFlags = 0;
-            else
-               gPalette[i].peFlags = 255;
-         }
-      break;
-
-      case DRAWFX_DITHERGREY:
-         pXLatGrey = FindStandardXlat(XLAT_FILTERWHITE90);
-         for (i = 0; i < 256; i++)
-         {
-            gPalette[i].peRed = pPalette[fastXLAT(i, pXLatGrey)].red;
-            gPalette[i].peGreen = pPalette[fastXLAT(i, pXLatGrey)].green;
-            gPalette[i].peBlue = pPalette[fastXLAT(i, pXLatGrey)].blue;
-
-            if (i == 254)
-               gPalette[i].peFlags = 0;
-            else
-               gPalette[i].peFlags = 255;
-         }
-      break;
-
-      case DRAWFX_DITHERTRANS:
-         if ((0 == xlatID1) || (xlatID0 == xlatID1))
-         {
-            for (i = 0; i < 256; i++)
-            {
-               gPalette[i].peRed = pPalette[fastXLAT(i, pXLat0)].red;
-               gPalette[i].peGreen = pPalette[fastXLAT(i, pXLat0)].green;
-               gPalette[i].peBlue = pPalette[fastXLAT(i, pXLat0)].blue;
-
-               if (i == 254)
-                  gPalette[i].peFlags = 0;
-               else
-                  gPalette[i].peFlags = 255;
-            }
-         }
-         else
-         {
-            for (i = 0; i < 256; i++)
-            {
-               gPalette[i].peRed = pPalette[fastXLAT(i, pXLat1)].red;
-               gPalette[i].peGreen = pPalette[fastXLAT(i, pXLat1)].green;
-               gPalette[i].peBlue = pPalette[fastXLAT(i, pXLat1)].blue;
-
-               if (i == 254)
-                  gPalette[i].peFlags = 0;
-               else
-                  gPalette[i].peFlags = 255;
-            }
-         }
-      break;
-
-      case DRAWFX_SECONDTRANS:
-         for (i = 0; i < 256; i++)
-         {
-            gPalette[i].peRed = pPalette[fastXLAT(i, pXLat1)].red;
-            gPalette[i].peGreen = pPalette[fastXLAT(i, pXLat1)].green;
-            gPalette[i].peBlue = pPalette[fastXLAT(i, pXLat1)].blue;
-
-            if (i == 254)
-               gPalette[i].peFlags = 0;
-            else
-               gPalette[i].peFlags = 255;
-         }
-      break;
-
-      default:
-         for (i = 0; i < 256; i++)
-         {
-            gPalette[i].peRed = pPalette[fastXLAT(fastXLAT(i, pXLat0), pXLat1)].red;
-            gPalette[i].peGreen = pPalette[fastXLAT(fastXLAT(i, pXLat0), pXLat1)].green;
-            gPalette[i].peBlue = pPalette[fastXLAT(fastXLAT(i, pXLat0), pXLat1)].blue;
-
-            if (i == 254)
-               gPalette[i].peFlags = 0;
-            else
-               gPalette[i].peFlags = 255;
-         }
-      break;
-   }
 }
 
 void D3DRenderLMapsBuild(void)

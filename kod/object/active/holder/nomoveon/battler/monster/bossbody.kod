@@ -19,7 +19,6 @@ resources:
    include bossbody.lkod
 
    OrcPitBossBody_name_rsc = "body of the orc pit boss"
-   OrcPitBossBody_live_name = "orc pit boss"
    OrcPitBossBody_icon_rsc = OrcPitbX.bgf
    OrcPitBossBody_desc_rsc = \
       "This is the body of the orc pit boss.  Its head is almost completely "
@@ -42,7 +41,7 @@ classvars:
    vrDead_name = OrcPitBossBody_dead_name_rsc
 
    viTreasure_type = TID_NONE
-   viAttack_type = ATCK_WEAP_WHIP
+   viAttack_type = ATK_TYPE_WHIP
    viSpeed = SPEED_NONE
    viAttributes = MOB_NOMOVE 
    viDefault_behavior = AI_NOMOVE| AI_NOFIGHT

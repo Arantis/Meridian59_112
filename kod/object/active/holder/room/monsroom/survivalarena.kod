@@ -37,16 +37,11 @@ resources:
 
    room_SurvivalArena = survival_ex.roo
    room_name_SurvivalArena = "The Survival Arena"
-   SurvivalArena_music = pk_fm.ogg
+   SurvivalArena_music = dance1.ogg
 
    SurvivalArena_no_offer = \
       "Osvann Vaendefdall says, \"Spectators and combatants may not exchange goods "
       "during matches."
-   SurvivalArena_no_attack = "You may not fight here unless you are a combatant."
-   SurvivalArena_no_spell = "Only the combatants may cast spells."
-   SurvivalArena_no_rescue = "No chickening out!"
-   SurvivalArena_no_target = "That's awfully rude of you!"
-   SurvivalArena_between_bouts = "No horseplay between bouts!"
    SurvivalArena_cant_go = \
       "Osvann Vaendefdall says, \"You can't leave!  You're a combatant!\""
 
@@ -60,9 +55,7 @@ resources:
    SurvivalArena_Fanfare_Sound = fanfare1.ogg
    SurvivalArena_Combat_Sound = arena1.ogg
    SurvivalArena_Huzzah_Sound = huzzah.ogg
-   SurvivalArena_commence_wav = forest1.ogg
    SurvivalArena_gong_sound = gong.ogg
-
 
 classvars:
 
