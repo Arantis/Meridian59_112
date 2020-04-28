@@ -335,7 +335,7 @@ resources:
    player_too_full = "You are too full to eat."
    player_too_full_drink = "You are too full to drink."
 
-   player_to_hunters = "You detect that %s%s could be found somewhere around %s"
+   player_to_hunters = "You detect that %s%s could be found somewhere around %s."
 
    player_dead_male_icona_rsc = playerXa.bgf
    player_dead_male_iconb_rsc = playerXb.bgf
@@ -4460,13 +4460,15 @@ messages:
    "Will not let a person attack someone who isn't pkill_enabled."
    "Will not let a person who isn't pkill_enabled attack another person."
    {
-      local oRoom, oGuild, oSpell, oVictimGuild;
+      local oRoom, oGuild, oSpell, oVictimGuild, cVictimClass;
 
       // Must have a target.
       if (victim = $)
       {
          return FALSE;
       }
+
+      cVictimClass = GetClass(victim);
 
       // Default location to check is the room the victim is in.
       // This allows X-room atacks (such as firewalls) to work.
@@ -4633,7 +4635,7 @@ messages:
 
       if IsClass(victim,&Monster)
       {
-         /*oSpell = Send(SYS,@FindSpellByNum,#num=SID_TRUCE);
+         oSpell = Send(SYS,@FindSpellByNum,#num=SID_TRUCE);
          if (Send(oRoom,@GetEnchantedState,#what=oSpell) <> $)
          {
             if report
@@ -4642,10 +4644,11 @@ messages:
             }
 
             return FALSE;
-         }*/
+         }
 
-         if IsClass(victim,&Reflection)
-            OR IsClass(victim,&EvilTwin)
+         if cVictimClass = &Reflection
+            OR cVictimClass = &EvilTwin
+            OR cVictimClass = &Brambles
             OR Send(victim,@GetMaster) <> $
          {
             if (Send(victim,@IsOwnedByPlayer))
@@ -4683,24 +4686,44 @@ messages:
                }
             }
 
-            if Send(victim,@GetMaster) = self
+            // Bramble has looser attack rules, can't attack player-spawned
+            // bramble if not flagged for pvp, or if the guild check is failed.
+            // As long as the player is attackable in some way, they can attack
+            // the bramble (even if they can't attack the caster).
+            if cVictimClass = &Brambles
             {
-               if report
+               if (NOT Send(oRoom,@AllowGuildAttack,#what=self,
+                           #victim=Send(victim,@GetCaster)))
                {
-                  Send(self,@MsgSendUser,#message_rsc=player_own_minion);
+                  if report
+                  {
+                     Send(self,@MsgSendUser,#message_rsc=room_guild_combat);
+                  }
+
+                  return FALSE;
+               }
+            }
+            else
+            {
+               if Send(victim,@GetMaster) = self
+               {
+                  if report
+                  {
+                     Send(self,@MsgSendUser,#message_rsc=player_own_minion);
+                  }
+
+                  return FALSE;
                }
 
-               return FALSE;
-            }
-
-            // Check status and safety against the owner of the minion.
-            if NOT Send(self,@AllowBattlerAttack,
-                        #victim=Send(victim,@GetMaster),
-                        #use_weapon=use_weapon,#stroke_obj=stroke_obj,
-                        #report=report,#actual=actual,#minion=TRUE,
-                        #oRoomOverride=oRoom)
-            {
-               return FALSE;
+               // Check status and safety against the owner of the minion.
+               if NOT Send(self,@AllowBattlerAttack,
+                           #victim=Send(victim,@GetMaster),
+                           #use_weapon=use_weapon,#stroke_obj=stroke_obj,
+                           #report=report,#actual=actual,#minion=TRUE,
+                           #oRoomOverride=oRoom)
+               {
+                  return FALSE;
+               }
             }
          }
 
@@ -5360,8 +5383,9 @@ messages:
       if IsClass(oFinalTarget,&Battler)
          AND stroke_obj <> $
          AND (IsClass(stroke_obj,&Stroke)
+            OR IsClass(stroke_obj,&TouchAttackSpell)
             OR (IsClass(stroke_obj,&Spell)
-               AND Send(stroke_obj,@GetNumSpellTargets) = 1))
+               AND (Send(stroke_obj,@GetNumSpellTargets) = 1)))
       {
          if iDist > 1
             AND NOT LineOfSightView(Send(self,@GetAngle), piRow, piCol, piFine_row,
@@ -6917,7 +6941,20 @@ messages:
       local i;
 
       // in case it's on the list of window overlays 
-      Send(self,@RemoveWindowOverlayObject,#what=what);
+      // Commented out since item calls this when dropped.
+      //Send(self,@RemoveWindowOverlayObject,#what=what);
+
+      foreach i in plUsing
+      {
+         if i = what
+         {
+            plUsing = DelListElem(plUsing,i);
+            // implied by drop: Send(self,@NewUnusing,#what=what)
+            Send(what,@NewUnused,#what=self);
+
+            break;
+         }
+      }
 
       // in case it set our icon
       if poIcon_set = what
@@ -6940,18 +6977,6 @@ messages:
       if poArms_set = what
       {
          Send(self,@ResetPlayerArms);
-      }
-
-      foreach i in plUsing
-      {
-         if i = what
-         {
-            plUsing = DelListElem(plUsing,i);
-            // implied by drop: Send(self,@NewUnusing,#what=what)
-            Send(what,@NewUnused,#what=self);
-
-            break;
-         }
       }
 
       propagate;
@@ -9661,6 +9686,10 @@ messages:
       {
          piHealth = 1;
          Send(self,@NewHealth);
+
+         // Need to clear any lethal overtime effects so the user doesn't
+         // get multiple-killed.
+         Send(self,@DeleteAllLethalOverTimeEffects);
 
          // Currently, the following block is only for
          // Necromancer Amulets and Hunter Swords.
@@ -14425,14 +14454,23 @@ messages:
 
    AddToMonsterChasers(level=0)
    {
-      piMonsterChasers = piMonsterChasers + level;
+      piMonsterChasers += level;
 
       return;
    }
 
-   SubtractFromMonsterChasers(level=0)
+   SubtractFromMonsterChasers(level=0, what = $)
    {
-      piMonsterChasers = piMonsterChasers - level;
+      piMonsterChasers -= level;
+
+      // Catch bug where this can be less than 0, and log it.
+      if (piMonsterChasers < 0)
+      {
+         Debug("ALERT: ", vrName, " got piMonsterChasers < 0. Calling mob was "
+         , what, GetClass(what));
+
+         piMonsterChasers = 0;
+      }
 
       return;
    }
@@ -15448,6 +15486,7 @@ messages:
          oEffect = Nth(i,5);
 
          if (Nth(i,3) < iStrength)
+            AND IsObject(oEffect)
             AND Send(oEffect,@IsLethal,#who=self)   // Not all effects are lethal.
             AND Nth(i,10) = FALSE                   // ...or real.
          {
