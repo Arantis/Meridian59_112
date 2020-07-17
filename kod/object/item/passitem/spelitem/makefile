@@ -5,6 +5,6 @@
 !include $(TOPDIR)\common.mak
 
 DEPEND = ..\spelitem.bof
-BOFS = potion.bof scroll.bof wand.bof
+BOFS = potion.bof scroll.bof wand.bof battery.bof
 
 !include $(KODDIR)\kod.mak

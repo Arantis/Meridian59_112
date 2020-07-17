@@ -19,9 +19,9 @@ resources:
    include berg3cave.lkod
 
    room_berg3cave = berg3_cave.roo
-   room_name_berg3cave = "A Rat's Nest"
+   room_name_berg3cave = "A Dark Place"
 
-   berg3cave_music = orc1.ogg
+   berg3cave_music = creep.ogg
 
 classvars:
 
@@ -69,7 +69,7 @@ messages:
 
    Constructed()
    {
-      plMonsters = [ [&DuskRat, 100] ];
+      plMonsters = [ [&Nyrphling, 100] ];
 
       // Use Random Spawn
       // plGenerators = [ [6, 21], [22, 4], [13, 29], [15, 15] ];

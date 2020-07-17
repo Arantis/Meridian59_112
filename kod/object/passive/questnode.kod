@@ -65,6 +65,7 @@ resources:
    sub_def_prize = "%DEF_PRIZE"
    sub_him_her_npc = "%HIMHER_NPC"
    sub_monster = "%MONSTER"
+   sub_num_to_kill = "%NUMTOKILL"
    sub_indef_monster = "%INDEF_MONSTER"
    sub_def_monster = "%DEF_MONSTER"
    sub_standard_prefix = "%"
@@ -122,6 +123,11 @@ properties:
    pCargo = $
    // A dummy instance of the type of monster that we are awaiting the death of
    poMonster = $
+
+   // Counter for quests of type QN_TYPE_MONSTER_MULTIPLE
+   piMonstersKilled = 0
+   // Target num kills for quests of type QN_TYPE_MONSTER_MULTIPLE
+   piMonsterKillTarget = 0
 
    piDeadline = 0
 
@@ -366,6 +372,19 @@ messages:
          }
       }
 
+      if (piNodeType = QN_TYPE_MONSTER_MULTIPLE)
+      {
+         ClearTempString();
+         AppendTempString(piMonsterKillTarget);
+         while StringContain(saystring,sub_num_to_kill)
+         {
+            if StringSubstitute(saystring,sub_num_to_kill,GetTempString()) <> 1
+            {
+               break;
+            }
+         }
+      }
+
       if Nth(plDescs,1) <> $
       {
          while StringContain(saystring,sub_monster)
@@ -468,6 +487,7 @@ messages:
       oQuestEngine = Send(SYS,@GetQuestEngine);
 
       if piNodeType <> QN_TYPE_MONSTER
+         AND piNodeType <> QN_TYPE_MONSTER_MULTIPLE
          AND piNodeType <> QN_TYPE_SHOWUP
       {
          // Choose cargo
@@ -578,13 +598,26 @@ messages:
       if piNodeType = QN_TYPE_MONSTER
          OR piNodeType = QN_TYPE_MONSTER_ITEMCLASS
          OR piNodeType = QN_TYPE_MONSTER_BRING
+         OR piNodeType = QN_TYPE_MONSTER_MULTIPLE
       {
          cMonsterClass = Send(oQuestEngine,
                               @GetRandomMonsterFromQuestNodeTemplate,
                               #index=piQuestNodeTemplateIndex);
 
-         // Create a dummy instance so we can get its name (yuk)
-         poMonster = Create(cMonsterClass);   
+         // Extra steps for this quest type, return from
+         // GetRandomMonsterFromQuestNodeTemplate is [mobclass, number_to_kill]
+         if (piNodeType = QN_TYPE_MONSTER_MULTIPLE)
+         {
+            poMonster = Create(First(cMonsterClass));
+            piMonsterKillTarget = Nth(cMonsterClass,2);
+            piMonstersKilled = 0;
+         }
+         else
+         {
+            // Create a dummy instance so we can get its name (yuk)
+            poMonster = Create(cMonsterClass);
+         }
+
          if poMonster = $
          {
             Debug("Nil monster created in questnode assign");
@@ -962,7 +995,7 @@ messages:
    
    CompletionCriteriaMet()
    {
-      local lQuesters, oQuester, oQuestEngine, lPrize, lPenalty, sSay;
+      local lQuesters, oQuester, oQuestEngine, lPrize, lPenalty, sSay, oMercenary;
 
       lQuesters = Send(poQuest,@GetQuesters);
 
@@ -1019,6 +1052,13 @@ messages:
             Send(oQuester,@AddQuestHistory,
                  #index=Send(poQuest,@GetQuestTemplateIndex),
                  #success=TRUE);
+
+            oMercenary = Send(oQuester,@GetMercenary);
+
+            if (oMercenary <> $) AND IsClass(oMercenary,&Follower)
+            {
+               Send(oMercenary,@QuestFinished);
+            }
          }
       }
 
@@ -1284,7 +1324,7 @@ messages:
    {
       local i, iPrizeStat, iPrizeType, cPrizeClass, oPrize, iAmount, iDays,
             oBoon, iBoonNum, iPrizeBoon, iPrizeFaction, oQuestEngine, oQuester,
-            oLich, oNewLich, oQuestTemplate;
+            oLich, oNewLich, oQuestTemplate, iRID, iRow, iCol;
 
       if prize = $
          OR recipients = $
@@ -1771,6 +1811,23 @@ messages:
 
          return;
       }
+      
+      if iPrizeType = QN_PRIZETYPE_SPAWN
+      {
+         // Spawn class at destination RID, row and col
+         cPrizeClass = Nth(prize,2);
+         iRID = Nth(prize,3);
+         iRow = Nth(prize,4);
+         iCol = Nth(prize,5);
+         foreach oQuester in recipients
+         {
+            oPrize = Create(cPrizeClass);
+            Send(Send(SYS,@FindRoomByNum,#num=iRID),@NewHold,
+                  #what=oPrize,#new_row=iRow,#new_col=iCol);
+         }
+
+         return;
+      }
 
       Debug("AwardPrizesOrPenalties got unknown prize type",iPrizeType);
 
@@ -1899,7 +1956,23 @@ messages:
                piStatus = QN_STATUS_IN_PROGRESS;
                Send(poMonster,@Delete);
                poMonster = $;
+
                return TRUE;
+            }
+
+            if piNodeType = QN_TYPE_MONSTER_MULTIPLE
+            {
+               if (++piMonstersKilled = piMonsterKillTarget)
+               {
+                  piStatus = QN_STATUS_IN_PROGRESS;
+                  Send(poMonster,@Delete);
+                  poMonster = $;
+
+                  return TRUE;
+               }
+
+               // Return FALSE here if still more mobs to kill.
+               return FALSE;
             }
 
             if piNodeType <> QN_TYPE_MONSTER_ITEMCLASS
@@ -1946,9 +2019,46 @@ messages:
       return FALSE;
    }
 
+   SetMonsterData(cMonster=$, iKillTarget = 0)
+   "Sets quest mob data (poMonster, piMonsterKillTarget) directly.  Used by "
+   "QuestEngine to rebuild quests of type QN_TYPE_MONSTER_MULTIPLE and "
+   "QN_TYPE_MONSTER on RecreateAll."
+   {
+      if (piNodeType = QN_TYPE_MONSTER
+         OR piNodeType = QN_TYPE_MONSTER_MULTIPLE)
+      {
+         // Fine to set this for QN_TYPE_MONSTER since it won't matter, no
+         // need to check for the specific node.
+         piMonsterKillTarget = iKillTarget;
+
+         if (poMonster <> $)
+         {
+            if (GetClass(poMonster) = cMonster)
+            {
+               // No need to recreate mob.
+               return;
+            }
+            Send(poMonster,@Delete);
+         }
+         poMonster = Create(cMonster);
+      }
+
+      return;
+   }
+
    GetDeadline()
    {
       return piDeadline;
+   }
+
+   GetNumberMonstersKilled()
+   {
+      return piMonstersKilled;
+   }
+
+   GetMonsterKillTarget()
+   {
+      return piMonsterKillTarget;
    }
 
    ActivateQuestNodeWaiting()

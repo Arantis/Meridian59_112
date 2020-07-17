@@ -19,7 +19,7 @@ resources:
    include jixa3.lkod
 
    room_ji3 = ji3.roo
-   room_name_ji3 = "Abandoned Trading Post"
+   room_name_ji3 = "Archaic Obelisk"
    ji3_music = walkjixa.ogg
 
 classvars:
@@ -53,6 +53,8 @@ properties:
 
    piMonster_count_max = 7
 
+   poShrine = $
+
 messages:
 
    CreateStandardExits()
@@ -69,6 +71,9 @@ messages:
    {
       plMonsters = [ [&Chupacabra, 100] ];
 
+      poShrine = Create(&shrine,#shrine_num=SHRINE_JIXA);
+      Send(self,@NewHold,#what=poShrine,#new_row=20,#new_col=13,#fine_row=64,#fine_col=64);
+
       // Use Random Spawn
       // plGenerators = [ [28, 4], [28, 17], [20, 21], [14, 14], [7, 12], [21, 14] ];
 
@@ -83,6 +88,82 @@ messages:
          #fine_row=0,#fine_col=0,#new_angle=ANGLE_EAST);
       Send(self,@NewHold,#what=Create(&OrnamentalObject,#type=OO_MIDTREE3),#new_row=17,#new_col=23,
          #fine_row=0,#fine_col=0,#new_angle=ANGLE_EAST);
+
+      propagate;
+   }
+
+   RecalcLightAndWeather()
+   {
+      local iHour;
+
+      // Wendigo come out at night
+      iHour = Send(SYS,@GetHour);
+
+      if (iHour = 20)
+      {
+         plMonsters = [ [&Chupacabra, 90], [&Wendigo, 10] ];
+      }
+      else if (iHour = 5)
+      {
+         plMonsters = [ [&Chupacabra, 100] ];
+      }
+
+      propagate;
+   }
+
+   NewHold(what=$)
+   {
+      if IsClass(what,&Item)
+      {
+         Post(self,@PostShrineCheckItem,#what=what);
+         // Have to post this to handle numberitems and SYS can't handle posts.
+      }
+
+      propagate;
+   }
+
+   PostShrineCheckItem(what=$)
+   {
+      Send(SYS,@ShrineCheckItem,#ShrineObj=poShrine,#what=what,#Radius=2);
+
+      return;
+   }
+
+   ShrineUsed()
+   {
+      local iSchool;
+
+      if poShrine <> $
+      {
+         iSchool = Send(poShrine,@GetAllegiance);
+      }
+
+      // Based on the shrine's dedicated school,
+      // certain monsters will spawn here.
+      if (iSchool = SS_SHALILLE)
+      {
+         plMonsters = [ [&Chupacabra, 80], [&KillerBunny, 20] ];
+      }
+      else if (iSchool = SS_QOR)
+      {
+         plMonsters = [ [&Chupacabra, 40], [&Wendigo, 60] ];
+      }
+      else if (iSchool = SS_KRAANAN)
+      {
+         plMonsters = [ [&Chupacabra, 70], [&Spinebeast, 30] ];
+      }
+      else if (iSchool = SS_FAREN)
+      {
+         plMonsters = [ [&Chupacabra, 70], [&Nyrphling, 30] ];
+      }
+      else if (iSchool = SS_RIIJA)
+      {
+         plMonsters = [ [&Chupacabra, 80], [&LivingStatue, 20] ];
+      }
+      else
+      {
+         plMonsters = [ [&Chupacabra, 100] ];
+      }
 
       propagate;
    }

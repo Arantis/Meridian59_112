@@ -1,0 +1,47 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+RanuTreasure is TreasureType
+
+constants:
+
+   include blakston.khd
+
+classvars:
+
+   viTreasure_num = TID_RANU
+
+properties:
+
+   piItem_att_chance = 6
+   piDIff_seed = 2
+
+messages:
+
+   Constructed()
+   {
+      plTreasure = [ [ &CyanMushroom, 30],
+                     [ &EntrootBerry, 24],
+                     [ &AcidArrow, 25],
+                     [ &TwinkleCap, 6],
+                     [ &CookingRecipe, 5],
+                     [ &BlankScroll, 3],
+                     [ &Hatchet, 2],
+                     [ &Maul, 2],
+                     [ &HuntingBow, 1],
+                     [ &ThornedCirclet, 1],
+                     [ &BoonBerry, 1]
+                   ];
+
+      propagate;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

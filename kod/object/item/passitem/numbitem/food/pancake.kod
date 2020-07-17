@@ -1,0 +1,52 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+Pancake is Food
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   //include pancake.lkod
+
+   Pancake_name_rsc = "pancake"
+   Pancake_icon_rsc = pancake.bgf
+   Pancake_desc_rsc = \
+    "Fluffy and delicious, coated in a luscious syrup made from sweetened "
+    "Yrx'l sap.  The sugar rush from this cake will keep you roving."
+
+   Pancake_name_plural_rsc = "pancakes"
+
+classvars:
+
+   vrName = Pancake_name_rsc
+   vrIcon = Pancake_icon_rsc
+   vrDesc = Pancake_desc_rsc
+
+   vrName_plural = Pancake_name_plural_rsc
+
+   viSpellEffect = SID_FREE_ACTION
+
+   viBulk = 30
+   viWeight = 30
+   viValue_average = 80
+
+properties:
+
+   viNutrition = 20
+   viFilling = 40
+   piNumber = 2
+
+messages:
+
+end
+////////////////////////////////////////////////////////////////////////////////

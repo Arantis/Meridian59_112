@@ -72,7 +72,7 @@ messages:
 
    Constructed()
    {
-      plMonsters = [ [&Wolf, 45], [&Groundworm, 35], [&Bandit, 20] ];
+      plMonsters = [ [&SpinebeastSmall, 60], [&Bandit, 40] ];
 
       // Use Random Spawn
       // plGenerators = [ [8, 13], [20, 4], [27, 11], [22, 24], [16, 36], [26, 54] ];
@@ -114,6 +114,10 @@ messages:
          #new_row=32,#new_col=47,#fine_row=36,#fine_col=16);
       Send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_FIRE,#iIntensity=30),
          #new_row=31,#new_col=51,#fine_row=50,#fine_col=16);
+
+      // Plant Soil
+      Send(self,@NewHold,#what=Create(&PlantSoil), 
+         #new_row=29,#new_col=21,#fine_row=32,#fine_col=32,#angle=ANGLE_EAST);
 
       propagate;
    }

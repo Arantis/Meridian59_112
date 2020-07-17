@@ -50,5 +50,15 @@ messages:
       propagate;
    }
 
+   IsCookingIngredient()
+   {
+      return TRUE;
+   }
+
+   GetSubstitueReagentClass()
+   {
+      return &TwinkleCap;
+   }
+
 end
 ////////////////////////////////////////////////////////////////////////////////

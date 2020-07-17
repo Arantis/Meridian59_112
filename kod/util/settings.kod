@@ -40,6 +40,10 @@ properties:
    //  spawn faster (less time waiting between spawns).
    piSpawnRate = 100
 
+   // A plant grows every Meridian hour (2 real life hours), when grow reaches
+   // its max of 1000, it will proceed to the next phase of its lifecycle.
+   piPlantGrowFactor = 150
+
    //
    // Player advancement
    //
@@ -72,6 +76,9 @@ properties:
 
    // Lore book drop facter, 1 in piLoreBookDropFactor per loot roll
    piLoreBookDropFactor = 2000
+
+   // Cooking recipe drop facter, 1 in piCookingRecipeDropFactor per loot roll
+   piCookingRecipeDropFactor = 4000
 
    // DefaultDeathCost:  Should always be a value between 1 and 100.  Lowering
    //  this will lower the odds of a dead player losing health and skill/spell
@@ -361,7 +368,10 @@ properties:
    piDrainFactor = 50
 
    // Enables or disables the follower.
-   pBFollowerEnabled = FALSE
+   pbFollowerEnabled = TRUE
+
+   // Enables or disables mercenary contracts.
+   pbMercenaryContractEnabled = TRUE
 
    //
    // PvP honor system
@@ -415,6 +425,9 @@ properties:
 
    // Are fizzles disabled?
    pbNoFizzles = FALSE
+
+   // Are we able to lift others by hitting the <space> key?
+   pbIsLiftEnabled = TRUE
 
 messages:
 
@@ -509,6 +522,11 @@ messages:
    GetLoreBookDropFactor()
    {
       return piLoreBookDropFactor;
+   }
+
+   GetCookingRecipeDropFactor()
+   {
+      return piCookingRecipeDropFactor;
    }
 
    GetDefaultDeathCost()
@@ -964,14 +982,26 @@ messages:
 
    IsFollowerEnabled()
    {
-      return pBFollowerEnabled;
+      return pbFollowerEnabled;
    }
 
    SetFollowerEnabled(bEnabled=TRUE)
    {
-      pBFollowerEnabled = bEnabled;
+      pbFollowerEnabled = bEnabled;
 
-      return pBFollowerEnabled;
+      return pbFollowerEnabled;
+   }
+
+   IsMercenaryContractEnabled()
+   {
+      return pbMercenaryContractEnabled;
+   }
+
+   SetMercenaryContractEnabled(bEnabled=TRUE)
+   {
+      pbMercenaryContractEnabled = bEnabled;
+
+      return pbMercenaryContractEnabled;
    }
 
    GetChaseRangeFactor()
@@ -1061,6 +1091,16 @@ messages:
    NoFizzles()
    {
       return pbNoFizzles;
+   }
+
+   GetPlantGrowFactor()
+   {
+      return piPlantGrowFactor;
+   }
+
+   IsLiftEnabled()
+   {
+      return pbIsLiftEnabled;
    }
 
 end

@@ -43,7 +43,7 @@ resources:
    swamphall_platearmor_icon = plateamr.bgf
    swamphall_platearmor_desc = "A suit of plate armor."
 
-   room_name_guildh17 = "Old Fort"
+   room_name_guildh17 = "The Wetland Fortress"
    room_guildh17 = guildh17.roo
 
 classvars:
@@ -65,6 +65,14 @@ classvars:
 
    viInner_teleport_row = 7
    viInner_teleport_col = 24
+
+   viHellPortal_row = 16
+   viHellPortal_col = 23
+   viHellPortal_angle = ANGLE_NORTH
+
+   viPublicChest_row = 8
+   viPublicChest_col = 18
+   viPublicChest_angle = ANGLE_WEST
 
    viQuality = 6
 
@@ -455,6 +463,10 @@ messages:
       Send(self,@NewHold,#what=Create(&WoodenBox),
             #new_row=11,#new_col=30,#fine_row=0,#fine_col=0,
             #new_angle=ANGLE_WEST);
+
+      poDecorator = Create(&GuildDecorator);
+      Send(self,@NewHold,#what=poDecorator,
+           #new_row=4,#new_col=28,#fine_row=32,#fine_col=32);
 
       propagate;
    }

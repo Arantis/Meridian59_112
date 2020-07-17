@@ -2195,7 +2195,9 @@ messages:
       if new_row = $ OR new_col = $ OR fine_row = $ OR fine_col = $
          OR new_angle = $
       {
-         Debug("Tried to NewHold",Send(what,@GetName),"at bad coords.");
+         Debug("Tried to NewHold",Send(what,@GetName),"at bad coords in room ",
+            vrName, ". Data: ", new_row, new_col, fine_row, fine_col,
+            new_angle);
 
          return;
       }
@@ -2809,6 +2811,35 @@ messages:
    GetYFineStep(angle=0)
    {
       return Send(self,@GetXFineStep,#angle=angle+3*MAX_ANGLE/4);
+   }
+
+   GetStepCoordinates(who=$,angle=0,step=1,finestep=0)
+   "Returns a list [col,finecol,row,finerow] of coordinates for the position"
+   "of who once specified number and directon of steps have been taken."
+   {
+      local iFineCol, iFineRow, iXFineStep, iYFineStep;
+
+      if who = $
+      {
+         Debug("Nil who!");
+
+         return;
+      }
+
+      // Delta of coordinates for a single step being taken in given direction.
+      iXFineStep = Send(self,@GetXFineStep,#angle=angle);
+      iYFineStep = Send(self,@GetYFineStep,#angle=angle);
+
+      // Let's multiply these values by the amount of steps and finesteps to take.
+      iXFineStep = iXFineStep * (FINENESS*step + finestep) / FINENESS;
+      iYFineStep = iYFineStep * (FINENESS*step + finestep) / FINENESS;
+
+      // We know the amount of finesteps to take now, add them to our coordinates.
+      iFineCol = Send(who,@GetCol)*FINENESS + Send(who,@GetFineCol) + iXFineStep;
+      iFineRow = Send(who,@GetRow)*FINENESS + Send(who,@GetFineRow) + iYFineStep;
+
+      // That's all we need for our coordinates...
+      return [iFineCol/FINENESS,iFinecol%FINENESS,iFineRow/FINENESS,iFineRow%FINENESS];
    }
 
    ReqSomethingUse(what = $, use_item = $)
@@ -4261,7 +4292,7 @@ messages:
 
    SomethingTryGo(what = $,row = $,col = $)
    {
-      local i, iAngle;
+      local i, iAngle, oRoom;
 
       foreach i in plExits
       {
@@ -4308,9 +4339,17 @@ messages:
                Send(what,@WaveSendUser,#wave_rsc=Send(self,@GetDoorSound));
             }
 
-            Send(SYS,@UtilGoNearSquare,#what=what,
-                 #where=Send(SYS,@FindRoomByNum,#num=Nth(i,3)),
-                 #new_row=Nth(i,4),#new_col=Nth(i,5),#new_angle=iAngle);
+            oRoom = Send(SYS,@FindRoomByNum,#num=Nth(i,3));
+            Send(SYS,@UtilGoNearSquare,#what=what,#where=oRoom,
+                 #new_row=Nth(i,4),#new_col=Nth(i,5),#new_angle=iAngle,
+                 #mob_override=TRUE);
+
+            // Using a door in the same room.
+            if (oRoom = self
+               AND IsClass(what,&User))
+            {
+               Send(what,@PlayerIntraRoomTeleport,#row=row,#col=col);
+            }
 
             return TRUE;
          }
@@ -6410,6 +6449,24 @@ messages:
       return;
    }
 
+   GetMercenaryInfoObject(who=$)
+   {
+      local iRow, iCol, i;
+
+      iRow = Send(who,@GetRow);
+      iCol = Send(who,@GetCol);
+
+      foreach i in plExits
+      {
+         if (Abs(iRow - First(i)) < 3 ) AND (Abs(iCol - Nth(i,2)) < 3)
+         {
+            return Send(SYS,@FindRoomByNum,#num=Nth(i,3));
+         }
+      }
+
+      return;
+   }
+
    GetTrailSteps()
    {
       return piTrailSteps;
@@ -6464,6 +6521,141 @@ messages:
       }
 
       return (piActiveSummons < Send(SETTINGS_OBJECT,@GetRoomSummoningLimit));
+   }
+
+   ReqLift(who=$,what=$)
+   {
+      return TRUE;
+   }
+
+   TryRemoveObject(who=$, template=$)
+   {
+      local i, lInventory, oClosest, iClosestDistance, iCurrentDistance, iTemp,
+            iFirst, iSecond, iRowDiff, iColDiff, bConfused;
+
+      if who = $ OR template = $
+      {
+         return FALSE;
+      }
+
+      oClosest = $;
+
+      // About 1.5 squares away
+      iClosestDistance = FINENESS + FINENESS_HALF;
+
+      // Apply distance formula.
+      iClosestDistance = (iClosestDistance*iClosestDistance);
+      iClosestDistance = iClosestDistance * 2;
+
+      // This is set if there could be confusion between two objects.
+      bConfused = FALSE;
+
+      // Determine which list to use.
+      if Send(template,@GetObjectType) = ACTIVE
+      {
+         lInventory = Send(self,@GetHolderActive);
+      }
+      else
+      {
+         lInventory = Send(self,@GetHolderPassive);
+      }
+      
+      foreach i in lInventory
+      {
+         if IsClass(First(i),GetClass(template))
+            AND StringEqual(Send(First(i),@GetName),Send(template,@GetName))
+         {
+            // First, figure the difference between the rows.  Depending on
+            // the sign of the difference depends on what amount of the
+            // fine row we need to count.  IE, if the difference is negative,
+            // that means that the player has a greater row value than the
+            // object, so count the fineness between them (from object's
+            // fineness to max fineness, then from 0 to the player's fineness)
+            // Space between them is the number of full squares between
+            // them.  Same logic for columns.
+            iRowDiff = Send(First(i),@GetRow) - Send(who,@GetRow);
+            iColDiff = Send(First(i),@GetCol) - Send(who,@GetCol);
+
+            // Don't bother if it's greater than two full rows/columns away.
+            if Abs(iRowDiff) > 2 OR Abs(iColDiff) > 2
+            {
+               continue;
+            }
+
+            if iRowDiff < 0
+            {
+               iFirst = FINENESS - Send(First(i),@GetFineRow);
+               iSecond = Send(who,@GetFineRow);
+               iTemp = iFirst + iSecond + ((Abs(iRowDiff) - 1) * FINENESS);
+            }
+            else
+            {
+               if iRowDiff > 0
+               {
+                  iFirst = FINENESS - Send(who,@GetFineRow);
+                  iSecond = Send(First(i),@GetFineRow);
+                  iTemp = iFirst + iSecond + ((Abs(iRowDiff) - 1) * FINENESS);
+               }
+               else
+               {
+                  // This means iRowDiff = 0
+                  iTemp = Abs((Send(First(i),@GetFineRow)
+                                 - Send(who,@GetFineRow)));
+               }
+            }
+
+            iCurrentDistance = (iTemp * iTemp);
+
+            if iColDiff < 0
+            {
+               iFirst = FINENESS - Send(First(i),@GetFineCol);
+               iSecond = Send(who,@GetFineCol);
+               iTemp = iFirst + iSecond + ((Abs(iColDiff) - 1) * FINENESS);
+            }
+            else
+            {
+               if iColDiff > 0
+               {
+                  iFirst = FINENESS - Send(who,@GetFineCol);
+                  iSecond = Send(First(i),@GetFineCol);
+                  iTemp = iFirst + iSecond + ((Abs(iColDiff) - 1) * FINENESS);
+               }
+               else
+               {
+                  // This means iColDiff = 0
+                  iTemp = Abs((Send(First(i),@GetFineCol)
+                              - Send(who,@GetFineCol)));
+               }
+            }
+
+            iCurrentDistance = (iCurrentDistance + (iTemp * iTemp));
+
+            if iCurrentDistance < iClosestDistance
+            {
+               // We're cool if we're closer than about a quarter of a
+               // "box" away, otherwise there may be some confusion.
+               if (iClosestDistance - iCurrentDistance)
+                     > ((FINENESS/4) * (FINENESS/4))
+               {
+                  iClosestDistance = iCurrentDistance;
+                  oClosest = First(i);
+               }
+               else
+               {
+                  bConfused = TRUE;
+               }
+            }
+         }
+      }
+
+      if NOT bConfused AND oClosest <> $
+      {
+         Send(oClosest,@Delete);
+
+         return TRUE;
+      }
+
+      return FALSE;
    }
 
 end

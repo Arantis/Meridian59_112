@@ -14,6 +14,8 @@ constants:
 
    include blakston.khd
 
+   FOOD_SPELLPOWER = 50
+
 resources:
 
    include food.lkod
@@ -21,22 +23,44 @@ resources:
    food_use = "Yum-yum good!"
    food_cant_use_on = "You can't feed %s%s"
 
+   food_append_desc = \
+      "\n\nConsumption will increase your vigor by "
+      "%i and decrease your hunger by %i points."
+
    food_eat_wav = eat.ogg
 
 classvars:
 
    viItem_type = ITEMTYPE_FOOD | ITEMTYPE_SUNDRY
 
+   viSpellEffect = 0
+
    viFilling = 50
    viNutrition = 10
 
    vrEat_wav = food_eat_wav
 
+   vrName_magical = $
+   vrName_magical_true = $
+   vrDesc_magical = $
+   vrDesc_magical_true = $
+
 properties:
 
    viObject_flags = OF_GETTABLE
+   pbMagical = FALSE
 
 messages:
+
+   Constructor(bMagical=FALSE)
+   {
+      if bMagical
+      {
+         Post(self,@MakeMagical);
+      }
+
+      propagate;
+   }
 
    GetFilling()
    {
@@ -46,24 +70,24 @@ messages:
 
    ReqNewApply(what = $,apply_on = $)
    {
-      if not IsClass(apply_on,&User)
+      if NOT IsClass(apply_on,&User)
       {
-	 Send(what,@MsgSendUser,#message_rsc=food_cant_use_on, 
-	      #parm1=Send(apply_on,@GetIndef),
-		  #parm2=Send(apply_on,@GetName));
-	 return False;
+         Send(what,@MsgSendUser,#message_rsc=food_cant_use_on, 
+            #parm1=Send(apply_on,@GetIndef),
+            #parm2=Send(apply_on,@GetName));
+         return FALSE;
       }
-      if not Send(apply_on,@ReqEatSomething,#filling=viFilling,#what=self)
+      if NOT Send(apply_on,@ReqEatSomething,#filling=viFilling,#what=self)
       {
-	 return False;
+         return FALSE;
       }
-      return True;
+      return TRUE;
    }
 
    SendTaste(what = $,apply_on = $)
    {
       Send(apply_on,@MsgSendUser,#message_rsc=food_use);
-	  return;
+    return;
    }
 
    NewApplied(what = $,apply_on = $)
@@ -71,18 +95,183 @@ messages:
       Send(self,@SendTaste,#what=what,#apply_on=apply_on);
       Send(what,@WaveSendUser,#wave_rsc=vrEat_wav);
       Send(apply_on,@EatSomething,#nutrition=viNutrition,#filling=viFilling);
+
+      if viSpellEffect <> 0
+      {
+         Send(self,@CastFoodSpell,#who=what,#lTargets=[apply_on]);
+      }
+
       Send(self,@SubtractNumber,#number=1);
+
       return;
    }
 
+   CastFoodSpell(who = $,lTargets = $)
+   {
+      local oSpell;
+
+      if who = $
+      {
+         return;
+      }
+
+      oSpell = Send(SYS,@FindSpellByNum,#num=viSpellEffect);
+
+      // No harmful spells.
+      if Send(oSpell,@IsHarmful)
+      {
+         Debug("Food had a harmful spell!  Spell is ",
+               Send(oSpell,@GetName)," and owner of food is ",
+               Send(who,@GetTrueName));
+
+         return FALSE;
+      }
+
+      if (Send(oSpell,@CanPayCosts,#who=poOwner,#lTargets=lTargets,
+           #iSpellPower=FOOD_SPELLPOWER,#bItemCast=TRUE))
+         AND (Send(Send(who,@GetOwner),@ReqSpellCast,#who=who,#oSpell=oSpell))
+      {
+         // Deal with Elusion's odd spell structure, so we can have it
+         // as an item-castable spell.
+         if viSpellEffect = SID_ELUSION
+         {
+            Send(oSpell,@BeginCastingTrance,#who=poOwner,#lTargets=lTargets,
+                  #iSpellPower=FOOD_SPELLPOWER);
+         }
+         else
+         {
+            Send(oSpell,@CastSpell,#who=poOwner,#lTargets=lTargets,
+                  #iSpellPower=FOOD_SPELLPOWER,#bItemCast=TRUE);
+         }
+      }
+
+      return;
+   }
+
+   AppendDesc()
+   {
+      AddPacket(4,food_append_desc, 4, viNutrition, 4, viFilling);
+
+      propagate;
+   }
+
    IsAlcohol()
-   {	 
+   {   
       return FALSE;
    }
 
    IsBeverage()
    {
       return FALSE;
+   }
+
+   IsCookingIngredient()
+   {
+      return NOT pbMagical;
+   }
+
+   GetName(number = 0)
+   {
+      if pbMagical AND vrName_magical <> $
+      {
+         return vrName_magical;
+      }
+
+      propagate;
+   }
+
+   GetApparentName()
+   {
+      if pbMagical AND vrName_magical <> $
+      {
+         return vrName_magical;
+      }
+
+      propagate;
+   }
+
+   GetTrueName()
+   {
+      if pbMagical
+      {
+         if vrName_magical_true <> $
+         {
+            return vrName_magical_true;
+         }
+         else if vrName_magical <> $
+         {
+            return vrName_magical;
+         }
+      }
+
+      propagate;
+   }
+
+   IsStackable()
+   {
+      return NOT pbMagical;
+   }
+
+   AddNumber()
+   {
+      if pbMagical
+      {
+         return;
+      }
+
+      propagate;
+   }
+
+   SubtractNumber()
+   {
+      if pbMagical
+      {
+         return 1;
+      }
+
+      propagate;
+   }
+
+   MakeMagical()
+   {
+      pbMagical = TRUE;
+      Send(self,@AddMagicFlag);
+      piNumber = 1;
+      Send(self,@NewNumber);
+
+      return;
+   }
+
+   DoBaseDesc(bShowAll=FALSE)
+   "Items can override this to provide a more detailed base description."
+   {
+      if pbMagical
+      {
+         if bShowAll AND (vrDesc_magical_true <> $)
+         {
+            AddPacket(4,vrDesc_magical_true);
+
+            return;
+         }
+         else if vrDesc_magical <> $
+         {
+            AddPacket(4,vrDesc_magical);
+
+            return;
+         }
+      }
+
+      propagate;
+   }
+
+   GetMinimapDotFlags()
+   {
+      if pbMagical
+      {
+         return MM_RARE_ITEM;
+      }
+
+      propagate;
    }
 
 end

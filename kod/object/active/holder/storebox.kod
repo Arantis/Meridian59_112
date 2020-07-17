@@ -25,6 +25,7 @@ resources:
    storagebox_icon_rsc = box1.bgf
 
    storagebox_desc_rsc = "This is a place to store stuff."
+   storagebox_desc_master = "%s\n\nCapacity: %i/%i"
 
 classvars:
 
@@ -59,6 +60,14 @@ messages:
    ReqNewOwner(what = $)
    {
       return FALSE;
+   }
+
+   ShowDesc()
+   {
+      AddPacket(4,storagebox_desc_master, 4,vrDesc,
+                4,Send(self,@GetBulkHold), 4,viBulk_hold_max);
+
+      return;
    }
 
    SendAnimation()
@@ -156,7 +165,7 @@ messages:
       }
 
       if IsClass(oTakerOwner,&GuildHall)
-         AND NOT Send(oTakerOwner,@ReqUseGuildChest,#who=taker)
+         AND NOT Send(oTakerOwner,@ReqUseGuildChest,#who=taker,#what=self)
       {
          return FALSE;
       }
@@ -164,9 +173,14 @@ messages:
       propagate;
    }
 
-   ReqNewHold(what = $, who = $)
+   ReqNewHold(what = $, who = $,bTransfer=FALSE)
    {
       local oWhoOwner;
+
+      if bTransfer
+      {
+         propagate;
+      }
 
       // The player's owner.
       oWhoOwner = Send(who,@GetOwner);
@@ -200,8 +214,9 @@ messages:
       }
 
       if IsClass(oWhoOwner,&GuildHall)
+         AND NOT Send(oWhoOwner,@ReqUseGuildChest,#who=who,#what=self)
       {
-         return Send(oWhoOwner,@ReqUseGuildChest,#who=who);
+         return FALSE;
       }
 
       propagate;

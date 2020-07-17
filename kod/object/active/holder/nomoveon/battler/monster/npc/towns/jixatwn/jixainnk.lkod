@@ -1,3 +1,8 @@
 JixaInnkeep_desc_rsc = de \
-   "Das ist der Barkeeper der Kneipe von Jixa"
-Jixa_entry_welcome = de "Guten Tag, %s%s."
+   "Er ist ein Mann mit einer warmen, fröhlichen Atmosphäre und liebt es, "
+   "den Menschen lange zuzuhören, ehe er ihnen das Ohr abkaut.  "
+   "Durch seine Leidenschaft für das Theater, kann er oft stundenlange "
+   "Gespräche führen. Jorgan ist immer fröhlich, auch wenn er unter einem "
+   "Kater leidet.  Er betrachtet alles als lustiges Ereignis und hegt keinen "
+   "Groll. Er arbeitet hart und spielt hart."
+Jixa_entry_welcome = de "HAGEL, %s%s."

@@ -14,9 +14,6 @@ constants:
 
    include blakston.khd
 
-   // If we miss our roll by this much, we really pissed the monster off
-   HATE_MARGIN = 25
-
 resources:
 
    include holysymb.lkod
@@ -57,6 +54,9 @@ classvars:
 
    vbIsAreaEffect = TRUE
 
+   viStartingPriority = 700
+   viPriorityAdjustment = 2000
+
 properties:
 
 messages:
@@ -86,6 +86,7 @@ messages:
          oMonster = Send(oRoom,@HolderExtractObject,#data=oObject);
 
          if IsClass(oMonster,&Monster)
+            AND Send(oMonster,@CanFrighten)
             AND NOT (Send(oMonster,@GetBehavior) & AI_NPC)
             AND (Send(oMonster,@IsUndead))
          {
@@ -107,15 +108,8 @@ messages:
             if iRoll < iChance
             {
                // they're scared and will now run away
-               Send(oMonster,@TurnedBy,#who=who);
+               Send(oMonster,@FrightenedBy,#who=who);
                Send(oMonster,@TargetSwitch,#what=who,#iHatred=Send(who,@GetKarma));
-            }
-
-            if iRoll > (iChance + HATE_MARGIN)
-            {
-               // oops!  since you failed, now they really hate you!
-               Send(oMonster,@TargetSwitch,#what=who,#iHatred=Send(who,@GetKarma));
-               Send(oMonster,@EnterStateEngage,#target=who,#actnow=TRUE);
             }
          }
       }
@@ -126,6 +120,28 @@ messages:
    GetDuration(iSpellpower=$)
    {
       return iSpellpower / 10; // Seconds
+   }
+
+   // Only cast this spell if we fight the undead.
+   MonsterCastCheck(who=$)
+   {
+      local i, oEnemy, oOwner;
+
+      oOwner = Send(who,@GetOwner);
+
+      foreach i in Send(who,@GetHurtMeRecently)
+      {
+         oEnemy = First(i);
+
+         if Send(oEnemy,@GetOwner) = oOwner
+            AND IsClass(oEnemy,&Monster)
+            AND Send(oEnemy,@IsUndead)
+         {
+            propagate;
+         }
+      }
+
+      return FALSE;
    }
 
 end

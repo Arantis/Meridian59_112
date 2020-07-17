@@ -88,10 +88,30 @@ messages:
 
    Constructed()
    {
-      plMonsters = [ [&Ranuculus, 100] ];
+      plMonsters = [ [&Ranuculus, 75], [&EvilEnt, 25] ];
 
       plGenerators = [ [13, 13], [11, 29], [17, 31], [17, 25], [18, 36],
                        [26, 9], [28, 16], [32, 14], [35, 28], [29, 30] ];
+
+      propagate;
+   }
+   
+   RecalcLightAndWeather()
+   {
+      local iHour;
+
+      // The swamp has a diverse list of monsters
+      iHour = Send(SYS,@GetHour);
+
+      if (iHour = 20)
+      {
+         plMonsters = [ [&Ranuculus, 75], [&EvilEnt, 25] ];
+      }
+      else if (iHour = 5)
+      {
+         // during the day weaker monsters spawn
+         plMonsters = [ [&BigSlime, 40], [&Frogman, 60] ];
+      }
 
       propagate;
    }
@@ -110,23 +130,21 @@ messages:
 
    CreateStandardObjects()
    {
+      Send(self,@NewHold,#what=Create(&PlantSoil),
+           #new_row=31,#new_col=24,#fine_row=16,#fine_col=32,#angle=ANGLE_EAST);
+      Send(self,@NewHold,#what=Create(&PlantSoil),
+           #new_row=48,#new_col=15,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
+      Send(self,@NewHold,#what=Create(&PlantSoil),
+           #new_row=50,#new_col=14,#fine_row=0,#fine_col=00,#new_angle=ANGLE_EAST);
+
       Send(self,@NewHold,#what=Create(&OrnamentalObject,#type=OO_NECTREE2),
            #new_row=26,#new_col=6,#fine_row=0,#fine_col=0,#angle=ANGLE_EAST);
 
       Send(self,@NewHold,#what=Create(&OrnamentalObject,#type=OO_NECTREE2),
            #new_row=18,#new_col=38,#fine_row=0,#fine_col=0,#angle=ANGLE_EAST);
 
-      Send(self,@NewHold,#what=Create(&OrnamentalObject,#type=OO_HALFSKULL),
-           #new_row=31,#new_col=24,#fine_row=16,#fine_col=32,#angle=ANGLE_EAST);
-
       Send(self,@NewHold,#what=Create(&OrnamentalObject,#type=OO_SHRUBEE1),
            #new_row=58,#new_col=35,#fine_row=0,#fine_col=0,#new_angle=ANGLE_EAST);
-
-      Send(self,@NewHold,#what=Create(&OrnamentalObject,#type=OO_SHRUBEE1),
-           #new_row=48,#new_col=15,#fine_row=0,#fine_col=32,#new_angle=ANGLE_EAST);
-
-      Send(self,@NewHold,#what=Create(&OrnamentalObject,#type=OO_SHRUBEE1),
-           #new_row=50,#new_col=14,#fine_row=0,#fine_col=00,#new_angle=ANGLE_EAST);
 
       Send(self,@NewHold,#what=Create(&OrnamentalObject,#type=OO_SHRUBEE1),
            #new_row=59,#new_col=23,#fine_row=0,#fine_col=0,#new_angle=ANGLE_EAST);

@@ -1,0 +1,42 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+EasternAreaTreasure is TreasureType
+
+constants:
+
+   include blakston.khd
+
+classvars:
+
+   viTreasure_num = TID_EASTERN_AREA
+
+properties:
+
+messages:
+
+   Constructed()
+   {
+      plTreasure = [ [ &WindrootSeed, 30],
+                     [ &Sapphire, 30],
+                     [ &RedMushroom, 25],
+                     [ &MelancholyScroll, 5],
+                     [ &GreenMushroom, 2 ],
+                     [ &Mallet, 2],
+                     [ &Knife, 2],
+                     [ &Hatchet, 2],
+                     [ &Club, 2]
+                   ];
+
+      propagate;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

@@ -20,7 +20,7 @@ resources:
 
    room_emgtoswamp = emgtoswamp.roo
    room_name_emgtoswamp = "The Duke's Way"
-   emgtoswamp_music = walk1.ogg
+   emgtoswamp_music = walk2.ogg
 
 classvars:
 
@@ -68,7 +68,7 @@ messages:
 
    Constructed()
    {
-      plMonsters = [ [&Spider, 55], [&BigSlime, 45] ];
+      plMonsters = [ [&BullAnt, 20], [&BigSlime, 80] ];
 
       plGenerators = [ [9, 4], [4, 3], [4, 11], [6, 19], [12, 25], [8, 30], [3, 24] ];
 

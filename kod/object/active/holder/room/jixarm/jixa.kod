@@ -18,8 +18,8 @@ constants:
    LIGHTS_ON = 1
    LIGHTS_RANDOM = 2
 
-   THEATER_BACKGROUND = 10
    THEATER_STAGE = 11
+   THEATER_BACKGROUND = 12
 
 resources:
 
@@ -40,6 +40,13 @@ resources:
    JixaTheater_lightswitch_icon = neclever.bgf
    JixaTheater_lightswitch_descA = "Master light switch"
    JixaTheater_lightswitch_descB = "Adjust light tempo"
+
+   Jixa_sign_name = "growing plants"
+   Jixa_sign_desc = \
+      "Rich soil can be found scattered throughout the lands."
+      "'Offer' any rich soil seeds to grow your own magical plant.  "
+      "Optionally while any plant is growing you can also water them.  "
+      "Once these plants are fully grown, anyone may harvest them."
 
 classvars:
 
@@ -178,7 +185,7 @@ messages:
 
    CreateStandardObjects()
    {
-      local lObjCoords1, oLight, oTargetGlobe;
+      local lObjCoords1, oLight, oTargetGlobe, oNews;
 
       lObjCoords1 = [ [16,28, 0,34, OO_BARREL],    [21,16,32,58, OO_BUCKET2],
                       [ 9, 6, 8, 2, OO_TALLTREE2], [22,29, 8, 2, OO_MIDTREE1],
@@ -190,17 +197,23 @@ messages:
                       [21,47, 8, 2, OO_SHRUBEE1],  [20,48,16,18, OO_MIDTREE2],
                       [19,49,24,34, OO_SHRUBEE1],  [17,51,24,18, OO_SHRUBEE1],
                       [16,52, 8,10, OO_MIDTREE2],  [14,53,56, 2, OO_SHRUBEE1],
-                      [11,35,20,34, OO_RSHRUB],    [ 1,43,32,58, OO_DRESS1],
+                      [27,40, 8,18, OO_MIDTREE1],    [ 1,43,32,58, OO_DRESS1],
                       [ 1,44,32,58, OO_DRESS2],    [ 3,41,56,2, OO_STOOL_KOCATAN],
-                      [27,46,48,58, OO_MIDTREE4],  [ 3,48,56,58, OO_STOOL_KOCATAN],
-                      [27,40, 8,18, OO_MIDTREE1]
+                      [27,46,48,58, OO_MIDTREE4],  [ 3,48,56,58, OO_STOOL_KOCATAN]
                     ];
       Send(self,@CreateOrnObjFromList,#lObjlist=lObjCoords1);
+      Send(self,@NewHold,#what=Create(&CookingPot),
+            #new_row=11,#new_col=9,#fine_row=56,#fine_col=54);
 
-      Send(self,@NewHold,#what=Create(&SmokeColumn),
-            #new_row=11,#new_col=9,#fine_row=56,#fine_col=54);
-      Send(self,@NewHold,#what=Create(&Firepit,#iSoundRadius=10),
-            #new_row=11,#new_col=9,#fine_row=56,#fine_col=54);
+      Send(self,@NewHold,#what=create(&Sign,#desc=Jixa_sign_desc,#name=Jixa_sign_name),
+           #new_row=11,#new_col=36,#fine_row=20,#fine_col=44,#angle=ANGLE_SOUTH_WEST);
+      Send(self,@NewHold,#what=Create(&PlantSoil),
+            #new_row=11,#new_col=35,#fine_row=0,#fine_col=40);
+      Send(self,@NewHold,#what=Create(&PlantSoil),
+            #new_row=11,#new_col=35,#fine_row=32,#fine_col=48);
+      Send(self,@NewHold,#what=Create(&PlantSoil),
+            #new_row=11,#new_col=35,#fine_row=16,#fine_col=16);
+
       Send(self,@NewHold,#what=Create(&DynamicLight,#iColor=LIGHT_FIRE,#iIntensity=30),
             #new_row=11,#new_col=9,#fine_row=56,#fine_col=54);
       Send(self,@NewHold,#what=Create(&SmokeColumn),
@@ -223,6 +236,13 @@ messages:
             #new_row=11,#new_col=15,#fine_row=40,#fine_col=34,#angle=ANGLE_EAST);
       Send(self,@NewHold,#what=Create(&FoodDispenser,#classtype=&Apple),
             #new_row=31,#new_col=10,#fine_row=8,#fine_col=34,#angle=ANGLE_EAST);
+
+      oNews = Send(SYS,@FindNewsByNum,#num=NID_GAME);
+      if oNews = $
+      {
+         oNews = Create(&News,#nid=NID_GAME,#name=news_game_name,#desc=news_game_desc);
+      }
+      Send(self,@NewHold,#what=oNews,#new_row=22,#new_col=18,#fine_row=52,#fine_col=8);
 
        //Theater
       oLight = Create(&Brazier);

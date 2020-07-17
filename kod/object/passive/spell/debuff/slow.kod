@@ -55,6 +55,8 @@ classvars:
 
    vrSucceed_wav = slow_sound
 
+   vbIsMoveSpeedModifier = TRUE
+
 properties:
 
    piBaseDuration = 4000
@@ -75,7 +77,7 @@ messages:
       return;
    }
 
-   DoSpellEffects(who=$,lTargets=$,iDuration=$,report=TRUE,iSpellPower=$)
+   DoSpellEffects(who=$,lTargets=$,iDuration=$,report=TRUE,iSpellPower=$,iSpeedPercent=$)
    "Holds target for duration milliseconds."
    {
       local i, oSpell, oTarget, iSpeed;
@@ -93,7 +95,12 @@ messages:
          iDuration = 5000;
       }
 
-      iSpeed = -(Send(self,@GetSlowAmount,#iSpellPower=iSpellPower));
+      iSpeed = iSpeedPercent;
+      if iSpeed = $
+      {
+         iSpeed = -(Send(self,@GetSlowAmount,#iSpellPower=iSpellPower));
+      }
+      
       Send(oTarget,@AddMovementSpeedPercent,#iSpeed=iSpeed);
 
       if (report)
@@ -134,6 +141,19 @@ messages:
    "Returns a positive number."
    {
       return (piBaseSlow + (iSpellPower + 1) * piSlowSpellpowerModifier) / 100;
+   }
+
+   GetSpellMoveSpeedBonus(state = $)
+   "Given the enchantment state, returns the speed penalty component."
+   {
+      if (state = $)
+      {
+         Debug("GetSpellMoveSpeedBonus called with $ state!");
+
+         return 0;
+      }
+
+      return First(state);
    }
 
    EndEnchantment(who=$,report=TRUE,state=$)

@@ -48,8 +48,8 @@ classvars:
 
 properties:
 
-   viFilling = 20
-   viNutrition = 9
+   viFilling = 25
+   viNutrition = 25
    piNumber = 1
 
 messages:
@@ -59,6 +59,11 @@ messages:
    {
       send(who,@msgsenduser,#message_rsc=soup_got_one);
       return;
+   }
+
+   IsCookingIngredient()
+   {
+      return TRUE;
    }
 
 end

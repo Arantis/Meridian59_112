@@ -112,6 +112,14 @@ properties:
    // identical to start off with).
    plArenaChampions = $
 
+   // Contains all available recipes in their own seperate lists
+   // [ RECIPE_TYPE [ [ingredient class, amount] ], [output class, amount] ]
+   // For example [ CR_SOUP, [ [&Snack, 2], [&Herbs, 2] ], [&Soup, 1] ]
+   // Two snacks and 2 herbs are required to make a soup. 
+   // The output list will always be one class, 
+   // but you can specfiy any amount.
+   plCookingRecipes = $
+
 messages:
 
    Constructor()
@@ -139,11 +147,17 @@ messages:
          Send(self,@LoreVerifyArenaLists);
       }
 
+      // Create the cooking recipes.
+      Send(self,@LoreCreateCookingRecipes);
+
       return;
    }
 
    ResetLore()
    {
+      // Create the cooking recipes.
+      Send(self,@LoreCreateCookingRecipes);
+
       // Create the Hall of Heroes statue lists.
       Send(self,@LoreCreateHoHLists);
 
@@ -151,6 +165,39 @@ messages:
       Send(self,@LoreCreateArenaLists);
 
       return;
+   }
+
+   LoreCreateCookingRecipes()
+   {
+      plCookingRecipes = [
+         [ CR_SOUP, [ [&Snack, 1], [&Herbs, 1] ], [&Soup, 1] ],
+         [ CR_BREAD, [ [&Elderberry, 3] ], [&Bread, 1] ],
+         [ CR_PRETZEL, [ [&Bread, 4], [&Solagh, 2] ], [&Pretzel, 1] ],
+         [ CR_WINEGOBLET, [ [&Grapes, 2] ], [&WineGoblet, 1] ],
+         [ CR_KOCATANMUG, [ [&TeloFruit, 1] ], [&KocatanMug, 1] ],
+         [ CR_KEBAB, [ [&Pork, 2] ], [&Kebab, 1] ],
+         [ CR_FRUITBOWL, [ [&Apple, 1], [&Pear, 1], [&Orange, 1] ],
+            [&FruitBowl, 1] ],
+         [ CR_COOKIE, [ [&Mint, 1] ], [&Cookie, 1] ],
+         [ CR_PANCAKE, [ [&Yrxlsap, 2] ], [&Pancake, 1] ],
+         [ CR_GHOSTPEPPER, [ [&FireSand, 4] ], [&GhostPepper, 1] ],
+         [ CR_SUSHI, [ [&Spideye, 4] ], [&Sushi, 1] ],
+         [ CR_MOONSHINE, [ [&Mug, 1], [&StoutGoblet, 1] ], [&Moonshine, 1] ],
+         [ CR_TWINKLECAP, [ [&GreenMushroom, 1], [&YellowMushroom, 1], 
+            [&CyanMushroom, 1], [&GrayMushroom, 1] ] , [&TwinkleCap, 1] ]
+      ];
+
+      return;
+   }
+
+   GetCookingRecipes()
+   {
+      return plCookingRecipes;
+   }
+
+   GetCookingRecipe(iRecipe = CR_NONE)
+   {
+      return GetListNode(plCookingRecipes,1,iRecipe);
    }
 
    LoreCreateHoHLists()

@@ -55,6 +55,20 @@ properties:
 
 messages:
 
+   CreateStandardObjects()
+   {
+      Send(self,@NewHold,#what=Create(&PlantSoil),
+           #new_row=41,#new_col=12,#fine_row=32,#fine_col=32,#angle=ANGLE_EAST);
+      Send(self,@NewHold,#what=Create(&PlantSoil),
+           #new_row=43,#new_col=18,#fine_row=32,#fine_col=32,#angle=ANGLE_EAST);
+      Send(self,@NewHold,#what=Create(&PlantSoil),
+           #new_row=47,#new_col=10,#fine_row=32,#fine_col=32,#angle=ANGLE_EAST);
+      Send(self,@NewHold,#what=Create(&PlantSoil),
+           #new_row=30,#new_col=9,#fine_row=32,#fine_col=32,#angle=ANGLE_EAST);
+
+      propagate;
+   }
+
    CreateStandardExits()
    {
       plEdge_Exits = $;
@@ -70,8 +84,24 @@ messages:
    {
       plMonsters = [ [&Chupacabra, 100] ];
 
-      // Use Random Spawn
-      // plGenerators = [ [10, 4], [17, 10], [28, 9], [41, 15], [27, 22], [10, 22], [17, 35], [26, 40], [34, 38], [8, 38] ];
+      propagate;
+   }
+
+   RecalcLightAndWeather()
+   {
+      local iHour;
+
+      // Wendigo come out at night
+      iHour = Send(SYS,@GetHour);
+
+      if (iHour = 20)
+      {
+         plMonsters = [ [&Chupacabra, 50], [&Wendigo, 50] ];
+      }
+      else if (iHour = 5)
+      {
+         plMonsters = [ [&Chupacabra, 100] ];
+      }
 
       propagate;
    }

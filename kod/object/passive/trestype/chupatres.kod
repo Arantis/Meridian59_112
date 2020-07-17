@@ -20,19 +20,22 @@ classvars:
 
 properties:
 
-   piItem_att_chance = 3
-   piDIff_seed = 6
+   piItem_att_chance = 2
+   piDIff_seed = 8
 
 messages:
 
    Constructed()
    {
-      plTreasure = [ [ &Mushroom, 30 ],
-                     [ &Herbs, 30 ],
-                     [ &RedMushroom , 30],
-                     [ &OrcTooth , 4],
-                     [ &Truffle , 1],
-                     [ &EntrootBerry , 5]
+      plTreasure = [ [ &Truffle, 30],
+                     [ &EntrootBerry, 30],
+                     [ &Snack, 20],
+                     [ &YellowMushroom, 10],
+                     [ &BlankScroll, 2],
+                     [ &MelancholyScroll, 2],
+                     [ &Mallet, 2],
+                     [ &Maul, 2],
+                     [ &Knife, 2]
                    ];
 
       propagate;

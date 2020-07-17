@@ -1,0 +1,43 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+WendigoTreasure is TreasureType
+
+constants:
+
+   include blakston.khd
+
+classvars:
+
+   viTreasure_num = TID_WENDIGO
+
+properties:
+
+messages:
+
+   Constructed()
+   {
+      plTreasure = [ [ &GreenMushroom, 27],
+                     [ &EntrootBerry, 25],
+                     [ &DarkAngelFeather, 25],
+                     [ &WindrootLeaf, 6],
+                     [ &Ruby, 6],
+                     [ &BoonBerry, 5],
+                     [ &Machete, 2],
+                     [ &BlankScroll, 2],
+                     [ &HuntingBow, 1],
+                     [ &TowerShield, 1]
+                   ];
+
+      propagate;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

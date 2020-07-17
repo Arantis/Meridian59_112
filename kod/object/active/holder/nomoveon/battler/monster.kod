@@ -112,15 +112,23 @@ resources:
    Lm_second_damage_level = "~B~r%s%s is clearly injured."
    Lm_third_damage_level = "~B~r%s%s is seriously wounded."
    Lm_fourth_damage_level = "~B~r%s%s is weak, and near death."
-   Lm_first_heal_level = "~B~t%s%s has recoverd a little and looks pretty healthy once more."
-   Lm_second_heal_level = "~B~t%s%s has recoverd a little but still shows signs of being slightly wounded."
-   Lm_third_heal_level = "~B~t%s%s has recoverd a little but still suffers from clearly visible wounds."
-   Lm_fourth_heal_level = "~B~t%s%s has recoverd a little but still suffers from serious injuries."
+   Lm_first_heal_level = "~B~q%s%s has recoverd a little and looks pretty healthy once more."
+   Lm_second_heal_level = "~B~q%s%s has recoverd a little but still shows signs of being slightly wounded."
+   Lm_third_heal_level = "~B~q%s%s has recoverd a little but still suffers from clearly visible wounds."
+   Lm_fourth_heal_level = "~B~q%s%s has recoverd a little but still suffers from serious injuries."
    Lm_party_killed_monster = "~B%s%s has valiantly slain %s%s!"
    Lm_party_monster_died_to_dot = "%s%s has succumbed to %s injuries!"
 
    Lm_monster_winded = "~I~r%s%s needs a moment to catch %s breath!"
    Lm_monster_spin = "~I~r%s%s spins around in a vicious attack!"
+   Lm_monster_taunt = "~I~r%s%s taunts %s%s!"
+   Lm_monster_stun = "~I~r%s%s attempts to stun %s%s!"
+   Lm_monster_cripple = "~I~r%s%s attempts to cripple %s%s!"
+   Lm_monster_weaken = "~I~r%s%s attempts to weaken %s%s!"
+   Lm_monster_snare = "~I~r%s%s attempts to ensnare %s%s!"
+   Lm_monster_daze = "~I~r%s%s attempts to daze %s%s!"
+   Lm_monster_distract = "~I~r%s%s attempts to distract their opponents!"
+   Lm_monster_frighten = "~I~r%s%s attempts to frighten their opponents!"
 
    monster_desc_level = "This opponent will take you to %i hitpoints."
    Lm_condition_healthy = "%s\n\n%r"
@@ -203,6 +211,7 @@ resources:
    vaultman_not_enough = "You don't have that many %s stored in your name!"
 
    monster_say_to_one = "~k%s%s tells you, \"%s~n~k\""
+   monster_mercenary_say_to_one = "~M%s%s tells you, \"%s~n~M\""
 
    monster_iteach = "I teach %s%s%s%s%s%s%s%s%s%s%s%s at that level."
    monster_teachnothing = "I teach no abilities at that level."
@@ -412,13 +421,16 @@ classvars:
    viBurnStrength = $
    viBurnDuration = $
 
+   // Multiplier for SKID_FRIGHTEN.
+   viFrightenFactor = 10
+
    // Some monsters are immune to certain drain effects.
    vbCanPoison = TRUE
    vbCanBleed = TRUE
    vbCanSiphon = TRUE
    vbCanFatigue = TRUE
    vbCanBurn = TRUE
-
+   vbCanFrighten = TRUE
    vbCanSeduce = TRUE
 
    // If true, items that are sold actually come out of the monster's
@@ -448,6 +460,7 @@ classvars:
    vrUnwanted_pay = LS_unwanted_pay
    vrUnwanted_give = LS_unwanted_give
    vrUnwanted_token = LS_unwanted_token
+   vrBuyer_Unwanted = Lm_buyer_unwanted
    vrTeach_quest_needed = monster_teach_quest_needed
    vrNothing_for_sale = Lm_nothing_for_sale
    vrMrcnt_too_costly = Lm_mrcnt_too_costly
@@ -463,6 +476,25 @@ classvars:
    vrMercenaryJoinContracted = Lm_mercenary_join_contracted
    vrMercenaryLeave = Lm_mercenary_leave
 
+   // Special info a follower can provide about the mob.
+   vrInfo = $
+   vrInfo_quest = $
+   vrInfo_killed = $
+   vrInfo_quest_killed = $
+   vrInfo_engaged = $
+   vrInfo_quest_engaged = $
+   vrInfo_retreating = $
+   vrInfo_quest_retreating = $
+
+   // Time between repeated commentary.
+   viInfo_time_quest = 0
+   viInfo_time_killed = 0
+   viInfo_time_quest_killed = 1
+   viInfo_time_engaged = 0
+   viInfo_time_quest_engaged = 0
+   viInfo_time_retreating = 0
+   viInfo_time_quest_retreating = 0
+
    // Obsolete, but still included here for safety's sake.
    vrSound_hit = $
    vrSound_miss = $
@@ -475,12 +507,18 @@ classvars:
    viFaction = FACTION_NEUTRAL
 
    vbIsAreaEffect = FALSE
+   
+   // What basic actions does the monster have access to?
+   // Standard mobs know how to slash, nothing else.
+   viAttacks = ATTACK_SLASH
 
    // What are the monster's priorities regarding basic actions?
    viMeleePriority = 600
    viMovePriority = 500
    viFirePriority = 550
-   vbSpin = FALSE
+
+   viMeleeAnimationTime = 400
+   viRangedAnimationTime = 400
    viSpinAnimationTime = 100
 
    // How well can the monster see in the dark? Default: 5
@@ -545,10 +583,10 @@ properties:
    poMaster = $
    // Who is our leader, if we have one.
    poLeader = $
-   // Player who has turned us.
-   poHolySymbolCaster = $
-   // Timer to expire turning.
-   ptUnturn = $
+   // Battler who has frightened us.
+   poFrightener = $
+   // Timer to expire frightening.
+   ptUnFrighten = $
    piHatred = 0
    // Emulates combat stats for monsters based on difficulty.
    piAgility = 25
@@ -827,7 +865,7 @@ messages:
 
    Constructed()
    {
-      local lActions, lTemp, i, oSpell;
+      local lActions, i, oSpell;
 
       // Any entry in the monster's spell book needs to have the
       // following form: [SID,Mana,Vigor,Range,Priority,P-Factor,SP].
@@ -844,7 +882,7 @@ messages:
 
       foreach i in lActions
       {
-         // We recognize list lengths of 1,4 and 7. If we get anything
+         // We recognize list lengths of 1,4 and 8. If we get anything
          // else, skip and move on.
          // Nothing provided but the spell...
          if Length(i) = 1
@@ -880,37 +918,8 @@ messages:
          }
       }
 
-      // Add default actions to the list:
-      // Movement.
-      lTemp = [SKID_MINIMUM,0,20,MAX_KOD_INT,viMovePriority,0,100,COMBAT_ACTION_NEUTRAL];
-      plActions = Cons(lTemp,plActions);
-
-      // Melee attacks.
-      if (GetListNode(plActions, 1, SKID_SLASH) = $)
-      {
-         lTemp = [SKID_SLASH,0,100,piMeleeRange*piMeleeRange,viMeleePriority,0,100,COMBAT_ACTION_HARM];
-         plActions = Cons(lTemp,plActions);
-      }
-
-      // Only add fire, if we can attack at range.
-      if piFireRange > 0
-      {
-         if (GetListNode(plActions, 1, SKID_FIRE) = $)
-         {
-            lTemp = [SKID_FIRE,0,100,piFireRange*piFireRange,viFirePriority,0,100,COMBAT_ACTION_HARM];
-            plActions = Cons(lTemp,plActions);
-         }
-      }
-
-      // Only add spin, if we have an area effect attack.
-      if vbSpin
-      {
-         if (GetListNode(plActions, 1, SKID_SPIN) = $)
-         {
-            lTemp = [SKID_SPIN,0,500,piMeleeRange*piMeleeRange,viMeleePriority+1,0,75,COMBAT_ACTION_HARM];
-            plActions = Cons(lTemp,plActions);
-         }
-      }
+      // Add default attacks. Outsourced so we can call it at a later time to update our attacks.
+      Send(self,@AddDefaultAttacks);
 
       // Check if the monster starts out socializing or minding their own business.
       if Random(1,100) <= viSocial
@@ -921,7 +930,153 @@ messages:
       propagate;
    }
 
-   AddCombatAction(iNum=0)
+   AddDefaultAttacks(bUpdate=FALSE)
+   {
+      local lTemp, i;
+
+      // If this is an update, clear our previous attacks first.
+      if bUpdate
+      {
+         foreach i in plActions
+         {
+            if First(i) > 400
+            {
+               plActions = DelListElem(plActions,i);
+            }
+         }
+      }
+
+      // Melee attacks. Check what's available to us.
+      if (viAttacks & ATTACK_SLASH) 
+         AND (GetListNode(plActions, 1, SKID_SLASH) = $)
+      {
+         lTemp = [SKID_SLASH,0,100,piMeleeRange*piMeleeRange,viMeleePriority,0,100,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_THRUST) 
+         AND (GetListNode(plActions, 1, SKID_THRUST) = $)
+      {
+         lTemp = [SKID_THRUST,0,100,piMeleeRange*piMeleeRange,viMeleePriority,0,100,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_STRIKE) 
+         AND (GetListNode(plActions, 1, SKID_STRIKE) = $)
+      {
+         lTemp = [SKID_STRIKE,0,100,piMeleeRange*piMeleeRange,viMeleePriority,0,100,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_PUNCH) 
+         AND (GetListNode(plActions, 1, SKID_PUNCH) = $)
+      {
+         lTemp = [SKID_PUNCH,0,100,piMeleeRange*piMeleeRange,viMeleePriority,0,100,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_CLAW) 
+         AND (GetListNode(plActions, 1, SKID_CLAW) = $)
+      {
+         lTemp = [SKID_CLAW,0,100,piMeleeRange*piMeleeRange,viMeleePriority,0,100,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_STING) 
+         AND (GetListNode(plActions, 1, SKID_STING) = $)
+      {
+         lTemp = [SKID_STING,0,100,piMeleeRange*piMeleeRange,viMeleePriority,0,100,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_BITE) 
+         AND (GetListNode(plActions, 1, SKID_BITE) = $)
+      {
+         lTemp = [SKID_BITE,0,100,piMeleeRange*piMeleeRange,viMeleePriority,0,100,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_SPIT) 
+         AND (GetListNode(plActions, 1, SKID_SPIT) = $)
+      {
+         lTemp = [SKID_SPIT,0,100,piMeleeRange*piMeleeRange,viMeleePriority,0,100,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_SPIN) 
+         AND (GetListNode(plActions, 1, SKID_SPIN) = $)
+      {
+         lTemp = [SKID_SPIN,0,500,piMeleeRange*piMeleeRange,viMeleePriority+1,0,75,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_TAUNT) 
+         AND (GetListNode(plActions, 1, SKID_TAUNT) = $)
+      {
+         lTemp = [SKID_TAUNT,0,500,piMeleeRange*piMeleeRange*25,viMeleePriority,200,50,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_STUN) 
+         AND (GetListNode(plActions, 1, SKID_STUN) = $)
+      {
+         lTemp = [SKID_STUN,0,500,piMeleeRange*piMeleeRange,viMeleePriority,600,50,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_DISTRACT) 
+         AND (GetListNode(plActions, 1, SKID_DISTRACT) = $)
+      {
+         lTemp = [SKID_DISTRACT,0,500,piMeleeRange*piMeleeRange*4,viMeleePriority,1000,0,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_FRIGHTEN) 
+         AND (GetListNode(plActions, 1, SKID_FRIGHTEN) = $)
+      {
+         lTemp = [SKID_FRIGHTEN,0,500,piMeleeRange*piMeleeRange*9,viMeleePriority,1000,0,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_CRIPPLE) 
+         AND (GetListNode(plActions, 1, SKID_CRIPPLE) = $)
+      {
+         lTemp = [SKID_CRIPPLE,0,500,piMeleeRange*piMeleeRange,viMeleePriority,600,150,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_WEAKEN) 
+         AND (GetListNode(plActions, 1, SKID_WEAKEN) = $)
+      {
+         lTemp = [SKID_WEAKEN,0,500,piMeleeRange*piMeleeRange,viMeleePriority,400,150,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_SNARE) 
+         AND (GetListNode(plActions, 1, SKID_SNARE) = $)
+      {
+         lTemp = [SKID_SNARE,0,500,piMeleeRange*piMeleeRange,viMeleePriority,600,50,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      if (viAttacks & ATTACK_DAZE) 
+         AND (GetListNode(plActions, 1, SKID_DAZE) = $)
+      {
+         lTemp = [SKID_DAZE,0,500,piMeleeRange*piMeleeRange,viMeleePriority,600,50,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      // Only add fire, if we can attack at range.
+      if piFireRange > 0 AND (GetListNode(plActions, 1, SKID_FIRE) = $)
+      {
+         lTemp = [SKID_FIRE,0,100,piFireRange*piFireRange,viFirePriority,0,100,COMBAT_ACTION_HARM];
+         plActions = Cons(lTemp,plActions);
+      }
+
+      return;
+   }
+
+   AddCombatAction(iNum=0,iMana=100,iExertion=100,iPriority=100,iPower=$)
    {
       local oSpell, lSpell;
 
@@ -930,12 +1085,12 @@ messages:
       {
          oSpell = Send(SYS,@FindSpellByNum,#num=iNum);
          lSpell = [iNum,
-                   Send(oSpell,@GetMonsterManaCost)*100,
-                   Send(oSpell,@GetMonsterExertion)*100,
+                   Send(oSpell,@GetMonsterManaCost)*iMana,
+                   Send(oSpell,@GetMonsterExertion)*iExertion,
                    Send(oSpell,@GetSquaredRange),
                    Send(oSpell,@GetStartingPriority),
-                   Send(oSpell,@GetPriorityAdjustment),
-                   Bound(Random(viDifficulty*3,viDifficulty*6),1,49),
+                   Send(oSpell,@GetPriorityAdjustment)*iPriority/100,
+                   Bound(Random(viDifficulty*3,viDifficulty*6),iPower,iPower),
                    Send(oSpell,@GetCombatType)];
 
          plActions = Cons(lSpell,plActions);
@@ -1305,12 +1460,12 @@ messages:
       plActions = $;
       poMaster = $;
       poObject = $;
-      poHolySymbolCaster = $;
+      poFrightener = $;
 
-      if ptUnturn <> $
+      if ptUnFrighten <> $
       {
-         DeleteTimer(ptUnturn);
-         ptUnturn = $;
+         DeleteTimer(ptUnFrighten);
+         ptUnFrighten = $;
       }
 
       if ptAction <> $
@@ -1562,6 +1717,15 @@ messages:
    {
       if poTarget <> target AND vrSound_aware <> $
       {
+         // Log a debug message for $ owner to help find out where these
+         // monsters are getting engaged with a target and no owner.
+         // Also don't obscure the error by doing a $ check before the
+         // SomethingWaveRoom call.
+         if (poOwner = $ AND poTarget <> $)
+         {
+            Debug("Monster ", vrName, " has $ owner with target ",
+               Send(poTarget,@GetTrueName));
+         }
          Send(poOwner,@SomethingWaveRoom,#what=self,#wave_rsc=vrSound_aware,
               #flags=SOUND_RANDOM_PITCH);
       }
@@ -2127,7 +2291,7 @@ messages:
       // Sanity checks
       if poOwner = $
       {
-         Debug("Unreachable. Null owner.");
+         Debug("Unreachable. Null owner for ", self, vrName);
          Send(self,@EnterStateLimbo);
 
          return;
@@ -2145,6 +2309,15 @@ messages:
       // Victim phased out or is now in spectator mode, break aggro.
       if IsClass(poTarget,&User)
          AND Send(poTarget,@IsInCannotInteractMode)
+      {
+         Send(self,@EnterStateMove);
+
+         return;
+      }
+
+      // Target is a monster but now has NPC flag.
+      if (IsClass(poTarget,&Monster)
+         AND (Send(poTarget,@GetBehavior) & AI_NPC))
       {
          Send(self,@EnterStateMove);
 
@@ -2229,7 +2402,7 @@ messages:
 
       if Send(self,@MonsterCombatCheck)
       {
-         iDelay = Send(self,@MonsterCombatAction,#distance=iDistance,#sight=bSight);
+         iDelay = Send(self,@MonsterAction,#distance=iDistance,#sight=bSight);
       }
       else
       {
@@ -2410,6 +2583,11 @@ messages:
       return piAim;
    }
 
+   GetRawAim()
+   {
+      return piAim;
+   }
+
    AddMonsterAim(points=0)
    {
       local iOrigAim;
@@ -2421,6 +2599,11 @@ messages:
    }
 
    GetAgility()
+   {
+      return piAgility;
+   }
+
+   GetRawAgility()
    {
       return piAgility;
    }
@@ -2440,6 +2623,11 @@ messages:
       return piMight;
    }
 
+   GetRawMight()
+   {
+      return piMight;
+   }
+
    AddMonsterMight(points=0)
    {
       local iOrigMight;
@@ -2451,6 +2639,11 @@ messages:
    }
 
    GetStamina()
+   {
+      return piStamina;
+   }
+
+   GetRawStamina()
    {
       return piStamina;
    }
@@ -2470,6 +2663,11 @@ messages:
       return piIntellect;
    }
 
+   GetRawIntellect()
+   {
+      return piIntellect;
+   }
+
    AddMonsterIntellect(points=0)
    {
       local iOrigIntellect;
@@ -2485,6 +2683,11 @@ messages:
       return piMysticism;
    }
 
+   GetRawMysticism()
+   {
+      return piMysticism;
+   }
+
    AddMonsterMysticism(points=0)
    {
       local iOrigMysticism;
@@ -2493,6 +2696,11 @@ messages:
       piMysticism = Bound(piMysticism + points,1,MONSTER_STAT_CAP);
 
       return piMysticism - iOrigMysticism;
+   }
+
+   FlipSkillAtrophyFlag()
+   {
+      return;
    }
 
    StartPalsy()
@@ -2523,26 +2731,24 @@ messages:
       return;
    }
 
-   AdjustedChanceBase(base = 0)
-   "Adjusts the probability of a monster spell cast based on enchantments"
+   AdjustSpellpower(spellpower = 0)
    {
       local oSpell;
 
       oSpell = Send(SYS,@FindSpellByNum,#num=SID_ANTIMAGIC_ROOM);
+
       if Send(poOwner,@CheckRoomFlag,#flag=ROOM_ANTI_MAGIC)
          AND (Send(poOwner,@GetEnchantmentState,#what=oSpell) <> $)
       {
-         // Reduce chance to 2/3 by multplying base by 3/2
-         base = (3 * base) / 2;
+         spellpower -= 33;
       }
 
       if (piEnch_flags & ENCH_DEMENTIA)
       {
-         // Halve the chance by doubling the base
-         base *= 2;
+         spellpower -= 50;
       }
 
-      return base;
+      return Bound(spellpower,SPELLPOWER_MINIMUM,SPELLPOWER_MAXIMUM);
    }
 
    ////  Auxiliary Routines
@@ -3073,6 +3279,27 @@ messages:
    // This is the type of damage done.
    GetAttackType(what = $)
    {
+      local iNum;
+
+      iNum = piAction % 10000;
+
+      if iNum = SKID_CLAW
+      {
+         return ATK_TYPE_CLAW;
+      }
+      if iNum = SKID_BITE
+      {
+         return ATK_TYPE_BITE;
+      }
+      if iNum = SKID_STING
+      {
+         return ATK_TYPE_STING;
+      }
+      if iNum = SKID_SPIT
+      {
+         return ATK_TYPE_ACID;
+      }
+
       return viAttack_type;
    }
 
@@ -3327,9 +3554,9 @@ messages:
    }
 
    // This function handles damage done, etc.
-   DidDamage(what = $, amount = 0)
+   DidDamage(what = $, amount = 0, iNum = $)
    {
-      Send(self,@HitSideEffect,#what=what,#amount=amount);
+      Send(self,@HitSideEffect,#what=what,#amount=amount,#iNum=iNum);
 
       return;
    }
@@ -3392,7 +3619,7 @@ messages:
       return Bound(piFireRange,piMeleeRange,$);
    }
 
-   GetTargetsInRange(bRanged=FALSE)
+   GetTargetsInRange(bRanged=FALSE,squaredrange=$)
    {
       local oRoom, i, each_obj, lValidTargets;
 
@@ -3403,7 +3630,7 @@ messages:
          if IsClass(each_obj,&Battler)
             AND (NOT Send(self,@IsAlly,#target=each_obj))
             AND (NOT Send(each_obj,@IsInCannotInteractMode))
-            AND Send(self,@CanReach,#what=each_obj,#bRanged=bRanged)
+            AND Send(self,@CanReach,#what=each_obj,#bRanged=bRanged,#squaredrange=squaredrange)
          {
             lValidTargets = Cons(each_obj,lValidTargets);
          }
@@ -3454,11 +3681,19 @@ messages:
       return;
    }
 
-   CanReach( what = $ , bRanged = FALSE)
+   CanReach( what = $ , bRanged = FALSE, squaredrange = $)
    {
       local iRange;
 
-      iRange = Send(self,@GetAttackRange,#bRanged=bRanged);
+      if squaredrange = $
+      {
+         iRange = Send(self,@GetAttackRange,#bRanged=bRanged);
+         iRange *= iRange;
+      }
+      else
+      {
+         iRange = squaredrange;
+      }
 
       if poOwner <> Send(what,@GetOwner)
       {
@@ -3467,7 +3702,7 @@ messages:
 
       // Check range first, for speed (in FINENESS units).
       if Send(self,@SquaredFineDistanceTo3D,#what=what)
-            > (iRange * iRange)
+            > iRange
       {
          if what = poTarget
          {
@@ -4250,8 +4485,7 @@ messages:
 
             if NOT Send(self,@ObjectDesired,#what=i)
             {
-               Send(self,@SayToOne,#target=what,#message_rsc=Lm_buyer_unwanted);
-
+               Send(self,@SayToOne,#target=what,#message_rsc=vrBuyer_Unwanted);
                return FALSE;
             }
 
@@ -4815,7 +5049,7 @@ messages:
    }
 
    // A monster's attack may cause side effects.
-   HitSideEffect(what=$,who=$,amount=0)
+   HitSideEffect(what=$,who=$,amount=0,iNum=$)
    "Called after every non-fatal monster hit."
    {
       local oEffect, iStrength, iDuration;
@@ -4926,6 +5160,131 @@ messages:
          }
       }
 
+      // Special attacks...
+
+      if IsClass(what,&Monster)
+      {
+         // Taunt is a half damage high threat attack.
+         if (iNum = SKID_TAUNT)
+         {
+            // Total threat: viLevel/10 + 2*damage, since taunt does 50% damage.
+            Send(what,@AddHurtMeRecently,#who=who,#amount=viLevel*10+amount*3);
+            Send(poOwner,@SomeoneSaid,#what=self,#string=Lm_monster_taunt,
+                  #type=SAY_MESSAGE,#parm1=Send(self,@GetCapDef),
+                  #parm2=Send(self,@GetName),#parm3=Send(what,@GetDef),
+                  #parm4=Send(what,@GetName));
+         }
+         // Stun adds a hold effect to the target.
+         else if (iNum = SKID_STUN)
+         {
+            Send(poOwner,@SomeoneSaid,#what=self,#string=Lm_monster_stun,
+                  #type=SAY_MESSAGE,#parm1=Send(self,@GetCapDef),
+                  #parm2=Send(self,@GetName),#parm3=Send(what,@GetDef),
+                  #parm4=Send(what,@GetName));
+
+            oEffect = Send(SYS,@FindSpellByNum,#num=SID_HOLD);
+
+            if NOT Send(what,@IsEnchanted,#what=oEffect)
+               AND (Random(1,viLevel) > Send(what,@GetLevel)/5)
+            {
+               Send(oEffect,@DoSpellEffects,#who=who,#lTargets=[what],
+                     #iDuration=(piMight+piAim+viLevel)*30,#report=FALSE);
+            }
+         }
+         // Cripple adds a vertigo effect to the target.
+         else if (iNum = SKID_CRIPPLE)
+         {
+            Send(poOwner,@SomeoneSaid,#what=self,#string=Lm_monster_cripple,
+                  #type=SAY_MESSAGE,#parm1=Send(self,@GetCapDef),
+                  #parm2=Send(self,@GetName),#parm3=Send(what,@GetDef),
+                  #parm4=Send(what,@GetName));
+
+            oEffect = Send(SYS,@FindSpellByNum,#num=SID_VERTIGO);
+
+            if NOT Send(what,@IsEnchanted,#what=oEffect)
+               AND (Random(1,viLevel) > Send(what,@GetLevel)/5)
+            {
+               Send(oEffect,@DoSpellEffects,#who=who,#lTargets=[what],
+                     #iDuration=(piIntellect+piAim+viLevel)*60,
+                     #iSpellPower=piIntellect+piAim,
+                     #report=FALSE);
+            }
+         }
+         // Weaken adds an enfeeble effect to the target.
+         else if (iNum = SKID_WEAKEN)
+         {
+            Send(poOwner,@SomeoneSaid,#what=self,#string=Lm_monster_weaken,
+                  #type=SAY_MESSAGE,#parm1=Send(self,@GetCapDef),
+                  #parm2=Send(self,@GetName),#parm3=Send(what,@GetDef),
+                  #parm4=Send(what,@GetName));
+
+            oEffect = Send(SYS,@FindSpellByNum,#num=SID_ENFEEBLE);
+
+            if NOT Send(what,@IsEnchanted,#what=oEffect)
+               AND (Random(1,viLevel) > Send(what,@GetLevel)/5)
+            {
+               Send(oEffect,@DoSpellEffects,#who=who,#lTargets=[what],
+                     #iDuration=(piMight+piAim+viLevel)*100,
+                     #iSpellPower=piMight+piAim,
+                     #report=FALSE);
+            }
+         }
+         // Snare reduces the target's movement speed.
+         else if (iNum = SKID_SNARE)
+         {
+            Send(poOwner,@SomeoneSaid,#what=self,#string=Lm_monster_snare,
+                  #type=SAY_MESSAGE,#parm1=Send(self,@GetCapDef),
+                  #parm2=Send(self,@GetName),#parm3=Send(what,@GetDef),
+                  #parm4=Send(what,@GetName));
+
+            oEffect = Send(SYS,@FindSpellByNum,#num=SID_SLOW);
+
+            if NOT Send(what,@IsEnchanted,#what=oEffect)
+               AND (Random(1,viLevel) > Send(what,@GetLevel)/5)
+            {
+               Send(oEffect,@DoSpellEffects,#who=who,#lTargets=[what],
+                     #iDuration=(piAgility+piAim+viLevel)*60,
+                     #iSpellPower=piAgility+piAim,
+                     #report=FALSE);
+            }
+         }
+         // Daze adds a dement effect to the target.
+         else if (iNum = SKID_DAZE)
+         {
+            Send(poOwner,@SomeoneSaid,#what=self,#string=Lm_monster_daze,
+                  #type=SAY_MESSAGE,#parm1=Send(self,@GetCapDef),
+                  #parm2=Send(self,@GetName),#parm3=Send(what,@GetDef),
+                  #parm4=Send(what,@GetName));
+
+            oEffect = Send(SYS,@FindSpellByNum,#num=SID_DEMENT);
+
+            if NOT Send(what,@IsEnchanted,#what=oEffect)
+               AND (Random(1,viLevel) > Send(what,@GetLevel)/5)
+            {
+               Send(oEffect,@DoSpellEffects,#who=who,#lTargets=[what],
+                     #iDuration=(piMight+piAgility+piAim+viLevel)*100,
+                     #iSpellPower=(piMight+piAgility+piAim)/2,
+                     #report=FALSE);
+            }
+         }
+         // Turns the target non hostile for the duration.
+         // AE, so messages are handled in MonsterAction()
+         else if (iNum = SKID_DISTRACT)
+            AND (Random(1,viLevel) > Send(what,@GetLevel)/4)
+         {
+            Post(what,@EnterStateWait,#delay=(piAgility+piIntellect+viLevel)*60);
+         }
+         // Makes the target flee.
+         // AE, so messages are handled in MonsterAction()
+         else if (iNum = SKID_FRIGHTEN) AND IsClass(what,&Monster)
+            AND vbCanFrighten
+            AND (Random(1,viLevel) > Send(what,@GetLevel)/3)
+         {
+            Send(what,@FrightenedBy,#who=who,
+                  #duration=(piMight+piStamina+viLevel)*viFrightenFactor);
+         }
+      }
+
       return;
    }
 
@@ -4939,22 +5298,22 @@ messages:
 
          switch(num)
          {
-         case SID_POISON:
-            rMessage = vrIllusionPoison;
-            break;
-         case SID_BLEED:
-            rMessage = vrIllusionBleed;
-            rAmount = amount;
-            break;
-         case SID_SIPHON:
-            rMessage = vrIllusionSiphon;
-            break;
-         case SID_FATIGUE:
-            rMessage = vrIllusionFatigue;
-            break;
-         case SID_BURN:
-            rMessage = vrIllusionBurn;
-            break;
+            case SID_POISON:
+               rMessage = vrIllusionPoison;
+               break;
+            case SID_BLEED:
+               rMessage = vrIllusionBleed;
+               rAmount = amount;
+               break;
+            case SID_SIPHON:
+               rMessage = vrIllusionSiphon;
+               break;
+            case SID_FATIGUE:
+               rMessage = vrIllusionFatigue;
+               break;
+            case SID_BURN:
+               rMessage = vrIllusionBurn;
+               break;
          }
 
          if rMessage <> $
@@ -4988,6 +5347,11 @@ messages:
 
       // Default duration of 10 seconds.
       return 10000;
+   }
+
+   GetPoisonChance()
+   {
+      return viPoisonChance;
    }
 
    PoisonVisualEffect(what=$)
@@ -5188,7 +5552,7 @@ messages:
    Killed(what=$)
    "The mob was just killed."
    {
-      local i,val,oBody,hReputation;
+      local i,val,oBody,hReputation, oQuester;
 
       // If the monster was just killed, assume it did itself in.
       if what = $
@@ -5230,12 +5594,24 @@ messages:
 
          if Send(poOwner,@CanDropMonsterLoot)
          {
-            // Notify the quest engine, to check if a quest is affected -AJM
-            Send(Send(SYS,@GetQuestEngine),@MonsterKilled,#dead_monster=self,
-                  #killing_player=what,#corpse=oBody);
+            if IsClass(what,&Player)
+            {
+               oQuester = what;
+            }
+            else
+            {
+               oQuester = Send(what,@GetLeader);
+            }
 
-            Send(EVENTENGINE_OBJECT,@MonsterKilled,#dead_monster=self,
-                  #killing_player=what,#corpse=oBody);
+            if oQuester <> $
+            {
+               // Notify the quest engine, to check if a quest is affected -AJM
+               Send(Send(SYS,@GetQuestEngine),@MonsterKilled,#dead_monster=self,
+                     #killing_player=oQuester,#corpse=oBody);
+
+               Send(EVENTENGINE_OBJECT,@MonsterKilled,#dead_monster=self,
+                     #killing_player=oQuester,#corpse=oBody);
+            }
 
             if (piReputationGroup <> REP_NEUTRAL
                AND Send(SETTINGS_OBJECT,@GetMonsterFactionEnabled))
@@ -6299,150 +6675,196 @@ messages:
       return TRUE;
    }
 
-   MonsterCombatAction(distance=0,sight=TRUE)
-   "Figure out what the monster is going to attack with."
+   MonsterAction(distance=0,sight=TRUE)
+   "Figure out what action the monster is going to take."
    "Depending on our action, return an appropriate delay."
    {
-      local i, iPriority, lActions, lAction, iNum, oSpell, iAttacks,
-         iMana, iVigor, iFactor, iSpellPower, lTargets, iDelay, iPowerLevel,
-         oSpin, iAction, oTarget, oInjured, iHealthPercent, bAttack;
+      local i, iPriority, lActions, lAction, iNum, oSpell, iAttacks, iUrgency,
+         iFactor, iSpellPower, lTargets, iDelay, iPowerLevel, iPercentage, iAction,
+         oTarget, oInjured, oAfflicted, bCombat, bMove, bHarm;
 
-      bAttack = FALSE;
+      // Following a specific order to increase performance.
+      // Checking for combat first.
+      bCombat = (piState & STATE_ENGAGE);
 
-      // Let's get the attack check out of the way.
-      if Send(poOwner,@ReqSomethingAttack,#what=self,#victim=poTarget,#use_weapon=self)
+      // Checking cornered first.
+      bMove = NOT (piBehavior & AI_CORNERED);
+
+      // Only reset flag if we are actually cornered.
+      if NOT bMove
       {
-         bAttack = TRUE;
+         Send(self,@SetBehaviorFlag,#flag=AI_CORNERED,#value=FALSE);
       }
 
-      // We are scared but not cornered. Cast a heal or run!
-      if (Send(self,@HealthBelowWimpy) AND NOT (piBehavior & AI_CORNERED))
+      // We only move if we are in combat and are free to do so.
+      bMove = bMove AND bCombat AND NOT(piBehavior & AI_NOMOVE);
+
+      // In this case, add movement as an option.
+      if bMove
       {
+         lActions = Cons([SKID_MINIMUM,0,20,MAX_KOD_INT,viMovePriority,0,100,0],lActions);
+      }
+
+      // If we are in no mood to fight, we don't need to bother with the following.
+      if NOT (piBehavior & AI_NOFIGHT)
+      {
+         // Expand our definition of being able to harm someone.
+         bHarm = bCombat
+                 AND (poTarget <> $)
+                 AND (sight OR (piBehavior & AI_FIGHT_THROUGH_WALLS))
+                 AND Send(poOwner,@ReqSomethingAttack,#what=self,#victim=poTarget,#use_weapon=self)
+                 AND NOT (bMove AND Send(self,@HealthBelowWimpy));
+
+         // Keep track of our actions to see if we have a way to aid afflicted or injured targets.
+         oInjured = FALSE;
+         oAfflicted = FALSE;
+
+         iPercentage = piMana/piMax_mana;
+
+         // Actually assemble our action pool by picking relevant entries from plActions.
          foreach i in plActions
          {
-            if First(i) = SKID_MINIMUM
+            // Check is outsourced and returns our action type or FALSE.
+            iAction = Send(self,@MonsterActionCheck,#i=i,#distance=distance,#bHarm=bHarm,
+               #iPercentage=iPercentage);
+
+            if iAction
             {
                lActions = Cons(i,lActions);
-            }
-            else if Nth(i,8) = COMBAT_ACTION_HEAL
-               AND (Nth(i,2) < piMana)
-            {
-               lActions = Cons(i,lActions);
-            }
-         }
-      }
-      // We're not scared but we've lost sight of our target or can't attack it
-      // directly. We are free to do anything else though.
-      else if NOT (sight OR (piBehavior & AI_FIGHT_THROUGH_WALLS)) OR NOT bAttack
-      {
-         foreach i in plActions
-         {
-            if Nth(i,8) <> COMBAT_ACTION_HARM
-               AND (Nth(i,2) < piMana)
-               AND (Nth(i,4) > distance)
-            {
-               lActions = Cons(i,lActions);
+
+               if iAction = COMBAT_ACTION_HEAL
+               {
+                  oInjured = TRUE;
+               }
+               else if iAction = COMBAT_ACTION_CURE
+               {
+                  oAfflicted = TRUE;
+               }
             }
          }
-      }
-      // We got a clear target and we're not scared! Use any tool at our disposal!
-      else
-      {
-         // Sort out any actions in our action list that can't reach the
-         // target or that we don't have the resources for.
-         foreach i in plActions
+
+         // It's time to look at other potential targets. Check if we or a loved one are injured.
+         // But only if we have a way to heal them.
+         if oInjured
          {
-            if (Nth(i,2) < piMana)
-               AND ((Nth(i,4) > distance)
-                  OR (Nth(i,8) <> COMBAT_ACTION_HARM))
+            iPercentage = Send(self,@GetExactHealth)/Send(self,@GetMaxHealth);
+            oInjured = Send(self,@GetClosestInjured);
+
+            if (oInjured <> $)
             {
-               lActions = Cons(i,lActions);
+               if iPercentage < 75 - (viSocial / 2)
+               {
+                  oInjured = self;
+               }
             }
-         }
-      }
-
-      // Double check if the monster can perform basic actions.
-      foreach i in lActions
-      {
-         iNum = First(i);
-
-         if iNum = SKID_MINIMUM
-         {
-            if (piBehavior & AI_NOMOVE) OR (piBehavior & AI_CORNERED)
+            else if (iPercentage < 50)
+               OR ((iPercentage < 75) AND Send(self,@IsEnchanted,#byClass=&Bleed))
             {
-               lActions = DelListElem(lActions,i);
-               Send(self,@SetBehaviorFlag,#flag=AI_CORNERED,#value=FALSE);
-            }
-         }
-         else if (piBehavior & AI_NOFIGHT)
-         {
-            lActions = DelListElem(lActions,i);
-         }
-         else if ((iNum = SKID_FIRE) AND (distance <= piMeleeRange*piMeleeRange))
-            AND NOT (IsClass(self,&Reflection) OR IsClass(self,&EvilTwin))
-         {
-            lActions = DelListElem(lActions,i);
-         }
-         else if ((iNum = SKID_SPIN) AND (Length(Send(self,@GetTargetsInRange)) < 2))
-         {
-            lActions = DelListElem(lActions,i);
-         }
-      }
-
-      // It's time to look at other potential targets. Check if we or a loved one are injured.
-      iHealthPercent = Send(self,@GetExactHealth)/Send(self,@GetMaxHealth);
-      oInjured = Send(self,@GetClosestInjured);
-
-      if (oInjured <> $)
-      {
-         if (iHealthPercent < Send(oInjured,@GetExactHealth)/Send(oInjured,@GetMaxHealth))
-         {
-            oInjured = self;
-         }
-      }
-      else if (iHealthPercent < 75)
-      {
-         oInjured = self;
-      }
-
-      // Check the actual spells in our action list for castability. Provide the matching
-      // target depending on the spell chosen.
-      foreach i in lActions
-      {
-         iNum = First(i);
-
-         if iNum < SKID_MINIMUM
-         {
-            switch(Nth(i,8))
-            {
-               case COMBAT_ACTION_HEAL:
-                  oTarget = oInjured;
-                  break;
-               case COMBAT_ACTION_BUFF:
-                  oTarget = poLeader;
-                  break;
-               case COMBAT_ACTION_NEUTRAL:
-                  oTarget = self;
-                  break;
-               default:
-                  oTarget = poTarget;
-                  break;
+               oInjured = self;
             }
 
-            if oTarget = $
+            iUrgency = 0;
+
+            if oInjured = self
             {
-               lActions = DelListElem(lActions,i);
+               iUrgency = 100 - iPercentage;
             }
-            else
+            else if oInjured <> $
             {
-               oSpell = Send(SYS,@FindSpellByNum,#num=iNum);
-               lTargets = Send(oSpell,@GetTargets,#who=self,#lTargets=[oTarget]);
-               if NOT Send(oSpell,@CanPayMonsterCosts,#who=self,#lTargets=lTargets,
-                           #iSpellPower=iSpellPower)
-                  OR NOT Send(poOwner,@ReqSpellCast,#who=self,#oSpell=oSpell,
-                              #lItems=lTargets)
+               iUrgency = 100 - (Send(oInjured,@GetExactHealth)/Send(oInjured,@GetMaxHealth));
+            }
+
+            iUrgency *= 10;
+         }
+         else
+         {
+            oInjured = $;
+         }
+
+         // What about debuffs? Check if friends are suffering from a debuff.
+         if oAfflicted
+         {
+            oAfflicted = Send(self,@GetClosestAfflicted);
+            if Send(self,@IsEnchanted,#byClass=&Debuff)
+            {
+               if oAfflicted = $
+                  OR viSocial < Random(1,99)
+               {
+                  oAfflicted = self;
+               }
+            }
+         }
+         else
+         {
+            oAfflicted = $;
+         }
+
+         // Check the actual spells in our action list for castability. Provide the matching
+         // target depending on the spell chosen.
+         foreach i in lActions
+         {
+            iNum = First(i);
+
+            if iNum < SKID_MINIMUM
+            {
+               oTarget = $;
+
+               // Healing > Curing > Rest
+               switch(Nth(i,8))
+               {
+                  case COMBAT_ACTION_HEAL:
+                     oTarget = oInjured;
+                     break;
+                  case COMBAT_ACTION_BUFF:
+                     if (oInjured = $) AND (oAfflicted = $)
+                     {
+                        if Send(Send(SYS,@FindSpellByNum,#num=iNum),@GetNumSpellTargets) = 0
+                        {
+                           oTarget = self;
+                        }
+                        else
+                        {
+                           oTarget = poLeader;
+                        }
+                     }
+                     break;
+                  case COMBAT_ACTION_CURE:
+                     if (oInjured = $)
+                     {
+                        oTarget = oAfflicted;
+                     }
+                     break;
+                  case COMBAT_ACTION_NEUTRAL:
+                     if (oInjured = $) AND (oAfflicted = $)
+                     {
+                        oTarget = self;
+                     }
+                     break;
+                  default:
+                     if ((oInjured = $) AND (oAfflicted = $))
+                        OR ((iNum = SID_VAMPIRIC_DRAIN) AND (oInjured = self))
+                     {
+                        oTarget = poTarget;
+                     }
+                     break;
+               }
+
+               if oTarget = $
                {
                   lActions = DelListElem(lActions,i);
+               }
+               else
+               {
+                  oSpell = Send(SYS,@FindSpellByNum,#num=iNum);
+                  lTargets = Send(oSpell,@GetTargets,#who=self,#lTargets=[oTarget]);
+                  if NOT Send(oSpell,@MonsterCastCheck,#who=self,#lTargets=lTargets,#bCombat=bCombat)
+                     OR NOT Send(oSpell,@CanPayMonsterCosts,#who=self,#lTargets=lTargets,
+                              #iSpellPower=iSpellPower)
+                     OR NOT Send(poOwner,@ReqSpellCast,#who=self,#oSpell=oSpell,
+                                 #lItems=lTargets)
+                  {
+                     lActions = DelListElem(lActions,i);
+                  }
                }
             }
          }
@@ -6459,15 +6881,53 @@ messages:
       iPriority = MIN_KOD_INT;
       foreach i in lActions
       {
-         if Nth(i,5) >= iPriority
+         // Reusing variable... iNum is the current priority as saved in the list.
+         iNum = Nth(i,5);
+
+         // Adjust the priority of healing based on victim's health.
+         if Nth(i,8) = COMBAT_ACTION_HEAL
+         {
+            iNum += iUrgency;
+         }
+
+         // If the used action happened to also be our latest action, lower its
+         // priority based on the number of consecutive exections.
+         if First(i) = piAction % 1000
+         {
+            iNum = Send(SYS,@PowerCalculation,#factor=iNum,#denom=2,#exp=(piAction%10000)/1000);
+         }
+
+         // Finally, when out of combat, spells have priority over other actions.
+         if NOT (piState & STATE_ENGAGE) AND (First(i) < SKID_MINIMUM)
+         {
+            iNum = Bound(iNum,viMeleePriority,$);
+         }
+
+         if iNum >= iPriority
          {
             lAction = i;
-            iPriority = Nth(i,5);
+            iPriority = iNum;
          }
       }
 
       // We have our action at this point, let's check its ID.
+      // Also, let's store it in piAction so we can keep track of it.
+      // Let's also note the number of consecutive executions.
+      // Format: XXXXXYZZZ, where X is used for swing animation,
+      // Y keeps track of consecutive executions and ZZZ is SKID.
       iNum = First(lAction);
+
+      if piAction % 1000 = iNum
+      {
+         if piAction % 10000 < 9000
+         {
+            piAction += 1000;
+         }
+      }
+      else
+      {
+         piAction = iNum;
+      }
 
       // Let's also set our target depending on the action.
       switch(Nth(lAction,8))
@@ -6476,7 +6936,17 @@ messages:
             oTarget = oInjured;
             break;
          case COMBAT_ACTION_BUFF:
-            oTarget = poLeader;
+            if Send(Send(SYS,@FindSpellByNum,#num=iNum),@GetNumSpellTargets) = 0
+            {
+               oTarget = self;
+            }
+            else
+            {
+               oTarget = poLeader;
+            }
+            break;
+         case COMBAT_ACTION_CURE:
+            oTarget = oAfflicted;
             break;
          case COMBAT_ACTION_NEUTRAL:
             oTarget = self;
@@ -6490,7 +6960,14 @@ messages:
       iDelay = Send(self,@GetAttackTime);
 
       // Standard melee attack. Let's initiate the attack.
-      if (iNum = SKID_SLASH) OR (iNum = SKID_PUNCH)
+      if (iNum = SKID_SLASH) OR
+         (iNum = SKID_THRUST) OR
+         (iNum = SKID_STRIKE) OR
+         (iNum = SKID_PUNCH) OR
+         (iNum = SKID_CLAW) OR
+         (iNum = SKID_STING) OR
+         (iNum = SKID_BITE) OR
+         (iNum = SKID_SPIT)
       {
          iAttacks = 100 + viBonusSwing;
          i = 0;
@@ -6521,7 +6998,7 @@ messages:
                   #new_finerow=Send(oTarget,@GetFineRow),
                   #new_finecol=Send(oTarget,@GetFineCol),#face_target=TRUE);
             // We actually attack. Do the animation if we're still around.
-            Send(self,@DoMeleeAttack,#swings=i);
+            Send(self,@DoMeleeAttack,#swings=i,#iNum=iNum);
          }
       }
       // If we are a ranged attack, shoot something.
@@ -6574,11 +7051,11 @@ messages:
                      #type=SAY_MESSAGE,#parm1=Send(self,@GetCapDef),
                      #parm2=Send(self,@GetName));
 
-               foreach oSpin in lTargets
+               foreach oTarget in lTargets
                {
-                  if oSpin <> $ AND Send(oSpin,@GetOwner) <> $
+                  if oTarget <> $ AND Send(oTarget,@GetOwner) <> $
                   {
-                     Send(self,@TryAttack,#what=oSpin,#stroke_obj=self,
+                     Send(self,@TryAttack,#what=oTarget,#stroke_obj=self,
                            #factor=Nth(lAction,7));
                   }
                }
@@ -6589,15 +7066,83 @@ messages:
             iAttacks -= 100;
          }
 
-         if poOwner <> $
+         if (poOwner <> $) AND (poTarget <> $)
          {
             // Gotta get in position for a good spinning first.
+            Send(self,@MonsterOrient,#new_row=Send(poTarget,@GetRow),
+                  #new_col=Send(poTarget,@GetCol),
+                  #new_finerow=Send(poTarget,@GetFineRow),
+                  #new_finecol=Send(poTarget,@GetFineCol),#face_target=TRUE);
+            // We spun around i times. Let's animate it.
+            Send(self,@DoSpinAttack,#spins=i);
+         }
+      }
+      // A single target special attack!
+      else if (iNum = SKID_TAUNT) OR (iNum = SKID_STUN) OR (iNum = SKID_CRIPPLE)
+         OR (iNum = SKID_SNARE) OR (iNum = SKID_DAZE) OR (iNum = SKID_WEAKEN)
+      {
+         Send(self,@TryAttack,#what=oTarget,#stroke_obj=self,
+               #factor=Nth(lAction,7),#iNum=iNum);
+
+         if poOwner <> $
+         {
             Send(self,@MonsterOrient,#new_row=Send(oTarget,@GetRow),
                   #new_col=Send(oTarget,@GetCol),
                   #new_finerow=Send(oTarget,@GetFineRow),
                   #new_finecol=Send(oTarget,@GetFineCol),#face_target=TRUE);
-            // We spun around i times. Let's animate it.
-            Send(self,@DoSpinAttack,#spins=i);
+            Send(self,@DoSpecialAttack,#iNum=iNum);
+         }
+      }
+      // An AoE special attack!
+      else if (iNum = SKID_DISTRACT) OR (iNum = SKID_FRIGHTEN)
+      {
+         lTargets = Send(self,@GetTargetsInRange,#squaredrange=Nth(lAction,4));
+
+         switch (iNum)
+         {
+            case SKID_DISTRACT:
+               Send(poOwner,@SomeoneSaid,#what=self,#string=Lm_monster_distract,
+                     #type=SAY_MESSAGE,#parm1=Send(self,@GetCapDef),
+                     #parm2=Send(self,@GetName));
+               break;
+            case SKID_FRIGHTEN:
+               Send(poOwner,@SomeoneSaid,#what=self,#string=Lm_monster_frighten,
+                     #type=SAY_MESSAGE,#parm1=Send(self,@GetCapDef),
+                     #parm2=Send(self,@GetName));
+               break;
+         }
+
+         foreach oTarget in lTargets
+         {
+            if oTarget <> $ AND Send(oTarget,@GetOwner) <> $
+            {
+               Send(self,@TryAttack,#what=oTarget,#stroke_obj=self,
+                     #factor=Nth(lAction,7),#iNum=iNum);
+            }
+         }
+
+         if poOwner <> $
+         {
+            if (poTarget = $)
+            {
+               if (oTarget <> $)
+               {
+                  Send(self,@MonsterOrient,#new_row=Send(oTarget,@GetRow),
+                        #new_col=Send(oTarget,@GetCol),
+                        #new_finerow=Send(oTarget,@GetFineRow),
+                        #new_finecol=Send(oTarget,@GetFineCol),
+                        #face_target=TRUE);
+               }
+            }
+            else
+            {
+               Send(self,@MonsterOrient,#new_row=Send(poTarget,@GetRow),
+                     #new_col=Send(poTarget,@GetCol),
+                     #new_finerow=Send(poTarget,@GetFineRow),
+                     #new_finecol=Send(poTarget,@GetFineCol),#face_target=TRUE);
+            }
+
+            Send(self,@DoSpecialAttack,#iNum=iNum);
          }
       }
       // Looks like we are casting something. How exciting!
@@ -6652,10 +7197,8 @@ messages:
       }
 
       // We did something. Pay the cost.
-      iMana = Nth(lAction,2);
-      iVigor = Nth(lAction,3);
-      Send(self,@LoseMana,#amount=iMana,#precision=TRUE);
-      Send(self,@LoseVigor,#amount=iVigor,#precision=TRUE);
+      Send(self,@LoseMana,#amount=Nth(lAction,2),#precision=TRUE);
+      Send(self,@LoseVigor,#amount=Nth(lAction,3),#precision=TRUE);
 
       // If we made it this far, we acted in some way. Adjust our priorities.
       iFactor = Nth(lAction,6);
@@ -6670,13 +7213,20 @@ messages:
          // gained depends on mysticism.
          if iAction < SKID_MINIMUM
          {
+            // We just cast this. Lower priority.
             if iAction = iNum
             {
                SetNth(i,5,Bound(iPriority - iFactor,-10000,$));
             }
+            // We are running around. Increase priority slightly.
+            else if iNum = SKID_MINIMUM
+            {
+               SetNth(i,5,Bound(Nth(i,5) + (piMysticism/5),$,1000));
+            }
+            // We did something else. Increase priority.
             else
             {
-               SetNth(i,5,Bound(Nth(i,5)+(piMysticism/2),$,1000));
+               SetNth(i,5,Bound(Nth(i,5) + piMysticism,$,1000));
             }
          }
 
@@ -6684,35 +7234,212 @@ messages:
          // travelled. Gain depends on aim (1 to 5 points).
          if iAction > SKID_MINIMUM
          {
+            // We are moving, increase priority for every attack.
             if iNum = SKID_MINIMUM
             {
-               SetNth(i,5,Bound(Nth(i,5)+(piAim/10),$,1000));
+               SetNth(i,5,Bound(Nth(i,5) + (piAim + piAgility)/10,$,1000));
             }
-            else
+            // We are adjusting the priority of the attack that has just been executed.
+            else if iAction = iNum
             {
-               if iAction = SKID_SLASH
-               {
-                  SetNth(i,5,viMeleePriority);
-               }
-               if iAction = SKID_SPIN
-               {
-                  SetNth(i,5,viMeleePriority+1);
-               }
+               // Standard attacks are reset to standard priority.
                if iAction = SKID_FIRE
                {
                   SetNth(i,5,viFirePriority);
+               }
+               // We can tell it's the mobs standard attack because
+               // it's priority isn't lowered after use.
+               else if iFactor = 0
+               {
+                  SetNth(i,5,viMeleePriority);
+               }
+               else
+               // Special attacks are handled just like spells.
+               {
+                  SetNth(i,5,Bound(iPriority - iFactor,-10000,$));
+               }
+            }
+            // We are adjusting the priority of a different attack.
+            else if iAction = SKID_TAUNT
+            {
+               // Taunt gains priority based on stamina.
+               SetNth(i,5,Bound(Nth(i,5) + piStamina,$,1000));
+            }
+            else
+            {
+               // Standard attacks keep their priority.
+               // The rest moves up in priority.
+               if Nth(i,6) <> 0
+               {
+                  // Special attacks gain priority based on aim and agility.
+                  SetNth(i,5,Bound(Nth(i,5) + piAim + piAgility,$,1000));
                }
             }
          }
       }
 
-      // Adjust our position. Only if we can move and we aren't blind though.
-      if NOT ((piBehavior & AI_MOVE_RANDOM) OR (piBehavior & AI_NOMOVE))
+      // Adjust our position. Only if we can move and are able to see though.
+      if bMove AND NOT (piBehavior & AI_MOVE_RANDOM)
       {
          Send(self,@SideStepCheck,#distance=distance);
       }
 
       return iDelay;
+   }
+
+   MonsterActionCheck(i=$,distance=0,bHarm=TRUE,iPercentage=100)
+   {
+      local iNum, iAction;
+
+      iAction = Nth(i,8);
+
+      if iAction = COMBAT_ACTION_HARM
+      {
+         if NOT bHarm
+         {
+            return FALSE;
+         }
+
+         iNum = First(i);
+
+         if (iNum < SKID_MINIMUM) AND (iPercentage < 70) AND (iNum <> SID_VAMPIRIC_DRAIN)
+         {
+            return FALSE;
+         }
+
+         if ((iNum = SKID_FIRE) AND (distance <= piMeleeRange*piMeleeRange))
+            AND NOT (IsClass(self,&Reflection) OR IsClass(self,&EvilTwin))
+         {
+            return FALSE;
+         }
+         if ((iNum = SKID_SPIN) OR (iNum = SKID_DISTRACT) OR (iNum = SKID_FRIGHTEN))
+            AND (Length(Send(self,@GetTargetsInRange)) < 2)
+         {
+            return FALSE;
+         }
+         if (iNum = SKID_TAUNT) AND (Send(poTarget,@GetTarget) = self)
+         {
+            return FALSE;
+         }
+         if (iNum = SID_EXPLOSIVE_FROST)
+            AND ((poTarget = $) OR (Send(poTarget,@ResistanceCheck,#stype=SPL_TYPE_COLD) > 10))
+         {
+            return FALSE;
+         }
+         if (iNum = SID_ICE_NOVA)
+            AND (((poTarget = $) OR (Send(poTarget,@ResistanceCheck,#stype=SPL_TYPE_COLD) > 10))
+               OR (piHealth/piMax_health < 90))
+         {
+            return FALSE;
+         }
+         if ((iNum = SID_FIREBALL) OR (iNum = SID_BLAST_OF_FIRE))
+            AND ((poTarget = $) OR (Send(poTarget,@ResistanceCheck,#stype=SPL_TYPE_FIRE) > 10))
+         {
+            return FALSE;
+         }
+         if (iNum = SID_RING_OF_FLAMES)
+            AND (((poTarget = $) OR (Send(poTarget,@ResistanceCheck,#stype=SPL_TYPE_FIRE) > 10))
+               OR (piHealth/piMax_health < 90))
+         {
+            return FALSE;
+         }
+         if ((iNum = SID_LIGHTNING_BOLT) OR (iNum = SID_SHOCKING_FURY))
+            AND ((poTarget = $) OR (Send(poTarget,@ResistanceCheck,#stype=SPL_TYPE_SHOCK) > 10))
+         {
+            return FALSE;
+         }
+      }
+      else if iAction = COMBAT_ACTION_BUFF
+      {
+         if poLeader = $
+         {
+            return FALSE;
+         }
+
+         iNum = First(i);
+
+         if (iNum < SKID_MINIMUM) AND (iPercentage < 30)
+         {
+            return FALSE;
+         }
+
+         if ((iNum = SID_NIGHT_VISION) OR (iNum = SID_GLOW))
+            AND (Send(poOwner,@GetRoomLight) >= LIGHT_NICE)
+         {
+            return FALSE;
+         }
+         if (iNum = SID_MYSTIC_TOUCH)
+            AND ((piMana/piMax_mana < 90) OR (Send(poLeader,@GetManaPercentage) > 30))
+         {
+            return FALSE;
+         }
+         if (iNum = SID_BREATH_OF_LIFE)
+            AND ((piHealth/piMax_health < 90) OR (Send(poLeader,@GetHealthPercentage) > 80))
+         {
+            return FALSE;
+         }
+         if (iNum = SID_RELAY)
+            AND ((piVigor/200 < 80) OR (Send(poLeader,@GetVigorPercentage) > 70))
+         {
+            return FALSE;
+         }
+         if (iNum = SID_RESIST_POISON)
+            AND ((poTarget = $) OR (Send(poTarget,@GetPoisonChance) = 0))
+         {
+            return FALSE;
+         }
+         if (iNum = SID_RESIST_COLD)
+            AND ((poTarget = $) OR NOT (Send(poTarget,@GetSpellType)&SPL_TYPE_COLD))
+         {
+            return FALSE;
+         }
+         if (iNum = SID_RESIST_FIRE)
+            AND ((poTarget = $) OR NOT (Send(poTarget,@GetSpellType)&SPL_TYPE_FIRE))
+         {
+            return FALSE;
+         }
+         if (iNum = SID_RESIST_SHOCK)
+            AND ((poTarget = $) OR NOT (Send(poTarget,@GetSpellType)&SPL_TYPE_SHOCK))
+         {
+            return FALSE;
+         }
+      }
+      else if iAction = COMBAT_ACTION_NEUTRAL
+      {
+         iNum = First(i);
+
+         if (iNum < SKID_MINIMUM) AND (iPercentage < 50)
+         {
+            return FALSE;
+         }
+
+         if (iNum = SID_LIGHT) AND (Send(poOwner,@GetRoomLight) >= LIGHT_NICE)
+         {
+            return FALSE;
+         }
+         if (iNum = SID_MIRTH)
+            AND ((poTarget = $) OR (Send(poTarget,@GetKarma) >= 0))
+         {
+            return FALSE;
+         }
+         if (iNum = SID_MELANCHOLY)
+            AND ((poTarget = $) OR (Send(poTarget,@GetKarma) <= 0))
+         {
+            return FALSE;
+         }
+         if (iNum = SID_MANA_CONVERGENCE)
+            AND ((poTarget = $) OR (Send(poTarget,@GetMaxMana) < 10))
+         {
+            return FALSE;
+         }
+      }
+
+      if (Nth(i,2) > piMana) OR (Nth(i,4) < distance)
+      {
+         return FALSE;
+      }
+
+      return iAction;
    }
 
    AdjustActionPriority(num=$,amount=$)
@@ -6745,12 +7472,12 @@ messages:
       return FALSE;
    }
 
-   DoMeleeAttack(swings=0)
+   DoMeleeAttack(swings=0,iNum=0)
    "Calls melee attack animation as often as needed."
    {
       if ptAction = $
       {
-         piAction = swings;
+         piAction += swings*10000;
          Send(self,@DoMeleeAnimation);
       }
 
@@ -6767,10 +7494,113 @@ messages:
          piAnimation = ANIM_ATTACK;
          Send(poOwner,@SomethingChanged,#what=self);
          piAnimation = ANIM_NONE;
+         piAction = piAction%10000 + Bound((piAction/10000)-1,0,$)*10000;
 
-         if --piAction > 0
+         if piAction/10000 > 0
          {
-            ptAction = CreateTimer(self,@DoMeleeAnimation,400);
+            ptAction = CreateTimer(self,@DoMeleeAnimation,viMeleeAnimationTime);
+         }
+      }
+
+      return;
+   }
+
+   DoSpecialAttack(iNum=0)
+   "Calls animation depending on kind of attack."
+   {
+      if ptAction = $
+      {
+         piAction = piAction + 10000;
+
+         switch (iNum)
+         {
+         case SKID_TAUNT:
+            if IsClass(self,&Human)
+            {
+               Send(self,@DoPoint);
+            }
+            else
+            {
+               Send(self,@DoMeleeAnimation);
+            }
+            break;
+
+         case SKID_STUN:
+            if IsClass(self,&Human)
+            {
+               Send(self,@DoCast);
+            }
+            else
+            {
+               Send(self,@MonsterCastAnimation);
+            }
+            break;
+
+         case SKID_CRIPPLE:
+            if IsClass(self,&Human)
+            {
+               Send(self,@DoCast);
+            }
+            else
+            {
+               Send(self,@MonsterCastAnimation);
+            }
+            break;
+
+         case SKID_WEAKEN:
+            if IsClass(self,&Human)
+            {
+               Send(self,@DoFistAttack);
+            }
+            else
+            {
+               Send(self,@DoMeleeAnimation);
+            }
+            break;
+
+         case SKID_SNARE:
+            if IsClass(self,&Human)
+            {
+               Send(self,@DoFistAttack);
+            }
+            else
+            {
+               Send(self,@DoMeleeAnimation);
+            }
+            break;
+
+         case SKID_DAZE:
+            if IsClass(self,&Human)
+            {
+               Send(self,@DoCast);
+            }
+            else
+            {
+               Send(self,@MonsterCastAnimation);
+            }
+            break;
+
+         case SKID_DISTRACT:
+            if IsClass(self,&Human)
+            {
+               Send(self,@DoWave);
+            }
+            else
+            {
+               Send(self,@DoMeleeAnimation);
+            }
+            break;
+
+         case SKID_FRIGHTEN:
+            if IsClass(self,&Human)
+            {
+               Send(self,@DoFistAttack);
+            }
+            else
+            {
+               Send(self,@DoMeleeAnimation);
+            }
+            break;
          }
       }
 
@@ -6782,7 +7612,7 @@ messages:
    {
       if ptAction = $
       {
-         piAction = spins * 8;
+         piAction += spins * 80000;
          Send(self,@DoSpinAnimation);
       }
 
@@ -6799,7 +7629,8 @@ messages:
       if poOwner <> $
       {
          iAngle = Send(self,@GetAngle);
-         if piAction % 8 < 4
+
+         if (piAction/10000) % 8 < 4
          {
             iAngle += (MAX_ANGLE / 4);
          }
@@ -6808,7 +7639,7 @@ messages:
             iAngle -= (MAX_ANGLE / 4);
          }
 
-         if piAction % 4 = 0
+         if (piAction/10000) % 4 = 0
          {
             piAnimation = ANIM_ATTACK;
             Send(poOwner,@SomethingChanged,#what=self);
@@ -6817,7 +7648,9 @@ messages:
 
          Send(poOwner,@SomethingTurned,#what=self,#new_angle=iAngle);
 
-         if --piAction > 0
+         piAction = piAction%10000 + Bound((piAction/10000)-1,0,$)*10000;
+
+         if piAction/10000 > 0
          {
             ptAction = CreateTimer(self,@DoSpinAnimation,viSpinAnimationTime);
          }
@@ -6831,7 +7664,7 @@ messages:
    {
       if ptAction = $
       {
-         piAction = shots;
+         piAction += shots*10000;
          Send(self,@DoMissileAnimation);
       }
 
@@ -6850,9 +7683,11 @@ messages:
          piAnimation = ANIM_NONE;
          Send(poOwner,@SomethingShot,#who=self,#target=poTarget,#projectile=self);
 
-         if --piAction > 0
+         piAction = piAction%10000 + Bound((piAction/10000)-1,0,$)*10000;
+
+         if piAction/10000 > 0
          {
-            ptAction = CreateTimer(self,@DoMissileAnimation,400);
+            ptAction = CreateTimer(self,@DoMissileAnimation,viRangedAnimationTime);
          }
       }
 
@@ -7107,6 +7942,11 @@ messages:
       return viLevel;
    }
 
+   GetBaseMaxHealth()
+   {
+      return viLevel;
+   }
+
    GetDifficulty()
    {
       return viDifficulty;
@@ -7288,8 +8128,20 @@ messages:
 
    GetSpeed()
    {
-      // Set our current speed based on classvar and agility.
-      piSpeed = Bound(viSpeed + (piAgility/10) - 2,0,USER_RUNNING_SPEED);
+      if poLeader = $
+      {
+         // Set our current speed based on classvar and agility.
+         piSpeed = Bound(viSpeed + (piAgility/10) - 2,0,USER_RUNNING_SPEED);
+      }
+      else if IsClass(self,&Follower)
+      {
+         piSpeed = USER_RUNNING_SPEED;
+      }
+      else
+      {
+         // Double regular speed.
+         piSpeed = Bound(2*(viSpeed + (piAgility/10) - 2),0,USER_RUNNING_SPEED);
+      }
 
       // Movement speed mods (e.g. slow spell)
       piSpeed = piSpeed * Send(self,@GetMovementSpeedPercent) / 100;
@@ -7300,11 +8152,6 @@ messages:
          AND (poLeader = $)
       {
          piSpeed = Bound(piSpeed * viStrollSpeed / 100,$,piSpeed);
-      }
-
-      if poLeader <> $
-      {
-         piSpeed *= 2;
       }
 
       // If our monster is able to move in general, then other
@@ -7642,12 +8489,6 @@ messages:
       return temp_rsc;
    }
 
-   // Generally false, except for e.g. faction solder/faction mage.
-   IsMonsterQuestEquivalent()
-   {
-      return FALSE;
-   }
-
    HasAttribute(mask = $)
    {
       return (viAttributes & mask);
@@ -7691,7 +8532,7 @@ messages:
       return viAttributes;
    }
 
-   ObjectDesired(what=$)
+   ObjectDesired(what=$,report=TRUE)
    "This is set in individual buyers.  It allows them to pick and choose"
    "what they want to buy."
    {
@@ -8332,11 +9173,17 @@ messages:
    }
 
    Say(message_rsc=$, parm1=$, parm2=$, parm3=$, parm4=$,
-       parm5=$, parm6=$, parm7=$, parm8=$)
+       parm5=$, parm6=$, parm7=$, parm8=$, type1=STANDARD_RESOURCE,
+       type2=STANDARD_RESOURCE, type3=STANDARD_RESOURCE,
+       type4=STANDARD_RESOURCE, type5=STANDARD_RESOURCE,
+       type6=STANDARD_RESOURCE, type7=STANDARD_RESOURCE,
+       type8=STANDARD_RESOURCE)
    {
       Send(poOwner,@SomeoneSaid,#what=self,#type=SAY_RESOURCE,
-           #string=message_rsc,#parm1=parm1,#parm2=parm2,#parm3=parm3,
-           #parm4=parm4,#parm5=parm5,#parm6=parm6,#parm7=parm7,#parm8=parm8);
+           #string=message_rsc,#parm1=parm1,#type1=type1,#parm2=parm2,
+           #type2=type2,#parm3=parm3,#type3=type3,#parm4=parm4,#type4=type4,
+           #parm5=parm5,#type5=type5,#parm6=parm6,#type6=type6,#parm7=parm7,
+           #type7=type7,#parm8=parm8,#type8=type8);
 
       return;
    }
@@ -8361,7 +9208,33 @@ messages:
 
       return;
    }
-   
+
+   MercenarySayToOne(target=$, message_rsc=$,
+            parm1=$, parm2=$, parm3=$, parm4=$, parm5=$,
+            type1=STANDARD_RESOURCE, type2=STANDARD_RESOURCE,
+            type3=STANDARD_RESOURCE, type4=STANDARD_RESOURCE,
+            type5=STANDARD_RESOURCE)
+   {
+      if target = $
+      {
+         Debug("MercenarySayToOne reached with null target.");
+         return;
+      }
+      if message_rsc = $
+      {
+         Debug("MercenarySayToOne reached with null message.");
+         return;
+      }
+
+      Send(target,@MsgSendUser,#message_rsc=monster_mercenary_say_to_one,
+           #parm1=Send(self,@GetCapDef),#parm2=Send(self,@GetName),
+           #parm3=message_rsc,#parm4=parm1,#type4=type1,
+           #parm5=parm2,#type5=type2,#parm6=parm3,#type6=type3,
+           #parm7=parm4,#type7=type4,#parm8=parm5,#type8=type5);
+
+      return;
+   }
+
    CanMorphTo()
    {
       return TRUE;
@@ -8636,11 +9509,11 @@ messages:
    {
       if bContracted
       {
-         Post(self,@SayToOne,#target=what,#message_rsc=vrMercenaryJoinContracted);
+         Post(self,@MercenarySayToOne,#target=what,#message_rsc=vrMercenaryJoinContracted);
       }
-      else if IsClass(self,&Follower) OR NOT Random(0,7)
+      else if NOT Random(0,7)
       {
-         Post(self,@SayToOne,#target=what,#message_rsc=vrMercenaryJoin);
+         Post(self,@MercenarySayToOne,#target=what,#message_rsc=vrMercenaryJoin);
       }
 
       return;
@@ -8807,14 +9680,7 @@ messages:
 
    IsFrightenedOf(target = $)
    {
-      if vbIsUndead
-         AND (poHolySymbolCaster <> $)
-         AND (poHolySymbolCaster = target)
-      {
-         return TRUE;
-      }
-
-      return FALSE;
+      return (poFrightener <> $ AND poFrightener = target);
    }
 
    GetClosestAlly()
@@ -8880,6 +9746,83 @@ messages:
    GetClosestInjured()
    {
       local iRangeSquared, oTarget, iThisRangeSquared, i, iDistRow, iDistCol,
+            oIllusion, oObject, oBodyType, iHealth, iHealthLimit;
+
+      if poOwner = $
+      {
+         return $;
+      }
+
+      iRangeSquared = piVisionDistance * piVisionDistance;
+
+      foreach i in Send(poOwner,@GetHolderActive)
+      {
+         oObject = First(i);
+
+         // Pass if we're looking at ourself here.
+         if oObject = self
+         {
+            continue;
+         }
+
+         // is what it looks like, an ally?
+         oBodyType = oObject;
+         if IsClass(oObject,&User)
+            AND NOT IsClass(self,&Follower)
+         {
+            oIllusion = Send(oObject,@GetIllusionForm); 
+            if oIllusion <> $
+            {
+               oBodyType = oIllusion;
+            }
+         }
+
+         // If not an ally, we don't care.
+         if NOT Send(self,@IsAlly,#target=oBodyType)
+         {
+            continue;
+         }
+
+         iHealth = Send(oObject,@GetExactHealth);
+
+         iHealthLimit = Send(oObject,@GetMaxHealth) * 2 / 3;
+
+         if Send(oObject,@IsEnchanted,#byClass=&Bleed)
+         {
+            iHealthLimit = iHealthLimit*5/4;
+         }
+
+         // Factor in our sociability.
+         iHealthLimit *= viSocial;
+
+         if iHealth > iHealthLimit
+         {
+            continue;
+         }
+
+         iDistRow = (piRow * FINENESS + piFine_row)
+                     - (Send(oObject,@GetRow) * FINENESS + Send(oObject,@GetFineRow));
+
+         iDistCol = (piCol * FINENESS + piFine_col)
+                     - (Send(oObject,@GetCol) * FINENESS + Send(oObject,@GetFineCol));
+
+         iThisRangeSquared = (iDistRow * iDistRow + iDistCol * iDistCol)
+                              / FINENESS_SQUARED;
+
+         if iThisRangeSquared <= iRangeSquared
+         {
+            iRangeSquared = iThisRangeSquared;
+            oTarget = oObject;
+         }
+      }
+
+      // oTarget = nil if none are in range.
+      return oTarget;
+   }
+
+   GetClosestAfflicted()
+   {
+      local iRangeSquared, oTarget, iThisRangeSquared, i, iDistRow, iDistCol,
             oIllusion, oObject, oBodyType;
 
       if poOwner = $
@@ -8917,8 +9860,10 @@ messages:
             continue;
          }
 
-         // If not injured below 75% of our social rating, we don't care.
-         if Send(oObject,@GetExactHealth) > viSocial * Send(oObject,@GetMaxHealth) * 75 / 100
+         // If not afflicted, we don't care...
+         if NOT Send(oObject,@IsEnchanted,#byClass=&Debuff)
+            AND NOT (Send(oObject,@IsCursedByItems)
+               AND Send(self,@MonsterHasAbility,#iNum=SID_REMOVE_CURSE))
          {
             continue;
          }
@@ -9101,6 +10046,13 @@ messages:
             continue;
          }
 
+         // Special case monsters that gain the AI_NPC flag.
+         if (IsClass(oHurter,&Monster)
+            AND (Send(oHurter,@GetBehavior) & AI_NPC))
+         {
+            continue;
+         }
+
          // Hatred is based on damage dealt by the hurter.
          iHurt = Nth(i,2);
 
@@ -9137,17 +10089,31 @@ messages:
       return oTop;
    }
 
+   GetWimpy()
+   {
+      if ptUnFrighten <> $
+      {
+         return 101;
+      }
+
+      return viWimpy;
+   }
+
    HealthBelowWimpy()
    {
+      local iWimpy;
+
+      iWimpy = Send(self,@GetWimpy);
+
       // Wimpy of 0 means monster never runs, just fights til the end.
-      if viWimpy = 0
+      if iWimpy = 0
       {
          return FALSE;
       }
 
       // If wimpy is set at 50, monster will flee once his health is at 49% of
       //  max.
-      if (piHealth/ piMax_health) < viWimpy
+      if (piHealth/ piMax_health) < iWimpy
       {
          Send(self,@SetBehaviorFlag,#flag=AI_FLEEING,#value=TRUE);
 
@@ -9205,7 +10171,8 @@ messages:
       if what = $
          OR poOwner = $
       {
-         Debug("BAD target we're switching to here!");
+         Debug("BAD target we're switching to for ",self, vrName, " what: ",
+               what, "owner: ", poOwner);
 
          return FALSE;
       }
@@ -9543,39 +10510,37 @@ messages:
       return vbIsUndead;
    }
 
-   TurnedBy(who = $)
+   FrightenedBy(who = $, duration = $)
    {
       if who = $
       {
-         Debug("Turned by $.");
+         Debug("Frightened by $.");
 
          return;
       }
 
-      if NOT vbIsUndead
-      {
-         Debug("Somehow turned a monster that isn't undead.");
+      poFrightener = who;
 
-         return;
+      if ptUnFrighten <> $
+      {
+         DeleteTimer(ptUnFrighten);
+         ptUnFrighten = $;
       }
 
-      poHolySymbolCaster = who;
-
-      if ptUnturn <> $
+      if duration = $
       {
-         DeleteTimer(ptUnturn);
-         ptUnturn = $;
+         duration = TURN_TIME/viDifficulty;
       }
 
-      ptUnturn = CreateTimer(self,@UnTurn,TURN_TIME/viDifficulty);
+      ptUnFrighten = CreateTimer(self,@UnFrighten,duration);
 
       return;
    }
 
-   UnTurn()
+   UnFrighten()
    {
-      ptUnturn = $;
-      poHolySymbolCaster = $;
+      ptUnFrighten = $;
+      poFrightener = $;
 
       return;
    }
@@ -9878,6 +10843,11 @@ messages:
       return vbCanBurn;
    }
 
+   CanFrighten()
+   {
+      return vbCanFrighten;
+   }
+
    GetProjectileSpeed()
    {
       return viProjectileSpeed;
@@ -10010,7 +10980,7 @@ messages:
    }
 
    // Causes mobs to become docile.
-   StartLullaby(iSpellPower=0)
+   StartLullaby(iSpellPower=0,iDuration=1000)
    {
       // Minions owned by players excluded.
       if (poLeader <> $
@@ -10032,7 +11002,7 @@ messages:
          OR ((iSpellPower * 3 / 2 > viLevel)
             AND plHurtMeRecently = $)
       {
-         Send(self,@EnterStateWait,#delay=1000);
+         Send(self,@EnterStateWait,#delay=iDuration);
       }
 
       return;
@@ -10137,7 +11107,7 @@ messages:
 
    GetSpellPower()
    {
-      return piSpellPower;
+      return Send(self,@AdjustSpellpower,#spellpower=piSpellPower);
    }
 
    StartResting()
@@ -10338,6 +11308,126 @@ messages:
       return TRUE;
    }
 
+   IsExpansionMonster()
+   {
+      return FALSE;
+   }
+
+   GetFollowerInfo(iInfo=FALSE)
+   {
+      local rInfo;
+
+      if iInfo&MONSTER_INFO_QUEST
+      {
+         if iInfo&MONSTER_INFO_KILLED
+         {
+            rInfo = vrInfo_quest_killed;
+         }
+         else if iInfo&MONSTER_INFO_ENGAGED
+         {
+            rInfo = vrInfo_quest_engaged;
+         }
+         else if iInfo&MONSTER_INFO_RETREATING
+         {
+            rInfo = vrInfo_quest_retreating;
+         }
+         else
+         {
+            rInfo = vrInfo_quest;
+         }
+      }
+
+      if rInfo = $
+      {
+         if iInfo&MONSTER_INFO_KILLED
+         {
+            rInfo = vrInfo_killed;
+         }
+         else if iInfo&MONSTER_INFO_ENGAGED
+         {
+            rInfo = vrInfo_engaged;
+         }
+         else if iInfo&MONSTER_INFO_RETREATING
+         {
+            rInfo = vrInfo_retreating;
+         }
+         else
+         {
+            rInfo = vrInfo;
+         }
+      }
+
+      return rInfo;
+   }
+
+   GetFollowerInfoTime(who=$,iInfo=FALSE)
+   {
+      local iTime;
+
+      if iInfo&MONSTER_INFO_QUEST
+      {
+         if iInfo&MONSTER_INFO_KILLED
+         {
+            iTime = viInfo_time_quest_killed;
+         }
+         else if iInfo&MONSTER_INFO_ENGAGED
+         {
+            iTime = viInfo_time_quest_engaged;
+         }
+         else if iInfo&MONSTER_INFO_RETREATING
+         {
+            iTime = viInfo_time_quest_retreating;
+         }
+         else
+         {
+            iTime = viInfo_time_quest;
+         }
+      }
+
+      if iTime = $
+      {
+         if iInfo&MONSTER_INFO_KILLED
+         {
+            iTime = viInfo_time_killed;
+         }
+         else if iInfo&MONSTER_INFO_ENGAGED
+         {
+            iTime = viInfo_time_engaged;
+         }
+         else if iInfo&MONSTER_INFO_RETREATING
+         {
+            iTime = viInfo_time_retreating;
+         }
+         else
+         {
+            iTime = viInfo_time;
+         }
+      }
+
+      return iTime;
+   }
+
+   IsCursedByItems()
+   {
+      return FALSE;
+   }
+
+   CancelMaintainedSpells()
+   {
+      local i, oEnch, state;
+
+      foreach i in plRadiusEnchantments
+      {
+         oEnch = Nth(i,2);
+         state = Nth(i,3);
+         if (Send(oEnch,@GetCaster,#state=state) = self)
+         {
+            Send(oEnch,@BreakTrance,#who=self,#state=state,#event=EVENT_OOM);
+         }
+      }
+
+      propagate;
+   }
 
 end
 ////////////////////////////////////////////////////////////////////////////////

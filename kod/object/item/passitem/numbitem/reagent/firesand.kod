@@ -137,5 +137,15 @@ messages:
       propagate;
    }
 
+   IsCookingIngredient()
+   {
+      return TRUE;
+   }
+
+   GetSubstitueReagentClass()
+   {
+      return &EssenceDust;
+   }
+
 end
 ////////////////////////////////////////////////////////////////////////////////

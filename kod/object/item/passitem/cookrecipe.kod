@@ -1,0 +1,119 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+CookingRecipe is PassiveItem
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include cookrecipe.lkod
+
+   CookingRecipe_name_rsc = "cooking recipe"
+   CookingRecipe_icon_rsc = scr04.bgf
+   CookingRecipe_desc_rsc = \
+      "This recipe lists the ingredients needed to prepare "
+      "a serving of %s%s.  (Requires a suitable cooking pot.) %r"
+   CookingRecipe_ingredients = "\n  %i %s"
+
+classvars:
+
+   vrName = CookingRecipe_name_rsc
+   vrIcon = CookingRecipe_icon_rsc
+   vrDesc = CookingRecipe_desc_rsc
+
+   viWeight = 2
+
+properties:
+
+   piRecipe = CR_NONE
+
+messages:
+
+   Constructor()
+   {
+      Send(self,@SetRandomRecipe);
+
+      propagate;
+   }
+
+   ShowDesc()
+   {
+      local lRecipe, lTemplates, lIngredients, lFoods, i, iNumber, oItem, obj;
+
+      if piRecipe = CR_NONE
+      {
+         AddPacket(4,system_blank_resource);
+
+         return;
+      }
+
+      lRecipe = Send(self,@GetRecipe);
+      if (lRecipe = $)
+      {
+         Debug("Cooking recipe got $ recipe for recipe constant ", piRecipe);
+         AddPacket(4,system_blank_resource);
+
+         return;
+      }
+
+      lTemplates = Send(SYS,@GetItemTemplates);
+      if (lTemplates = $)
+      {
+         AddPacket(4,system_blank_resource);
+
+         return;
+      }
+
+      lIngredients = Nth(lRecipe,2);
+      oItem = GetListElemByClass(lTemplates,First(Nth(lRecipe,3)));
+
+      AddPacket(4,CookingRecipe_desc_rsc,
+                4,Send(oItem,@GetInDef), 4,Send(oItem,@GetName),
+                4,Send(SYS,@AddResourceTemplate,#iNum=Length(lIngredients)) );
+
+      foreach i in lIngredients
+      {
+         oItem = GetListElemByClass(lTemplates,First(i));
+         iNumber = Nth(i,2);
+         AddPacket(4, CookingRecipe_ingredients, 4,iNumber,
+                   4, Send(oItem,@GetName,#number=iNumber));
+      }
+
+      return;
+   }
+
+   SetRandomRecipe()
+   {
+      local lRecipes;
+
+      lRecipes = Send(Send(SYS,@GetLore),@GetCookingRecipes);
+      if lRecipes <> $
+      {
+         piRecipe = First(Nth(lRecipes,Random(1,Length(lRecipes))));
+      }
+
+      return TRUE;
+   }
+
+   GetRecipe()
+   {
+      return Send(Send(SYS,@GetLore),@GetCookingRecipe,#iRecipe=piRecipe);
+   }
+
+   GetRecipeConstant()
+   {
+      return piRecipe;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

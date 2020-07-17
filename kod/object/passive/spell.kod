@@ -226,6 +226,9 @@ classvars:
    // radius enchantments and ranged attack that effect multiple targets.
    vbIsAreaEffect = FALSE
 
+   // Whether the spell has any effect on movement speed.
+   vbIsMoveSpeedModifier = FALSE
+
    // If true, newbies cannot target other players with this spell.
    viNoNewbieOffense = FALSE
 
@@ -257,6 +260,8 @@ classvars:
    vbIsLightSource = FALSE
 
    vbCanBreakTrance = TRUE
+
+   vbCombatOnly = TRUE
 
 properties:
 
@@ -789,8 +794,8 @@ messages:
 
    CanPayReagents(who=$,lTargets=$,iSpellPower=0,bFreeCast=FALSE)
    {
-      local lReagent, cReagentClass, iNumNeeded, bFound, lItems, lLists,
-            oUserObject, iNum, oOwner, oSpell, oRing, oRoom;
+      local lReagent, cReagentClass, iNumNeeded, bFound, lItems, lLists, oReg,
+            oUserObject, iNum, oOwner, oSpell, oRing, oRoom, cSubReagentClass;
 
       oRoom = Send(who,@GetOwner);
       if Send(who,@PlayerIsImmortal)
@@ -809,6 +814,8 @@ messages:
       foreach lReagent in plReagents
       {
          cReagentClass = First(lReagent);
+         oReg = Send(SYS,@FindTemplateItemByClass,#cClass=cReagentClass);
+         cSubReagentClass = Send(oReg,@GetSubstitueReagentClass);
          iNumNeeded = Nth(lReagent,2);
 
          bFound = FALSE;
@@ -821,7 +828,8 @@ messages:
             // Count # of reagent that user has; complain if not enough
             foreach oUserObject in lItems
             {
-               if IsClass(oUserObject,cReagentClass)
+               if (IsClass(oUserObject,cReagentClass)
+                  OR IsClass(oUserObject,cSubReagentClass))
                {
                   if Send(oUserObject,@IsStackable)
                   {
@@ -1484,7 +1492,7 @@ messages:
    "half the exertion, and no reagents."
    {
       local num, iAbility, lReagent, cReagentClass, iLists, lItems,
-            iNumNeeded, oUserObject, oRoom;
+            iNumNeeded, oUserObject, oRoom, oReg, iLeftover;
 
       oRoom = Send(who,@GetOwner);
       if NOT IsClass(who,&User)
@@ -1533,54 +1541,59 @@ messages:
       {
          cReagentClass = First(lReagent);
          iNumNeeded = Nth(lReagent,2);
-         iLists = 1;
-         while iLists <= 3
+
+         iLeftover = Send(self,@PayReagent,#who=who,
+                        #cReagentClass=cReagentClass,#iAmount=iNumNeeded);
+         if iLeftover <> 0
          {
-            if iLists = 1
+            // check if the reg can be substitued
+            oReg = Send(SYS,@FindTemplateItemByClass,#cClass=cReagentClass);
+            cReagentClass = Send(oReg,@GetSubstitueReagentClass);
+
+            if NOT (iLeftover = iNumNeeded)
             {
-               lItems = Send(who,@GetHolderActive);
-            }
-            else if iLists = 2
-            {
-               lItems = Send(who,@GetHolderPassive);
-            }
-            else
-            {
-               lItems = Send(who,@GetReagentBagContents);
+               iNumNeeded = iNumNeeded - iLeftover;
             }
 
-            // Since spell is cast, we can be cavalier about deleting things
-            foreach oUserObject in lItems
-            {
-               if IsClass(oUserObject,cReagentClass)
-               {
-                  if Send(oUserObject,@IsStackable)
-                  {
-                     Send(oUserObject,@SubtractNumber,#number=iNumNeeded);
-                     iNumNeeded = 0;
-
-                     break;
-                  }
-                  else
-                  {
-                     Send(oUserObject,@Delete);
-                     if --iNumNeeded = 0
-                     {
-                        break;
-                     }
-                  }
-               }
-            }
-            if iNumNeeded = 0
-            {
-               // Found all we need.
-               break;
-            }
-            ++iLists;
+            Send(self,@PayReagent,#who=who,
+               #cReagentClass=cReagentClass,#iAmount=iNumNeeded);
          }
       }
 
       return TRUE;
+   }
+
+   PayReagent(who=$,cReagentClass=$,iAmount=0)
+   {
+      local lLists, lItems, oUserObject, iLeftover;
+
+      iLeftover = iAmount;
+      lLists = [Send(who,@GetHolderActive),Send(who,@GetHolderPassive),
+                  Send(who,@GetReagentBagContents)];
+
+      foreach lItems in lLists
+      {
+         foreach oUserObject in lItems
+         {
+            if IsClass(oUserObject,cReagentClass)
+            {
+               if Send(oUserObject,@IsStackable)
+               {
+                  // SubtractNumber will return anything left over
+                  iLeftover = Send(oUserObject,@SubtractNumber,#number=iAmount);
+                  return iLeftover;
+               }
+               else
+               {
+                  Send(oUserObject,@Delete);
+                  iLeftover--;
+                  return iLeftover;
+               }
+            }
+         }
+      }
+
+      return iLeftover;
    }
 
    SpellFailed(who=$,iSpellpower=0)
@@ -1714,7 +1727,7 @@ messages:
             }
          }
 
-         if (viCooldownSID > 0)
+         if (viCooldownSID > 0 AND NOT viPersonal_ench)
          {
             oSpell = Send(SYS,@FindSpellByNum,#num=viCooldownSID);
             if (oSpell <> $)
@@ -1726,15 +1739,7 @@ messages:
 
       if IsClass(who,&DM)
       {
-         if (lTargets <> $)
-         {
-            GodLog("DM ",Send(who,@GetTrueName)," cast ", Send(self,@GetName),
-                  " on ",Send(First(lTargets),@GetTrueName));
-         }
-         else
-         {
-            GodLog("DM ",Send(who,@GetTrueName)," cast ", Send(self,@GetName));
-         }
+         Send(self,@LogDMCast,#who=who,#lTargets=lTargets);
       }
 
       if NOT bItemCast
@@ -1938,6 +1943,26 @@ messages:
       return;
    }
 
+   LogDMCast(who=$,lTargets=$)
+   {
+      if (who = $)
+      {
+         return;
+      }
+
+      if (lTargets <> $)
+      {
+         GodLog("DM ",Send(who,@GetTrueName)," cast ", Send(self,@GetName),
+               " on ",Send(First(lTargets),@GetTrueName));
+      }
+      else
+      {
+         GodLog("DM ",Send(who,@GetTrueName)," cast ", Send(self,@GetName));
+      }
+
+      return;
+   }
+
    PlaySpellSound(room_obj = $,what = $)
    {
       local wave_rsc;
@@ -2079,6 +2104,11 @@ messages:
    GetLevel()
    {
       return viSpell_level;
+   }
+
+   GetSpellMoveSpeedBonus()
+   {
+      return 0;
    }
 
    SetSpellPlayerFlag(who=$)
@@ -3041,6 +3071,11 @@ messages:
       return vbIsAreaEffect;
    }
 
+   IsMoveSpeedModifier()
+   {
+      return vbIsMoveSpeedModifier;
+   }
+
    IsAffectedByRadiusEnchantment()
    {
       return FALSE;
@@ -3189,6 +3224,18 @@ messages:
    IsLightSource()
    {
       return vbIsLightSource;
+   }
+
+   // Certain spells may have additional criteria that need to be met for a monster
+   // to cast them. Most spells will only be cast in combat.
+   MonsterCastCheck(who=$,lTargets=$,bCombat=FALSE)
+   {
+      if NOT bCombat AND vbCombatOnly
+      {
+         return FALSE;
+      }
+
+      return TRUE;
    }
 
 end

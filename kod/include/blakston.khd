@@ -1011,6 +1011,7 @@
    RID_BERG_LEADER = 2823
    RID_BERG_LEADER_HALL = 2824
    RID_BERG_GRAVE = 2825
+   RID_BERG_JAIL = 2826
    
    // DeathValley Area 2850-2900
    RID_DVALLEY_1 = 2850
@@ -1806,6 +1807,12 @@
    VSTATE_INVALID_ATTACK   = 0x20000
    VSTATE_VALIDITY_MASK    = 0x0FFFF
 
+   // Monster information states for follower commentary.
+   MONSTER_INFO_QUEST        = 0x00001
+   MONSTER_INFO_KILLED       = 0x00002
+   MONSTER_INFO_ENGAGED      = 0x00004
+   MONSTER_INFO_RETREATING   = 0x00008
+
    // Flag passed to BSP C calls to signify the monster
    // can move outside the BSP tree. Mobs that can do this
    // have the AI_MOVE_WALKTHROUGH_WALLS AI flag.
@@ -1866,6 +1873,25 @@
 
    // Battlers need this much vigor to be able to run.
    VIGOR_RUN_THRESHOLD = 1000
+   
+   // Monster attacks
+   ATTACK_SLASH               = 0x0000001
+   ATTACK_THRUST              = 0x0000002
+   ATTACK_STRIKE              = 0x0000004
+   ATTACK_PUNCH               = 0x0000008
+   ATTACK_CLAW                = 0x0000010
+   ATTACK_STING               = 0x0000020
+   ATTACK_BITE                = 0x0000040
+   ATTACK_SPIT                = 0x0000080
+   ATTACK_SPIN                = 0x0000100
+   ATTACK_TAUNT               = 0x0000200
+   ATTACK_STUN                = 0x0000400
+   ATTACK_DISTRACT            = 0x0000800
+   ATTACK_FRIGHTEN            = 0x0001000
+   ATTACK_CRIPPLE             = 0x0002000
+   ATTACK_SNARE               = 0x0004000
+   ATTACK_DAZE                = 0x0008000
+   ATTACK_WEAKEN              = 0x0010000
 
    // Monster movement speeds
    SPEED_NONE          = 0
@@ -1913,10 +1939,11 @@
    MAX_GOOD     = 100
 
    // Action classification
-   COMBAT_ACTION_NEUTRAL = 0
-   COMBAT_ACTION_HARM = 1
-   COMBAT_ACTION_HEAL = 2
-   COMBAT_ACTION_BUFF = 3
+   COMBAT_ACTION_NEUTRAL = 1
+   COMBAT_ACTION_HARM = 2
+   COMBAT_ACTION_HEAL = 3
+   COMBAT_ACTION_BUFF = 4
+   COMBAT_ACTION_CURE = 5
 
    // Avar types
    // Same as purple to blue
@@ -2007,7 +2034,13 @@
    TID_CHUPA         = 77
    TID_WOLF          = 78
    TID_VITKHUL       = 79
-   TID_LOSTSOUL       = 80
+   TID_LOSTSOUL      = 80
+   TID_WENDIGO       = 81
+   TID_SPINEBEAST    = 82
+   TID_RANU          = 83
+   TID_NYRPHLING     = 84
+   TID_SWAMP         = 85
+   TID_EASTERN_AREA  = 86
 
    // English articles
 
@@ -2037,6 +2070,8 @@
    ITEM_USE_SHIRT = 0x0800
    // In theory, used for masks.
    ITEM_USE_FACE = 0x1000
+   // Used for wings.
+   ITEM_USE_BACK = 0x2000
 
    ITEMTYPE_MISC =     0
    ITEMTYPE_WEAPON =   0x000001
@@ -2059,6 +2094,7 @@
    ITEMTYPE_SCROLL =   0x008000
    ITEMTYPE_MASK =     0x010000
    ITEMTYPE_ROD =      0x020000
+   ITEMTYPE_BATTERY =  0x040000
 
    // Item Attributes.  See the end of item.kod for details
    IA_DEFAULT              = 0
@@ -2086,6 +2122,7 @@
    IA_XP_KILL_BONUS        = 22
    IA_MOVESPEED            = 23
    IA_DYED                 = 24
+   IA_AUCTIONED            = 25
 
    // Weapon Attributes.  These are attributes only applied to weapons.
    WA_TRAINING             = 51
@@ -2113,6 +2150,22 @@
    WA_BLEED                = 73
    WA_FATIGUE              = 74
    WA_SLOW                 = 75
+
+   // Cooking recipes
+   CR_NONE        = 0
+   CR_SOUP        = 1
+   CR_BREAD       = 2
+   CR_PRETZEL     = 3
+   CR_WINEGOBLET  = 4
+   CR_KOCATANMUG  = 5
+   CR_KEBAB       = 6
+   CR_FRUITBOWL   = 7
+   CR_COOKIE      = 8
+   CR_PANCAKE     = 9
+   CR_GHOSTPEPPER = 10
+   CR_SUSHI       = 11
+   CR_MOONSHINE   = 12
+   CR_TWINKLECAP  = 13
 
    // Herald shields
 
@@ -2259,6 +2312,7 @@
    SKID_SLASH = 421
    SKID_THRUST = 422
    SKID_SPIN = 423
+   SKID_STRIKE = 424
 
    // Missile weapon strokes here.
    SKID_FIRE = 425
@@ -2267,6 +2321,20 @@
    // Unarmed combat moves start here.
    SKID_PUNCH = 430
    SKID_KICK = 431
+   SKID_STING = 432
+   SKID_BITE = 433
+   SKID_CLAW = 434
+   SKID_SPIT = 435
+
+   // Special moves go here.
+   SKID_TAUNT = 440
+   SKID_STUN = 441
+   SKID_DISTRACT = 442
+   SKID_FRIGHTEN = 443
+   SKID_CRIPPLE = 444
+   SKID_SNARE = 445
+   SKID_DAZE = 446
+   SKID_WEAKEN = 447
 
    // Specific weapon proficiencies.
    SKID_BRAWLING = 450
@@ -2506,6 +2574,11 @@
    SID_STRONG = 213
    SID_NIMBLE = 214
    SID_TOUGH = 215
+   
+   SID_DISSONANCE = 216
+   SID_SPIRITUAL_WINGS = 217
+   SID_COOLDOWN_SPIRITUAL_WINGS = 218
+   SID_TRANSFERENCE = 219
 
    // Depreciated spell IDs
    SID_LIGHTNING = 1                   // use SID_LIGHTNING_BOLT
@@ -2699,14 +2772,15 @@
 
    // Second set of player flags (in piFlags2)
    // A mask of flags that are unaffected by ResetPlayerFlagList
-   PFLAG2_MASK             = 0x1F7F80
+   PFLAG2_MASK             = 0x5F7F80
 
    PFLAG2_HASTED           = 0x000001
    PFLAG2_DANCING          = 0x000002
    PFLAG2_DETECT_GOOD      = 0x000004
    PFLAG2_DETECT_EVIL      = 0x000008
    PFLAG2_DETECT_INVIS     = 0x000010
-   PFLAG2_PARALYZED        = 0x000020
+   // Set if player has dmg absorbing wings.
+   PFLAG2_WINGS_ABSORB     = 0x000020
    PFLAG2_HUNTED           = 0x000040
    // DM set only.  No chance of revenants.
    PFLAG2_NOHAUNT          = 0x000080
@@ -2730,6 +2804,10 @@
    PFLAG2_NO_INFORM_TP     = 0x080000
    // Set if other party accepted our trade offer.
    PFLAG2_OFFER_OTHER_ACPT = 0x100000
+   // Set if player is ready to offer a lift to others.
+   PFLAG2_OFFER_LIFT       = 0x200000
+   // Set if player is performing an AOE attack, to avoid resetting gain flags.
+   PFLAG2_AOE_ATTACK       = 0x400000
 
    // Third set of player flags (in piFlags3)
    // piFlags3 can now be used as a proper bitfield, and no longer
@@ -2817,6 +2895,7 @@
    EFFECT_XLATOVERRIDE = 17
    EFFECT_FIREWORKS = 18
    EFFECT_CLEAVE = 19
+   EFFECT_DODGE = 20
 
    // Effect flashes
    FLASH_NONE = 0
@@ -2902,6 +2981,7 @@
    HS_TOP_BOW = 32
    HS_BOTTOM_BOW = 33
    HS_LEGS = 41
+   HS_PLAYER_WINGS = 41
    HS_EMBLEM = 51
    HS_SHIELD_BACK = 61
 
@@ -3349,6 +3429,7 @@
    SHRINE_ISLAND     = 3
    SHRINE_BRAX       = 4
    SHRINE_FOREST     = 5
+   SHRINE_JIXA       = 6
 
    // Server types
 
@@ -3359,10 +3440,6 @@
 
    QUEST_MAX_NUM_PLAYERS = 5
    QUEST_MAX_MAX_ACTIVE = 100
-
-   // Active quest info bitfield for reassigning quests after a recreateall.
-   QSTA_MOB_NOTKILLED = 0x0000
-   QSTA_MOB_KILLED    = 0x0001
 
    // Field names for a QuestTemplate
    QT_QST_ID            = 1
@@ -3474,300 +3551,351 @@
    QST_ID_MANA_NODE              = 76
    QST_ID_RAZA_MUMMY             = 77
    QNT_ID_RAT_KING_QUEST         = 78
+   QNT_ID_NERU_GOLEM             = 79
+   QNT_ID_SWAMP_HUNT             = 80
+   QNT_ID_FIRE_GOLEM             = 81
+   QNT_ID_EAST_LOVERS            = 82
+   QNT_ID_DARK_ANGEL             = 83
+   QNT_ID_WENDIGO_HUNT           = 84
+   QNT_ID_BERG_KING_POLITCS      = 85
+   QNT_ID_BERG_KING_SPIDER_QUEST = 86
 
    // Quest Node Template IDs. Each quest has multple Quest Nodes.
-   QNT_ID_DUKE_JOIN_ONE          = 1
-   QNT_ID_DUKE_JOIN_TWO          = 2
+   QNT_ID_DUKE_JOIN_ONE             = 1
+   QNT_ID_DUKE_JOIN_TWO             = 2
 
-   QNT_ID_PRINCESS_JOIN_ONE      = 3
-   QNT_ID_PRINCESS_JOIN_TWO      = 4
+   QNT_ID_PRINCESS_JOIN_ONE         = 3
+   QNT_ID_PRINCESS_JOIN_TWO         = 4
 
-   QNT_ID_DUKE_LOYALTY_ONE       = 5
-   QNT_ID_DUKE_LOYALTY_TWO       = 6
-   QNT_ID_DUKE_LOYALTY_THREE     = 7
+   QNT_ID_DUKE_LOYALTY_ONE          = 5
+   QNT_ID_DUKE_LOYALTY_TWO          = 6
+   QNT_ID_DUKE_LOYALTY_THREE        = 7
 
-   QNT_ID_PRINCESS_LOYALTY_ONE   = 8
-   QNT_ID_PRINCESS_LOYALTY_TWO   = 9
+   QNT_ID_PRINCESS_LOYALTY_ONE      = 8
+   QNT_ID_PRINCESS_LOYALTY_TWO      = 9
 
-   QNT_ID_KRAN_DISCIPLE_ONE      = 10
-   QNT_ID_KRAN_DISCIPLE_TWO      = 11
+   QNT_ID_KRAN_DISCIPLE_ONE         = 10
+   QNT_ID_KRAN_DISCIPLE_TWO         = 11
 
-   QNT_ID_SHAL_DISCIPLE_ONE      = 12
-   QNT_ID_SHAL_DISCIPLE_TWO      = 13
-   QNT_ID_SHAL_DISCIPLE_THREE    = 14
+   QNT_ID_SHAL_DISCIPLE_ONE         = 12
+   QNT_ID_SHAL_DISCIPLE_TWO         = 13
+   QNT_ID_SHAL_DISCIPLE_THREE       = 14
 
-   QNT_ID_FAREN_DISCIPLE_ONE     = 15
-   QNT_ID_FAREN_DISCIPLE_TWO     = 16
-   QNT_ID_FAREN_DISCIPLE_THREE   = 17
+   QNT_ID_FAREN_DISCIPLE_ONE        = 15
+   QNT_ID_FAREN_DISCIPLE_TWO        = 16
+   QNT_ID_FAREN_DISCIPLE_THREE      = 17
 
-   QNT_ID_GSHIELD_ONE            = 18
-   QNT_ID_GSHIELD_TWO            = 19
+   QNT_ID_GSHIELD_ONE               = 18
+   QNT_ID_GSHIELD_TWO               = 19
    
-   QNT_ID_GSHIELD_INTRO_ONE      = 20
+   QNT_ID_GSHIELD_INTRO_ONE         = 20
    
-   QNT_ID_LUTEQUEST_ONE          = 21
-   QNT_ID_LUTEQUEST_TWO          = 22
-   QNT_ID_LUTEQUEST_THREE        = 23
-   QNT_ID_LUTEQUEST_FOUR         = 24
+   QNT_ID_LUTEQUEST_ONE             = 21
+   QNT_ID_LUTEQUEST_TWO             = 22
+   QNT_ID_LUTEQUEST_THREE           = 23
+   QNT_ID_LUTEQUEST_FOUR            = 24
 
-   QNT_ID_TRUTHPUPIL_ONE         = 25
-   QNT_ID_TRUTHPUPIL_TWO         = 26
-   QNT_ID_TRUTHPUPIL_THREE       = 27
-   QNT_ID_TRUTHPUPIL_FOUR        = 28
+   QNT_ID_TRUTHPUPIL_ONE            = 25
+   QNT_ID_TRUTHPUPIL_TWO            = 26
+   QNT_ID_TRUTHPUPIL_THREE          = 27
+   QNT_ID_TRUTHPUPIL_FOUR           = 28
 
-   QNT_ID_TRUTH_ENDBRANCH_ONE    = 29
-   QNT_ID_TRUTH_ENDBRANCH_TWO    = 30
+   QNT_ID_TRUTH_ENDBRANCH_ONE       = 29
+   QNT_ID_TRUTH_ENDBRANCH_TWO       = 30
 
-   QNT_ID_BONE_PRIESTESS_OPB_ONE = 31
-   QNT_ID_BONE_PRIESTESS_OPB_TWO = 32
+   QNT_ID_BONE_PRIESTESS_OPB_ONE    = 31
+   QNT_ID_BONE_PRIESTESS_OPB_TWO    = 32
 
-   QNT_ID_MAD_SCI_DFLY_ONE       = 33
-   QNT_ID_MAD_SCI_DFLY_TWO       = 34
+   QNT_ID_MAD_SCI_DFLY_ONE          = 33
+   QNT_ID_MAD_SCI_DFLY_TWO          = 34
 
-   QNT_ID_TRADINGPOST_KICKOFF    = 35
-   QNT_ID_TRADINGPOST_GOOD       = 36
-   QNT_ID_TRADINGPOST_EVIL       = 37
+   QNT_ID_TRADINGPOST_KICKOFF       = 35
+   QNT_ID_TRADINGPOST_GOOD          = 36
+   QNT_ID_TRADINGPOST_EVIL          = 37
 
-   QNT_ID_BOWMAKER_KICKOFF       = 38
-   QNT_ID_BOWMAKER_GOOD_ONE      = 39
-   QNT_ID_BOWMAKER_GOOD_TWO      = 40
-   QNT_ID_BOWMAKER_EVIL          = 41
+   QNT_ID_BOWMAKER_KICKOFF          = 38
+   QNT_ID_BOWMAKER_GOOD_ONE         = 39
+   QNT_ID_BOWMAKER_GOOD_TWO         = 40
+   QNT_ID_BOWMAKER_EVIL             = 41
 
-   QNT_ID_QOR_DISCIPLE_ONE       = 42
-   QNT_ID_QOR_DISCIPLE_TWO       = 43
-   QNT_ID_QOR_DISCIPLE_THREE     = 44
+   QNT_ID_QOR_DISCIPLE_ONE          = 42
+   QNT_ID_QOR_DISCIPLE_TWO          = 43
+   QNT_ID_QOR_DISCIPLE_THREE        = 44
 
-   QNT_ID_SCIMITAR_PUPIL_ONE     = 45
-   QNT_ID_SCIMITAR_PUPIL_TWO     = 46
-   QNT_ID_SCIMITAR_PUPIL_THREE   = 47
-   QNT_ID_SCIMITAR_PUPIL_FOUR    = 48
+   QNT_ID_SCIMITAR_PUPIL_ONE        = 45
+   QNT_ID_SCIMITAR_PUPIL_TWO        = 46
+   QNT_ID_SCIMITAR_PUPIL_THREE      = 47
+   QNT_ID_SCIMITAR_PUPIL_FOUR       = 48
 
-   QNT_ID_CHICKEN_SOUP_ONE       = 49
-   QNT_ID_CHICKEN_SOUP_TWO       = 50
-   QNT_ID_CHICKEN_SOUP_THREE     = 51
+   QNT_ID_CHICKEN_SOUP_ONE          = 49
+   QNT_ID_CHICKEN_SOUP_TWO          = 50
+   QNT_ID_CHICKEN_SOUP_THREE        = 51
    
-   QNT_ID_STUNTED_DWARF_ONE      = 52
-   QNT_ID_STUNTED_DWARF_TWO      = 53
-   QNT_ID_STUNTED_DWARF_THREE    = 54
-   QNT_ID_STUNTED_DWARF_FOUR     = 55
-   QNT_ID_STUNTED_DWARF_FIVE     = 56
-   QNT_ID_STUNTED_DWARF_SIX      = 57
-   QNT_ID_STUNTED_DWARF_SEVEN    = 58
+   QNT_ID_STUNTED_DWARF_ONE         = 52
+   QNT_ID_STUNTED_DWARF_TWO         = 53
+   QNT_ID_STUNTED_DWARF_THREE       = 54
+   QNT_ID_STUNTED_DWARF_FOUR        = 55
+   QNT_ID_STUNTED_DWARF_FIVE        = 56
+   QNT_ID_STUNTED_DWARF_SIX         = 57
+   QNT_ID_STUNTED_DWARF_SEVEN       = 58
 
-   QNT_ID_SACCHAQUA_ONE          = 59
-   QNT_ID_SACCHAQUA_TWO          = 60
-   QNT_ID_SACCHAQUA_THREE        = 61
-   QNT_ID_SACCHAQUA_FOUR         = 62
+   QNT_ID_SACCHAQUA_ONE             = 59
+   QNT_ID_SACCHAQUA_TWO             = 60
+   QNT_ID_SACCHAQUA_THREE           = 61
+   QNT_ID_SACCHAQUA_FOUR            = 62
 
-   QNT_ID_QOR_OFFERING_ONE       = 63
-   QNT_ID_QOR_OFFERING_TWO       = 64
-   QNT_ID_QOR_OFFERING_THREE     = 65
-   QNT_ID_QOR_OFFERING_FOUR      = 66
-   QNT_ID_QOR_OFFERING_FIVE      = 67
+   QNT_ID_QOR_OFFERING_ONE          = 63
+   QNT_ID_QOR_OFFERING_TWO          = 64
+   QNT_ID_QOR_OFFERING_THREE        = 65
+   QNT_ID_QOR_OFFERING_FOUR         = 66
+   QNT_ID_QOR_OFFERING_FIVE         = 67
 
-   QNT_ID_SHAL_OFFERING_ONE      = 68
-   QNT_ID_SHAL_OFFERING_TWO      = 69
-   QNT_ID_SHAL_OFFERING_THREE    = 70
-   QNT_ID_SHAL_OFFERING_FOUR     = 71
-   QNT_ID_SHAL_OFFERING_FIVE     = 72
+   QNT_ID_SHAL_OFFERING_ONE         = 68
+   QNT_ID_SHAL_OFFERING_TWO         = 69
+   QNT_ID_SHAL_OFFERING_THREE       = 70
+   QNT_ID_SHAL_OFFERING_FOUR        = 71
+   QNT_ID_SHAL_OFFERING_FIVE        = 72
 
-   QNT_ID_FAREN_OFFERING_ONE     = 73
-   QNT_ID_FAREN_OFFERING_TWO     = 74
-   QNT_ID_FAREN_OFFERING_THREE   = 75
-   QNT_ID_FAREN_OFFERING_FOUR    = 76
-   QNT_ID_FAREN_OFFERING_FIVE    = 77
+   QNT_ID_FAREN_OFFERING_ONE        = 73
+   QNT_ID_FAREN_OFFERING_TWO        = 74
+   QNT_ID_FAREN_OFFERING_THREE      = 75
+   QNT_ID_FAREN_OFFERING_FOUR       = 76
+   QNT_ID_FAREN_OFFERING_FIVE       = 77
 
-   QNT_ID_KRAN_OFFERING_ONE      = 78
-   QNT_ID_KRAN_OFFERING_TWO      = 79
-   QNT_ID_KRAN_OFFERING_THREE    = 80
-   QNT_ID_KRAN_OFFERING_FOUR     = 81
-   QNT_ID_KRAN_OFFERING_FIVE     = 82
+   QNT_ID_KRAN_OFFERING_ONE         = 78
+   QNT_ID_KRAN_OFFERING_TWO         = 79
+   QNT_ID_KRAN_OFFERING_THREE       = 80
+   QNT_ID_KRAN_OFFERING_FOUR        = 81
+   QNT_ID_KRAN_OFFERING_FIVE        = 82
 
-   QNT_ID_RIIJA_OFFERING_ONE     = 83
-   QNT_ID_RIIJA_OFFERING_TWO     = 84
-   QNT_ID_RIIJA_OFFERING_THREE   = 85
-   QNT_ID_RIIJA_OFFERING_FOUR    = 86
-   QNT_ID_RIIJA_OFFERING_FIVE    = 87
+   QNT_ID_RIIJA_OFFERING_ONE        = 83
+   QNT_ID_RIIJA_OFFERING_TWO        = 84
+   QNT_ID_RIIJA_OFFERING_THREE      = 85
+   QNT_ID_RIIJA_OFFERING_FOUR       = 86
+   QNT_ID_RIIJA_OFFERING_FIVE       = 87
 
-   QNT_ID_FADE_PUPIL_ONE         = 88
-   QNT_ID_FADE_PUPIL_TWO         = 89
-   QNT_ID_FADE_PUPIL_THREE       = 90
-   QNT_ID_FADE_PUPIL_FOUR        = 91
+   QNT_ID_FADE_PUPIL_ONE            = 88
+   QNT_ID_FADE_PUPIL_TWO            = 89
+   QNT_ID_FADE_PUPIL_THREE          = 90
+   QNT_ID_FADE_PUPIL_FOUR           = 91
 
-   QNT_ID_DEMENT_PUPIL_ONE       = 92
-   QNT_ID_DEMENT_PUPIL_TWO       = 93
-   QNT_ID_DEMENT_PUPIL_THREE     = 94
+   QNT_ID_DEMENT_PUPIL_ONE          = 92
+   QNT_ID_DEMENT_PUPIL_TWO          = 93
+   QNT_ID_DEMENT_PUPIL_THREE        = 94
 
-   QNT_ID_SPORE_PUPIL_ONE        = 95
-   QNT_ID_SPORE_PUPIL_TWO        = 96
-   QNT_ID_SPORE_PUPIL_THREE      = 97
+   QNT_ID_SPORE_PUPIL_ONE           = 95
+   QNT_ID_SPORE_PUPIL_TWO           = 96
+   QNT_ID_SPORE_PUPIL_THREE         = 97
 
-   QNT_ID_POLISHED_SERAPHYM_ONE  = 98
-   QNT_ID_POLISHED_SERAPHYM_TWO  = 99
+   QNT_ID_POLISHED_SERAPHYM_ONE     = 98
+   QNT_ID_POLISHED_SERAPHYM_TWO     = 99
 
-   QNT_ID_PRIESTESS_INSIGNIA_ONE = 100
-   QNT_ID_PRIESTESS_INSIGNIA_TWO = 101
-   QNT_ID_PRIESTESS_INSIGNIA_THREE = 102
+   QNT_ID_PRIESTESS_INSIGNIA_ONE    = 100
+   QNT_ID_PRIESTESS_INSIGNIA_TWO    = 101
+   QNT_ID_PRIESTESS_INSIGNIA_THREE  = 102
 
-   QNT_ID_MONK_INSIGNIA_ONE      = 103
-   QNT_ID_MONK_INSIGNIA_TWO      = 104
-   QNT_ID_MONK_INSIGNIA_THREE    = 105
+   QNT_ID_MONK_INSIGNIA_ONE         = 103
+   QNT_ID_MONK_INSIGNIA_TWO         = 104
+   QNT_ID_MONK_INSIGNIA_THREE       = 105
 
-   QNT_ID_FACTION_INSIGNIA_ONE   = 106
-   QNT_ID_FACTION_INSIGNIA_TWO   = 107
-   QNT_ID_FACTION_INSIGNIA_THREE = 108
-   QNT_ID_FACTION_INSIGNIA_FOUR  = 109
+   QNT_ID_FACTION_INSIGNIA_ONE      = 106
+   QNT_ID_FACTION_INSIGNIA_TWO      = 107
+   QNT_ID_FACTION_INSIGNIA_THREE    = 108
+   QNT_ID_FACTION_INSIGNIA_FOUR     = 109
    
-   QNT_ID_MYSTERY_MONSTER_ONE    = 110
-   QNT_ID_MYSTERY_MONSTER_TWO    = 111
-   QNT_ID_MYSTERY_MONSTER_THREE  = 112
-   QNT_ID_MYSTERY_MONSTER_FOUR   = 113
+   QNT_ID_MYSTERY_MONSTER_ONE       = 110
+   QNT_ID_MYSTERY_MONSTER_TWO       = 111
+   QNT_ID_MYSTERY_MONSTER_THREE     = 112
+   QNT_ID_MYSTERY_MONSTER_FOUR      = 113
 
-   QNT_ID_MOXAL_SCAMONE_ONE      = 114
-   QNT_ID_MOXAL_SCAMONE_TWO      = 115
-   QNT_ID_MOXAL_SCAMONE_THREE    = 116
-   QNT_ID_MOXAL_SCAMONE_FOUR     = 117
-   QNT_ID_MOXAL_SCAMONE_FIVE     = 118
+   QNT_ID_MOXAL_SCAMONE_ONE         = 114
+   QNT_ID_MOXAL_SCAMONE_TWO         = 115
+   QNT_ID_MOXAL_SCAMONE_THREE       = 116
+   QNT_ID_MOXAL_SCAMONE_FOUR        = 117
+   QNT_ID_MOXAL_SCAMONE_FIVE        = 118
 
-   QNT_ID_MOXAL_SCAMTWO_ONE      = 119
-   QNT_ID_MOXAL_SCAMTWO_TWO      = 120
-   QNT_ID_MOXAL_SCAMTWO_THREE    = 121
-   QNT_ID_MOXAL_SCAMTWO_FOUR     = 122
-   QNT_ID_MOXAL_SCAMTWO_FIVE     = 123
+   QNT_ID_MOXAL_SCAMTWO_ONE         = 119
+   QNT_ID_MOXAL_SCAMTWO_TWO         = 120
+   QNT_ID_MOXAL_SCAMTWO_THREE       = 121
+   QNT_ID_MOXAL_SCAMTWO_FOUR        = 122
+   QNT_ID_MOXAL_SCAMTWO_FIVE        = 123
 
-   QNT_ID_COUNCIL_LETTER_ONE     = 124
-   QNT_ID_COUNCIL_LETTER_TWO     = 125
+   QNT_ID_COUNCIL_LETTER_ONE        = 124
+   QNT_ID_COUNCIL_LETTER_TWO        = 125
 
-   QNT_ID_CHESS_QUEST_ONE        = 126
-   QNT_ID_CHESS_QUEST_TWO        = 127
-   QNT_ID_CHESS_QUEST_THREE      = 128
-   QNT_ID_CHESS_QUEST_FOUR       = 129
+   QNT_ID_CHESS_QUEST_ONE           = 126
+   QNT_ID_CHESS_QUEST_TWO           = 127
+   QNT_ID_CHESS_QUEST_THREE         = 128
+   QNT_ID_CHESS_QUEST_FOUR          = 129
 
-   QNT_ID_CHESS_CHECKMATE_ONE    = 130
-   QNT_ID_CHESS_CHECKMATE_TWO    = 131
-   QNT_ID_CHESS_CHECKMATE_THREE  = 132
-   QNT_ID_CHESS_CHECKMATE_FOUR   = 133
-   QNT_ID_CHESS_CHECKMATE_FIVE   = 134
+   QNT_ID_CHESS_CHECKMATE_ONE       = 130
+   QNT_ID_CHESS_CHECKMATE_TWO       = 131
+   QNT_ID_CHESS_CHECKMATE_THREE     = 132
+   QNT_ID_CHESS_CHECKMATE_FOUR      = 133
+   QNT_ID_CHESS_CHECKMATE_FIVE      = 134
    
-   QNT_ID_LOVE_LETTERONE_ONE     = 135
-   QNT_ID_LOVE_LETTERONE_TWO     = 136
+   QNT_ID_LOVE_LETTERONE_ONE        = 135
+   QNT_ID_LOVE_LETTERONE_TWO        = 136
    
-   QNT_ID_LOVE_LETTERTWO_ONE     = 137
-   QNT_ID_LOVE_LETTERTWO_TWO     = 138
+   QNT_ID_LOVE_LETTERTWO_ONE        = 137
+   QNT_ID_LOVE_LETTERTWO_TWO        = 138
    
-   QNT_ID_NECROGUILD_ONE         = 139
-   QNT_ID_NECROGUILD_TWO         = 140
-   QNT_ID_NECROGUILD_THREE       = 141
+   QNT_ID_NECROGUILD_ONE            = 139
+   QNT_ID_NECROGUILD_TWO            = 140
+   QNT_ID_NECROGUILD_THREE          = 141
    
-   QNT_ID_APHRODISIAC_ONE        = 142
-   QNT_ID_APHRODISIAC_TWO        = 143
-   QNT_ID_APHRODISIAC_THREE      = 144
-   QNT_ID_APHRODISIAC_FOUR       = 145
+   QNT_ID_APHRODISIAC_ONE           = 142
+   QNT_ID_APHRODISIAC_TWO           = 143
+   QNT_ID_APHRODISIAC_THREE         = 144
+   QNT_ID_APHRODISIAC_FOUR          = 145
    
-   QNT_ID_NECRO_WARN_EVIL_ONE    = 146
-   QNT_ID_NECRO_WARN_EVIL_TWO    = 147
-   QNT_ID_NECRO_WARN_EVIL_THREE  = 148
+   QNT_ID_NECRO_WARN_EVIL_ONE       = 146
+   QNT_ID_NECRO_WARN_EVIL_TWO       = 147
+   QNT_ID_NECRO_WARN_EVIL_THREE     = 148
    
-   QNT_ID_BAR_RESTOCK_ONE        = 149
-   QNT_ID_BAR_RESTOCK_TWO        = 150
-   QNT_ID_BAR_RESTOCK_THREE      = 151
+   QNT_ID_BAR_RESTOCK_ONE           = 149
+   QNT_ID_BAR_RESTOCK_TWO           = 150
+   QNT_ID_BAR_RESTOCK_THREE         = 151
    
-   QNT_ID_CATERING_ONE           = 152
-   QNT_ID_CATERING_TWO           = 153
-   QNT_ID_CATERING_THREE         = 154
+   QNT_ID_CATERING_ONE              = 152
+   QNT_ID_CATERING_TWO              = 153
+   QNT_ID_CATERING_THREE            = 154
    
-   QNT_ID_BLACKSMITH_ORE_ONE     = 155
-   QNT_ID_BLACKSMITH_ORE_TWO     = 156
+   QNT_ID_BLACKSMITH_ORE_ONE        = 155
+   QNT_ID_BLACKSMITH_ORE_TWO        = 156
    
-   QNT_ID_APOTHECARY_ONE         = 157
-   QNT_ID_APOTHECARY_TWO         = 158
+   QNT_ID_APOTHECARY_ONE            = 157
+   QNT_ID_APOTHECARY_TWO            = 158
    
-   QNT_ID_VAULT_TAX_ONE          = 159
-   QNT_ID_VAULT_TAX_TWO          = 160
+   QNT_ID_VAULT_TAX_ONE             = 159
+   QNT_ID_VAULT_TAX_TWO             = 160
    
-   QNT_ID_MERCHANT_TAX_ONE       = 161
-   QNT_ID_MERCHANT_TAX_TWO       = 162
+   QNT_ID_MERCHANT_TAX_ONE          = 161
+   QNT_ID_MERCHANT_TAX_TWO          = 162
    
-   QNT_ID_LATE_TAX_ONE           = 163
-   QNT_ID_LATE_TAX_TWO           = 164
+   QNT_ID_LATE_TAX_ONE              = 163
+   QNT_ID_LATE_TAX_TWO              = 164
    
-   QNT_ID_KOC_WEAP_TRADE_ONE     = 165
-   QNT_ID_KOC_WEAP_TRADE_TWO     = 166
-   QNT_ID_KOC_WEAP_TRADE_THREE   = 167
+   QNT_ID_KOC_WEAP_TRADE_ONE        = 165
+   QNT_ID_KOC_WEAP_TRADE_TWO        = 166
+   QNT_ID_KOC_WEAP_TRADE_THREE      = 167
    
-   QNT_ID_KOC_ALE_TRADE_ONE      = 168
-   QNT_ID_KOC_ALE_TRADE_TWO      = 169
-   QNT_ID_KOC_ALE_TRADE_THREE    = 170
+   QNT_ID_KOC_ALE_TRADE_ONE         = 168
+   QNT_ID_KOC_ALE_TRADE_TWO         = 169
+   QNT_ID_KOC_ALE_TRADE_THREE       = 170
    
-   QNT_ID_NECRO_WARN_GOOD_ONE    = 171
-   QNT_ID_NECRO_WARN_GOOD_TWO    = 172
-   QNT_ID_NECRO_WARN_GOOD_THREE  = 173
+   QNT_ID_NECRO_WARN_GOOD_ONE       = 171
+   QNT_ID_NECRO_WARN_GOOD_TWO       = 172
+   QNT_ID_NECRO_WARN_GOOD_THREE     = 173
    
-   QNT_ID_WARLETTER_ONE          = 174
-   QNT_ID_WARLETTER_TWO          = 175
+   QNT_ID_WARLETTER_ONE             = 174
+   QNT_ID_WARLETTER_TWO             = 175
 
-   QNT_ID_POTION_ID_ONE          = 176
-   QNT_ID_POTION_ID_TWO          = 177
-   QNT_ID_POTION_ID_THREE        = 178
+   QNT_ID_POTION_ID_ONE             = 176
+   QNT_ID_POTION_ID_TWO             = 177
+   QNT_ID_POTION_ID_THREE           = 178
    
-   QNT_ID_WAND_ID_ONE            = 179
-   QNT_ID_WAND_ID_TWO            = 180
-   QNT_ID_WAND_ID_THREE          = 181
+   QNT_ID_WAND_ID_ONE               = 179
+   QNT_ID_WAND_ID_TWO               = 180
+   QNT_ID_WAND_ID_THREE             = 181
    
-   QNT_ID_CESS_MURDER_ONE        = 182
-   QNT_ID_CESS_MURDER_TWO        = 183
-   QNT_ID_CESS_MURDER_ONE_THREE  = 184
-   QNT_ID_CESS_MURDER_TWO_THREE  = 185
-   QNT_ID_CESS_MURDER_THREE_THREE = 186
+   QNT_ID_CESS_MURDER_ONE           = 182
+   QNT_ID_CESS_MURDER_TWO           = 183
+   QNT_ID_CESS_MURDER_ONE_THREE     = 184
+   QNT_ID_CESS_MURDER_TWO_THREE     = 185
+   QNT_ID_CESS_MURDER_THREE_THREE   = 186
    
-   QNT_ID_DUKE_MURDER_ONE        = 187
-   QNT_ID_DUKE_MURDER_TWO        = 188
-   QNT_ID_DUKE_MURDER_ONE_THREE  = 189
-   QNT_ID_DUKE_MURDER_TWO_THREE  = 190
-   QNT_ID_DUKE_MURDER_THREE_THREE = 191
+   QNT_ID_DUKE_MURDER_ONE           = 187
+   QNT_ID_DUKE_MURDER_TWO           = 188
+   QNT_ID_DUKE_MURDER_ONE_THREE     = 189
+   QNT_ID_DUKE_MURDER_TWO_THREE     = 190
+   QNT_ID_DUKE_MURDER_THREE_THREE   = 191
 
-   QNT_ID_JONAS_MURDER_ONE       = 192
-   QNT_ID_JONAS_MURDER_TWO       = 193
-   QNT_ID_JONAS_MURDER_ONE_THREE = 194
-   QNT_ID_JONAS_MURDER_TWO_THREE = 195
-   QNT_ID_JONAS_MURDER_THREE_THREE = 196
+   QNT_ID_JONAS_MURDER_ONE          = 192
+   QNT_ID_JONAS_MURDER_TWO          = 193
+   QNT_ID_JONAS_MURDER_ONE_THREE    = 194
+   QNT_ID_JONAS_MURDER_TWO_THREE    = 195
+   QNT_ID_JONAS_MURDER_THREE_THREE  = 196
 
-   QNT_ID_REBEL_LOYALTY_ONE      = 197
-   QNT_ID_REBEL_LOYALTY_TWO      = 198
+   QNT_ID_REBEL_LOYALTY_ONE         = 197
+   QNT_ID_REBEL_LOYALTY_TWO         = 198
    
-   QNT_ID_REBEL_JOIN_ONE         = 199
-   QNT_ID_REBEL_JOIN_TWO         = 200
+   QNT_ID_REBEL_JOIN_ONE            = 199
+   QNT_ID_REBEL_JOIN_TWO            = 200
    
-   QNT_ID_JALA_NECKLACE_ONE      = 201
-   QNT_ID_JALA_NECKLACE_TWO      = 202
-   QNT_ID_JALA_NECKLACE_THREE    = 203
-   QNT_ID_JALA_NECKLACE_FOUR     = 204
-   QNT_ID_JALA_NECKLACE_FIVE     = 205
-   QNT_ID_JALA_NECKLACE_SIX      = 206
-   QNT_ID_JALA_NECKLACE_SEVEN    = 207
+   QNT_ID_JALA_NECKLACE_ONE         = 201
+   QNT_ID_JALA_NECKLACE_TWO         = 202
+   QNT_ID_JALA_NECKLACE_THREE       = 203
+   QNT_ID_JALA_NECKLACE_FOUR        = 204
+   QNT_ID_JALA_NECKLACE_FIVE        = 205
+   QNT_ID_JALA_NECKLACE_SIX         = 206
+   QNT_ID_JALA_NECKLACE_SEVEN       = 207
    
-   QNT_ID_DUKE_SOLDIER_ONE       = 208
-   QNT_ID_DUKE_SOLDIER_TWO       = 209
-   QNT_ID_DUKE_SOLDIER_THREE     = 210
+   QNT_ID_DUKE_SOLDIER_ONE          = 208
+   QNT_ID_DUKE_SOLDIER_TWO          = 209
+   QNT_ID_DUKE_SOLDIER_THREE        = 210
    
-   QNT_ID_CESS_SOLDIER_ONE       = 211
-   QNT_ID_CESS_SOLDIER_TWO       = 212
-   QNT_ID_CESS_SOLDIER_THREE     = 213
+   QNT_ID_CESS_SOLDIER_ONE          = 211
+   QNT_ID_CESS_SOLDIER_TWO          = 212
+   QNT_ID_CESS_SOLDIER_THREE        = 213
 
-   QNT_ID_REBEL_SOLDIER_ONE      = 214
-   QNT_ID_REBEL_SOLDIER_TWO      = 215
-   QNT_ID_REBEL_SOLDIER_THREE    = 216
+   QNT_ID_REBEL_SOLDIER_ONE         = 214
+   QNT_ID_REBEL_SOLDIER_TWO         = 215
+   QNT_ID_REBEL_SOLDIER_THREE       = 216
 
-   QNT_ID_ABSTAIN_PVP_ONE        = 217
-   QNT_ID_ABSTAIN_PVP_TWO        = 218
+   QNT_ID_ABSTAIN_PVP_ONE           = 217
+   QNT_ID_ABSTAIN_PVP_TWO           = 218
 
-   QNT_ID_MANA_NODE_ONE          = 219
+   QNT_ID_MANA_NODE_ONE             = 219
    
-   QNT_ID_RAZA_MUMMY_ONE         = 220
-   QNT_ID_RAZA_MUMMY_TWO         = 221
+   QNT_ID_RAZA_MUMMY_ONE            = 220
+   QNT_ID_RAZA_MUMMY_TWO            = 221
    
-   QNT_ID_RAT_KING_QUEST_ONE     = 222
-   QNT_ID_RAT_KING_QUEST_TWO     = 223
+   QNT_ID_RAT_KING_QUEST_ONE        = 222
+   QNT_ID_RAT_KING_QUEST_TWO        = 223
+
+   QNT_ID_NERU_GOLEM_1              = 224
+   QNT_ID_NERU_GOLEM_2              = 225
+   QNT_ID_NERU_GOLEM_3              = 226
+   QNT_ID_NERU_GOLEM_4              = 227
+   QNT_ID_NERU_GOLEM_5              = 228
+   QNT_ID_NERU_GOLEM_6              = 229
+   QNT_ID_NERU_GOLEM_7              = 230
+   QNT_ID_NERU_GOLEM_8              = 231
+   
+   QNT_ID_SWAMP_HUNT_1              = 232
+   QNT_ID_SWAMP_HUNT_2              = 233
+   QNT_ID_SWAMP_HUNT_3              = 234
+   QNT_ID_SWAMP_HUNT_4              = 235
+   QNT_ID_SWAMP_HUNT_5              = 236
+
+   QNT_ID_FIRE_GOLEM_1              = 237
+   QNT_ID_FIRE_GOLEM_2              = 238
+   
+   QNT_ID_EAST_LOVERS_1             = 239
+   QNT_ID_EAST_LOVERS_2             = 241
+   QNT_ID_EAST_LOVERS_3             = 242
+   QNT_ID_EAST_LOVERS_4             = 243
+   QNT_ID_EAST_LOVERS_5             = 244
+
+   QNT_ID_DARK_ANGEL_1              = 245
+   QNT_ID_DARK_ANGEL_2              = 246
+   QNT_ID_DARK_ANGEL_3              = 247
+
+   QNT_ID_WENDIGO_HUNT_1            = 248
+   QNT_ID_WENDIGO_HUNT_2            = 249
+   
+   QNT_ID_BERG_KING_POLITCS_1       = 250
+   QNT_ID_BERG_KING_POLITCS_2       = 251
+   QNT_ID_BERG_KING_POLITCS_3       = 252
+   QNT_ID_BERG_KING_POLITCS_4       = 253
+   QNT_ID_BERG_KING_POLITCS_5       = 254
+   QNT_ID_BERG_KING_POLITCS_6       = 255
+   QNT_ID_BERG_KING_POLITCS_7       = 256
+
+   QNT_ID_BERG_KING_SPIDER_QUEST_1  = 257
+   QNT_ID_BERG_KING_SPIDER_QUEST_2  = 258
+   QNT_ID_BERG_KING_SPIDER_QUEST_3  = 259
 
    // Quest misc constants
 
@@ -3842,6 +3970,8 @@
    Q_R2_HAS_HEALTH_LEVEL         = 9   // [Q_R2_, minHPs]             (calls GetMaxHealth)
    Q_R2_DOES_NOT_HAVE_ITEM       = 10  // [Q_R2_, itemclass]
    Q_R2_NECRO_GUILD_ACTIVE       = 11  // [Q_R2_, boolean]            (is necromancer guild active?)
+   Q_R2_HAS_COMPLETED_QUEST_ID   = 12  // [Q_R2_, quest ID]           (checks quest history, successful quest)
+   Q_R2_HAS_FAILED_QUEST_ID      = 13  // [Q_R2_, quest ID]           (checks quest history, failed quest)
 
    QUEST_HISTORY_MASK           = 0x0FFFFFF           // bits used in player quest history compound to indicate quest index
    QUEST_HISTORY_SUCCESS           = 0x1000000
@@ -3858,8 +3988,11 @@
    QN_TYPE_USERNAME           = 0x07   // Deliver the name of a user that I give you (NYI)
    QN_TYPE_LOGGEDONNAME       = 0x08   // Deliver the name of an logged-on user that I give you (NYI)
    QN_TYPE_MONSTER            = 0x09   // Kill a monster of a certain type
-   QN_TYPE_MONSTER_ITEMCLASS  = 0x10   // Kill a monster of a certain type, and deliver the newly created dropped item
    QN_TYPE_MONSTER_BRING      = 0x0A   // Bring a charmed monster of this type
+   QN_TYPE_MONSTER_MULTIPLE   = 0x0B   // Kill multiple monsters of this type [class, number]
+
+   QN_TYPE_MONSTER_ITEMCLASS  = 0x10   // Kill a monster of a certain type, and deliver the newly created dropped item
+   QN_TYPE_MAX                = 0x10   // Equal to max value for this 'enum'
 
    // Quest node status values
    QN_STATUS_UNINITIALIZED          = 0x0
@@ -3891,12 +4024,13 @@
    QN_PRIZETYPE_ESTABLISH_NECROGUILD      = 0x11      // Form the Order of Necromancers
    QN_PRIZETYPE_OUTLAW                    = 0x12      // Make the player an outlaw
    QN_PRIZETYPE_NPC_RESPONSE              = 0x13      // Let the QuestTemplate give different responses for each NPC.
-   QN_PRIZETYPE_TRAINING_POINTS           = 0x014     // Award training points.
-   QN_PRIZETYPE_EXPERIENCE_POINTS         = 0x015     // Award "experience points" (gain chance).
-   QN_PRIZETYPE_NO_PVP_FLAG               = 0x016     // Switch the player's pvp off
+   QN_PRIZETYPE_TRAINING_POINTS           = 0x14      // Award training points.
+   QN_PRIZETYPE_EXPERIENCE_POINTS         = 0x15      // Award "experience points" (gain chance).
+   QN_PRIZETYPE_NO_PVP_FLAG               = 0x16      // Switch the player's pvp off
    // Has the form [QN_PRIZETYPE_ITEM_ENUM, ID] where ID is an enum value.
    // Handles prizes with Constructor parameters which can't use QN_PRIZETYPE_ITEMCLASS.
-   QN_PRIZETYPE_ITEM_ENUM                 = 0x017
+   QN_PRIZETYPE_ITEM_ENUM                 = 0x17
+   QN_PRIZETYPE_SPAWN                     = 0x18      // Spawn class at specific rid, row and col
 
    // Quest node prize statistic types
    QN_PRIZE_STAT_MIGHT    = 0x0
@@ -4066,4 +4200,14 @@
    // height offset added or subtracted by default in LoS checks
    // same as OBJECTHEIGHTROO in roofile.h
    LOS_DEFAULT_ZOFFSET = 48
-   
+
+   FOLLOWER_ROLE_BARD  = 0
+   FOLLOWER_ROLE_WARRIOR = 1
+   FOLLOWER_ROLE_WIZARD  = 2
+   FOLLOWER_ROLE_PRIEST  = 3
+   FOLLOWER_ROLE_WARLOCK = 4
+
+   // Different lifting operations
+   LIFT_OFFER = 0
+   LIFT_ACCEPT = 1
+   LIFT_CANCEL = 2

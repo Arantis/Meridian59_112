@@ -48,5 +48,15 @@ properties:
 
 messages:
 
+   IsCookingIngredient()
+   {
+      return TRUE;
+   }
+
+   GetSubstitueReagentClass()
+   {
+      return &WindrootLeaf;
+   }
+
 end
 ////////////////////////////////////////////////////////////////////////////////

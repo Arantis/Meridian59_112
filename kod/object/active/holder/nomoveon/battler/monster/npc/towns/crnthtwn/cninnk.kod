@@ -52,9 +52,10 @@ messages:
    SetForSale()
    {
       plFor_sale = [
-         [ 
+         [
             Create(&LoadoutScroll,#labelled=TRUE),
-            Create(&SetScroll,#labelled=TRUE)
+            Create(&SetScroll,#labelled=TRUE),
+            Create(&Snack)
          ],
          $,
          [

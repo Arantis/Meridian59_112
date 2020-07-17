@@ -1,0 +1,44 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+NyrphlingTreasure is TreasureType
+
+constants:
+
+   include blakston.khd
+
+classvars:
+
+   viTreasure_num = TID_NYRPHLING
+
+properties:
+
+messages:
+
+   Constructed()
+   {
+      plTreasure = [ [ &Diamond, 29],
+                     [ &Ruby, 26],
+                     [ &GreenMushroom, 25],
+                     [ &YellowMushroom, 8],
+                     [ &SpessartineRock, 4],
+                     [ &Lantern, 2],
+                     [ &WarHelm, 2],
+                     [ &HuntingBow, 1],
+                     [ &Machete, 1],
+                     [ &Kukri, 1],
+                     [ &HealWand, 1]
+                   ];
+
+      propagate;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

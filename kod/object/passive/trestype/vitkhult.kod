@@ -27,17 +27,17 @@ messages:
 
    Constructed()
    {
-      plTreasure = [ [ &IvyCirclet, 20 ],
-                     [ &Scimitar, 15 ],
-                     [ &PlateArmor, 10 ],
-                     [ &LongSword, 10 ],
-                     [ &OrcShield, 10 ],
-                     [ &KnightShield, 10 ],
-                     [ &MysticSword, 5 ],
-                     [ &RingInvisibility, 5 ],
-                     [ &FireRing, 5 ],
-                     [ &SeduceWand, 5 ],
-                     [ &BlindWand, 5 ]
+      plTreasure = [ [ &InkyCap, 20],
+                     [ &DarkAngelFeather, 19],
+                     [ &BlueDragonScale, 17],
+                     [ &GrayMushroom, 14],
+                     [ &Knife, 8],
+                     [ &Machete, 8],
+                     [ &TheurgicRemnant, 6],
+                     [ &IceSword, 3],
+                     [ &RubiciteArmor, 3],
+                     [ &HoldWand, 1],
+                     [ &AngelWings, 1]
                    ];
 
       propagate;

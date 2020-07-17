@@ -37,12 +37,11 @@ classvars:
 
    viBulk = 30
    viWeight = 30
-
    viValue_average = 80
 
 properties:
 
-   viNutrition = 30
+   viNutrition = 35
    viFilling = 40
    piNumber = 2
 
