@@ -16,7 +16,7 @@ constants:
 
 resources:
 
-   //include glyph.lkod
+   include glyph.lkod
 
    DesertGlyph_name_rsc = "stone glyph"
    DesertGlyph_icon_rsc = blank.bgf
@@ -64,7 +64,7 @@ classvars:
 
 properties:
 
-   pbDontDispose = TRUE
+   piMonsterFlags = MFLAG_DONT_DISPOSE
    piMax_mana = 100
 
 messages:

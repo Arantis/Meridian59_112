@@ -2139,7 +2139,8 @@ messages:
       if liClient_cmd = BP_REQ_BUY
       {
          oWhat = Nth(client_msg,2);
-         if IsClass(oWhat,&Monster)
+         if IsClass(oWhat,&Monster) 
+            OR IsClass(oWhat,&Flagpole)
          {
             Send(self,@UserBuy,#what=oWhat);
          }
@@ -2174,6 +2175,7 @@ messages:
       {
          oWhat = Nth(client_msg,2);
          if IsClass(oWhat,&Monster)
+            OR IsClass(oWhat,&Flagpole)
          {
             Send(self,@UserBuyItems,#what=oWhat,#item_list=Nth(client_msg,3),
                   #number_list=number_stuff);
@@ -7348,6 +7350,11 @@ messages:
 
       if piFlags & PFLAG_TRANCE
       {
+         if (NOT Send(self,@CanBreakTrance))
+         {
+            return;
+         }
+
          Send(self,@BreakTrance,#event=EVENT_USE);
       }
 
@@ -7365,6 +7372,11 @@ messages:
    {
       if piFlags & PFLAG_TRANCE
       {
+         if (NOT Send(self,@CanBreakTrance))
+         {
+            return;
+         }
+
          Send(self,@BreakTrance,#event=EVENT_USE);
       }
 
@@ -7391,6 +7403,11 @@ messages:
 
       if piFlags & PFLAG_TRANCE
       {
+         if (NOT Send(self,@CanBreakTrance))
+         {
+            return FALSE;
+         }
+
          Send(self,@BreakTrance,#event=EVENT_ATTACK);
       }
 
@@ -7511,6 +7528,7 @@ messages:
          // to cast. If we are already preparing to cast the same spell,
          // don't interrupt our cast.
          if Send(self,@GetTranceAbility) = oSpell
+            OR NOT Send(self,@CanBreakTrance)
          {
             return;
          }
@@ -7649,6 +7667,7 @@ messages:
       if piFlags & PFLAG_TRANCE
       {
          if Send(self,@GetTranceAbility) = oSkill
+            OR NOT Send(self,@CanBreakTrance)
          {
             return;
          }
@@ -9082,6 +9101,7 @@ messages:
          {
             if GetClass(i) = GetClass(what)
                AND i <> what
+               AND Send(i,@GetKarmaCheck) = Send(what,@GetKarmaCheck)
             {
                oLastSpellItem = i;
             }
@@ -10030,6 +10050,7 @@ messages:
       {
          AddPacket(1,BP_USE,4,what);
          SendPacket(poSession);
+         Send(self,@CreateSetList);
 
          if IsClass(what,&Weapon)
          {
@@ -10046,6 +10067,7 @@ messages:
       {
          AddPacket(1,BP_UNUSE,4,what);
          SendPacket(poSession);
+         Send(self,@CreateSetList);
 
          if IsClass(what,&Weapon)
          {
@@ -11740,16 +11762,6 @@ messages:
          if First(i) = index
          {
             return Nth(i,2);
-         }
-      }
-
-      // Check completed list.
-      foreach i in plQuestHistory
-      {
-         if (First(i) & QUEST_HISTORY_MASK) = index
-            AND (First(i) & QUEST_HISTORY_SUCCESS)
-         {
-            return $;
          }
       }
 

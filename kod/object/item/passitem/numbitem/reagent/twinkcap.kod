@@ -16,7 +16,7 @@ constants:
 
 resources:
 
-   //include twinkcap.lkod
+   include twinkcap.lkod
 
    TwinkleCap_name_rsc = "twinkle cap mushroom"
    TwinkleCap_icon_rsc = mushroom.bgf
@@ -52,6 +52,13 @@ messages:
                            #color2=XLAT_TO_BLUE);
       
       propagate;
+   }
+
+   NewGameHour(iHour=0)
+   {
+      Send(self,@ChangeColor,#iHour=iHour);
+
+      return;
    }
 
    ChangeColor(color=0,iHour=0)

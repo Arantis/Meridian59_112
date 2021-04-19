@@ -16,7 +16,7 @@ constants:
 
 resources:
 
-   //include BergJail.lkod
+   include bergjail.lkod
 
    room_BergJail = berg_jail.roo
    room_name_BergJail = "Bouldergate Prison"
@@ -62,6 +62,9 @@ messages:
          #new_row=13,#new_col=2,#fine_row=32,#fine_col=32);
       Send(self,@NewHold,#what=Create(&Brazier),
          #new_row=5,#new_col=2,#fine_row=40,#fine_col=22);
+
+      Send(self,@NewHold,#what=Create(&LootChest,#iColor=LC_ORANGE),
+         #new_row=12,#new_col=4,#fine_row=32,#fine_col=32,#new_angle=ANGLE_EAST);
 
       propagate;
    }

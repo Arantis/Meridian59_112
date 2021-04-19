@@ -29,6 +29,7 @@ EXPORTS
 	InitMenuPopupHandler
 	GetHBitmapFromResource
 	GetAvailableLanguages
+	CacheGetObjectList
 
 ; Keyboard handling
 	KeyAddTable
@@ -131,6 +132,7 @@ EXPORTS
 	DrawBorder
 	DrawWindowBackgroundColor
 	DrawWindowBackgroundBorder
+	GetTransparentBrush
 
 ; Linked lists
 	list_create

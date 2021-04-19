@@ -1,0 +1,46 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+NeruTrollTreasure is TreasureType
+
+constants:
+
+   include blakston.khd
+
+classvars:
+
+   viTreasure_num = TID_NERU_TROLL
+
+   viMinItemDrop = 4
+
+properties:
+
+   piItem_att_chance = 8
+   piDiff_seed = 7
+
+messages:
+
+   InitTreasureLists()
+   {
+      plTreasure = [ [ &NeruditeArmor, 8 ],
+                     [ &MendBattery, 1 ],
+                     [ &InkyCap, 25 ],
+                     [ &NeruditeSword, 14 ],
+                     [ &HealWand, 5 ],
+                     [ &UncutSeraphym, 22 ],
+                     [ &TwinkleCap, 25 ] ];
+
+      plGuaranteedTreasure = [ [ &TwinkleCap, 12, 20] ];
+
+      propagate;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

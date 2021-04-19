@@ -123,6 +123,8 @@ properties:
    pCargo = $
    // A dummy instance of the type of monster that we are awaiting the death of
    poMonster = $
+   // If something was spawned
+   poSpawned = $
 
    // Counter for quests of type QN_TYPE_MONSTER_MULTIPLE
    piMonstersKilled = 0
@@ -1055,7 +1057,9 @@ messages:
 
             oMercenary = Send(oQuester,@GetMercenary);
 
-            if (oMercenary <> $) AND IsClass(oMercenary,&Follower)
+            if (oMercenary <> $
+               AND IsObject(oMercenary)
+               AND IsClass(oMercenary,&Follower))
             {
                Send(oMercenary,@QuestFinished);
             }
@@ -1078,6 +1082,13 @@ messages:
       {
          Send(poMonster,@Delete);
          poMonster = $;
+      }
+
+      // Delete anything spawned
+      if (poSpawned <> $)
+      {
+         Send(poSpawned,@Delete);
+         poSpawned = $;
       }
 
       // Delete cargo if it's a quest item.
@@ -1821,9 +1832,9 @@ messages:
          iCol = Nth(prize,5);
          foreach oQuester in recipients
          {
-            oPrize = Create(cPrizeClass);
+            poSpawned = Create(cPrizeClass);
             Send(Send(SYS,@FindRoomByNum,#num=iRID),@NewHold,
-                  #what=oPrize,#new_row=iRow,#new_col=iCol);
+                  #what=poSpawned,#new_row=iRow,#new_col=iCol);
          }
 
          return;
@@ -1905,6 +1916,11 @@ messages:
    GetQuestMonster()
    {
       return poMonster;
+   }
+
+   GetQuestSpawn()
+   {
+      return poSpawned;
    }
 
    GetDestNPC()
@@ -2106,6 +2122,12 @@ messages:
          pCargo = $;
       }
 
+      // If something was spawned, get rid of it
+      if poSpawned <> $
+      {
+         Send(poSpawned,@Delete);
+      }
+
       if poQuest = $
       {
          Debug("Trying to expire questnode with no owning quest! QN#=",
@@ -2216,7 +2238,12 @@ messages:
       {
          Send(poMonster,@Delete);
       }
+      if poSpawned <> $
+      {
+         Send(poSpawned,@Delete);
+      }
       poMonster = $;
+      poSpawned = $;
       poQuestActivated = $;
       piStatus = QN_STATUS_UNINITIALIZED;
 

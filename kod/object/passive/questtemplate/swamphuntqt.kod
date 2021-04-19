@@ -47,7 +47,7 @@ resources:
       "Return to %s and let %s know the task has been completed."
 
    SwampHuntQuest_completed = \
-      "You gone hunting at the swamp."
+      "You have gone hunting at the swamp."
 
    // Quest resources.
    SwampHuntQuest_trigger = "swamp"
@@ -106,9 +106,9 @@ resources:
       "Currently, you have slain %i towards that target.  "
       "Complete this task and report back to Michael d'Adue."
    SwampHuntQuest_assign_5 = \
-      "No jurisdiction?  Where do our taxed shills go?  A giant bird?!  "
-      "Probably on some distant island, but not here..."
-      "Although... when the sun sets, there's a feeling of an evil presence.  "
+      "No jurisdiction?!  A giant bird?!  BLAH!  "
+      "Probably on some distant island, but not here...Just maybe..."
+      "when the sun sets, there is a feeling of an evil presence.  "
       "Go rally a team and banish these so called night-stalkers."
    SwampHuntQuest_failure_5 = \
       "Subject: Muddy the Waters\n"
@@ -239,7 +239,10 @@ messages:
       if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MONSTER_MULTIPLE,
                #NPC_modifier=QN_NPCMOD_SAME,#monsterlist=[ [&GiantEye, 16] ],
                #timelimit=piTimeLimit,#quest_node_index=QNT_ID_SWAMP_HUNT_5,
-               #prizelist=[ [ QN_PRIZETYPE_TRAINING_POINTS, 100 ] ])
+            #prizelist=[ [ [ QN_PRIZETYPE_ITEMCLASS, &SpessartineRock, 10 ],
+                           [ QN_PRIZETYPE_ITEMCLASS, &WindrootLeaf, 15 ],
+                           [ QN_PRIZETYPE_ITEMCLASS, &Truffle, 5 ],
+                           [ QN_PRIZETYPE_ITEMCLASS, &TwinkleCap, 20 ] ] ])
       {
          Send(oQE,@SetQuestNodeAssignHint,#index=QNT_ID_SWAMP_HUNT_5,
                #new_hint=SwampHuntQuest_assign_5);

@@ -14,7 +14,7 @@ constants:
 
 resources:
 
-   //include windleaf.lkod
+   include windleaf.lkod
 
    WindrootLeaf_name_rsc = "windroot leaf"
    WindrootLeaf_icon_rsc = leaf.bgf
@@ -39,7 +39,7 @@ classvars:
 
 properties:
 
-   piNumber = 3
+   piNumber = 2
 
 messages:
 

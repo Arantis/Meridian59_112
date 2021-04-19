@@ -84,7 +84,7 @@ properties:
    poCaster = $
    poOriginal = $         // Who the EvilTwin is of.
    piGender = GENDER_MALE
-   pbIllusion = TRUE
+   piMonsterFlags = MFLAG_ILLUSION
    piDamagePercent
    piSpellpower = 1
    poArrow = $
@@ -142,6 +142,16 @@ messages:
       {
          oRoom = Send(who,@GetOwner);
          oDestObj = who;
+      }
+
+      if (oRoom = $)
+      {
+         Debug("Tried to place an ET in $ room, poMaster:", poMaster,
+               " poMaster's owner:", Send(poMaster,@GetOwner), " poCaster:",
+               poCaster, " original:", who, " original's owner:",
+               Send(who,@GetOwner));
+         // Don't do anything else to handle this until we know more about
+         // why this happens.
       }
 
       // Attempt to place the ET near but not on top of the target/master.

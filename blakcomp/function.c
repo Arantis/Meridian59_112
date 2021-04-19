@@ -32,6 +32,7 @@
 function_type Functions[] = {
 {"Send",                SENDMESSAGE,     STORE_OPTIONAL, AEXPRESSION,   AEXPRESSION,  ASETTINGS, ANONE},
 {"Create",              CREATEOBJECT,    STORE_OPTIONAL, AEXPRESSION,   ASETTINGS,    ANONE},
+{"SetTrace",            SETTRACE,        STORE_OPTIONAL, ANONE},
 {"Cons",                CONS,            STORE_REQUIRED, AEXPRESSION,   AEXPRESSION,  ANONE},
 {"Length",              LENGTH,          STORE_REQUIRED, AEXPRESSION,   ANONE},
 {"List",                MLIST,           STORE_REQUIRED, AEXPRESSIONS,  ANONE},
@@ -180,6 +181,7 @@ id_struct BuiltinIds[] = {
 {"gameeventengine",I_MISSING,  29,  0,   I_CLASS},
 {"escapedconvict",I_MISSING,   30,  0,   I_CLASS},
 {"testkod",       I_MISSING,   31,  0,   I_CLASS},
+{"initializeserver",I_MISSING, 32,  0,   I_MESSAGE},
 };
 
 int numbuiltins = (sizeof(BuiltinIds)/sizeof(id_struct));

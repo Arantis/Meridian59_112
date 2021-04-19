@@ -26,8 +26,10 @@ properties:
 
 messages:
 
-   Constructed()
+   InitTreasureLists()
    {
+      plGuaranteedTreasure = [ [&Entrootberry, 2, 3] ];
+
       plTreasure = [ [ &Entrootberry, 55],
                      [ &Snack, 5 ],
                      [ &PurpleMushroom, 37 ],

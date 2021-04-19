@@ -16,7 +16,9 @@ constants:
 
 resources:
 
-   dragon_koc_name_rsc = "napyijoa"
+   include dragon.lkod
+
+   dragon_koc_name_rsc = "kokozotz"
    dragon_name_rsc = "dragon"
    dragon_icon_rsc = dragon.bgf
    dragon_desc_rsc = "A terrifyingly huge dragon."

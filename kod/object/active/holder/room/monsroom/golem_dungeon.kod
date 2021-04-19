@@ -197,14 +197,20 @@ messages:
       Send(self,@NewHold,#what=poChest,#new_row=83,#new_col=16,
             #fine_row=32,#fine_col=4);
             
-      poLever1 = Create(&Lever,#description=golem_dungeon_lever_desc);          
+      poLever1 = Create(&Lever,#description=golem_dungeon_lever_desc);
       Send(self,@NewHold,#what=poLever1,#new_row=30,#new_col=32);
-      poLever2 = Create(&Lever,#description=golem_dungeon_lever_desc);          
+      poLever2 = Create(&Lever,#description=golem_dungeon_lever_desc);
       Send(self,@NewHold,#what=poLever2,#new_row=49,#new_col=62);
-      poLever3 = Create(&Lever,#description=golem_dungeon_lever_desc);          
+      poLever3 = Create(&Lever,#description=golem_dungeon_lever_desc);
       Send(self,@NewHold,#what=poLever3,#new_row=28,#new_col=80);
-      poLever4 = Create(&Lever,#description=golem_dungeon_lever_desc);          
+      poLever4 = Create(&Lever,#description=golem_dungeon_lever_desc);
       Send(self,@NewHold,#what=poLever4,#new_row=40,#new_col=73);
+
+      Send(self,@NewHold,#what=Create(&LootChest,#iColor=LC_PURPLE),
+         #new_row=74,#new_col=67,#fine_row=0,#fine_col=32,#new_angle=ANGLE_NORTH_WEST);
+      Send(self,@NewHold,#what=Create(&LootChest,#iColor=LC_ORANGE),
+         #new_row=85,#new_col=43,#fine_row=32,#fine_col=32,#new_angle=ANGLE_NORTH);
+
 
       Send(self,@NewHold,#what=Create(&BookPedestal,
          #name=golem_dungeon_lore_book,#text=golem_dungeon_lore_text),
@@ -232,36 +238,46 @@ messages:
    ResetTreasureList()
    {
       // All chances (first number) should add up to 100.
-      plTreasuresList = [ [ 1, TREASURE_OBJECT, &RubiciteArmor, 1 ],
-                          [ 3, TREASURE_WEAPON, &Machete, WA_BLINDER ],
-                          [ 2, TREASURE_WEAPON, &Machete, WA_PURGER ],
-                          [ 3, TREASURE_WEAPON, &Machete, WA_PARALYZER ],
-                          [ 3, TREASURE_WEAPON, &Knife, WA_PARALYZER ],
-                          [ 3, TREASURE_WEAPON, &Knife, WA_BLINDER ],
-                          [ 5, TREASURE_WEAPON, &Maul, WA_BLINDER ],
-                          [ 3, TREASURE_WEAPON, &Maul, WA_PURGER ],
-                          [ 1, TREASURE_WEAPON, &Kukri, WA_PURGER ],
-                          [ 1, TREASURE_WEAPON, &Kukri, WA_PARALYZER ],
-                          [ 1, TREASURE_WEAPON, &Kukri, WA_PURGER ],
-                          [ 3, TREASURE_WEAPON, &Hatchet, WA_BLINDER ],
-                          [ 3, TREASURE_WEAPON, &Hatchet, WA_PARALYZER ],
-                          [ 6, TREASURE_OBJECT, &FireSword, 1 ],
+      plTreasuresList = [ [ 1, TREASURE_OBJECT, &RubiciteRock, 20 ],
+                          [ 1, TREASURE_OBJECT, &FireSword, 1 ],
+                          [ 1, TREASURE_OBJECT, &Prism, 1 ],
+                          [ 2, TREASURE_OBJECT, &Lyre, 1 ],
                           [ 3, TREASURE_OBJECT, &OfferingKraanan, 1 ],
                           [ 3, TREASURE_OBJECT, &OfferingShalille, 1 ],
                           [ 3, TREASURE_OBJECT, &OfferingRiija, 1 ],
                           [ 3, TREASURE_OBJECT, &OfferingQor, 1 ],
-                          [ 3, TREASURE_OBJECT, &OfferingFaren, 1 ],
-                          [ 2, TREASURE_OBJECT, &OfferingJala, 1 ],
-                          [ 1, TREASURE_OBJECT, &Prism, 1 ],
-                          [ 3, TREASURE_OBJECT, &TrueLute, 1 ],
-                          [ 5, TREASURE_OBJECT, &GreenMushroom, 25 ],
-                          [ 7, TREASURE_OBJECT, &Truffle, 20 ],
+                          [ 4, TREASURE_OBJECT, &OfferingFaren, 1 ],
+                          [ 4, TREASURE_OBJECT, &OfferingJala, 1 ],
+
+                          [ 2, TREASURE_WEAPON, &Maul, WA_BLINDER ],
+                          [ 2, TREASURE_WEAPON, &Maul, WA_PURGER ],
+                          [ 2, TREASURE_WEAPON, &Maul, WA_PARALYZER ],
+
+                          [ 2, TREASURE_WEAPON, &Machete, WA_BLINDER ],
+                          [ 2, TREASURE_WEAPON, &Machete, WA_PURGER ],
+                          [ 2, TREASURE_WEAPON, &Machete, WA_PARALYZER ],
+
+                          [ 2, TREASURE_WEAPON, &Knife, WA_PARALYZER ],
+                          [ 2, TREASURE_WEAPON, &Knife, WA_BLINDER ],
+                          [ 2, TREASURE_WEAPON, &Knife, WA_BLINDER ],
+
+                          [ 2, TREASURE_WEAPON, &Kukri, WA_PURGER ],
+                          [ 2, TREASURE_WEAPON, &Kukri, WA_PARALYZER ],
+                          [ 2, TREASURE_WEAPON, &Kukri, WA_PURGER ],
+
+                          [ 2, TREASURE_WEAPON, &Hatchet, WA_BLINDER ],
+                          [ 2, TREASURE_WEAPON, &Hatchet, WA_PARALYZER ],
+                          [ 2, TREASURE_WEAPON, &Hatchet, WA_PURGER ],
+                          
+                          [ 5, TREASURE_OBJECT, &SpessartineRock, 10 ],
                           [ 5, TREASURE_OBJECT, &InkyCap, 20 ],
                           [ 5, TREASURE_OBJECT, &BlueDragonScale, 20 ],
-                          [ 5, TREASURE_OBJECT, &EntrootBerry, 50 ],
-                          [ 5, TREASURE_OBJECT, &DarkAngelFeather, 20 ],
-                          [ 6, TREASURE_OBJECT, &Ruby, 35 ],
-                          [ 3, TREASURE_OBJECT, &Money, 25000 ]
+                          [ 5, TREASURE_OBJECT, &Ruby, 20 ],
+                          [ 5, TREASURE_OBJECT, &Yrxlsap, 20 ],
+                          [ 5, TREASURE_OBJECT, &Money, 25000 ],
+                          [ 5, TREASURE_OBJECT, &GreenMushroom, 20 ],
+                          [ 5, TREASURE_OBJECT, &Truffle, 25 ],
+                          [ 5, TREASURE_OBJECT, &WindrootSeed, 25 ]
                         ];
 
       return;
@@ -273,13 +289,13 @@ messages:
 
       iNumPlayers = Send(self,@CountHeroes);
 
-      if iNumPlayers > 5
+      if iNumPlayers > 4
       {
          iNumPlayers = Random(3,5);
       }
       else
       {
-         iNumPlayers = Random(1,iNumPlayers);
+         iNumPlayers = Random(1,iNumPlayers+1);
       }
 
       while iNumPlayers > 0
@@ -444,7 +460,7 @@ messages:
 
    SomethingKilled(what = $, victim = $)
    {
-      if IsClass(victim,&FireElementalChampion)
+      if IsClass(victim,&FireElementalBoss)
       {
          Send(self,@DoEndTreasure);
          Send(poChest,@LockChest,#bLocked=FALSE);
@@ -553,9 +569,9 @@ messages:
    {
       ptBossTimer = $;
       if pbCanSpawnBoss
-         AND NOT Send(self,@CountHoldingHowMany,#class=&FireElementalChampion)
+         AND NOT Send(self,@CountHoldingHowMany,#class=&FireElementalBoss)
       {
-         Send(self,@NewHold,#what=Create(&FireElementalChampion),
+         Send(self,@NewHold,#what=Create(&FireElementalBoss),
              #new_row=84,#new_col=21);
          Send(self,@SomethingWaveRoom,
              #wave_rsc=golem_dungeon_lava_spash_sound,#what=self);
@@ -593,7 +609,7 @@ messages:
       ptMaintenance = $;
       
       if Send(self,@CountHoldingHowMany,#class=&FireElemental) 
-         OR Send(self,@CountHoldingHowMany,#class=&FireElementalChampion)
+         OR Send(self,@CountHoldingHowMany,#class=&FireElementalBoss)
       {
           ptMaintenance = CreateTimer(self,@ResetDungeon,MAINTENANCE_DELAY);
           return FALSE;

@@ -1486,6 +1486,25 @@ messages:
       return n;
    }
 
+   CountMonstersWithMonsterFlag(flag=0)
+   {
+      local n, i, each_obj;
+
+      n = 0;
+
+      foreach i in plActive
+      {
+         each_obj = First(i);
+         if (IsClass(each_obj, &Monster)
+            AND Send(each_obj,@CheckMonsterFlag,#flag=flag))
+         {
+            ++n;
+         }
+      }
+
+      return n;
+   }
+
    ReqSomethingAttack(what = $,victim = $, use_weapon = $, stroke_obj = $,
                       report = TRUE)
    {
@@ -1644,6 +1663,39 @@ messages:
       }
 
       return TRUE;
+   }
+
+   IsOpenFactionCombatAttack(what = $, victim = $)
+   "Faction combat in contested flagpole zones allows any guilded player "
+   "to attack any other guilded player, except if they are in the same guild "
+   "or allies."
+   {
+      local oFlagPole, oGuild, oVictimGuild;
+
+      if (what = $ OR victim = $)
+      {
+         Debug("IsOpenFactionCombatAttack called with bad data: ", what, victim);
+
+         return FALSE;
+      }
+
+      oFlagPole = Send(self,@FindHoldingActive,#Class=&Flagpole);
+
+      if (oFlagPole <> $
+         AND Send(oFlagPole,@IsClaimAttemptInProgress))
+      {
+         oGuild = Send(what,@GetGuild);
+         oVictimGuild = Send(victim,@GetGuild);
+         if (oGuild <> $
+            AND oVictimGuild <> $
+            AND (oGuild <> oVictimGuild)
+            AND NOT (Send(oGuild,@IsAlly,#otherguild=oVictimGuild)))
+         {
+            return TRUE;
+         }
+      }
+
+      return FALSE;
    }
 
    AddBaseLight(amount=$)
@@ -5442,7 +5494,8 @@ messages:
          if Send(each_obj,@IsIllusion)
             AND Random(1,100) <= iChance
          {
-            if (IsClass(each_obj,&Monster))
+            if (IsClass(each_obj,&Monster)
+               AND NOT Send(each_obj,@IsAnimated))
             {
                if (Send(who,@AllowBattlerAttack,#victim=each_obj,
                         #stroke_obj=stroke_obj))

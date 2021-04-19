@@ -109,7 +109,7 @@ messages:
          return FALSE;
       }
 
-      if (Send(oRoom,@CountHoldingHowMany,#class=&monster) > 25)
+      if (Send(oRoom,@CountHoldingHowMany,#class=&Monster) > 25)
          AND NOT IsClass(oRoom,&SurvivalRoom)
       {
          Send(who,@MsgSendUser,#message_rsc=Animate_failed_full_rsc);
@@ -203,8 +203,8 @@ messages:
       {
          oRisen = Create(&DaemonSkeleton);
       }
-
-      Send(oRisen,@SetIllusion,#value=TRUE);
+      Send(oRisen,@SetMonsterFlag,#flag=MFLAG_ILLUSION | MFLAG_ANIMATED,
+            #value=TRUE);
 
       // Place the minion
       Send(oRoom,@NewHold,#what=oRisen,#new_row=Send(oTarget,@GetRow),

@@ -1,0 +1,417 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+Harbinger is Wanderer
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include harbinger.lkod
+
+   Harbinger_name_rsc = "Harbinger"
+   Harbinger_icon_rsc = qw02i.bgf
+   Harbinger_desc_rsc =  \
+      "This floating body is an avatar of pure evil.  His limbless body "
+      "smells of graverot, and maggots can be seen in the folds of his skin.  "
+      "The Harbinger drips a foul ichor as he moves, and gives off an aura of "
+      "pure, decisive malevolance."
+
+   Harbinger_projectile_icon = spblast.bgf
+
+   Harbinger_sound_hit = lich_atk.ogg
+   Harbinger_sound_aware = lich_awr.ogg
+   Harbinger_sound_death = lich_die.ogg
+
+   Harbinger_relic = "...my summoning scepter...thank you mortal..."
+
+classvars:
+
+   vrName = Harbinger_name_rsc
+   vrIcon = Harbinger_icon_rsc
+   vrDesc = Harbinger_desc_rsc
+
+   vrSound_hit = Harbinger_sound_hit
+   vrSound_miss = Harbinger_sound_hit
+   vrSound_aware = Harbinger_sound_aware
+   vrSound_death = Harbinger_sound_death
+
+   viAttributes = MOB_RECEIVE | MOB_SELLER | MOB_SPASM
+   viOccupation = MOB_ROLE_WIZARD
+   viDefault_behavior = 0
+
+   viLevel = 200
+   viAttack_type = ATK_TYPE_CLAW
+   viSpeed = SPEED_VERY_FAST
+   viDifficulty = 8
+   viVisionDistance = 40
+   viMeleeRange = 128
+   viFireRange = 320
+   viAttacks = ATTACK_SLASH
+
+   viMeleePriority = 600
+   viFirePriority = 400
+   viMovePriority = 300
+
+   vbCanBleed = FALSE
+   vbCanBurn = FALSE
+
+   viNightVision = 255
+
+   viBonusXP = 1000
+   viBonusTP = 50
+
+properties:
+
+   piNameColor = NC_NPC
+   piDrawEffectFlag = OF_BOUNCING
+   pbEventMode = FALSE
+   pbAttackMode = FALSE
+
+   ptLeaveTimer = $
+
+   piMonsterFlags = MFLAG_DONT_DISPOSE
+   piReputationGroup = REP_UNDEAD
+
+   piHealthFactor = 7
+
+messages:
+
+   Constructor()
+   {
+      plResistances = [ [-SPL_TYPE_ALL, 60],
+                        [ATK_TYPE_ALL, 60],
+                        [ATK_TYPE_NERUDITE, -20 ],
+                        [ATK_TYPE_BLUDGEON, -20 ],
+                        [ATK_TYPE_SILVER, -60 ],
+                        [-SPL_TYPE_COLD, 90],
+                        [-SPL_TYPE_UNHOLY, 90 ],
+                        [-SPL_TYPE_ACID, 30 ],
+                        [-SPL_TYPE_SHOCK, -20],
+                        [-SPL_TYPE_FIRE, -20 ],
+                        [-SPL_TYPE_HOLY, -40 ],
+                        [-SPL_TYPE_HUNTERSWORD, -90 ]
+                      ];
+
+      plActions =  [ [SID_SPIRIT_BLAST], [SID_HOLD],
+                     [SID_SLOW,500,0,MAX_KOD_INT,0,1200,99,COMBAT_ACTION_HARM],
+                     [SID_CURSE_WEAPON,200,0,16384,0,600,99,COMBAT_ACTION_HARM],
+                     [SID_DARKNESS,0,0,MAX_KOD_INT,1000,0,99,COMBAT_ACTION_NEUTRAL] ];
+
+      plWantedItems = [&Scepter];
+
+      propagate;
+   }
+
+   Constructed()
+   {
+      if (piHealthFactor > 0)
+      {
+         piMax_Health *= piHealthFactor;
+      }
+      // piHealth uses high-precision numbers, so multiply by 100.
+      piHealth = piMax_Health * 100;
+
+      propagate;
+   }
+
+   Delete()
+   {
+      if ptLeaveTimer <> $
+      {
+         DeleteTimer(ptLeaveTimer);
+         ptLeaveTimer = $;
+      }
+
+      propagate;
+   }
+
+   SetForSale()
+   {
+      plFor_sale = [ $,$,$,$ ];
+
+      return;
+   }
+
+   UserEntered(who=$)
+   {
+      local iAction;
+
+      iAction = Send(who,@GetAction);
+
+      if iAction = UA_SAD
+      {
+         Send(self,@SetMood,#new_mood=piMood+1);
+      }
+      else if iAction = UA_HAPPY
+      {
+         Send(self,@SetMood,#new_mood=piMood-1);
+      }
+      else if iAction = UA_WRY
+      {
+         Send(self,@SetMood,#new_mood=piMood+2);
+      }
+
+      propagate;
+   }
+
+   CreateDestinationList()
+   {
+      plDestinations = [ [RID_TOS_CRYPT, 21, 4], [RID_CASTLE1, 20, 37],
+                         [RID_MAR_CRYPT1, 13, 37], [RID_RATCAVE3, 38, 45] ] ;
+      return;
+   }
+
+   CheckWhyWanted(obj=$,who=$)
+   {
+      if NOT pbEventMode
+         AND IsClass(obj,&Scepter)
+      {
+         Send(self,@SayToOne,#target=who,#message_rsc=Harbinger_relic);
+         Send(self,@EnableEventMode);
+         ptLeaveTimer = CreateTimer(self,@TriggerEvent,Random(2500,5000));
+
+         return TRUE;
+      }
+
+      propagate;
+   }
+
+   TriggerEvent(timer = $)
+   {
+      if (ptLeaveTimer <> $
+         AND ptLeaveTimer <> timer)
+      {
+         DeleteTimer(ptLeaveTimer);
+      }
+
+      ptLeaveTimer = $;
+
+      piHealth = piMax_Health * 100;
+      Send(SYS,@StartEvent,#event_type=&TriggeredInvasion);
+
+      return;
+   }
+
+   EnableEventMode(bEnabled=TRUE)
+   {
+      pbEventMode = bEnabled;
+
+      if pbEventMode
+      {
+         piNameColor = NC_EVENTCHAR;
+         Send(self,@SetWandering,#value=FALSE);
+         // SomethingChangedFlags goes here because EnableAttackMode also calls it.
+         if poOwner <> $
+         {
+            Send(poOwner,@SomethingChangedFlags,#what=self);
+         }
+      }
+      else
+      {
+         piNameColor = NC_NPC;
+         Send(self,@SetWandering,#value=TRUE);
+         Send(self,@EnableAttackMode,#bEnabled=FALSE);
+         // Reset harbinger health.
+         piHealth = piMax_Health * 100;
+      }
+
+      return;
+   }
+
+   EnableAttackMode(bEnabled=TRUE)
+   {
+      local oTarget;
+
+      pbAttackMode = bEnabled;
+
+      Send(self,@ResetBehaviorFlags);
+
+      if pbAttackMode
+      {
+         oTarget = Send(self,@GetClosestEnemy);
+         if (oTarget = $)
+         {
+            Send(self,@EnterStateMove,#actnow=TRUE);
+         }
+         else
+         {
+            Send(self,@TargetSwitch,#what=oTarget,#iHatred=100);
+            Send(self,@EnterStateEngage,#target=oTarget,#actnow=TRUE);
+         }
+      }
+
+      if poOwner <> $
+      {
+         Send(poOwner,@SomethingChangedFlags,#what=self);
+      }
+
+      return;
+   }
+
+   GetObjectFlags(what=$)
+   {
+      local iFlags;
+
+      iFlags = viObject_flags | piDrawEffectFlag;
+
+      if (pbEventMode)
+      {
+         iFlags &= ~OF_BUYABLE | ~OF_OFFERABLE;
+      }
+      else
+      {
+         iFlags |= OF_BUYABLE | OF_OFFERABLE;
+      }
+
+      if (NOT pbAttackMode)
+      {
+         iFlags &= ~OF_ATTACKABLE;
+      }
+
+      return iFlags;
+   }
+
+   DMCanArmageddon()
+   {
+      return FALSE;
+   }
+
+   CanEvilTwin()
+   {
+      return FALSE;
+   }
+
+   GetProjectileIcon()
+   {
+      return Harbinger_projectile_icon;
+   }
+
+   SendProjectileAnimation()
+   {
+      AddPacket(1, ANIMATE_CYCLE, 4, 40, 2, 2, 2, 2);  // 40ms between animations
+
+      return;
+   }
+
+   GetProjectileSpeed()
+   {
+      return 20;
+   }
+
+   GetProjectileRange()
+   {
+      return 100;
+   }
+
+   GetProjectileLightFlags()
+   {
+      return PROJ_FLAG_LIGHT_SOURCE | PROJ_FLAG_TRANSPARENT50;
+   }
+
+   GetProjectileLightIntensity()
+   {
+      return 10;
+   }
+
+   GetProjectileLightColor()
+   {
+      return LIGHT_DPURPLE;
+   }
+
+   AssessDamage()
+   {
+      // Only possible to do damage while it is in "attack mode"
+      if NOT pbAttackMode
+      {
+         return 0;
+      }
+
+      propagate;
+   }
+
+   Killed(what=$)
+   {
+      local oTreasure, lTreasure, bComma;
+
+      Debug("Harbinger killed! Reward is: ");
+      ClearTempString();
+      bComma = FALSE;
+      foreach lTreasure in [plActive, plPassive]
+      {
+         foreach oTreasure in lTreasure
+         {
+            if Send(oTreasure,@DropOnDeath)
+            {
+               if (bComma)
+               {
+                  AppendTempString(", ");
+               }
+               else
+               {
+                  bComma = TRUE;
+               }
+               if IsClass(oTreasure,&NumberItem)
+               {
+                  AppendTempString(Send(oTreasure,@GetNumber));
+                  AppendTempString(" ");
+               }
+               AppendTempString(Send(oTreasure,@GetName));
+
+               Send(poOwner,@NewHold,#what=oTreasure,
+                  #new_row=piRow,#new_col=piCol,
+                  #fine_row=piFine_row,#fine_col=piFine_col,
+                  #new_angle=Send(self,@GetAngle));
+            }
+         }
+      }
+      Debug(GetTempString());
+
+      Send(self,@EnableEventMode,#bEnabled=FALSE);
+      Send(self,@NextDest);
+
+      return;
+   }
+
+   NewHoldObject(what=$)
+   {
+      // Override to allow this class to hold objects; used for dropping loot when killed.
+      Send(self,@HolderAddNode,#node=what);
+
+      return;
+   }
+
+   TweakBehavior()
+   {
+      if pbAttackMode
+      {
+         piBehavior |= AI_MOVE_OPTIMAL_RANGE | AI_FIGHT_SWITCHALOT
+            | AI_FIGHT_HYPERAGGRESSIVE | AI_FIGHT_LASHOUT;
+      }
+      else
+      {
+         piBehavior = AI_NPC | AI_NOMOVE | AI_NOFIGHT;
+      }
+
+      return;
+   }
+
+   ZeroVigor()
+   "Harbinger has endless energy, and doesn't need to rest."
+   {
+      Send(self,@GainVigor,#amount=piVigor_rest_threshold);
+
+      return;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

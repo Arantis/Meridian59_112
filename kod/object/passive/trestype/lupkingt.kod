@@ -27,9 +27,9 @@ properties:
 
 messages:
 
-   Constructed()
+   InitTreasureLists()
    {
-      plTreasure = [ [ &BlueDragonScale, 25 ],
+      plTreasure = [ [ &WindrootLeaf, 25 ],
                      [ &InkyCap, 20 ],
                      [ &JalaNecklace, 10 ],
                      [ &YellowMushroom, 10],
@@ -43,6 +43,11 @@ messages:
                      [ &IvyCirclet, 2 ],
                      [ &DiscordScroll, 1 ]
                    ];
+
+      plGuaranteedTreasure = [ [&BlueDragonScale, 12, 20],
+                               [&WindrootLeaf, 18, 30],
+                               [&InkyCap, 8, 15]
+                             ];
 
       propagate;
    }

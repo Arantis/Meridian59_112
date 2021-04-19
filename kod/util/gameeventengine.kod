@@ -16,6 +16,8 @@ constants:
 
 resources:
 
+   include gameeventengine.lkod
+
    event_success_rsc = "Success."
    event_failure_rsc = "Failure."
    event_failure_duplicate_rsc = \
@@ -37,7 +39,7 @@ messages:
 
    Constructor()
    {
-      Send(self,@Recreate);
+      Send(self,@RecreateRandomEvents);
 
       return;
    }
@@ -70,11 +72,14 @@ messages:
          Send(i,@Recreate);
       }
 
-      plRandomEvents = $;
+      Send(self,@RecreateRandomEvents);
 
-      Debug("Creating Events");
-      plRandomEvents = Cons(&RatInvasion,plRandomEvents);
-      plRandomEvents = Cons(&OrcInvasion,plRandomEvents);
+      return;
+   }
+
+   RecreateRandomEvents()
+   {
+      plRandomEvents = [&RatInvasion, &OrcInvasion];
 
       return;
    }
@@ -702,12 +707,12 @@ messages:
    FindEventOfType(event_type=$)
    {
       local i;
-      
+
       if (event_type = $)
       {
          return;
       }
-      
+
       // if the event is unique (they are by default) then there should only be
       // one in this list.  If the event is not unique this will only return the
       // first match found, consider using FindAllEventsOfType instead.
@@ -718,40 +723,20 @@ messages:
             return i;
          }
       }
-      
+
       return;
-      
    }
-   
+
    FindAllEventsOfType(event_type=$)
    {
-      local i, lEvents;
-    
-      lEvents = $;
-    
       if (event_type=$)
       {
          return;
       }
-      
-      foreach i in plActiveEvents
-      {
-         if (GetClass(i) = event_type)
-         {
-            if lEvents = $
-            {
-               lEvents = [i];
-            }
-            else
-            {
-               lEvents = Cons(lEvents,i);
-            }
-         }
-      }
-      
-      return lEvents;
+
+      return GetAllListNodesByClass(plActiveEvents, 0, event_type);
    }
-   
+
    IsChaosNightActive()
    {
       return ((piActiveEventsFlagHi & GAMEEVENT_HIBYTE_CHAOS)

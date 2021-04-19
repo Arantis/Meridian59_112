@@ -1,0 +1,220 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+///////////////////////////////////////////////////////////////////////////////
+TrollCave is MonsterRoom
+
+constants:
+
+   include blakston.khd
+
+   BOSS_ROW = 18
+   BOSS_COL = 25
+
+   SEC_CAVE_EXIT = 2
+
+resources:
+
+   include trollcave.lkod
+
+   room_TrollCave = trollcave2.roo
+   room_name_TrollCave ="A Giant's Hollow"
+   TrollCave_music = drgnfly.ogg
+
+classvars:
+
+   vrName = room_name_TrollCave
+
+   viTeleport_row = 41
+   viTeleport_col = 25
+
+   viTerrain_type = TERRAIN_MOUNTAIN
+
+   viWeatherZone = WEATHER_ZONE_CV
+   viWeatherMask = WEATHER_MASK_MOUNTAINS
+   // 2 minutes in ms
+   viSpawnTime = 120 * 1000
+
+properties:
+
+   prRoom = room_TrollCave
+   prMusic = TrollCave_music
+   piRoom_num = RID_TROLL_CAVE
+
+   piBaseLight = LIGHT_NICE
+   piOutside_factor = 8
+
+   piDirectional_percent = DIRECTIONAL_PERCENT_OUTDOORS
+
+   pbSnowGroundTexture = TRUE
+
+   piGen_time = 20000
+   piGen_percent = 80
+
+   piInit_count_min = 15
+   piInit_count_max = 18
+
+   piMonster_count_max = 20
+
+   ptBoss_gen = $
+
+messages:
+
+   Constructed()
+   {
+      plMonsters = [ [&Troll, 80], [&StoneTroll, 20] ];
+
+      propagate;
+   }
+
+   Delete()
+   {
+      if ptBoss_gen <> $
+      {
+         DeleteTimer(ptBoss_gen);
+         ptBoss_gen = $;
+      }
+
+      propagate;
+   }
+
+
+   BossGenTimer()
+   "Check if there's a nerudite troll in room.  If not, make one."
+   {
+      local i, bFound;
+
+      ptBoss_gen = $;
+
+      // Skip spawning/timer if no users around to see it.
+      if (NOT pbUser_in_room)
+      {
+         return;
+      }
+
+      bFound = FALSE;
+      foreach i in plActive
+      {
+         if IsClass(First(i),&NeruditeTroll)
+         {
+            bFound = TRUE;
+
+            break;
+         }
+      }
+
+      if NOT bFound
+      {
+         Send(self,@NewHold,#what=Create(&NeruditeTroll),#new_row=BOSS_ROW,
+               #new_col=BOSS_COL);
+      }
+
+      ptBoss_gen = CreateTimer(self,@BossGenTimer,viSpawnTime);
+
+      return;
+   }
+
+   FirstUserEntered()
+   {
+      // Spawn a boss now if there's no timer.
+      if (ptBoss_gen = $)
+      {
+         Post(self,@BossGenTimer);
+      }
+
+      propagate;
+   }
+
+   SomethingMoved(what = $,new_row = $, new_col = $)
+   {
+      if (new_row = 12) 
+         AND ((new_col= 2) OR (new_col= 3))
+      {
+         Send(SYS,@UtilGoNearSquare,#what=what,
+              #where=Send(SYS,@FindRoomByNum,#num=RID_I8),
+              #new_row=53,#new_col=41,
+              #new_angle=ANGLE_WEST);
+
+         return;
+      }
+
+      // Special case: prevent boss from leaving battle zone
+      if IsClass(what,&NeruditeTroll)
+        AND Send(what,@GetSectorIDAtObject) = SEC_CAVE_EXIT
+      {
+         Send(self,@Rumble);
+         Send(what,@HealthRegen);
+
+         Post(self,@SomethingMoved,#what=what,#new_row=BOSS_ROW,#new_col=BOSS_COL);
+      }
+
+      propagate;
+   }
+
+   StartSnow(bOnGround=TRUE)
+   {
+      // Check if we can have weather effects here.
+      if NOT pbWeatherEffects
+      {
+         return;
+      }
+
+      // If there's a sandstorm weather effect here, clear it.
+      if Send(self,@CheckRoomFlag,#flag=ROOM_SANDSTORM)
+      {
+         Send(self,@EndSandstorm);
+      }
+
+      if bOnGround
+      {
+         if pbSnowGroundTexture
+         {
+            // Add snow to floor.
+            Send(self,@ChangeTexture,#id=0,#new_texture=61015,#flags=CTF_FLOOR);
+            Send(self,@ChangeTexture,#id=2,#new_texture=61015,#flags=CTF_FLOOR);
+            Send(self,@ChangeTexture,#id=2,#new_texture=61015,#flags=CTF_FLOOR);
+            // Add darker snow to middle section.
+            Send(self,@ChangeTexture,#id=5,#new_texture=61016,#flags=CTF_FLOOR);
+            // Add darker snow to small vertical ledges.
+            Send(self,@ChangeTexture,#id=15,#new_texture=61016,
+                  #flags=CTF_BELOWWALL);
+         }
+      }
+
+      Send(self,@SetRoomFlag,#flag=ROOM_SNOWING,#value=TRUE);
+      Send(self,@WeatherChanged);
+
+      return;
+   }
+
+   EndSnow(override=FALSE)
+   {
+      if Send(self,@CheckRoomFlag,#flag=ROOM_SNOWING)
+      {
+         Send(self,@SetRoomFlag,#flag=ROOM_SNOWING,#value=FALSE);
+         Send(self,@WeatherChanged);
+      }
+
+      if pbSnowGroundTexture
+         OR override
+      {
+         // Remove snow from floor.
+         Send(self,@RemoveTextureChange,#id=0);
+         Send(self,@RemoveTextureChange,#id=2);
+         Send(self,@RemoveTextureChange,#id=5);
+         // Remove from small vertical ledges.
+         Send(self,@RemoveTextureChange,#id=15);
+
+      }
+
+      return;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

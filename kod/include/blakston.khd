@@ -824,6 +824,8 @@
    RID_TEMPLE_KRAANAN = 801
    RID_TEMPLE_QOR = 802
 
+   RID_TROLL_CAVE = 803
+
    // Same as KE1, must be in kocatan zone
    RID_TEMPLE_RIIJA = 2151
 
@@ -1916,10 +1918,6 @@
    MOVEMENTSPEED_MIN = 10
    MOVEMENTSPEED_MAX = 200
 
-   // Flags indicating enchantments
-   ENCH_PALSY       = 0x01
-   ENCH_DEMENTIA    = 0x20
-
    // Resistance constants
    MAX_RESISTANCE =  100
    NO_RESISTANCE  =    0
@@ -2041,6 +2039,8 @@
    TID_NYRPHLING     = 84
    TID_SWAMP         = 85
    TID_EASTERN_AREA  = 86
+   TID_SPINEBEAST_BOSS = 87
+   TID_NERU_TROLL = 88
 
    // English articles
 
@@ -2125,7 +2125,7 @@
    IA_AUCTIONED            = 25
 
    // Weapon Attributes.  These are attributes only applied to weapons.
-   WA_TRAINING             = 51
+   //WA_TRAINING           = 51
    WA_POISON               = 52
    WA_MYSTIC               = 53
    WA_SPLINTERING          = 54
@@ -2151,6 +2151,13 @@
    WA_FATIGUE              = 74
    WA_SLOW                 = 75
 
+   // Loot Chests
+   LC_GRAY           = 0
+   LC_RED            = 1
+   LC_ORANGE         = 2
+   LC_GREEN          = 3
+   LC_PURPLE         = 4
+
    // Cooking recipes
    CR_NONE        = 0
    CR_SOUP        = 1
@@ -2166,6 +2173,13 @@
    CR_SUSHI       = 11
    CR_MOONSHINE   = 12
    CR_TWINKLECAP  = 13
+
+   // Forgeable Items
+   FI_NONE             = 0
+   FI_RUBICITEARMOR    = 1
+   FI_BLACKAXE         = 2
+   FI_BLACKHAMMER      = 3
+   FI_GOLDARROW        = 4
 
    // Herald shields
 
@@ -2721,6 +2735,20 @@
    BFLAG_MANA_CURSE     = 0x0040
    // Affected by something that changes spellpower of incoming/outgoing spells.
    BFLAG_SPELLPOWER_MOD = 0x0080
+
+   // Monster flags (piMonsterFlags in monster.kod)
+   // Set if a monster is part of harbinger's army.
+   MFLAG_HARBINGER_MOB  = 0x001
+   MFLAG_DONT_DISPOSE   = 0x002
+   MFLAG_ILLUSION       = 0x004
+   MFLAG_ANIMATED       = 0x008
+   MFLAG_EVENT          = 0x010
+   MFLAG_SUMMONED       = 0x020
+   MFLAG_PALSIED        = 0x040
+   MFLAG_DEMENTED       = 0x080
+
+   // Illusion, animated, event, summoned.
+   MFLAG_ALTERED_SPAWN = 0x03C
 
    // Player flags
 
@@ -3559,6 +3587,12 @@
    QNT_ID_WENDIGO_HUNT           = 84
    QNT_ID_BERG_KING_POLITCS      = 85
    QNT_ID_BERG_KING_SPIDER_QUEST = 86
+   QNT_ID_WOLF_HUNT              = 87
+   QNT_ID_JIXA_ESCORT            = 88
+   QNT_ID_ESCORT_ASSASSINATION   = 89
+   QNT_ID_JIXA_BANDIT            = 90
+   QNT_ID_SPINEBEAST_BOSS        = 100
+   QNT_ID_MONSTER_CHARM          = 101
 
    // Quest Node Template IDs. Each quest has multple Quest Nodes.
    QNT_ID_DUKE_JOIN_ONE             = 1
@@ -3897,6 +3931,24 @@
    QNT_ID_BERG_KING_SPIDER_QUEST_2  = 258
    QNT_ID_BERG_KING_SPIDER_QUEST_3  = 259
 
+   QNT_ID_WOLF_HUNT_1               = 260
+   QNT_ID_WOLF_HUNT_2               = 261
+
+   QNT_ID_JIXA_ESCORT_ONE           = 262
+   QNT_ID_JIXA_ESCORT_TWO           = 263
+   
+   QNT_ID_ESCORT_ASSASSINATION_1    = 264
+   QNT_ID_ESCORT_ASSASSINATION_2    = 265
+
+   QNT_ID_JIXA_BANDIT_ONE           = 266
+   QNT_ID_JIXA_BANDIT_TWO           = 267
+
+   QNT_ID_SPINEBEAST_BOSS_1         = 268
+   QNT_ID_SPINEBEAST_BOSS_2         = 269
+
+   QNT_ID_MONSTER_CHARM_ONE         = 270
+   QNT_ID_MONSTER_CHARM_TWO         = 271
+
    // Quest misc constants
 
    // An player must be this close to an NPC to offer/receive items, talk, etc.
@@ -4211,3 +4263,38 @@
    LIFT_OFFER = 0
    LIFT_ACCEPT = 1
    LIFT_CANCEL = 2
+
+   // Different sets that item attributes may contribute to.
+   SET_NONE =                         0x00000000
+   SET_APPRENTICE =                   0x00000001
+   SET_BEAR =                         0x00000002
+   SET_CRAFTSMAN =                    0x00000003
+   SET_DISCIPLE =                     0x00000004
+   SET_ENVY =                         0x00000005
+   SET_FOX =                          0x00000006
+   SET_GREED =                        0x00000007
+   SET_HONOR =                        0x00000008
+   SET_INNOCENCE =                    0x00000009
+   SET_JUSTICE =                      0x0000000A
+   SET_KNIGHT =                       0x0000000B
+   SET_LIBERTY =                      0x0000000C
+   SET_MINSTREL =                     0x0000000D
+   SET_NOBILITY =                     0x0000000E
+   SET_OWL =                          0x0000000F
+   SET_PROTECTOR =                    0x00000010
+   SET_QUALITY =                      0x00000011
+   SET_ROGUE =                        0x00000012
+   SET_SORCEROR =                     0x00000013
+   SET_TRICKSTER =                    0x00000014
+   SET_UTILITY =                      0x00000015
+   SET_VILLAINY =                     0x00000016
+   SET_WARRIOR =                      0x00000017
+   SET_XENOPHILIA =                   0x00000018
+   SET_YOUTH =                        0x00000019
+   SET_ZEAL =                         0x0000001A
+   SET_FREE_ONE =                     0x0000001B
+   SET_FREE_TWO =                     0x0000001C
+   SET_FREE_THREE =                   0x0000001D
+   SET_FREE_FOUR =                    0x0000001E
+   SET_FREE_FIVE =                    0x0000001F
+   SET_SPACER =                       0x00000020

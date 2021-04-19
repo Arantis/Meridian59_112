@@ -24,7 +24,7 @@ constants:
 
 resources:
 
-   //include plantsoil.lkod
+   include plantsoil.lkod
 
    PlantSoil_icon_1_rsc = plantsoil.bgf
    PlantSoil_icon_2_rsc = plantpot.bgf
@@ -84,6 +84,8 @@ messages:
 
    Constructor(bPotted=FALSE)
    {
+      Send(SYS,@RegisterPlantSoil,#what=self);
+
       if bPotted
       {
          vrIcon = PlantSoil_icon_2_rsc;
@@ -92,6 +94,13 @@ messages:
       {
          vrIcon = PlantSoil_icon_1_rsc;
       }
+
+      propagate;
+   }
+
+   Delete()
+   {
+      Send(SYS,@UnregisterPlantSoil,#what=self);
 
       propagate;
    }
@@ -252,22 +261,31 @@ messages:
    {
       local oItem;
 
-      if IsClass(who,&User)
-         AND poOwner = Send(who,@GetOwner)
+      if (who = $
+         OR NOT IsClass(who,&User)
+         OR NOT (poOwner = Send(who,@GetOwner)))
       {
-         oItem = Create(&WindrootLeaf);
-         if Send(who,@ReqNewHold,#what=oItem)
-         {
-            Send(who,@NewHold,#what=oItem);
-            Send(who,@MsgSendUser,#message_rsc=plantsoil_harvest);
-            Send(poOwner,@SomethingWaveRoom,#what=self,#wave_rsc=plantsoil_harvest_snd);
-            Send(self,@UpdatePlantSoil);
-         }
-         else
-         {
-            Send(who,@MsgSendUser,#message_rsc=PlantSoil_no_can_hold);
-            return TRUE;
-         }
+         return FALSE;
+      }
+
+      // Must have LoS.
+      if (NOT Send(poOwner,@LineOfSight,#obj1=who,#obj2=self))
+      {
+         return FALSE;
+      }
+
+      oItem = Create(&WindrootLeaf);
+      if Send(who,@ReqNewHold,#what=oItem)
+      {
+         Send(who,@NewHold,#what=oItem);
+         Send(who,@MsgSendUser,#message_rsc=plantsoil_harvest);
+         Send(poOwner,@SomethingWaveRoom,#what=self,#wave_rsc=plantsoil_harvest_snd);
+         Send(self,@UpdatePlantSoil);
+      }
+      else
+      {
+         Send(who,@MsgSendUser,#message_rsc=PlantSoil_no_can_hold);
+         return TRUE;
       }
 
       return TRUE;

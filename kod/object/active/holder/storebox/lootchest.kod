@@ -1,0 +1,499 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+LootChest is StorageBox
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include lootchest.lkod
+
+   LootChest_name_rsc = "metal box"
+   LootChest_icon_rsc = box3.bgf
+
+   LootChest_desc_rsc = \
+      "This metal box is sturdy and well built.  On the front there appears "
+      "to be a keyhole."
+
+   LootChest_key_disappears = "Your key disappears into thin air!"
+   LootChest_locked = \
+      "This chest appears to be locked."
+
+   LootChest_sound_rsc = kblow3.ogg
+   LootChest_lock_sound_rsc = doorlck.ogg
+
+classvars:
+
+   vrName = LootChest_name_rsc
+   vrIcon = LootChest_icon_rsc
+   vrDesc = LootChest_desc_rsc
+
+   viBulk_hold_max = 50000
+   viWeight_hold_max = $
+
+   viMinNumTreasure = 15
+   viMaxNumTreasure = 30
+
+   // Reset after 1 hour
+   viReset_time = 6000000
+
+properties:
+
+   pbLocked = FALSE
+
+   ptReset_timer = $
+
+   piColor_flags = 0
+   piChestColor = 0
+
+messages:
+
+   Constructor(iColor=0)
+   {
+      Send(self,@SetLootChestColor,#iColor=iColor);
+      Send(self,@ResetLootChest);
+
+      propagate;
+   }
+
+
+   GenerateLootTreasure()
+   {
+      local oObject, iMin, iMax, iRand, lLootList;
+
+      iMin = 0;
+      iMax = Random(viMinNumTreasure,viMaxNumTreasure);
+
+      iRand = Random(1,100);
+      if (piChestColor = LC_GRAY)
+      {
+         if iRand > 66
+         {
+            lLootList = [ &OnyxRock,
+                        &Truffle,
+                        &WindrootLeaf,
+                        &WebMoss,
+                        &BlueDragonScale,
+                        &PlateArmor,
+                        &WarHelm,
+                        &Snack,
+                        &Spideye ];
+         }
+         else if iRand > 33
+         {
+            lLootList = [ &SpessartineRock,
+                        &ObsidianRock,
+                        &OnyxRock,
+                        &TheurgicRemnant,
+                        &EssenceDust,
+                        &BoonBerry,
+                        &WindrootLeaf,
+                        &HealWand,
+                        &Snowball,
+                        &BlankScroll,
+                        &BonkStick,
+                        &Herbs,
+                        &Mushroom,
+                        &ScaleArmor,
+                        &Knife,
+                        &MetalShield,
+                        &Pork,
+                        &WineGoblet,
+                        &TwinkleCap ];
+         }
+         else
+         {
+            lLootList = [ &RubiciteRock,
+                        &ObsidianRock,
+                        &OnyxRock,
+                        &KriipaClaw,
+                        &Mace,
+                        &TwinkleCap ];
+         }
+      }
+      else if (piChestColor = LC_RED)
+      {
+         if iRand > 66
+         {
+            lLootList = [ &Rose,
+                        &Tanktop,
+                        &WindrootLeaf,
+                        &WebMoss,
+                        &BlueDragonScale,
+                        &PlateArmor,
+                        &WarHelm,
+                        &Pork,
+                        &Spideye ];
+         }
+         else if iRand > 33
+         {
+            lLootList = [ &SpessartineRock,
+                        &ObsidianRock,
+                        &OnyxRock,
+                        &TheurgicRemnant,
+                        &EssenceDust,
+                        &BoonBerry,
+                        &WindrootLeaf,
+                        &HealWand,
+                        &Snowball,
+                        &BlankScroll,
+                        &BonkStick,
+                        &Herbs,
+                        &YellowMushroom,
+                        &NeruditeArmor,
+                        &Scimitar,
+                        &Longbow,
+                        &Pork,
+                        &WineGoblet,
+                        &TwinkleCap ];
+         }
+         else
+         {
+            lLootList = [ &RubiciteRock,
+                        &ObsidianRock,
+                        &OnyxRock,
+                        &KriipaClaw,
+                        &Mace,
+                        &TwinkleCap ];
+         }
+      }
+      else if (piChestColor = LC_ORANGE)
+      {
+         if iRand > 66
+         {
+            lLootList = [ &OnyxRock,
+                        &Truffle,
+                        &WindrootLeaf,
+                        &WebMoss,
+                        &BlueDragonScale,
+                        &PlateArmor,
+                        &WarHelm,
+                        &Pork,
+                        &Spideye ];
+         }
+         else if iRand > 33
+         {
+            lLootList = [ &SpessartineRock,
+                        &ObsidianRock,
+                        &OnyxRock,
+                        &TheurgicRemnant,
+                        &EssenceDust,
+                        &BoonBerry,
+                        &WindrootLeaf,
+                        &HealWand,
+                        &Snowball,
+                        &BlankScroll,
+                        &BonkStick,
+                        &Herbs,
+                        &Mushroom,
+                        &ScaleArmor,
+                        &Knife,
+                        &MetalShield,
+                        &Pork,
+                        &WineGoblet,
+                        &TwinkleCap ];
+         }
+         else
+         {
+            lLootList = [ &RubiciteRock,
+                        &ObsidianRock,
+                        &OnyxRock,
+                        &KriipaClaw,
+                        &Mace,
+                        &TwinkleCap ];
+         }
+      }
+      else if (piChestColor = LC_GREEN)
+      {
+         if iRand > 66
+         {
+            lLootList = [ &OnyxRock,
+                        &Truffle,
+                        &WindrootLeaf,
+                        &Cheese,
+                        &BlueDragonScale,
+                        &PlateArmor,
+                        &WarHelm,
+                        &Snowball,
+                        &Mug ];
+         }
+         else if iRand > 33
+         {
+            lLootList = [ &SpessartineRock,
+                        &ObsidianRock,
+                        &OnyxRock,
+                        &TheurgicRemnant,
+                        &EssenceDust,
+                        &BoonBerry,
+                        &WindrootLeaf,
+                        &HealWand,
+                        &Snowball,
+                        &BlankScroll,
+                        &BonkStick,
+                        &Herbs,
+                        &Mushroom,
+                        &ScaleArmor,
+                        &Knife,
+                        &MetalShield,
+                        &Pork,
+                        &WineGoblet,
+                        &TwinkleCap ];
+         }
+         else
+         {
+            lLootList = [ &RubiciteRock,
+                        &ObsidianRock,
+                        &EntrootBerry,
+                        &KriipaClaw,
+                        &Mace,
+                        &TwinkleCap ];
+         }
+      }
+      else if (piChestColor = LC_PURPLE)
+      {
+         if iRand > 66
+         {
+            lLootList = [ &TheurgicRemnant,
+                        &Truffle,
+                        &WindrootLeaf,
+                        &WebMoss,
+                        &BlueDragonScale,
+                        &NeruditeArmor,
+                        &WarHelm,
+                        &InkyCap,
+                        &Spideye ];
+         }
+         else if iRand > 33
+         {
+            lLootList = [ &SpessartineRock,
+                        &ObsidianRock,
+                        &OnyxRock,
+                        &TheurgicRemnant,
+                        &EssenceDust,
+                        &BoonBerry,
+                        &WindrootLeaf,
+                        &HealWand,
+                        &Snowball,
+                        &BlankScroll,
+                        &BonkStick,
+                        &Herbs,
+                        &Mushroom,
+                        &ScaleArmor,
+                        &GoldSword,
+                        &TowerShield,
+                        &SpecialGiftTwo,
+                        &SpecialGift,
+                        &TwinkleCap ];
+         }
+         else
+         {
+            lLootList = [ &TheurgicRemnant,
+                        &ObsidianRock,
+                        &OnyxRock,
+                        &KriipaClaw,
+                        &NeruditeSword,
+                        &TwinkleCap ];
+         }
+      }
+
+      while (iMin < iMax)
+      {
+         oObject = Create(Nth(lLootList, Random(1, Length(lLootList))));
+         Send(self,@NewHold,#what=oObject);
+         iMin++;
+      }
+
+      return;
+   }
+
+   SetLootChestColor(iColor=0)
+   {
+      local xlat;
+
+      if (iColor = 0)
+      {
+         piChestColor = Random(LC_RED,LC_PURPLE);
+      }
+      else 
+      {
+         piChestColor = iColor;
+      }
+       
+      switch(piChestColor)
+      {
+         case 1:
+            xlat = PT_GRAY_TO_RED;
+            break;
+         case 2:
+            xlat = PT_GRAY_TO_ORANGE;
+            break;
+         case 3:
+            xlat = PT_GRAY_TO_DGREEN;
+            break;
+         case 4:
+            xlat = PT_GRAY_TO_PURPLE;
+            break;
+         default:
+            xlat = 0;
+            break;
+      }
+
+      piColor_flags = piColor_flags & ITEM_INVERSE_PALETTE_MASK;
+      piColor_flags = piColor_flags | xlat;
+
+      if poOwner <> $
+      {
+         Send(poOwner,@SomethingChanged,#what=self);
+      }
+
+      return;
+   }
+
+   LockChest(bLocked=$)
+   {
+      pbLocked = bLocked;
+
+      if pbLocked
+      {
+         viObject_Flags &= ~OF_CONTAINER;
+         viObject_Flags |= OF_ACTIVATABLE;
+      }
+      else
+      {
+         viObject_Flags |= OF_CONTAINER;
+         viObject_Flags &= ~OF_ACTIVATABLE;
+
+         // Lock the chest again after a given amount of time.
+         ptReset_timer = CreateTimer(self,@ResetLootChest,viReset_time);
+      }
+
+      // Might have different graphic for locked - don't just send flags.
+      if poOwner <> $
+      {
+         Send(poOwner,@SomethingChanged,#what=self);
+      }
+
+      return;
+   }
+
+   ResetLootChest()
+   {
+      ptReset_timer = $;
+
+      Send(self,@GenerateLootTreasure);
+      Send(self,@LockChest,#bLocked=TRUE);
+
+      return;
+   }
+
+   TryActivate(who=$)
+   {
+      local oKey;
+
+      if (who = $
+         OR NOT IsClass(who,&User)
+         OR NOT (poOwner = Send(who,@GetOwner)))
+      {
+         return FALSE;
+      }
+
+      // Must have LoS.
+      if (NOT Send(poOwner,@LineOfSight,#obj1=who,#obj2=self))
+      {
+         return FALSE;
+      }
+
+      oKey = Send(self,@IsHoldingKey,#who=who,#iColor=piChestColor);
+      
+      if oKey
+      {
+         Send(who,@MsgSendUser,#message_rsc=LootChest_key_disappears);
+         Send(who,@WaveSendUser,#wave_rsc=LootChest_sound_rsc);
+         Send(self,@LockChest,#bLocked=FALSE);
+         Send(oKey,@Delete);
+         return TRUE;
+      }
+      else 
+      {
+         Send(who,@MsgSendUser,#message_rsc=LootChest_locked);
+         Send(who,@WaveSendUser,#wave_rsc=LootChest_lock_sound_rsc);
+         return TRUE;
+      }
+
+      return FALSE;
+   }
+
+   IsHoldingKey(who=$,iColor=0)
+   {
+      local i, each_obj, iFound, lPassive;
+
+      iFound = 1;
+      lPassive = Send(who,@GetHolderPassive);
+
+      foreach i in lPassive
+      {
+         each_obj = Send(who,@HolderExtractObject,#data=i);
+         if IsClass(each_obj,&ChestKey)
+         {
+            if iFound <= 1
+               AND (Send(each_obj,@GetKeyColor) = iColor)
+            {
+               return each_obj;
+            }
+            else
+            {
+               --iFound;
+            }
+         }
+      }
+
+      return $;
+   }
+
+   Delete()
+   {
+      if ptReset_timer <> $
+      {
+         DeleteTimer(ptReset_timer);
+         ptReset_timer = $;
+      }
+
+      propagate;
+   }
+
+   SendAnimation()
+   {
+      if (piColor_flags & ITEM_PALETTE_MASK) <> 0
+      {
+         AddPacket(1,ANIMATE_TRANSLATION, 1,piColor_flags&ITEM_PALETTE_MASK);
+      }
+
+      if pbLocked
+      {
+         AddPacket(1,ANIMATE_NONE,2,1);
+       
+         return;
+      }
+
+      AddPacket(1,ANIMATE_NONE,2,2);
+
+      return;
+   }
+
+   GetChestColor()
+   {
+      return piChestColor;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

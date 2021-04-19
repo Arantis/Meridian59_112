@@ -49,9 +49,13 @@
 
 // Minimum # of milliseconds between non-repeat actions
 #define KEY_NOREPEAT_INTERVAL 400
+#define KEY_HOTKEY_INTERVAL 200
+#define KEY_ATTACK_INTERVAL 100
 
 // Last time we performed a non-repeat action
 static DWORD last_norepeat_time;
+static DWORD last_hotkeyrepeat_time;
+static DWORD last_attackrepeat_time;
 
 typedef struct {
    int      state;   // Game state in which this key table applies
@@ -173,7 +177,7 @@ int TranslateKey(UINT vk_key, KeyTable table, void **data)
  */
 void HandleKeys(Bool poll)
 {
-   Bool norepeat;
+   Bool norepeat, hotkeyrepeat, attackrepeat;
    BYTE keys[NUM_KEYS];
    int action, i, j;
    DWORD now;
@@ -208,6 +212,8 @@ void HandleKeys(Bool poll)
       /* Perform action for ALL keys that are down; this allows multiple arrow keys to work */
       /* First, mark all actions that correspond to keys that are down */
       norepeat = False;
+      hotkeyrepeat = False;
+      attackrepeat = False;
       moved = turned = False;
       for (i = 1; i < NUM_KEYS; i++)
       {
@@ -234,10 +240,24 @@ void HandleKeys(Bool poll)
 	 actions[num_actions++] = action;
 	 
 	 /* Only repeat for moving actions and a few others */
-	 if (!RepeatAction(action))
-	    if (now - last_norepeat_time >= KEY_NOREPEAT_INTERVAL)
-	       norepeat = True;
-	    else continue;    // Action retried too soon
+   if (IsTextCommandAction(action))
+   {
+      if (now - last_hotkeyrepeat_time >= KEY_HOTKEY_INTERVAL)
+         hotkeyrepeat = True;
+      else continue;
+   }
+   else if (IsAttackAction(action) || IsTabAction(action))
+   {
+      if (now - last_attackrepeat_time >= KEY_ATTACK_INTERVAL)
+         attackrepeat = True;
+      else continue;
+   }
+   else if (!RepeatAction(action))
+   {
+      if (now - last_norepeat_time >= KEY_NOREPEAT_INTERVAL)
+         norepeat = True;
+      else continue;    // Action retried too soon
+   }
 	 
 	if (IsMoveAction(action))
 		if (moved)
@@ -387,7 +407,11 @@ void HandleKeys(Bool poll)
 	 // If we're doing a non-repeat action, remember the time so that we don't repeat it
 	 if (norepeat)
 	    last_norepeat_time = now;
-	 
+    if (hotkeyrepeat)
+       last_hotkeyrepeat_time = now;
+    if (attackrepeat)
+       last_attackrepeat_time = now;
+
 	 PerformAction(action, action_data);
       }
    }
@@ -399,7 +423,7 @@ void HandleKeys(Bool poll)
  */
 void KeySetLastNorepeatTime(void)
 {
-   last_norepeat_time = timeGetTime();
+   last_norepeat_time = last_hotkeyrepeat_time = last_attackrepeat_time = timeGetTime();
 }
 /***********************************************************************/
 /*

@@ -90,6 +90,9 @@ resources:
    cannot_conveyance_msg = \
       "The guild hall's innate defenses prevent you from casting conveyance!"
 
+   guildhall_not_enough_space = \
+      "Your guild hall does not have enough storage space!"
+
    guildhall_sound_down = shielddn.ogg
    guildhall_sound_up = shieldup.ogg
 
@@ -299,7 +302,7 @@ messages:
       return;
    }
 
-   NewHold(what=$)
+   NewHold(what=$,new_row=0,new_col=0)
    "Don't let anyone log in anyplace but the foyer!"
    {
       if IsClass(what,&Player)
@@ -312,6 +315,13 @@ messages:
          {
             Send(what,@MsgSendUser,#message_rsc=guildhall_raided);
          }
+      }
+      // Handle public chest being replaced by recreateall.
+      else if (IsClass(what,&StorageBox)
+         AND new_row = viPublicChest_row
+         AND new_col = viPublicChest_col)
+      {
+         poPublicChest = what;
       }
 
       propagate;
@@ -1673,6 +1683,31 @@ messages:
    GetPublicChest()
    {
       return poPublicChest;
+   }
+
+   SendToGuildChest(who=$,what=$)
+   {
+      local oBox, oItem, i, lItems;
+
+      if (Send(who,@GetGuild) <> poGuild_owner)
+      {
+         return FALSE;
+      }
+
+      foreach i in Send(self,@GetHolderActive)
+      {
+         oBox = First(i);
+         if IsClass(oBox,&StorageBox)
+            AND oBox <> poPublicChest
+            AND Send(oBox,@ReqNewHold,#what=what,#bTransfer=TRUE)
+         {
+            Send(oBox,@NewHold,#what=what);
+            return TRUE;
+         }
+      }
+
+      Send(who,@MsgSendUser,#message_rsc=guildhall_not_enough_space);
+      return FALSE;
    }
 
 end

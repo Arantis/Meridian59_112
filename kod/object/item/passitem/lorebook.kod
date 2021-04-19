@@ -16,6 +16,8 @@ constants:
 
 resources:
 
+   include lorebook.lkod
+   
    lore_book_icon_rsc = book1.bgf
 
    lore_book_name_rsc = "lore book"
@@ -100,6 +102,16 @@ messages:
    {
       AddPacket(4, vrDesc);
       return;
+   }
+
+   GetTotalBooks()
+   {
+      return viTotalBooks;
+   }
+
+   GetBookNum()
+   {
+      return piBookNum;
    }
 
 end

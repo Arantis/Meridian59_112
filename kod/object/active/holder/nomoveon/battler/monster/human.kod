@@ -2039,6 +2039,21 @@ messages:
       return Send(SYS,@DecodePrimaryColor,#Xlat=iXlat);
    }
 
+   GetCurrentPantsColor()
+   {
+      local i;
+
+      foreach i in plUsing
+      {
+         if IsClass(i,&Pants)
+         {
+            return Send(i,@GetPaletteTranslation);
+         }
+      }
+
+      return Send(self,@GetDefaultPantsTranslation);
+   }
+
    SetSkinTranslation(translation = $)
    {
       piBody_translations &= ~HUMAN_TRANSLATION_SKIN_MASK;
@@ -2376,7 +2391,7 @@ messages:
 
       iOffense = 4*viLevel + 8*piAim;
 
-      if piEnch_flags & ENCH_PALSY
+      if (piMonsterFlags & MFLAG_PALSIED)
       {
          iOffense = iOffense * 3 / 4;
       }
@@ -2454,7 +2469,7 @@ messages:
 
       iDamage += iDamageBonus;
 
-      if piEnch_flags & ENCH_PALSY
+      if (piMonsterFlags & MFLAG_PALSIED)
       {
          iDamage = iDamage * 3 / 4 ;
       }
@@ -2480,10 +2495,17 @@ messages:
    {
       return FALSE;
    }
-   
+
    IsArenaMonster()
    {
       return FALSE;
+   }
+
+   GetGuild()
+   "Stub needed because humans can wield weapons with attributes, which "
+   "might call GetGuild."
+   {
+      return $;
    }
 
 end

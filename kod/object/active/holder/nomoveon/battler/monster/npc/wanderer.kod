@@ -137,7 +137,7 @@ messages:
                   #fine_row=nth(nth(plDestinations,piCurrent_Dest),4),
                   #fine_col=nth(nth(plDestinations,piCurrent_Dest),5));
          }
-
+         Post(self,@UpdateHeight);
          Send(oRoom,@WandererEntered,#mob=self);
       }
 
@@ -200,6 +200,30 @@ messages:
       }
 
       GodLog("NPC: ",Send(self,@GetName),", Maps: ",GetTempString());
+
+      return;
+   }
+
+   DisableWanderer()
+   {
+      local oRoom;
+
+      if (ptTeleport <> $)
+      {
+         DeleteTimer(ptTeleport);
+         ptTeleport = $;
+      }
+      oRoom = Send(SYS,@FindRoomByNum,#num=RID_GODROOM);
+      Send(oRoom,@Teleport,#what=self);
+      pbWandering = FALSE;
+
+      return;
+   }
+
+   EnableWanderer()
+   {
+      pbWandering = TRUE;
+      Send(self,@TeleportTimerTrigger);
 
       return;
    }
