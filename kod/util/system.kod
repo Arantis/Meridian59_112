@@ -3991,6 +3991,7 @@ messages:
       Send(self,@CreateOneItemAttIfNew,#num=IA_NEW_DESCRIPTION,#class=&ItemAttNewDescription);
       Send(self,@CreateOneItemAttIfNew,#num=IA_APPEND_DESCRIPTION,#class=&ItemAttAppendDescription);
       Send(self,@CreateOneItemAttIfNew,#num=IA_QUEST_CARGO,#class=&ItemAttQuestCargo);
+      Send(self,@CreateOneItemAttIfNew,#num=IA_RESTRICTED_LOOT,#class=&ItemAttRestrictedLoot);
 
       // More common, since they can be created by players.
       Send(self,@CreateOneItemAttIfNew,#num=WA_CURSED,#class=&WeapAttCursed);
@@ -6051,6 +6052,7 @@ messages:
       plMonsterTemplates = Cons(Create(&DukeMage,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&PrincessTroop,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&PrincessMage,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = Cons(Create(&NecromancerMage,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&NecromancerTroop,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&Necromancer,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&Follower,#template=TRUE),plMonsterTemplates);
@@ -8983,9 +8985,15 @@ messages:
       return $;
    }
 
-   ResetGlobalHonor()
+   ResetGlobalHonor(bAreYouSure = 0)
    {
       local i;
+
+      // For safety.
+      if (bAreYouSure <> 11523)
+      {
+         return system_failure_rsc;
+      }
 
       foreach i in plUsers
       {
@@ -9000,20 +9008,23 @@ messages:
 
    CreateHonorList()
    {
-      local i;
+      local i, iDefault, iHonor;
 
       plHonorList = $;
 
+      iDefault = Send(SETTINGS_OBJECT,@GetDefaultHonor);
+
       foreach i in plUsers
       {
-         // Don't include DMs, event characters, ineligible characters
-         // or empty character slots.
-         if Send(i,@CanParticipateInHonorSystem)
+         iHonor = Send(i,@GetHonorPoints);
+         // Don't include DMs, event characters, ineligible characters or empty
+         // character slots. User must be active and have non-default points.
+         if (Send(i,@CanParticipateInHonorSystem)
+            AND NOT Send(i,@IsUserHonorInactive)
+            AND iHonor <> iDefault)
          {
-            if (NOT Send(i,@IsUserHonorInactive))
-            {
-               plHonorList = Cons([i, Send(i,@GetHonorPoints)], plHonorList);
-            }
+            plHonorList = Send(self,@AddToSortedList,#what=i,#lList=plHonorList,
+                      #number=iHonor,#bIgnoreDuplicate=FALSE,#bReverse=FALSE);
          }
          else
          {
@@ -9024,7 +9035,7 @@ messages:
       }
 
       Debug("Honor list created.");
-      Send(self,@UpdateHonorList);
+      Send(self,@CalculateHonorRanks);
 
       return;
    }

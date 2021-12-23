@@ -152,6 +152,10 @@ properties:
    // Can users buff each other in safe zones?
    pbBuffOthersInSafeZones = FALSE
 
+   // Can users buy spells which have been disabled, but are still
+   // set as accessible? (i.e. pbEnabled FALSE, pbAccessible TRUE).
+   pbCanBuyDisabledSpells = TRUE
+
    //
    // Guild settings
    //
@@ -439,6 +443,9 @@ properties:
    // Amount of rewards given for triggered invasions
    piHarbingerRewards = 100
 
+   // Default TRUE for testing, set to FALSE manually for 105/112.
+   piCanDMsTPToExpRooms = TRUE
+
 messages:
 
    Constructor()
@@ -671,6 +678,11 @@ messages:
    CanBuffOthersInSafeZones()
    {
       return pbBuffOthersInSafeZones;
+   }
+
+   CanBuyDisabledSpells()
+   {
+      return pbCanBuyDisabledSpells;
    }
 
    //
@@ -1139,6 +1151,18 @@ messages:
    GetHarbingerRewards()
    {
       return piHarbingerRewards;
+   }
+
+   CanDMsTPToExpRooms()
+   {
+      return piCanDMsTPToExpRooms;
+   }
+
+   SetCanDMsTPToExpRooms(value = FALSE)
+   {
+      piCanDMsTPToExpRooms = value;
+
+      return;
    }
 
 end
