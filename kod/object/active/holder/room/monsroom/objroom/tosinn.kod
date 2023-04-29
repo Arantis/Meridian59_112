@@ -40,6 +40,7 @@ classvars:
    viTeleport_col = 8
 
    viTerrain_type = TERRAIN_CITY | TERRAIN_SHOP
+   viRegion = REGION_TOS
 
 properties:
 
@@ -94,7 +95,8 @@ messages:
    {
       local oNews;
 
-
+      // Note this is the master copy of the globe, use &NewsLink for other
+      // rooms/globes of this type.
       oNews = Send(SYS,@FindNewsByNum,#num=NID_ANNOUNCEMENTS);
       if oNews = $
       {

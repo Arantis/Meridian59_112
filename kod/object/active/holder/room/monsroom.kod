@@ -82,6 +82,36 @@ properties:
 
 messages:
 
+   UpdateDatabase()
+   {
+      Send(self,@UpdateDatabaseMobZone);
+
+      propagate;
+   }
+
+   UpdateDatabaseMobZone()
+   {
+      //Wiki Exports: Monster spawn list
+      local i, oMob;
+
+      foreach i in plMonsters
+      {
+         oMob = Send(SYS,@FindMonsterTemplateByClass,#cClass=First(i));
+         if (oMob = $)
+         {
+            Debug("UpdateDatabase() STAT_MONSTER_ZONE export found mob class ",
+               First(i), " with $ template, skipping export.");
+         }
+         else
+         {
+            RecordStat(STAT_MONSTER_ZONE, TAG_INT, piRoom_num, 
+            TAG_RESOURCE, Send(oMob,@GetName), TAG_INT, Nth(i,2));
+         }
+      }
+
+      return;
+   }
+
    Constructed()
    {
       Send(self,@SetMonsterGenPoints);
@@ -265,7 +295,7 @@ messages:
             if IsClass(self,&SurvivalRoom)
                 OR IsClass(self,&SurvivalArena)
             {
-               oMonster = Create(First(lMonster_info),#piSurvivalLevel=piLevel);
+               oMonster = Create(First(lMonster_info),#iSurvivalLevel=piLevel);
             }
             else
             {

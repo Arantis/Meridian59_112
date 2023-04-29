@@ -38,7 +38,7 @@ resources:
    JixaInnBanditQuest_name_rsc = \
       "In with the Crowd"
    JixaInnBanditQuest_desc_rsc = \
-      "Jorgan would to introduce some of his business partners to you.  They "
+      "Jorgan would like to introduce some of his business partners to you.  They "
       "have set up camp outside of Berg.  You may want to dress appropriately "
       "if you want to fit in before meeting with their captain."
    JixaInnBanditQuest_completed_rsc = \
@@ -75,6 +75,8 @@ classvars:
    viIcon_Animation_start = 1
 
 properties:
+
+   pbDisabled = TRUE
 
    piNumPlayers = 1
    piPlayerRestrict = Q_PLAYER_NOTTRIED_RECENTLY
@@ -126,7 +128,7 @@ messages:
                            [ QN_PRIZETYPE_ITEMCLASS, &Machete, 1 ],
                            [ QN_PRIZETYPE_ITEMCLASS, &Truffle, 5 ],
                            [ QN_PRIZETYPE_ITEMCLASS, &WindrootLeaf, 25 ] ] ],
-            #monsterlist=[ &Bandit ],
+            #monsterlist=[ &BanditCaptain ],
             #quest_node_index=QNT_ID_JIXA_BANDIT_TWO)
       {
          Send(oQE,@SetQuestNodeNPCModifier,#index=QNT_ID_JIXA_BANDIT_TWO,

@@ -36,6 +36,8 @@ resources:
    EvilTwin_trouble = \
       "You sense that a evil twin you summoned has gotten you "
       "into some trouble..."
+   EvilTwin_minion_kill = \
+      "%s$0%s$0The evil twin you summoned has slain %s%s as by your orders."
 
 classvars:
 
@@ -66,6 +68,7 @@ classvars:
    vrSound_aware = EvilTwin_sound_aware
    vrSound_death = EvilTwin_sound_death
    vrMinion_trouble = EvilTwin_trouble
+   vrMinion_kill = EvilTwin_minion_kill
 
    viDefault_behavior = AI_FIGHT_SINGLEMINDED | AI_FIGHT_NEWBIESAFE | AI_FIGHT_AGGRESSIVE
 
@@ -89,10 +92,15 @@ properties:
    piSpellpower = 1
    poArrow = $
 
+   // Is original using morph or illusionary form.
+   pbOriginalIllusioned = FALSE
+
 messages:
 
    Constructor(iSpellPower=1,oMaster=$,oTarget=$)
    {
+      local i, oWeapon, iRange;
+
       if oMaster <> $
       {
          poCaster = oMaster;
@@ -102,6 +110,46 @@ messages:
       if oTarget <> $
       {
          poOriginal = oTarget;
+
+         if IsClass(poOriginal,&Monster)
+         {
+            // We have the same actions at our disposal as the original.
+            plActions = ListCopy(Send(poOriginal,@GetActions));
+
+            // Well, almost...
+            foreach i in plActions
+            {
+               if First(i) < SKID_MINIMUM
+               {
+                  // We don't get any spells.
+                  plActions = DelListElem(plActions,i);
+               }
+               else
+               {
+                  // But at least our skills don't cost resources.
+                  SetNth(i,2,0);
+                  SetNth(i,3,0);
+               }
+            }
+         }
+         else
+         {
+            plActions = [[SKID_MINIMUM,0,0,MAX_KOD_INT,50,1,99,COMBAT_ACTION_NEUTRAL]];
+
+            oWeapon = Send(poOriginal,@GetWeapon);
+            iRange = Send(self,@GetAttackRange);
+            iRange *= iRange;
+
+            if IsClass(oWeapon,&RangedWeapon)
+               OR IsClass(oWeapon,&ThrownWeapon)
+            {
+               plActions = Cons([SKID_FIRE,0,0,iRange,100,1,99,COMBAT_ACTION_HARM],plActions);
+            }
+            else
+            {
+               plActions = Cons([SKID_SLASH,0,0,iRange,100,1,99,COMBAT_ACTION_HARM],plActions);
+            }
+         }
       }
 
       piDamagePercent = viDamagePercent;
@@ -679,7 +727,7 @@ messages:
 
    GetAttackRange()
    {
-      local iWeapon;
+      local oWeapon;
 
       if poOriginal = $
       {
@@ -688,11 +736,15 @@ messages:
 
       if IsClass(poOriginal,&User)
       {
-         iWeapon = Send(poOriginal,@GetWeapon);
+         oWeapon = Send(poOriginal,@GetWeapon);
 
-         if iWeapon <> $
+         if oWeapon <> $
          {
-            return Send(iWeapon,@GetRange);
+            if (IsClass(oWeapon,&Monster))
+            {
+               return Send(oWeapon,@GetAttackRange);
+            }
+            return Send(oWeapon,@GetRange);
          }
       }
       else
@@ -763,7 +815,15 @@ messages:
 
       propagate;
    }
-
+   // Notes about SomethingChanged-type calls and ETs:
+   // Reacting to a SomethingChanged from the original by immediately calling
+   // our own SomethingChanged isn't necessarily good - SomethingChanged is
+   // used to change animation states, e.g. playing a swing animation and if
+   // both we and the original are swinging, our SomethingChanged would cut
+   // off our own swing animation. Basically we need to only react to visual
+   // changes - equipping/unequipping an item, flag changes, drawing effect
+   // changes & ignore the rest. Objects that can equip/unequip items MUST
+   // ensure that ET get the OriginalEquipChanged call.
    SomethingChangedFlags(what=$)
    {
       if (what = poOriginal)
@@ -781,58 +841,83 @@ messages:
 
    SomethingChanged(what=$)
    {
-      local oWeapon, iRange, i;
+      local iDrawfx, bIllusioned, bChanged;
 
       if what = poOriginal
       {
+         iDrawfx = piDrawfx;
          piDrawfx = Send(self,@GetDrawingEffects);
+         bChanged = (iDrawfx <> piDrawfx);
 
-         // Reset plActions.
-         plActions = [[SKID_MINIMUM,0,0,MAX_KOD_INT,50,1,99,COMBAT_ACTION_NEUTRAL]];
-
-         // Gotta get the evil twin's correct action list.
-         if IsClass(poOriginal,&User)
+         // If human mobs get morph or illusionary form, this has to change.
+         if (IsClass(poOriginal,&User))
          {
-            oWeapon = Send(poOriginal,@GetWeapon);
-
-            if oWeapon <> $
+            bIllusioned = pbOriginalIllusioned;
+            pbOriginalIllusioned = Send(poOriginal,@IsMorphedOrIllusioned);
+            if (bIllusioned <> pbOriginalIllusioned)
             {
-               iRange = Send(oWeapon,@GetRange);
-               iRange *= iRange;
+               // Morph/ill form requires Post.
+               if (poOwner <> $)
+               {
+                  Post(poOwner,@SomethingChanged,#what=self);
+               }
 
-               if IsClass(oWeapon,&RangedWeapon)
-                  OR IsClass(oWeapon,&ThrownWeapon)
-               {
-                  plActions = Cons([SKID_FIRE,0,0,iRange,100,1,99,COMBAT_ACTION_HARM],plActions);
-               }
-               else
-               {
-                  plActions = Cons([SKID_SLASH,0,0,iRange,100,1,99,COMBAT_ACTION_HARM],plActions);
-               }
-            }
-            else
-            {
-               plActions = Cons([SKID_SLASH,0,0,4096,100,1,99,COMBAT_ACTION_HARM],plActions);
+               propagate;
             }
          }
-         else
-         {
-            iRange = Send(poOriginal,@GetMeleeRange);
-            iRange *= iRange;
-            plActions = Cons([SKID_SLASH,0,0,iRange,100,1,99,COMBAT_ACTION_HARM],plActions);
 
-            iRange = Send(poOriginal,@GetFireRange);
-            iRange *= iRange;
-            plActions = Cons([SKID_FIRE,0,0,iRange,100,1,99,COMBAT_ACTION_HARM],plActions);
-         }
-
-         if poOwner <> $
+         if (poOwner <> $)
+            AND bChanged
          {
             Send(poOwner,@SomethingChanged,#what=self);
          }
       }
 
       propagate;
+   }
+
+   OriginalEquipChanged(what = $)
+   {
+      if (IsClass(what,&Weapon))
+      {
+         Send(self,@OriginalWeaponChanged);
+      }
+      else if (poOwner <> $)
+      {
+         Send(poOwner,@SomethingChanged,#what=self);
+      }
+
+      return;
+   }
+
+   OriginalWeaponChanged()
+   {
+      local oWeapon, iRange, bChanged;
+
+      // Reset plActions.
+      plActions = [[SKID_MINIMUM,0,0,MAX_KOD_INT,50,1,99,COMBAT_ACTION_NEUTRAL]];
+
+      oWeapon = Send(poOriginal,@GetWeapon);
+
+      iRange = Send(self,@GetAttackRange);
+      iRange *= iRange;
+
+      if IsClass(oWeapon,&RangedWeapon)
+         OR IsClass(oWeapon,&ThrownWeapon)
+      {
+         plActions = Cons([SKID_FIRE,0,0,iRange,100,1,99,COMBAT_ACTION_HARM],plActions);
+      }
+      else
+      {
+         plActions = Cons([SKID_SLASH,0,0,iRange,100,1,99,COMBAT_ACTION_HARM],plActions);
+      }
+
+      if poOwner <> $
+      {
+         Send(poOwner,@SomethingChanged,#what=self);
+      }
+
+      return;
    }
 
    DoWave()
@@ -897,20 +982,17 @@ messages:
       {
          oWeapon = Send(poOriginal,@GetWeapon);
 
-         if oWeapon <> $
+         if IsClass(oWeapon,&Touch)
          {
-            if IsClass(oWeapon,&TouchAttackSpell)
-            {
-               piAnimation = PANM_CAST;
-            }
-            else
-            {
-               piAnimation = PANM_WEAPON_ATTACK;
-            }
+            piAnimation = PANM_CAST;
+         }
+         else if IsClass(oWeapon,&Punch)
+         {
+            piAnimation = PANM_FIST_ATTACK;
          }
          else
          {
-            piAnimation = PANM_FIST_ATTACK;
+            piAnimation = PANM_WEAPON_ATTACK;
          }
       }
       else
@@ -930,6 +1012,16 @@ messages:
       }
 
       return;
+   }
+
+   GetSwingTime()
+   {
+      if IsClass(poOriginal,&Monster)
+      {
+         return Send(poOriginal,@GetSwingTime);
+      }
+
+      return Send(Send(poOriginal,@GetStrokeObject),@GetTranceTime);
    }
 
    DoMissileAnimation()
@@ -1139,6 +1231,20 @@ messages:
    CanEvilTwin()
    {
       return FALSE;
+   }
+
+   HitSideEffect(what=$,who=$,amount=0,iNum=$,use_weapon=$,stroke_obj=$)
+   "Called after every non-fatal player hit."
+   {
+      Send(poOriginal,@HitSideEffect,#what=what,#who=who,#amount=amount,
+         #iNum=iNum,#use_weapon=use_weapon,#stroke_obj=stroke_obj);
+
+      propagate;
+   }
+
+   GetWeapon()
+   {
+      return Send(poOriginal,@GetWeapon);
    }
 
 end

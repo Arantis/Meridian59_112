@@ -1,0 +1,35 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+DesertRoom is ObjectRoom
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   Desert_music = desert.ogg
+
+classvars:
+
+   viTerrain_type = TERRAIN_BADLANDS
+   viRegion = REGION_DESERT
+
+   vbIsExpansionRoom = TRUE
+
+properties:
+
+   prMusic = Desert_music
+
+messages:
+
+end
+////////////////////////////////////////////////////////////////////////////////

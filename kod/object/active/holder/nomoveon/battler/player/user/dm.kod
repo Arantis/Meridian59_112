@@ -538,9 +538,9 @@ messages:
       propagate;
    }
 
-   ResetPlayerFlagList()
+   ResetPlayerFlagList(bFlagsOnly=FALSE)
    {
-      local i;
+      local i, oSpell, oSpell1, oSpell2;
 
       Send(self,@ResetPlayerDrawfx,#Sendsomethingchanged=FALSE);
 
@@ -555,7 +555,26 @@ messages:
          piFlags = piFlags | PFLAG_NO_MAGIC;
       }
 
-      SendList(plEnchantments,2,@SetSpellPlayerFlag,#who=self);
+      // Do detect invis first if present.
+      oSpell1 = Send(SYS,@FindSpellByNum,#num=SID_DETECT_INVISIBLE);
+      if (Send(self,@IsEnchanted,#what=oSpell1))
+      {
+         Send(oSpell1,@SetSpellPlayerFlag,#who=self);
+      }
+      oSpell2 = Send(SYS,@FindSpellByNum,#num=SID_DM_DETECT_INVISIBLE);
+      if (Send(self,@IsEnchanted,#what=oSpell2))
+      {
+         Send(oSpell2,@SetSpellPlayerFlag,#who=self);
+      }
+
+      foreach i in plEnchantments
+      {
+         oSpell = Nth(i,2);
+         if (oSpell <> oSpell1) AND (oSpell <> oSpell2)
+         {
+            Send(oSpell,@SetSpellPlayerFlag,#who=self);
+         }
+      }
       SendList(plUsing,0,@SetItemPlayerFlag,#who=self);
 
       if poOwner <> $
@@ -583,7 +602,14 @@ messages:
 
       if poOwner <> $
       {
-         Send(poOwner,@SomethingChanged,#what=self);
+         if bFlagsOnly
+         {
+            Send(poOwner,@SomethingChangedFlags,#what=self);
+         }
+         else
+         {
+            Send(poOwner,@SomethingChanged,#what=self);
+         }
       }
 
       Post(self,@DrawOffense);
@@ -822,19 +848,21 @@ messages:
          GodLog("DM ", Send(self,@GetTrueName), " gave ", what, ": ",
                Send(what,@GetName), " to ", Send(poOffer_who,@GetTrueName));
       }
+      else if (where <> $ AND IsClass(where,&StorageBox))
+      {
+         GodLog("DM ", Send(self,@GetTrueName), " put ", what, ": ",
+               Send(what,@GetName), " into ", Send(where,@GetName),
+               " in ", Send(poOwner,@GetName));
+      }
+      else if (poOwner = $)
+      {
+         GodLog("DM ", Send(self,@GetTrueName), " dropped ", what, ": ",
+               Send(what,@GetName), " into the void ($)");
+      }
       else
       {
-         if (where <> $ AND IsClass(where,&StorageBox))
-         {
-            GodLog("DM ", Send(self,@GetTrueName), " put ", what, ": ",
-                  Send(what,@GetName), " into ", Send(where,@GetName),
-                  " in ", Send(poOwner,@GetName));
-         }
-         else
-         {
-            GodLog("DM ", Send(self,@GetTrueName), " dropped ", what, ": ",
-                  Send(what,@GetName), " in ", Send(poOwner,@GetName));
-         }
+         GodLog("DM ", Send(self,@GetTrueName), " dropped ", what, ": ",
+               Send(what,@GetName), " in ", Send(poOwner,@GetName));
       }
 
       propagate;
@@ -877,11 +905,6 @@ messages:
    {
       if pbImmortal
       {
-         if stroke_obj <> $
-         {
-            Send(stroke_obj,@SendMissMessageToDefender,#who=self,#attacker=what);
-         }
-
          return 0;
       }
 
@@ -942,11 +965,11 @@ messages:
       propagate;
    }
 
-   LoseVigor()
+   LoseVigor(bCheck=FALSE)
    {
       if pbImmortal
       {
-         return 0;
+         return bCheck;
       }
 
       propagate;
@@ -1212,13 +1235,20 @@ messages:
          return FALSE;
       }
 
-      if IsClass(victim,&Follower)
-      {
-         return FALSE;
-      }
-
       if pbImmortal OR Send(self,@IsEventCharacter)
       {
+         if NOT IsClass(victim,&Battler)
+         {
+            Send(self,@MsgSendUser,#message_rsc=player_must_attack_battler);
+
+            return FALSE;
+         }
+
+         if IsClass(victim,&Follower)
+         {
+            propagate;
+         }
+
          return TRUE;
       }
 
@@ -4052,9 +4082,9 @@ messages:
       return (pbMorph OR Send(self,@CheckPlayerFlag,#flag=PFLAG_MORPHED));
    }
 
-   RemoveInaccessibleSpells()
+   RemoveInaccessibleAbilities()
    {
-      // Do not remove "bad" spells from a DM or above.
+      // Do not remove "bad" abilities from a DM or above.
       return;
    }
 

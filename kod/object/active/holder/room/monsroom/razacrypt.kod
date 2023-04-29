@@ -168,6 +168,7 @@ classvars:
    viTeleport_col = 23
 
    viTerrain_type = TERRAIN_NECROPOLIS | TERRAIN_CAVES
+   viRegion = REGION_RAZA
 
    // Tutorial messages are only displayed once unless asked about.
    viInfo_time = FALSE
@@ -205,6 +206,26 @@ properties:
    piPatrolRadius = 1
 
 messages:
+
+   UpdateDatabaseMobZone()
+   {
+      // Wiki Exports: Additional boss monster.
+      local oMob;
+
+      oMob = Send(SYS,@FindMonsterTemplateByClass,#cClass=&BlackMummy);
+      if (oMob = $)
+      {
+         Debug("UpdateDatabase() STAT_MONSTER_ZONE export found mob class ",
+            &BlackMummy, " with $ template, skipping export.");
+      }
+      else
+      {
+         RecordStat(STAT_MONSTER_ZONE, TAG_INT, piRoom_num,
+            TAG_RESOURCE, Send(oMob,@GetName), TAG_INT, -1);
+      }
+
+      propagate;
+   }
 
    Constructed()
    {

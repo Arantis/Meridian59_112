@@ -1,0 +1,209 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+DragonFlyQueen is DragonFly
+
+constants:
+
+   include blakston.khd
+
+   HS_WINGS = 1
+
+resources:
+
+   include dflyq.lkod
+
+   DragonFlyQueen_koc_name_rsc = "kohuzotz"
+   DragonFlyQueen_name_rsc = "dragonfly queen"
+   DragonFlyQueen_icon_rsc = dflo.bgf
+   DragonFlyQueen_desc_rsc = \
+      "The other dragonflies seem to revere this oddly colored female.  She "
+      "looks up at you out of curiosity or hunger, you are not sure which."
+
+   DragonFlyQueen_dead_icon_rsc = dfloX.bgf
+   DragonFlyQueen_dead_name_rsc = "dead dragonfly queen"
+
+   DragonFlyQueen_sound_hit = df_atkm.ogg
+   DragonFlyQueen_sound_miss = df_atkm.ogg
+   DragonFlyQueen_sound_death = df_dth.ogg
+   DragonFlyQueen_sound_aware = df_awr.ogg
+
+   dragonfly_charmed = \
+      "The dragonfly scarfs down the %s and looks at you with "
+      "obvious adoration."
+   dragonfly_notcharmed = \
+      "The dragonfly scarfs down the %s, sniffs your hand, and looks at "
+      "you expectantly."
+   DragonFlyQueen_unwanted_give = \
+      "~k%s%s cocks its head quizzically and sniffs your hand.~n~k"
+
+classvars:
+
+   viIndefinite = ARTICLE_A
+   vrKocName = DragonFlyQueen_koc_name_rsc
+   vrName = DragonFlyQueen_name_rsc
+   vrIcon = DragonFlyQueen_icon_rsc
+   vrDesc = DragonFlyQueen_desc_rsc
+   vrDead_icon = DragonFlyQueen_dead_icon_rsc
+   vrDead_name = DragonFlyQueen_dead_name_rsc
+
+   viSpeed = SPEED_FAST
+   viLevel = 145
+   viVisionDistance = 18
+   viDefault_behavior = AI_FIGHT_AGGRESSIVE
+   viAttributes = MOB_RECEIVE
+   viGender = GENDER_FEMALE
+   viCashmin = 725
+   viCashmax = 2000
+   viWimpy = 2
+
+   vrSound_hit = DragonFlyQueen_sound_hit
+   vrSound_miss = DragonFlyQueen_sound_miss
+   vrSound_aware = DragonFlyQueen_sound_aware
+   vrSound_death = DragonFlyQueen_sound_death
+
+   vrUnwanted_give = DragonFlyQueen_unwanted_give
+
+properties:
+
+   poLastFeeder = $
+
+messages:
+
+   Constructor()
+   {
+      plWantedItems = [&Food];
+
+      propagate;
+   }
+
+   Delete()
+   {
+      poLastFeeder = $;
+
+      propagate;
+   }
+
+   CanAcceptOffer()
+   {
+      return TRUE;
+   }
+
+   SetMaster(oMaster=$)
+   "Override to keep track of the last person to feed the dragonfly queen."
+   "Useful if we need to return control to that person."
+   {
+      poLastFeeder = poMaster;
+
+      propagate;
+   }
+
+   MobSeduceCheck(what=$)
+   "Check if we should return control to the last person to feed us."
+   {
+      if (poMaster = $
+         AND poLastFeeder = what)
+      {
+         Send(self,@SetMaster,#oMaster=what);
+      }
+
+      // Seduce overrides charm via feeding, checked in Monster.
+      propagate;
+   }
+
+   GotWantedItem(who=$, obj = 0)
+   {
+      local oPlayerObj, i;
+
+      if NOT IsClass(obj,&Food)
+      {
+         return FALSE;
+      }
+
+      oPlayerObj = $;
+      foreach i in Send(who,@GetHolderPassive)
+      {
+         if IsClass(i,GetClass(obj))
+         {
+            oPlayerObj = i;
+
+            break;
+         }
+      }
+
+      if oPlayerObj = $
+      {
+         Debug("player offered some food he didn't have.");
+
+         return FALSE;
+      }
+
+      if Send(oPlayerObj,@GetNumber) < Send(obj,@GetNumber)
+      {
+         Debug("Player offered more food than he had.");
+
+         return FALSE;
+      }
+
+      if IsClass(obj,&Meatpie)
+         AND (poMaster = $ OR IsClass(poMaster,&User))
+      {
+         /// Dragonfly is charmed.
+         Send(self,@SetMaster,#oMaster=who);
+         Post(who,@MsgSendUser,#message_rsc=dragonfly_charmed,
+               #parm1=Send(obj,@GetName));
+      }
+      else
+      {
+         Post(who,@MsgSendUser,#message_rsc=dragonfly_notcharmed,
+               #parm1=Send(obj,@GetName));
+      }
+
+      Send(oPlayerObj,@SubtractNumber,#number=Send(obj,@Getnumber));
+      Send(obj,@Delete);
+
+      return TRUE;
+   }
+
+   TweakBehavior(mob = $)
+   {
+      if poMaster <> $
+      {
+         Send(self,@SetBehaviorFlag,#flag=AI_FIGHT_AGGRESSIVE,#value=FALSE);
+         Send(self,@SetBehaviorFlag,#flag=AI_FIGHT_NEWBIESAFE);
+      }
+
+      return;
+   }
+
+   GetObjectFlags(what = $)
+   {
+      local iFlags;
+
+      iFlags = 0;
+
+      if (poMaster = $
+         AND what <> $
+         AND IsClass(what,&User)
+         AND Send(what,@UserDisplayMobQuestActive,#what=self))
+      {
+         iFlags |= OF_MOBKILLQUEST;
+      }
+
+      if piAnimation = ANIM_NONE
+      {
+         return iFlags | OF_ATTACKABLE | OF_OFFERABLE;
+      }
+
+      return iFlags | OF_ATTACKABLE | OF_OFFERABLE | OF_BOUNCING;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

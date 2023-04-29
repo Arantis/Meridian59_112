@@ -1,0 +1,96 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+SpinebeastSmall is Spinebeast
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include spinebeastsmall.lkod
+
+   spinebeastsmall_koc_name_rsc = "imixkimakao"
+   
+   // "spine beast" is the baby version. The adults are "spinebeasts"
+   spinebeastsmall_name_rsc = "spine beast" 
+
+   spinebeastsmall_icon_rsc = spinebeastsmall.bgf
+   spinebeastsmall_desc_rsc = \
+    "Adorable yet fierce, the spine beast is ready to charge at any evil doer "
+    "who would dare to challenge its territory in order to prove its might "
+    "to the rest of the herd.  Even though a young spine beast may not be "
+    "the toughest opponent on its own, adventurers are well advised to keep "
+    "a look out for stronger specimens who may come to the young one's aid."
+   spinebeastsmall_dead_icon_rsc = spinebeastsmallX.bgf
+   spinebeastsmall_dead_name_rsc = "dead spine beast"
+
+   spinebeastsmall_sound_hit = yti_atkh.ogg
+   spinebeastsmall_sound_miss = yti_atkm.ogg
+   spinebeastsmall_sound_death = yti_dth.ogg
+   spinebeastsmall_sound_aware = yti_awr.ogg
+
+classvars:
+
+   vrKocName = spinebeastsmall_koc_name_rsc
+   vrName = spinebeastsmall_name_rsc
+   vrIcon = spinebeastsmall_icon_rsc
+   vrDesc = spinebeastsmall_desc_rsc
+   vrDead_icon = spinebeastsmall_dead_icon_rsc
+   vrDead_name = spinebeastsmall_dead_name_rsc
+
+   viTreasure_type = TID_SPINEBEAST
+   viSpeed = SPEED_FAST
+   viAttack_type = ATK_TYPE_THRUST
+   viDefault_behavior = AI_FIGHT_KARMA_AGGRESSIVE | AI_FIGHT_HYPERAGGRESSIVE
+   viLevel = 90
+   viDifficulty = 6
+   viVisionDistance = 20
+   viMeleeRange = 128
+   viKarma = 85
+   viCashmin = 100
+   viCashmax = 500
+   vrSound_hit = spinebeastsmall_sound_hit
+   vrSound_miss = spinebeastsmall_sound_miss
+   vrSound_aware = spinebeastsmall_sound_aware
+   vrSound_death = spinebeastsmall_sound_death
+
+   viBleedChance = 20
+   viBleedStrength = 3000
+   viBleedDuration = 7000
+
+   vbCanSiphon = FALSE
+
+properties:
+
+   piAnimation = ANIM_NONE
+
+messages:
+
+   Constructed()
+   {
+      plResistances = [ [-SPL_TYPE_COLD, 90],
+                        [-SPL_TYPE_SHOCK, 90],
+                        [-SPL_TYPE_ACID, 10 ],
+                        [-SPL_TYPE_FIRE, 10 ],
+                        [ATK_TYPE_SLASH, 55 ],
+                        [ATK_TYPE_NERUDITE, 25 ],
+                        [ATK_TYPE_PIERCE, 70 ],
+                        [ATK_TYPE_THRUST, 70 ],
+                        [ATK_TYPE_BLUDGEON, 30 ]];
+
+      plReputationEnemies = [REP_UNDEAD];
+
+      propagate;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

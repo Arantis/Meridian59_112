@@ -32,12 +32,12 @@ spell_safety_on = de \
    "keine Unschuldigen angreifen."
 spell_safety_no_unlawful = de \
    "Einer gesetzlosen Person wie %s%s zu helfen wird Dich als Gesetzloser "
-   "ächten. Gut, dass Deine Sicherung aktiviert war!"
+   "ächten.  Gut, dass Deine Sicherung aktiviert war!"
 spell_angel_no_unlawful = de \
    "Einer gesetzlosen Person wie %s%s zu helfen wird Dich als Gesetzloser "
-   "ächten. Gut, dass Deine Sicherung aktiviert war!"
+   "ächten.  Du bist aber noch nicht für einen Kampf gegen andere Spieler bereit."
 spell_outlaw_cast = de \
-   "Mit diesem Zauber riskierst Du es, zum Gesetzlosen erklärt zu werden. "
+   "Mit diesem Zauber riskierst Du es, zum Gesetzlosen erklärt zu werden.  "
    "Du bist aber noch nicht für einen Kampf gegen andere Spieler bereit."
 spell_hands_too_full = de \
    "Deine Hände sind zu voll, um Zauber zu sprechen, die auf andere Spieler "
@@ -92,6 +92,8 @@ spell_trance_complete = de \
    "Der %s Zauber beginnt sich zu manifestieren!"
 spell_trance_fumble = de \
       "Es fällt Dir schwer, den %s Zauber zu wirken."
+spell_charge_stopped = de \
+      "Du formst den %s Zauber mit der magischen Energie, die du aufbringen kannst!"
 spell_disabled = de \
    "~g~BEine unbekannte Kraft raubt Dir die Zauberworte aus der Kehle bevor "
    "Du sie ganz aussprechen kannst."
@@ -102,8 +104,15 @@ spell_meditate_ratio_rsc = de \
 spell_Enchantment_type_default_rsc = de "Erzmagier"
 Spell_too_few_hp_rsc = de \
    "Du bist nicht stark genug um diesen Zauber zu benutzen."
-cannot_cast_cooldown = de \
-   "Du kannst %s nicht zaubern - der Zauber ist noch nicht bereit!"
 cannot_cast_on_phased_out = de \
    "Du kannst nichts auf %s zaubern, solange %s aus der Existenz getreten "
    "ist!"
+spell_level_enough_rsc = de "\n\nDu hast in diesem Rang genügend Punkte erworben, "
+      "um in den nächsten Rang aufzusteigen."
+spell_level_needed_rsc = de "\n\nDu benötigst in diesem Zirkel noch %i weitere "
+   "Prozentpunkte, um in den nächsten aufsteigen zu können."
+spell_level_other_needed_rsc = de \
+   "\n\nDieser Zauber gehört nicht zu den Dreien, die du in diesem Zirkel am besten "
+   "beherrschst!"
+   "\nDu würdest in diesem Zirkel noch %i weitere Prozentpunkte benötigen, "
+   "um in den nächsten aufsteigen zu können, wenn du diesen Zauber trainierst."

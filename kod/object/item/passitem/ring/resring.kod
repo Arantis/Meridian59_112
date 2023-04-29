@@ -50,6 +50,17 @@ properties:
 
 messages:
 
+   Constructor(bReveal=FALSE)
+   {
+      if (bReveal)
+      {
+         Send(self,@SetPaletteTranslation,#translation=viUnrevealedColor);
+         Send(self,@RevealHiddenColor);
+      }
+
+      propagate;
+   }
+
    AppendDesc()
    {
       if Send(SETTINGS_OBJECT,@GetResistRingLoseDurability)
@@ -93,7 +104,7 @@ messages:
       return [[piResistanceType,piResistanceChange]];
    }
 
-   DefendingHit()
+   DamageItem()
    {
       return;
    }

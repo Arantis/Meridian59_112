@@ -38,6 +38,7 @@ classvars:
    viWeaponQuality = WEAPON_QUALITY_LOW
 
    viProficiency_Needed = SKID_PROFICIENCY_MACE
+   viDefault_stroke_number = SKID_STRIKE
 
    viValue_average = 50
    viWeight = 60
@@ -51,13 +52,20 @@ classvars:
    viInventory_group = 3
    viBroken_group = 2
 
-   viRange = 3 * FINENESS
+   vbCrush_enemies = TRUE
+
+   viRange = 2 * FINENESS
 
 properties:
 
    piAttack_type = ATK_TYPE_NONMAGIC+ATK_TYPE_BLUDGEON
 
 messages:
+
+   IsExpansionItem()
+   {
+      return TRUE;
+   }
 
 end
 ////////////////////////////////////////////////////////////////////////////////

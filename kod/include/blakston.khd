@@ -47,9 +47,28 @@
    MINUTE = 60
 
    // KOD Object type constants
-
    ACTIVE = 1
    PASSIVE = 2
+
+   // Kod types
+   TAG_NIL = 0
+   TAG_INT = 1
+   TAG_OBJECT = 2
+   TAG_LIST = 3
+   TAG_RESOURCE = 4
+   TAG_TIMER = 5
+   TAG_SESSION = 6
+   TAG_ROOM_DATA = 7
+   TAG_TEMP_STRING = 8
+   TAG_STRING = 9
+   TAG_CLASS = 10
+   TAG_MESSAGE = 11
+   TAG_DEBUGSTR = 12
+   TAG_TABLE = 13
+   TAG_OVERRIDE = 14
+   TAG_EMPTY = 15
+   // NOT a kod type - a hack to display a German resource in RecordStat.
+   RESOURCE_GER = 16
 
    // MoveOn type enum, now separate from object flags.
    MOVEON_YES        = 0
@@ -73,6 +92,7 @@
    OF_ACTIVATABLE    = 0x00000800
    OF_APPLYABLE      = 0x00001000
    OF_NPC            = 0x00002000
+   OF_EQUIPPED       = 0x00004000
    OF_BOUNCING       = 0x00010000
    OF_FLICKERING     = 0x00020000
    OF_FLASHING       = 0x00040000
@@ -444,10 +464,30 @@
    NID_ADVENTURE = 5
    // Event coordination newsball
    NID_EVENT_SCHEDULE = 6
+   NID_AUCTION = 7
    NID_ANNOUNCEMENTS = 9
    NID_GUILD_CHARTER = 10
    NID_GODROOM = 14
    NID_GUILD_NEWS = 15
+
+   // Map regions
+   // Used to determine teleport validity and for categorising rooms
+   // in the database.
+   REGION_DEFAULT    = 1
+   REGION_RAZA       = 2
+   REGION_MARION     = 3
+   REGION_JASPER     = 4
+   REGION_CORNOTH    = 5
+   REGION_TOS        = 6
+   REGION_BARLOQUE   = 7
+   REGION_JIXA       = 8
+   REGION_BERG       = 9
+   REGION_BRAX       = 10
+   REGION_ORCCAVES   = 11
+   REGION_KOCATAN    = 12
+   REGION_HISTORIC   = 13
+   REGION_DESERT     = 14
+   REGION_OUTOFGRACE = 15
 
    // NOTE: Guilds now use their RID_ numbers as their NIDs.  Do not assign them
    //  their own NID.
@@ -603,6 +643,8 @@
    RID_RAZA_MAUSOLEUM = 306
    RID_RAZA_BAR = 307
    RID_RAZA_MUSEUM = 308
+   RID_RAZA_BANK = 309
+   RID_RAZA_VAULT = 310
 
    RID_RAZA_FOREST = 330
    RID_FAROL_WEST = 331
@@ -810,14 +852,15 @@
    RID_GUILDH12 = 705
    RID_GUILDH13 = 713
    RID_GUILDH14 = 714
-   RID_GUILDH15 = 715
-   RID_GUILDH16 = 716
+   RID_GUILDH15 = 715 // Necromancer Hall
+   RID_GUILDH16 = 716 // Hunter Hall
    RID_GUILDH17 = 717
+   RID_GUILDH18 = 718
 
    // Keep these up to date!
    // NOTE: don't increment RID_GUILDH_MAX for inaccessible halls.
    RID_GUILDH_MIN = 701
-   RID_GUILDH_MAX = 715
+   RID_GUILDH_MAX = 716
 
    RID_ICE_CAVE1 = 750
 
@@ -875,21 +918,11 @@
    RID_DUKE5 = 954
 
    // Desert rooms, start at 1500.
-   // RID_DESERT is the constant used by GetRegion.
    RID_DESERT = 1500
-   RID_WAYLAYOASIS = 1500
-   RID_DESERTPATH1 = 1501
-   RID_DESERTCLIFFACCESS = 1502
-   RID_DESERTCLIFFNOACCESS1 = 1503
-   RID_DESERTCLIFFNOACCESS2 = 1504
-   RID_DESERTCLIFFNOACCESS3 = 1505
-   RID_DESERTDUNES = 1506
-   RID_DESERTSHORE1 = 1507
-   RID_DESERTSHORE2 = 1508
-   RID_DESERTSHORE3 = 1509
-   RID_DESERTRIVER1 = 1510
-   RID_DESERTRIVER2 = 1511
-   RID_DESERTBRIDGE = 1512
+   RID_HAKKA = 1500
+   RID_HAKKA_INN = 1501
+   RID_DESERT_MAZE = 1510
+   RID_DESERT1 = 1520
 
    // Settlement and Island 2000-2499
    // Needs to be seperate so it counts as a different 'zone'
@@ -986,6 +1019,7 @@
    RID_QORMASLAND = 2751
 
    // Berg Area 2800-2850
+   RID_BERG = 2800
    RID_BERG_CITY = 2800
    RID_BERG_VAULT = 2801
    RID_BERG_SMITH = 2802
@@ -1022,6 +1056,7 @@
    RID_DVALLEY_4 = 2853
    RID_DVALLEY_5 = 2854
    RID_DVALLEY_5B = 2855
+   RID_DVALLEY_TEMPLE = 2856
    
    // Jixa Area 2900-2950
    RID_JIXA_1 = 2900
@@ -1786,6 +1821,7 @@
    MOB_ROLE_SCHOLAR        = 0x16
    MOB_ROLE_WIZARD         = 0x17
    MOB_ROLE_BARD           = 0x18
+   MOB_ROLE_AUCTIONEER     = 0x19
 
    // Monster behaviors, or "states"
    STATE_LIMBO       = 0x00001
@@ -1856,21 +1892,21 @@
    AI_FIGHT_NEWBIESAFE        = 0x0020000
    // monster won't change targets unless current target is gone
    AI_FIGHT_SINGLEMINDED      = 0x0040000
-   // monster attacks the aggressor in a room.
+   // monster may strike through walls (revenants)
    AI_FIGHT_THROUGH_WALLS     = 0x0080000
    // monster chooses a new target that's in range randomly.
    AI_FIGHT_LASHOUT           = 0x0100000
-   // currently free...
+   // mob will return to a designated spawn point when leaving combat
    AI_RETURN_TO_SPAWN         = 0x0200000
    // monster will attack almost anything.
    AI_FIGHT_HYPERAGGRESSIVE   = 0x0400000
    // monster will check for new enemies a lot.
    AI_FIGHT_SWITCHALOT        = 0x0800000
-   // monster may strike through walls (revenants)
+   // monster is currently cornered and will fight back instead of trying to run
    AI_CORNERED                = 0x1000000
-   // Monster is cornered and will fight back.
+   // monster is currently in a chatty mood and meets up with others out of combat
    AI_SOCIALIZER              = 0x2000000
-   // Monster likes to meet up with other monsters for a chat.
+   // monster is currently on a stroll towards a random location
    AI_STROLLING               = 0x4000000
 
    // Battlers need this much vigor to be able to run.
@@ -1889,7 +1925,7 @@
    ATTACK_TAUNT               = 0x0000200
    ATTACK_STUN                = 0x0000400
    ATTACK_DISTRACT            = 0x0000800
-   ATTACK_FRIGHTEN            = 0x0001000
+   ATTACK_CONFUSE             = 0x0001000
    ATTACK_CRIPPLE             = 0x0002000
    ATTACK_SNARE               = 0x0004000
    ATTACK_DAZE                = 0x0008000
@@ -1952,7 +1988,8 @@
    AVARCLAN_BONE_FACTION   = 0x003C
 
    // Monster treasure tables
-
+   // MUST adjust TID_MAX when adding new TreasureTypes.
+   TID_MIN = 0
    // No treasure!
    TID_NONE          = 1
 
@@ -2039,8 +2076,16 @@
    TID_NYRPHLING     = 84
    TID_SWAMP         = 85
    TID_EASTERN_AREA  = 86
+
    TID_SPINEBEAST_BOSS = 87
-   TID_NERU_TROLL = 88
+   TID_NERU_TROLL      = 88
+   
+   TID_DESERT_MUMMY    = 89
+
+   TID_YETI            = 90
+   TID_SNOWMAN         = 91
+
+   TID_MAX             = 91
 
    // English articles
 
@@ -2097,6 +2142,8 @@
    ITEMTYPE_BATTERY =  0x040000
 
    // Item Attributes.  See the end of item.kod for details
+   // MUST adjust IA_MAX when adding new attributes.
+   IA_MIN                  = 0
    IA_DEFAULT              = 0
    IA_CORPSEPOINTER        = 1
    IA_EVIL                 = 2
@@ -2151,6 +2198,7 @@
    WA_BLEED                = 73
    WA_FATIGUE              = 74
    WA_SLOW                 = 75
+   IA_MAX                  = 75
 
    // Loot Chests
    LC_GRAY           = 0
@@ -2205,7 +2253,8 @@
    INSIG_SHALILLE = 8
    INSIG_REBEL = 9
    INSIG_KALIOR = 10
-   INSIG_MAXIMUM = 10 // increment with new additions
+   INSIG_QORMAS = 11
+   INSIG_MAXIMUM = 11 // increment with new additions
 
    // Weapons
 
@@ -2321,6 +2370,7 @@
    SKID_BLOCK = 404
    SKID_SECOND_WIND = 405
    SKID_DISARM = 406
+   SKID_CRUSHING_BLOWS = 407
 
    // Melee weapon strokes start here.
    SKID_DEFAULT = 420
@@ -2332,6 +2382,10 @@
    // Missile weapon strokes here.
    SKID_FIRE = 425
    SKID_THROW = 426
+
+   // New melee weapon strokes here.
+   SKID_STAB = 427
+   SKID_TOUCH = 428
 
    // Unarmed combat moves start here.
    SKID_PUNCH = 430
@@ -2345,7 +2399,7 @@
    SKID_TAUNT = 440
    SKID_STUN = 441
    SKID_DISTRACT = 442
-   SKID_FRIGHTEN = 443
+   SKID_CONFUSE = 443
    SKID_CRIPPLE = 444
    SKID_SNARE = 445
    SKID_DAZE = 446
@@ -2367,6 +2421,9 @@
 
    // Active skills
    SKID_CLEAVE = 470
+   SKID_UNLEASH = 471
+   SKID_SPRINT = 472
+   SKID_MARK = 473
 
    // Unique spell constants
 
@@ -2594,6 +2651,10 @@
    SID_SPIRITUAL_WINGS = 217
    SID_COOLDOWN_SPIRITUAL_WINGS = 218
    SID_TRANSFERENCE = 219
+   SID_NODE_TRAVEL = 220
+   SID_COOLDOWN_SPRINT = 221
+   SID_COOLDOWN_UNLEASH = 222
+   SID_ICEWALL = 223
 
    // Depreciated spell IDs
    SID_LIGHTNING = 1                   // use SID_LIGHTNING_BOLT
@@ -2642,6 +2703,8 @@
    SS_INACCESSIBLE = -1
 
    // Normal spell schools
+   SCHOOL_MIN = 1
+   SCHOOL_MAX = 12
    SS_SHALILLE = 1
    SS_QOR = 2
    SS_KRAANAN = 3
@@ -2747,9 +2810,12 @@
    MFLAG_SUMMONED       = 0x020
    MFLAG_PALSIED        = 0x040
    MFLAG_DEMENTED       = 0x080
+   // Used by followers to keep track of hold and stay commands.
+   MFLAG_STAYING        = 0x100
+   MFLAG_HOLDING        = 0x200
 
    // Illusion, animated, event, summoned.
-   MFLAG_ALTERED_SPAWN = 0x03C
+   MFLAG_ALTERED_SPAWN  = 0x03C
 
    // Player flags
 
@@ -2778,7 +2844,7 @@
    PFLAG_DODGED            = 0x0000040
    PFLAG_TRANCE            = 0x0000080
    PFLAG_HAUNTED           = 0x0000100
-   PFLAG_MANA_FOCUS        = 0x0000200
+   PFLAG_FRAGILE           = 0x0000200
    PFLAG_PKILL_ENABLE      = 0x0000400
    PFLAG_TUTORIAL          = 0x0000800
    PFLAG_PKILL_LOCK        = 0x0001000
@@ -2837,6 +2903,8 @@
    PFLAG2_OFFER_LIFT       = 0x200000
    // Set if player is performing an AOE attack, to avoid resetting gain flags.
    PFLAG2_AOE_ATTACK       = 0x400000
+   // Died from lich queen death
+   PFLAG2_CHEAP_DEATH      = 0x800000
 
    // Third set of player flags (in piFlags3)
    // piFlags3 can now be used as a proper bitfield, and no longer
@@ -2968,31 +3036,40 @@
    CAUSE_MOB_MOVEMENT = 3
 
    // Event types for trance breaking
-   EVENT_CAST = 1
+   // Hard break, no additional information provided.
+   EVENT_NONE = 0
+   // Player is trying to cast a spell or perform a skill.
+   EVENT_ABILITY = 1
    // Player is trying to steer an enchantment to go his way possibly ending it
    // early due to success.  Also used when the spell stops itself. Note that
-   // this doesn't affect radius enchantments (use EVENT_OOM/EVENT_CANCEL).
+   // this doesn't affect radius enchantments (use EVENT_NO_MANA/EVENT_CANCEL).
    EVENT_STEER = 2
    // Player moved to a new room.
    EVENT_NEWOWNER = 3
-   // Player ran.
-   EVENT_RUN = 4
    // Player was damaged.
-   EVENT_DAMAGE = 5
+   EVENT_DAMAGE = 4
    // Player attacked.
-   EVENT_ATTACK = 6
+   EVENT_ATTACK = 5
    // Player (un)used something.
-   EVENT_USE = 7
+   EVENT_USE = 6
    // Player rested.
-   EVENT_REST = 8
+   EVENT_REST = 7
    // Player was disrupted by something external trying to disrupt.
-   EVENT_DISRUPT = 9
+   EVENT_DISRUPT = 8
    // Player is moving to a new room but has not yet
-   EVENT_REQNEWOWNER = 10
+   EVENT_REQNEWOWNER = 9
    // Player ran out of mana.
-   EVENT_OOM = 11
-   // Player cancelled a spell manually by recasting.
+   EVENT_NO_MANA = 10
+   // Player ran out of vigor.
+   EVENT_NO_VIGOR = 11
+   // Player cancelled an ability manually using the spacebar.
    EVENT_CANCEL = 12
+   // Player fell on his face while trancing.
+   EVENT_DEATH = 13
+   // Player suffered a crushing blow.
+   EVENT_CRUSH = 14
+   // Player hit with a concentration-breaking debuff (hold, blind, dazzle)
+   EVENT_DEBUFF = 15
 
    // Hot spot definitions
 
@@ -3178,10 +3255,31 @@
    ANIMATE_TRANSLATION  = 9
    ANIMATE_EFFECT       = 10
 
-   // Normal animations--all are object specific, except ANIM_NONE & ANIM_ATTACK
-   //  for monsters
+   // Normal animations
    ANIM_NONE = 0
-   ANIM_ATTACK = 1
+   ANIM_ATTACK = 1     // Default
+   ANIM_CLAW = 1       // Used by nyrphling
+   ANIM_CAST = 2       // Default
+   ANIM_STING = 2      // Used by nyrphling
+   ANIM_GORE = 2       // Used by spinebeast
+   ANIM_BREATH = 2     // Used by lupogg king
+   ANIM_JUMPUP = 2     // Used by kriipa
+   ANIM_EMERGE = 2     // Used by groundworm
+   ANIM_SPECIAL = 3    // Default
+   ANIM_SPIKES = 3     // Used by chupacabra
+   ANIM_SLEEP = 3      // Used by fungus beasts
+   ANIM_SPIN = 3       // Used by thrasher
+   ANIM_BITE = 3       // Used by nyrphling
+   ANIM_WRATH = 3      // Used by vitkhul
+   ANIM_HOVER = 3      // Used by dragonfly
+   ANIM_JUMPDOWN = 3   // Used by kriipa
+   ANIM_POPUP = 3      // Used by mollusk creature
+   ANIM_SUBMERGE = 3   // Used by groundworm
+   ANIM_FIRE = 4       // Default
+   ANIM_SPIT = 4       // Used by lupogg king
+   ANIM_THROW = 4      // Used by mollusk creature
+   ANIM_HIT = -1
+   ANIM_STATIC = -2
 
    // Player animations
    PANM_NONE            = 0
@@ -3189,11 +3287,26 @@
    PANM_POINT           = 4
    PANM_CAST            = 6
    PANM_DANCE           = 7
+   PANM_HIT             = 8
 
    PANM_FIST_ATTACK     = 10
    PANM_WEAPON_ATTACK   = 11
    PANM_BOW_FIRE        = 12
    PANM_MONSTER_ATTACK  = 13
+   PANM_WEAPON_UNLEASH  = 14
+   PANM_FIST_UNLEASH    = 15
+   PANM_OFF_GUARD       = 16
+   PANM_OUT_OF_STANCE   = 17
+
+   // Tracks a players current combat state.
+   COMBAT_STATE_READY            = 0  // We are ready to attack. (ptAttackTimer = $)
+   COMBAT_STATE_MID_WEAPON_SWING = 1  // We are currently swinging a weapon. (trance active)
+   COMBAT_STATE_MID_FIST_SWING   = 2  // We are currently swinging our fist. (trance active)
+   COMBAT_STATE_POST_SWING       = 3  // We are recovering from a regular swing (post impact).
+   COMBAT_STATE_OFF_GUARD        = 4  // We are recovering from an unleashed swing (weapon).
+   COMBAT_STATE_GUARD_HIT        = 5  // We have been hit during recovery (weapon).
+   COMBAT_STATE_BAD_STANCE       = 6  // We are recovering from an unleashed swing (unarmed).
+   COMBAT_STATE_STANCE_HIT       = 7  // We have been hit during recovery (unarmed).
 
    // User Actions
    UA_NORMAL = 1
@@ -3545,7 +3658,7 @@
    QST_ID_CHESS_CHECKMATE        = 41
    QST_ID_LOVE_LETTER_1          = 42
    QST_ID_LOVE_LETTER_2          = 43
-   QST_ID_ESTABLISH_NECROGUILD   = 44
+   QST_ID_SPAWN_LICH             = 44
    QST_ID_APHRODISIAC            = 45
    QST_ID_NECRO_WARNING          = 46
    QST_ID_BAR_RESTOCK            = 47
@@ -3594,6 +3707,22 @@
    QNT_ID_JIXA_BANDIT            = 90
    QNT_ID_SPINEBEAST_BOSS        = 100
    QNT_ID_MONSTER_CHARM          = 101
+   QST_ID_RESIGN_FACTION         = 102
+   QNT_ID_FIND_JASPERBANK        = 103
+   QNT_ID_FIND_CORNOTH           = 104
+   QNT_ID_TOS_ZOMBIES            = 105
+   QNT_ID_MAR_MUMMIES            = 106
+   QNT_ID_MAR_STATUES            = 107
+   QNT_ID_CASTLEVIC              = 108
+   QNT_ID_MAR_ENTS               = 109
+   QNT_ID_FUNGUSHUNT             = 110
+   QNT_ID_MAR_THRASHERS          = 111
+   QNT_ID_ORCHUNT                = 112
+   QNT_ID_FEYHUNT_EVIL           = 113
+   QNT_ID_FEYHUNT_GOOD           = 114
+   QNT_ID_MOLLUSKHUNT            = 115
+   QNT_ID_NERUTROLLHUNT          = 116
+   QNT_ID_LUPOGG_HUNT            = 117
 
    // Quest Node Template IDs. Each quest has multple Quest Nodes.
    QNT_ID_DUKE_JOIN_ONE             = 1
@@ -3775,9 +3904,9 @@
    QNT_ID_LOVE_LETTERTWO_ONE        = 137
    QNT_ID_LOVE_LETTERTWO_TWO        = 138
    
-   QNT_ID_NECROGUILD_ONE            = 139
-   QNT_ID_NECROGUILD_TWO            = 140
-   QNT_ID_NECROGUILD_THREE          = 141
+   QST_ID_SPAWN_LICH_ONE            = 139
+   QST_ID_SPAWN_LICH_TWO            = 140
+   QST_ID_SPAWN_LICH_THREE          = 141
    
    QNT_ID_APHRODISIAC_ONE           = 142
    QNT_ID_APHRODISIAC_TWO           = 143
@@ -3950,6 +4079,54 @@
    QNT_ID_MONSTER_CHARM_ONE         = 270
    QNT_ID_MONSTER_CHARM_TWO         = 271
 
+   QNT_ID_RESIGN_FACTION_ONE        = 272
+   QNT_ID_RESIGN_FACTION_TWO        = 273
+   
+   QNT_ID_FIND_JASPERBANK_ONE       = 274
+   QNT_ID_FIND_JASPERBANK_TWO       = 275
+
+   QNT_ID_FIND_CORNOTH_ONE          = 276
+   QNT_ID_FIND_CORNOTH_TWO          = 277
+
+   QNT_ID_TOS_ZOMBIES_1             = 278
+   QNT_ID_TOS_ZOMBIES_2             = 279
+
+   QNT_ID_MAR_MUMMIES_1             = 280
+   QNT_ID_MAR_MUMMIES_2             = 281
+
+   QNT_ID_MAR_STATUES_1             = 282
+   QNT_ID_MAR_STATUES_2             = 283
+
+   QNT_ID_CASTLEVIC_1               = 284
+   QNT_ID_CASTLEVIC_2               = 285
+
+   QNT_ID_MAR_ENTS_1                = 286
+   QNT_ID_MAR_ENTS_2                = 287
+
+   QNT_ID_FUNGUSHUNT_1              = 288
+   QNT_ID_FUNGUSHUNT_2              = 289
+
+   QNT_ID_MAR_THRASHERS_1           = 290
+   QNT_ID_MAR_THRASHERS_2           = 291
+
+   QNT_ID_ORCHUNT_1                 = 292
+   QNT_ID_ORCHUNT_2                 = 293
+
+   QNT_ID_FEYHUNT_EVIL_1            = 294
+   QNT_ID_FEYHUNT_EVIL_2            = 295
+
+   QNT_ID_FEYHUNT_GOOD_1            = 296
+   QNT_ID_FEYHUNT_GOOD_2            = 297
+
+   QNT_ID_MOLLUSKHUNT_1             = 298
+   QNT_ID_MOLLUSKHUNT_2             = 299
+
+   QNT_ID_NERUTROLLHUNT_1           = 300
+   QNT_ID_NERUTROLLHUNT_2           = 301
+
+   QNT_ID_LUPOGG_HUNT_1             = 302
+   QNT_ID_LUPOGG_HUNT_2             = 303
+
    // Quest misc constants
 
    // An player must be this close to an NPC to offer/receive items, talk, etc.
@@ -4019,10 +4196,10 @@
    Q_R2_HAS_SPELL_SCHOOL         = 5   // [Q_R2_, school, numspells]  (default numspells = 1)
    Q_R2_HAS_ITEM                 = 6   // [Q_R2_, itemclass]
    Q_R2_USING_ITEM               = 7   // [Q_R2_, itemclass]
-   Q_R2_NUM_AMULETS              = 8   // [Q_R2_, minNumAmulets]
+   //Q_R2_NUM_AMULETS            = 8   // [Q_R2_, minNumAmulets]
    Q_R2_HAS_HEALTH_LEVEL         = 9   // [Q_R2_, minHPs]             (calls GetMaxHealth)
    Q_R2_DOES_NOT_HAVE_ITEM       = 10  // [Q_R2_, itemclass]
-   Q_R2_NECRO_GUILD_ACTIVE       = 11  // [Q_R2_, boolean]            (is necromancer guild active?)
+   Q_R2_NECROMANCERS_ACTIVE      = 11  // [Q_R2_, boolean]            (is necromancer order active?)
    Q_R2_HAS_COMPLETED_QUEST_ID   = 12  // [Q_R2_, quest ID]           (checks quest history, successful quest)
    Q_R2_HAS_FAILED_QUEST_ID      = 13  // [Q_R2_, quest ID]           (checks quest history, failed quest)
 
@@ -4074,7 +4251,7 @@
    QN_PRIZETYPE_PASS_SOURCE_NPC           = 0x0E      // Set dest npc -> current SourceNPC
    QN_PRIZETYPE_PASS_PREVIOUS_SOURCE_NPC  = 0x0F      // Set dest npc -> current PreviousSourceNPC
    QN_PRIZETYPE_SCHEDULE_QUEST            = 0x10      // Schedule a quest of this type
-   QN_PRIZETYPE_ESTABLISH_NECROGUILD      = 0x11      // Form the Order of Necromancers
+   QN_PRIZETYPE_SPAWN_LICH                = 0x11      // Spawn the lich queen
    QN_PRIZETYPE_OUTLAW                    = 0x12      // Make the player an outlaw
    QN_PRIZETYPE_NPC_RESPONSE              = 0x13      // Let the QuestTemplate give different responses for each NPC.
    QN_PRIZETYPE_TRAINING_POINTS           = 0x14      // Award training points.
@@ -4084,6 +4261,7 @@
    // Handles prizes with Constructor parameters which can't use QN_PRIZETYPE_ITEMCLASS.
    QN_PRIZETYPE_ITEM_ENUM                 = 0x17
    QN_PRIZETYPE_SPAWN                     = 0x18      // Spawn class at specific rid, row and col
+   QN_PRIZETYPE_DEACTIVATE_QUEST          = 0x19      // remove a quest from an NPC
 
    // Quest node prize statistic types
    QN_PRIZE_STAT_MIGHT    = 0x0
@@ -4117,6 +4295,7 @@
    QN_PRIZE_FACTION_PRINCESS   = 0x2    // join the princess' faction
    QN_PRIZE_FACTION_REBEL      = 0x3    // join the rebel faction
    QN_PRIZE_FACTION_NEUTRAL    = 0x4    // mainly for use as a penalty
+   QN_PRIZE_FACTION_RESIGN     = 0x5    // resign a faction
 
    // Quest node prize types for QN_PRIZETYPE_ITEM_ENUM
    QN_PRIZE_ITEM_KRANROBE      = 0x0
@@ -4240,13 +4419,58 @@
    STAT_PLAYERSUICIDE = 7
    STAT_GUILD = 8
    STAT_GUILDDISBAND = 9
+   STAT_SPELLS = 10
+   STAT_SPELL_REAGENT = 11
+   STAT_TREASURE_GEN = 12
+   STAT_MONSTER = 13
+   STAT_MONSTER_ZONE = 14
+   STAT_NPCS = 15
+   STAT_WEAPONS = 16
+   STAT_ROOMS = 17
+   STAT_NPC_ZONE = 18
+   STAT_NPC_SELLITEM = 19
+   STAT_NPC_SELLSKILL = 20
+   STAT_NPC_SELLSPELL = 21
+   STAT_REAGENTS = 22
+   STAT_FOOD = 23
+   STAT_AMMO = 24
+   STAT_ARMOR = 25
+   STAT_MISCITEMS = 26
+   STAT_RINGS = 27
+   STAT_RODS = 28
+   STAT_POTIONS = 29
+   STAT_SCROLLS = 30
+   STAT_WANDS = 31
+   STAT_QUESTITEMS = 32
+   STAT_SKILLS = 33
+   STAT_NECKLACE = 34
+   STAT_INSTRUMENTS = 35
+   STAT_GEMS = 36
+   STAT_OFFERINGS = 37
+   STAT_QUESTS = 38
+   STAT_TREASURE_EXTRA = 39
+   STAT_TREASURE_MAGIC = 40
+   STAT_NPC_SELLCOND = 41
+   STAT_LOGPEN = 42
+   STAT_LOGPEN_ITEM = 43
+   STAT_QUESTGIVER = 44
+   STAT_ACCOUNTS = 45 // Server only
+   STAT_ACCOUNT_CHARS = 46 // Server only
+   STAT_COMPL_QUESTS = 47
+   STAT_COMPL_QUEST_ITEMS = 48 // items from quest reward
+
+   // Item flags for wiki Export
+   FLAG_STACKABLE       = 0x0001
+   FLAG_MENDABLE        = 0x0002
+   FLAG_VAULTABLE       = 0x0004
+   FLAG_EXPANSION       = 0x0008
 
    // Survival options
    OPT_PVP_ON = 1     // Players can fight
 
    // Gravity Acceleration = speed-up falling objects
    // Same value as used in clients, but upscaled to work with integers
-   // unit/millisecondÂ² -> it would be -0.00032 for KOD-FINENESS base (64)
+   // unit/millisecond² -> it would be -0.00032 for KOD-FINENESS base (64)
    // Hence it's upscaled by 100000 and becomes
    GRAVITY_ACCELERATION = -32
 
@@ -4299,3 +4523,20 @@
    SET_FREE_FOUR =                    0x0000001E
    SET_FREE_FIVE =                    0x0000001F
    SET_SPACER =                       0x00000020
+
+   ACTIVE_DEFENSE_READY = 0
+   ACTIVE_BLOCK = 1
+   ACTIVE_PARRY = 2
+   ACTIVE_DODGE = 3
+   ACTIVE_BLOCK_FAILED = 4
+   ACTIVE_PARRY_FAILED = 5
+   ACTIVE_DODGE_FAILED = 6
+   ACTIVE_DEFENSE_LATE = -1
+
+   UNLEASH_NONE = 0
+   UNLEASH_LUNGE = 1
+   UNLEASH_SLAM = 2
+   UNLEASH_GUT = 3
+   UNLEASH_AMBUSH = 4
+   UNLEASH_CHARGE = 5
+   UNLEASH_STAGGER = 6

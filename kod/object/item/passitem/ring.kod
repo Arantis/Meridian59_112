@@ -18,7 +18,7 @@ resources:
 
    include ring.lkod
 
-   ring_unidentified_name_rsc = "magical ring"
+   ring_unidentified_name_rsc = "unidentified magical ring"
    ring_unidentified_description_rsc = "The ring pulses with magical energy."
 
    ring_identified_name_rsc = "generic magical ring"
@@ -40,6 +40,28 @@ properties:
    vrDesc = ring_unidentified_description_rsc
 
 messages:
+
+   UpdateDatabase()
+   {
+      // Wiki Export: all rings into a table
+      RecordStat(STAT_RINGS, TAG_RESOURCE, vrRealName, RESOURCE_GER, vrRealName,
+            TAG_RESOURCE, vrIcon, TAG_INT, viInventory_group, TAG_INT,
+            Send(self,@GetPaletteTranslation), TAG_RESOURCE, vrRealDesc,
+            RESOURCE_GER, vrRealDesc, TAG_INT, viValue_average, TAG_INT,
+            viWeight, TAG_INT, viBulk, TAG_INT, Send(self,@GetDatabaseFlags));
+
+      return;
+   }
+
+   Constructor(bReveal=FALSE)
+   {
+      if (bReveal)
+      {
+         Send(self,@RevealHiddenAttributes);
+      }
+
+      propagate;
+   }
 
    ReqUseSomething(what = $)
    {
@@ -79,7 +101,6 @@ messages:
    {
       return vrRealName;
    }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

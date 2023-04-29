@@ -101,6 +101,9 @@ properties:
    piMaxPlayers = 30
    piSchedulePct = 100
 
+   piQuestDuration = 40
+   piQuestDifficulty = 6
+
 messages:
 
    Constructor()
@@ -128,7 +131,8 @@ messages:
 
       // Template #114 is Moxal scam quest #1
       // QNT_ID_MOXAL_SCAMONE_ONE
-      if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_SHOWUP,
+      if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MESSAGE,
+               #NPC_modifier=QN_NPCMOD_NONE,#cargolist=[ letter_trigger ],
                #quest_node_index=QNT_ID_MOXAL_SCAMONE_ONE)
       {
          lNPCs = $;
@@ -227,8 +231,7 @@ messages:
                               [ QN_PRIZETYPE_ITEMCLASS, &ShortSword, 1 ],
                               [ QN_PRIZETYPE_ITEMCLASS, &MysticSword, 1 ],
                               [ QN_PRIZETYPE_ITEMCLASS, &PlateArmor, 1 ],
-                              [ QN_PRIZETYPE_ITEMCLASS, &Key, 1 ] ],
-                              [ QN_PRIZETYPE_TRAINING_POINTS, 100 ] ],
+                              [ QN_PRIZETYPE_ITEMCLASS, &Key, 1 ] ] ],
                #timelimit=2 * 3600,#quest_node_index=QNT_ID_MOXAL_SCAMONE_FIVE)
       {
          Send(oQE,@SetQuestNodeNPCList,#index=QNT_ID_MOXAL_SCAMONE_FIVE,

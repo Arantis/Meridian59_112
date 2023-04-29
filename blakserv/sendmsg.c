@@ -26,7 +26,7 @@ kod_stack_type stack[MAX_DEPTH];
 kod_statistics kod_stat;      /* actual statistics */
 
 char *bkod;
-int num_interpreted = 0; /* number of instructions in this top level call */
+UINT64 num_interpreted = 0; /* number of instructions in this top level call */
 
 int trace_session_id = INVALID_ID;
 
@@ -99,7 +99,6 @@ void InitProfiling(void)
 
    kod_stat.num_interpreted = 0;
    kod_stat.num_interpreted_highest = 0;
-   kod_stat.billions_interpreted = 0;
    kod_stat.num_messages = 0;
    kod_stat.num_top_level_messages = 0;
    kod_stat.system_start_time = GetTime();
@@ -268,6 +267,7 @@ void InitBkodInterpret(void)
    ccall_table[RANDOM] = C_Random;
    
    ccall_table[RECORDSTAT] = C_RecordStat;
+   ccall_table[EMPTYSTATTABLE] = C_EmptyStatTable;
    
    ccall_table[GETSESSIONIP] = C_GetSessionIP;
    
@@ -367,7 +367,7 @@ int SendTopLevelBlakodMessage(int object_id,int message_id,int num_parms,parm_no
    double start_time = 0;
    double interp_time = 0;
    int posts = 0;
-   int accumulated_num_interpreted = 0;
+   UINT64 accumulated_num_interpreted = 0;
 
    if (message_depth != 0)
    {
@@ -426,13 +426,7 @@ int SendTopLevelBlakodMessage(int object_id,int message_id,int num_parms,parm_no
 
    if (num_interpreted > kod_stat.num_interpreted_highest)
       kod_stat.num_interpreted_highest = num_interpreted;
-   
    kod_stat.num_interpreted += num_interpreted;
-   if (kod_stat.num_interpreted > 1000000000L)
-   {
-      kod_stat.num_interpreted -= 1000000000L;
-      kod_stat.billions_interpreted++;
-   }
 
    if (message_depth != 0)
    {
@@ -867,92 +861,119 @@ __forceinline void StoreProperty(int object_id, int data, val_type new_data)
 
 char *BlakodDebugInfo()
 {
-   static char s[100];
+   #define DEBUGINFO_STR 64
+
+   static char s[DEBUGINFO_STR];
    class_node *c;
 
-   if (kod_stat.interpreting_class == INVALID_CLASS)
+   if (kod_stat.interpreting_class == INVALID_CLASS || !IsInterpreting())
    {
-      sprintf(s,"Server");
+      snprintf(s, DEBUGINFO_STR, "Server");
    }
    else
    {
       c = GetClassByID(kod_stat.interpreting_class);
       if (c == NULL)
-         sprintf(s,"Invalid class %i",kod_stat.interpreting_class);
+         snprintf(s, DEBUGINFO_STR, "Invalid class %i", kod_stat.interpreting_class);
       else
-         sprintf(s,"%s (%i)",c->fname,GetSourceLine(c,bkod));
+         snprintf(s, DEBUGINFO_STR, "%s (%i)", c->fname, GetSourceLine(c, bkod));
    }
    return s;
 }
 
-char *BlakodStackInfo()
+// Send char pointer c to tprintf if b - a > 0, set a to 0.
+#define PSTD_FLUSH_CHECK(a, b, c) \
+   if (b - a < 0) { \
+      c -= a; \
+      tprintf(c); \
+      a = 0; \
+   }
+
+// Print the current stack to debug, avoiding the BUFFER_SIZE limit in
+// channel.c by flushing early (worst-case is ~7000 chars).
+void PrintStackToDebug()
 {
-   static char buf[5000];
-   class_node *c;
-   int i;
+   static char dump_buffer[BUFFER_SIZE];
+   char *buf_ptr = dump_buffer;
+   int num_chars;
+   int buf_len = 0;
 
-   buf[0] = '\0';
-   for (i=message_depth-1;i>=0;i--)
+   dprintf("Stack trace:");
+   for (int i = message_depth - 1; i >= 0; --i)
    {
-      char s[1000];
-      if (stack[i].class_id == INVALID_CLASS)
+      char *bkod_ptr = (i == message_depth - 1) ? bkod : stack[i].bkod_ptr;
+      kod_stack_type * frame = &stack[i];
+
+      // Should never happen, but better safe than sorry.
+      if (!frame || !bkod_ptr)
       {
-         sprintf(s,"Server");
+         dprintf("Tried to print a stack trace, but got invalid data! bkod_ptr exists: %s, frame exists: %s",
+            bkod_ptr ? "true" : "false", frame ? "true" : "false");
+         continue;
       }
-      else
+
+      // Called from outside kod?
+      if (frame->class_id == INVALID_CLASS)
       {
-         c = GetClassByID(stack[i].class_id);
-         if (c == NULL)
-            sprintf(s,"Invalid class %i",stack[i].class_id);
-         else
+         dprintf("Server (not a stack frame)");
+         continue;
+      }
+      class_node *c = GetClassByID(frame->class_id);
+
+      if (c == NULL)
+      {
+         dprintf("Invalid class %i", frame->class_id);
+         continue;
+      }
+
+      // "Class::Message(" Use %.*s with a fixed string of pluses to get
+      // exactly one plus per propagate depth.
+      PSTD_FLUSH_CHECK(buf_len, BUFFER_SIZE, buf_ptr);
+      num_chars = snprintf(buf_ptr, BUFFER_SIZE - buf_len, "%.*s%s::%s(",
+         frame->propagate_depth, "++++++++++++++++++++++",
+         c->class_name ? c->class_name : "(unknown)",
+         GetNameByID(frame->message_id));
+      buf_ptr += num_chars;
+      buf_len += num_chars;
+
+      // Parameter list i.e. "#parm1=type value, #parm2=type value"
+      for (int j = 0; j < frame->num_parms; ++j)
+      {
+         val_type val;
+         val.int_val = frame->parms[j].value;
+
+         PSTD_FLUSH_CHECK(buf_len, BUFFER_SIZE, buf_ptr);
+         num_chars = snprintf(buf_ptr, BUFFER_SIZE - buf_len, "#%s=%s %s",
+            GetNameByID(frame->parms[j].name_id),
+            GetTagName(val), GetDataName(val));
+         buf_ptr += num_chars;
+         buf_len += num_chars;
+         if (j < frame->num_parms - 1)
          {
-            char *bp;
-            char *class_name;
-            char buf2[200];
-            char parms[800];
-            int j;
-
-            /* for current frame, stack[] has pointer at beginning of function;
-               use current pointer instead */
-            bp = stack[i].bkod_ptr;
-            if (i == message_depth-1)
-               bp = bkod;
-
-            class_name = "(unknown)";
-            if (c->class_name)
-               class_name = c->class_name;
-            /* use %.*s with a fixed string of pluses to get exactly one plus per
-               propagate depth */
-            sprintf(s,"%.*s%s::%s",stack[i].propagate_depth,"++++++++++++++++++++++",
-               class_name,GetNameByID(stack[i].message_id));
-            strcat(s,"(");
-            parms[0] = '\0';
-            for (j=0;j<stack[i].num_parms;j++)
-            {
-               val_type val;
-               val.int_val = stack[i].parms[j].value;
-               sprintf(buf2,"#%s=%s %s",GetNameByID(stack[i].parms[j].name_id),
-                       GetTagName(val),GetDataName(val));
-               if (j > 0)
-                  strcat(parms,",");
-               strcat(parms,buf2);
-            }
-            strcat(s,parms);
-            strcat(s,")");
-            sprintf(buf2," %s (%i)",c->fname,GetSourceLine(c,bp));
-            strcat(s,buf2);
+            num_chars = snprintf(buf_ptr, BUFFER_SIZE - buf_len, ", ");
+            buf_ptr += num_chars;
+            buf_len += num_chars;
          }
       }
-      if (i < message_depth-1)
-         strcat(buf,"\n");
-      strcat(buf,s);
-      if (strlen(buf) > sizeof(buf) - 1000)
-      {
-         strcat(buf,"\n...and more");
-         break;
-      }
+
+      PSTD_FLUSH_CHECK(buf_len, BUFFER_SIZE, buf_ptr);
+      // Have to subract 1 from bkod_ptr to return the correct line
+      // since the ptr is set to the next one to execute.
+      num_chars = snprintf(buf_ptr, BUFFER_SIZE - buf_len, ") [%s (%i)]\n",
+         c->fname, GetSourceLine(c, bkod_ptr - 1));
+      buf_ptr += num_chars;
+      buf_len += num_chars;
+
+      // Flushing if getting too close to the limit. Very conservative here -
+      // largest stack frame ~3000 (max params, max len on param names etc)
+      // so flush with max 6000 chars to spare from the 10k channel buffer.
+      PSTD_FLUSH_CHECK(buf_len, BUFFER_SIZE * 0.4f, buf_ptr);
    }
-   return buf;
+
+   // Flush buffer to tprintf (debug print without timestamp).
+   PSTD_FLUSH_CHECK(buf_len, 0, buf_ptr);
+
+   dprintf("End stack trace");
 }
 
 // New opcodes
@@ -961,6 +982,11 @@ char *BlakodStackInfo()
 // is being checked (constant, local, property, classvar) for speed. All
 // address offsets take into account position of bkod pointer after reading
 // data (i.e. offset is from the point at which the offset is used).
+
+#define ERROR_NULL_OBJECT \
+   bprintf("%s critical error, NULL object in obj:%i %s\n", \
+      __func__, object_id, GetClassNameByObjectID(object_id)); \
+   FlushDefaultChannels()
 
 // OP_GOTO_UNCOND: 1 byte instruction, 4 byte address
 void InterpretGotoUncond(int object_id, local_var_type *local_vars)
@@ -997,8 +1023,7 @@ void InterpretGotoIfTrueProperty(int object_id, local_var_type *local_vars)
    object_node *o = GetObjectByIDInterp(object_id);
    if (!o)
    {
-      bprintf("Critical error, NULL object in InterpretGotoIfTrueProperty!\n");
-      FlushDefaultChannels();
+      ERROR_NULL_OBJECT;
    }
    else if (o->p[var_check].val.v.data != 0)
       bkod += dest_addr;
@@ -1042,8 +1067,7 @@ void InterpretGotoIfFalseProperty(int object_id, local_var_type *local_vars)
    object_node *o = GetObjectByIDInterp(object_id);
    if (!o)
    {
-      bprintf("Critical error, NULL object in InterpretGotoIfFalseProperty!\n");
-      FlushDefaultChannels();
+      ERROR_NULL_OBJECT;
    }
    else if (o->p[var_check].val.v.data == 0)
       bkod += dest_addr;
@@ -1087,8 +1111,7 @@ void InterpretGotoIfNullProperty(int object_id, local_var_type *local_vars)
    object_node *o = GetObjectByIDInterp(object_id);
    if (!o)
    {
-      bprintf("Critical error, NULL object in InterpretGotoIfNullProperty!\n");
-      FlushDefaultChannels();
+      ERROR_NULL_OBJECT;
    }
    else if (o->p[var_check].val.int_val == 0)
       bkod += dest_addr;
@@ -1132,8 +1155,7 @@ void InterpretGotoIfNeqNullProperty(int object_id, local_var_type *local_vars)
    object_node *o = GetObjectByIDInterp(object_id);
    if (!o)
    {
-      bprintf("Critical error, NULL object in InterpretGotoIfNeqNullProperty!\n");
-      FlushDefaultChannels();
+      ERROR_NULL_OBJECT;
    }
    else if (o->p[var_check].val.int_val != 0)
       bkod += dest_addr;
@@ -1451,7 +1473,9 @@ void InterpretCallSettingsStoreProperty(int object_id, local_var_type *local_var
 #define INT_CHECK_UNARY(a, b) \
    if (a.v.tag != TAG_INT) \
    { \
-      bprintf(b, a.v.tag, a.v.data); \
+      bprintf("%s can't %s non-int %i,%i in obj:%i %s\n", \
+         __func__, b, a.v.tag, a.v.data, object_id, \
+         GetClassNameByObjectID(object_id)); \
       return; \
    }
 
@@ -1460,7 +1484,7 @@ void InterpretUnaryNot_L(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_UNARY(source_data, "InterpretUnaryNot_L can't NOT non-int %i,%i\n")
+   INT_CHECK_UNARY(source_data, "NOT")
 
    source_data.v.data = !source_data.v.data;
    StoreLocal(local_vars, opnode->dest, source_data);
@@ -1470,7 +1494,7 @@ void InterpretUnaryNot_P(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_UNARY(source_data, "InterpretUnaryNot_P can't NOT non-int %i,%i\n")
+   INT_CHECK_UNARY(source_data, "NOT")
 
    source_data.v.data = !source_data.v.data;
    StoreProperty(object_id, opnode->dest, source_data);
@@ -1480,7 +1504,7 @@ void InterpretUnaryNeg_L(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_UNARY(source_data, "InterpretUnaryNeg_L can't negate non-int %i,%i\n")
+   INT_CHECK_UNARY(source_data, "negate")
 
    source_data.v.data = -source_data.v.data;
    StoreLocal(local_vars, opnode->dest, source_data);
@@ -1490,7 +1514,7 @@ void InterpretUnaryNeg_P(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_UNARY(source_data, "InterpretUnaryNeg_P can't negate non-int %i,%i\n")
+   INT_CHECK_UNARY(source_data, "negate")
 
    source_data.v.data = -source_data.v.data;
    StoreProperty(object_id, opnode->dest, source_data);
@@ -1514,7 +1538,7 @@ void InterpretUnaryBitNot_L(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_UNARY(source_data, "InterpretUnaryBitNot_L can't bitwise-not non-int %i,%i\n")
+   INT_CHECK_UNARY(source_data, "bitwise-not")
 
    source_data.v.data = ~source_data.v.data;
    StoreLocal(local_vars, opnode->dest, source_data);
@@ -1524,7 +1548,7 @@ void InterpretUnaryBitNot_P(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_UNARY(source_data, "InterpretUnaryBitNot_P can't bitwise-not non-int %i,%i\n")
+   INT_CHECK_UNARY(source_data, "bitwise-not")
 
    source_data.v.data = ~source_data.v.data;
    StoreProperty(object_id, opnode->dest, source_data);
@@ -1537,7 +1561,7 @@ void InterpretUnaryPostInc(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_UNARY(source_data, "InterpretUnaryPostInc can't post-increment non-int %i,%i\n")
+   INT_CHECK_UNARY(source_data, "post-increment")
 
    if (opnode->source != opnode->dest
       || opcode->source1 != opcode->source2)
@@ -1550,7 +1574,7 @@ void InterpretUnaryPostDec(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_UNARY(source_data, "InterpretUnaryPostDec can't post-decrement non-int %i,%i\n")
+   INT_CHECK_UNARY(source_data, "post-decrement")
 
    if (opnode->source != opnode->dest
       || opcode->source1 != opcode->source2)
@@ -1563,7 +1587,7 @@ void InterpretUnaryPreInc(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_UNARY(source_data, "InterpretUnaryPostDec can't pre-increment non-int %i,%i\n")
+   INT_CHECK_UNARY(source_data, "pre-increment")
 
    ++source_data.v.data;
    if (opnode->source != opnode->dest
@@ -1576,7 +1600,7 @@ void InterpretUnaryPreDec(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_UNARY(source_data, "InterpretUnaryPreDec can't pre-decrement non-int %i,%i\n")
+   INT_CHECK_UNARY(source_data, "pre-decrement")
 
    --source_data.v.data;
    if (opnode->source != opnode->dest
@@ -1589,13 +1613,17 @@ void InterpretUnaryPreDec(int object_id, local_var_type *local_vars)
 #define LIST_CHECK_UNARY(a, b) \
    if (a.v.tag != TAG_LIST) \
    { \
-      bprintf(b, a.v.tag, a.v.data); \
+      bprintf("%s can't take %s of a non-list %i,%i obj:%i %s\n", \
+         __func__, b, a.v.tag, a.v.data, object_id, \
+         GetClassNameByObjectID(object_id)); \
       return; \
    }
 #define INVALID_LIST_CHECK_UNARY(a, b) \
    if (!IsListNodeByID(a.v.data)) \
    { \
-      bprintf(b, a.v.tag, a.v.data); \
+      bprintf("%s can't take %s of an invalid list %i,%i obj:%i %s\n", \
+         __func__, b, a.v.tag, a.v.data, object_id, \
+         GetClassNameByObjectID(object_id)); \
       return; \
    }
 
@@ -1604,8 +1632,8 @@ void InterpretUnaryFirst_L(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   LIST_CHECK_UNARY(source_data, "InterpretUnaryFirst_L object %i can't take First of a non-list %i,%i\n")
-   INVALID_LIST_CHECK_UNARY(source_data, "InterpretUnaryFirst_L object %i can't take First of an invalid list %i,%i\n")
+   LIST_CHECK_UNARY(source_data, "First")
+   INVALID_LIST_CHECK_UNARY(source_data, "First")
 
    list_node *l = GetListNodeByID(source_data.v.data);
 
@@ -1616,8 +1644,8 @@ void InterpretUnaryFirst_P(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   LIST_CHECK_UNARY(source_data, "InterpretUnaryFirst_P object %i can't take First of a non-list %i,%i\n")
-   INVALID_LIST_CHECK_UNARY(source_data, "InterpretUnaryFirst_P object %i can't take First of an invalid list %i,%i\n")
+   LIST_CHECK_UNARY(source_data, "First")
+   INVALID_LIST_CHECK_UNARY(source_data, "First")
 
    list_node *l = GetListNodeByID(source_data.v.data);
 
@@ -1628,8 +1656,8 @@ void InterpretUnaryRest_L(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   LIST_CHECK_UNARY(source_data, "InterpretUnaryRest_L object %i can't take Rest of a non-list %i,%i\n")
-   INVALID_LIST_CHECK_UNARY(source_data, "InterpretUnaryRest_L object %i can't take Rest of an invalid list %i,%i\n")
+   LIST_CHECK_UNARY(source_data, "Rest")
+   INVALID_LIST_CHECK_UNARY(source_data, "Rest")
 
    list_node *l = GetListNodeByID(source_data.v.data);
 
@@ -1640,13 +1668,29 @@ void InterpretUnaryRest_P(int object_id, local_var_type *local_vars)
 {
    UNARY_OP_INIT
    UNARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   LIST_CHECK_UNARY(source_data, "InterpretUnaryRest_P object %i can't take Rest of a non-list %i,%i\n")
-   INVALID_LIST_CHECK_UNARY(source_data, "InterpretUnaryRest_P object %i can't take Rest of an invalid list %i,%i\n")
+   LIST_CHECK_UNARY(source_data, "Rest")
+   INVALID_LIST_CHECK_UNARY(source_data, "Rest")
 
    list_node *l = GetListNodeByID(source_data.v.data);
 
    StoreProperty(object_id, opnode->dest, l ? l->rest : nil_val);
 }
+
+// Error message macros for GetClass/IsClass, to avoid repeating them.
+#define ERROR_TAG_OBJECT(a) \
+   bprintf("%s can't deal with non-object %i,%i in obj:%i %s\n", \
+      __func__, a.v.tag, a.v.data, object_id, GetClassNameByObjectID(object_id))
+#define ERROR_TAG_CLASS(a) \
+   bprintf("%s can't look for non_class %i,%i in obj:%i %s\n", __func__, \
+      a.v.tag, a.v.data, object_id, GetClassNameByObjectID(object_id))
+#define ERROR_NO_OBJECT(a) \
+   bprintf("%s can't find object %i in obj:%i %s\n", __func__, \
+      a.v.data, object_id, GetClassNameByObjectID(object_id))
+#define ERROR_NO_CLASS(a) \
+   bprintf("%s can't find class %i, DIE totally in obj:%i %s\n", __func__, \
+      a, object_id, GetClassNameByObjectID(object_id)); \
+   FlushDefaultChannels()
+
 // OP_GETCLASS_L: Unary GetClass (return class ID or $), store in local.
 void InterpretUnaryGetClass_L(int object_id, local_var_type *local_vars)
 {
@@ -1656,8 +1700,7 @@ void InterpretUnaryGetClass_L(int object_id, local_var_type *local_vars)
 
    if (source_data.v.tag != TAG_OBJECT)
    {
-      bprintf("InterpretUnaryGetClass_L can't deal with non-object %i,%i\n",
-         source_data.v.tag, source_data.v.data);
+      ERROR_TAG_OBJECT(source_data);
       StoreLocal(local_vars, opnode->dest, nil_val);
       return;
    }
@@ -1665,7 +1708,7 @@ void InterpretUnaryGetClass_L(int object_id, local_var_type *local_vars)
    object_node *o = GetObjectByIDInterp(source_data.v.data);
    if (o == NULL)
    {
-      bprintf("InterpretUnaryGetClass_L can't find object %i\n", source_data.v.data);
+      ERROR_NO_OBJECT(source_data);
       StoreLocal(local_vars, opnode->dest, nil_val);
       return;
    }
@@ -1684,8 +1727,7 @@ void InterpretUnaryGetClass_P(int object_id, local_var_type *local_vars)
 
    if (source_data.v.tag != TAG_OBJECT)
    {
-      bprintf("InterpretUnaryGetClass_P can't deal with non-object %i,%i\n",
-         source_data.v.tag, source_data.v.data);
+      ERROR_TAG_OBJECT(source_data);
       StoreProperty(object_id, opnode->dest, nil_val);
       return;
    }
@@ -1693,7 +1735,7 @@ void InterpretUnaryGetClass_P(int object_id, local_var_type *local_vars)
    object_node *o = GetObjectByIDInterp(source_data.v.data);
    if (o == NULL)
    {
-      bprintf("InterpretUnaryGetClass_P can't find object %i\n", source_data.v.data);
+      ERROR_NO_OBJECT(source_data);
       StoreProperty(object_id, opnode->dest, nil_val);
       return;
    }
@@ -1717,13 +1759,16 @@ void InterpretUnaryGetClass_P(int object_id, local_var_type *local_vars)
 #define INT_CHECK_BINARY(a, b, c) \
    if (a.v.tag != TAG_INT || b.v.tag != TAG_INT) \
    { \
-      bprintf(c, a.v.tag, a.v.data, b.v.tag, b.v.data); \
+      bprintf("%s can't %s 2 vars %i,%i and %i,%i in obj:%i %s\n", \
+         __func__, c, a.v.tag, a.v.data, b.v.tag, b.v.data, \
+         object_id, GetClassNameByObjectID(object_id)); \
       return; \
    }
-#define DIV_0_CHECK(a, b) \
+#define DIV_0_CHECK(a) \
    if (a.v.data == 0) \
    { \
-      bprintf(b); \
+      bprintf("%s can't div by 0 in obj:%i %s\n", __func__, \
+         object_id, GetClassNameByObjectID(object_id)); \
       return; \
    }
 
@@ -1732,7 +1777,7 @@ void InterpretBinaryAdd_L(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode);
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryAdd_L can't add 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "add")
 
    source1_data.v.data += source2_data.v.data;
    StoreLocal(local_vars, opnode->dest, source1_data);
@@ -1742,7 +1787,7 @@ void InterpretBinaryAdd_P(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode);
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryAdd_P can't add 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "add")
 
    source1_data.v.data += source2_data.v.data;
    StoreProperty(object_id, opnode->dest, source1_data);
@@ -1752,7 +1797,7 @@ void InterpretBinarySub_L(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinarySub_L can't sub 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "sub")
 
    source1_data.v.data -= source2_data.v.data;
    StoreLocal(local_vars, opnode->dest, source1_data);
@@ -1762,7 +1807,7 @@ void InterpretBinarySub_P(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinarySub_P can't sub 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "sub")
 
    source1_data.v.data -= source2_data.v.data;
    StoreProperty(object_id, opnode->dest, source1_data);
@@ -1772,7 +1817,7 @@ void InterpretBinaryMul_L(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryMul_L can't mul 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "mul")
 
    source1_data.v.data *= source2_data.v.data;
    StoreLocal(local_vars, opnode->dest, source1_data);
@@ -1782,7 +1827,7 @@ void InterpretBinaryMul_P(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryMul_P can't mul 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "mul")
 
    source1_data.v.data *= source2_data.v.data;
    StoreProperty(object_id, opnode->dest, source1_data);
@@ -1792,8 +1837,8 @@ void InterpretBinaryDiv_L(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryDiv_L can't div 2 vars %i,%i and %i,%i\n")
-   DIV_0_CHECK(source2_data, "InterpretBinaryDiv_L can't div by 0\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "div")
+   DIV_0_CHECK(source2_data)
 
    source1_data.v.data /= source2_data.v.data;
    StoreLocal(local_vars, opnode->dest, source1_data);
@@ -1803,8 +1848,8 @@ void InterpretBinaryDiv_P(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryDiv_P can't div 2 vars %i,%i and %i,%i\n")
-   DIV_0_CHECK(source2_data, "InterpretBinaryDiv_P can't div by 0\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "div")
+   DIV_0_CHECK(source2_data)
 
    source1_data.v.data /= source2_data.v.data;
    StoreProperty(object_id, opnode->dest, source1_data);
@@ -1814,8 +1859,8 @@ void InterpretBinaryMod_L(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryMod_L can't mod 2 vars %i,%i and %i,%i\n")
-   DIV_0_CHECK(source2_data, "InterpretBinaryMod_L can't div by 0\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "mod")
+   DIV_0_CHECK(source2_data)
 
    source1_data.v.data = abs(source1_data.v.data % source2_data.v.data);
    StoreLocal(local_vars, opnode->dest, source1_data);
@@ -1825,8 +1870,8 @@ void InterpretBinaryMod_P(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryMod_P can't mod 2 vars %i,%i and %i,%i\n")
-   DIV_0_CHECK(source2_data, "InterpretBinaryMod_P can't div by 0\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "mod")
+   DIV_0_CHECK(source2_data)
 
    source1_data.v.data = abs(source1_data.v.data % source2_data.v.data);
    StoreProperty(object_id, opnode->dest, source1_data);
@@ -1836,7 +1881,7 @@ void InterpretBinaryAnd_L(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryAnd_L can't AND 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "AND")
 
    source1_data.v.data = source1_data.v.data && source2_data.v.data;
    StoreLocal(local_vars, opnode->dest, source1_data);
@@ -1846,7 +1891,7 @@ void InterpretBinaryAnd_P(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryAnd_P can't AND 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "AND")
 
    source1_data.v.data = source1_data.v.data && source2_data.v.data;
    StoreProperty(object_id, opnode->dest, source1_data);
@@ -1856,7 +1901,7 @@ void InterpretBinaryOr_L(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryOr_L can't OR 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "OR")
 
    source1_data.v.data = source1_data.v.data || source2_data.v.data;
    StoreLocal(local_vars, opnode->dest, source1_data);
@@ -1866,7 +1911,7 @@ void InterpretBinaryOr_P(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryOr_P can't OR 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "OR")
 
    source1_data.v.data = source1_data.v.data || source2_data.v.data;
    StoreProperty(object_id, opnode->dest, source1_data);
@@ -1928,7 +1973,7 @@ void InterpretBinaryLess_L(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryLess_L can't < 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "<")
 
    source1_data.v.data = source1_data.v.data < source2_data.v.data;
    StoreLocal(local_vars, opnode->dest, source1_data);
@@ -1938,7 +1983,7 @@ void InterpretBinaryLess_P(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryLess_P can't < 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "<")
 
    source1_data.v.data = source1_data.v.data < source2_data.v.data;
    StoreProperty(object_id, opnode->dest, source1_data);
@@ -1948,7 +1993,7 @@ void InterpretBinaryGreater_L(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryGreater_L can't > 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, ">")
 
    source1_data.v.data = source1_data.v.data > source2_data.v.data;
    StoreLocal(local_vars, opnode->dest, source1_data);
@@ -1958,7 +2003,7 @@ void InterpretBinaryGreater_P(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryGreater_P can't > 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, ">")
 
    source1_data.v.data = source1_data.v.data > source2_data.v.data;
    StoreProperty(object_id, opnode->dest, source1_data);
@@ -1968,7 +2013,7 @@ void InterpretBinaryLEq_L(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryLEq_L can't <= 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "<=")
 
    source1_data.v.data = source1_data.v.data <= source2_data.v.data;
    StoreLocal(local_vars, opnode->dest, source1_data);
@@ -1978,7 +2023,7 @@ void InterpretBinaryLEq_P(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryLEq_P can't <= 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "<=")
 
    source1_data.v.data = source1_data.v.data <= source2_data.v.data;
    StoreProperty(object_id, opnode->dest, source1_data);
@@ -1988,7 +2033,7 @@ void InterpretBinaryGEq_L(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryGEq_L can't >= 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, ">=")
 
    source1_data.v.data = source1_data.v.data >= source2_data.v.data;
    StoreLocal(local_vars, opnode->dest, source1_data);
@@ -1998,7 +2043,7 @@ void InterpretBinaryGEq_P(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryGEq_P can't >= 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, ">=")
 
    source1_data.v.data = source1_data.v.data >= source2_data.v.data;
    StoreProperty(object_id, opnode->dest, source1_data);
@@ -2008,7 +2053,7 @@ void InterpretBinaryBitAnd_L(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryBitAnd_L can't & 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "&")
 
    source1_data.v.data = source1_data.v.data & source2_data.v.data;
    StoreLocal(local_vars, opnode->dest, source1_data);
@@ -2018,7 +2063,7 @@ void InterpretBinaryBitAnd_P(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryBitAnd_P can't & 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "&")
 
    source1_data.v.data = source1_data.v.data & source2_data.v.data;
    StoreProperty(object_id, opnode->dest, source1_data);
@@ -2028,7 +2073,7 @@ void InterpretBinaryBitOr_L(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryBitOr_L can't | 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "|")
 
    source1_data.v.data = source1_data.v.data | source2_data.v.data;
    StoreLocal(local_vars, opnode->dest, source1_data);
@@ -2038,7 +2083,7 @@ void InterpretBinaryBitOr_P(int object_id, local_var_type *local_vars)
 {
    BINARY_OP_INIT
    BINARY_OP_RETRIEVE(object_id, local_vars, opcode, opnode)
-   INT_CHECK_BINARY(source1_data, source2_data, "InterpretBinaryBitOr_P can't | 2 vars %i,%i and %i,%i\n")
+   INT_CHECK_BINARY(source1_data, source2_data, "|")
 
    source1_data.v.data = source1_data.v.data | source2_data.v.data;
    StoreProperty(object_id, opnode->dest, source1_data);
@@ -2080,16 +2125,14 @@ void InterpretIsClass_L(int object_id, local_var_type *local_vars)
 
    if (object_val.v.tag != TAG_OBJECT)
    {
-      bprintf("InterpretIsClass_L can't deal with non-object %i,%i\n",
-         object_val.v.tag, object_val.v.data);
+      ERROR_TAG_OBJECT(object_val);
       ISCLASS_STORE_FALSE_LOCAL
       return;
    }
 
    if (class_val.v.tag != TAG_CLASS)
    {
-      bprintf("InterpretIsClass_L can't look for non-class %i,%i\n",
-         class_val.v.tag, class_val.v.data);
+      ERROR_TAG_CLASS(class_val);
       ISCLASS_STORE_FALSE_LOCAL
       return;
    }
@@ -2097,7 +2140,7 @@ void InterpretIsClass_L(int object_id, local_var_type *local_vars)
    object_node *o = GetObjectByID(object_val.v.data);
    if (o == NULL)
    {
-      bprintf("InterpretIsClass_L can't find object %i\n", object_val.v.data);
+      ERROR_NO_OBJECT(object_val);
       ISCLASS_STORE_FALSE_LOCAL
       return;
    }
@@ -2105,8 +2148,7 @@ void InterpretIsClass_L(int object_id, local_var_type *local_vars)
    class_node *c = GetClassByID(o->class_id);
    if (c == NULL)
    {
-      bprintf("InterpretIsClass_L can't find class %i, DIE totally\n", o->class_id);
-      FlushDefaultChannels();
+      ERROR_NO_CLASS(o->class_id);
       ISCLASS_STORE_FALSE_LOCAL
       return;
    }
@@ -2132,16 +2174,14 @@ void InterpretIsClass_P(int object_id, local_var_type *local_vars)
 
    if (object_val.v.tag != TAG_OBJECT)
    {
-      bprintf("InterpretIsClass_P can't deal with non-object %i,%i\n",
-         object_val.v.tag, object_val.v.data);
+      ERROR_TAG_OBJECT(object_val);
       ISCLASS_STORE_FALSE_PROP
       return;
    }
 
    if (class_val.v.tag != TAG_CLASS)
    {
-      bprintf("InterpretIsClass_P can't look for non-class %i,%i\n",
-         class_val.v.tag, class_val.v.data);
+      ERROR_TAG_CLASS(class_val);
       ISCLASS_STORE_FALSE_PROP
       return;
    }
@@ -2149,7 +2189,7 @@ void InterpretIsClass_P(int object_id, local_var_type *local_vars)
    object_node *o = GetObjectByID(object_val.v.data);
    if (o == NULL)
    {
-      bprintf("InterpretIsClass_P can't find object %i\n", object_val.v.data);
+      ERROR_NO_OBJECT(object_val);
       ISCLASS_STORE_FALSE_PROP
       return;
    }
@@ -2157,8 +2197,7 @@ void InterpretIsClass_P(int object_id, local_var_type *local_vars)
    class_node *c = GetClassByID(o->class_id);
    if (c == NULL)
    {
-      bprintf("InterpretIsClass_P can't find class %i, DIE totally\n", o->class_id);
-      FlushDefaultChannels();
+      ERROR_NO_CLASS(o->class_id);
       ISCLASS_STORE_FALSE_PROP
       return;
    }
@@ -2184,8 +2223,7 @@ void InterpretIsClassConst_L(int object_id, local_var_type *local_vars)
 
    if (object_val.v.tag != TAG_OBJECT)
    {
-      bprintf("InterpretIsClassConst_L can't deal with non-object %i,%i\n",
-         object_val.v.tag, object_val.v.data);
+      ERROR_TAG_OBJECT(object_val);
       ISCLASS_STORE_FALSE_LOCAL
       return;
    }
@@ -2193,7 +2231,7 @@ void InterpretIsClassConst_L(int object_id, local_var_type *local_vars)
    object_node *o = GetObjectByID(object_val.v.data);
    if (o == NULL)
    {
-      bprintf("InterpretIsClassConst_L can't find object %i\n", object_val.v.data);
+      ERROR_NO_OBJECT(object_val);
       ISCLASS_STORE_FALSE_LOCAL
       return;
    }
@@ -2201,8 +2239,7 @@ void InterpretIsClassConst_L(int object_id, local_var_type *local_vars)
    class_node *c = GetClassByID(o->class_id);
    if (c == NULL)
    {
-      bprintf("InterpretIsClassConst_L can't find class %i, DIE totally\n", o->class_id);
-      FlushDefaultChannels();
+      ERROR_NO_CLASS(o->class_id);
       ISCLASS_STORE_FALSE_LOCAL
       return;
    }
@@ -2228,8 +2265,7 @@ void InterpretIsClassConst_P(int object_id, local_var_type *local_vars)
 
    if (object_val.v.tag != TAG_OBJECT)
    {
-      bprintf("InterpretIsClassConst_P can't deal with non-object %i,%i\n",
-         object_val.v.tag, object_val.v.data);
+      ERROR_TAG_OBJECT(object_val);
       ISCLASS_STORE_FALSE_PROP
       return;
    }
@@ -2237,7 +2273,7 @@ void InterpretIsClassConst_P(int object_id, local_var_type *local_vars)
    object_node *o = GetObjectByID(object_val.v.data);
    if (o == NULL)
    {
-      bprintf("InterpretIsClassConst_P can't find object %i\n", object_val.v.data);
+      ERROR_NO_OBJECT(object_val);
       ISCLASS_STORE_FALSE_PROP
       return;
    }
@@ -2245,8 +2281,7 @@ void InterpretIsClassConst_P(int object_id, local_var_type *local_vars)
    class_node *c = GetClassByID(o->class_id);
    if (c == NULL)
    {
-      bprintf("InterpretIsClassConst_P can't find class %i, DIE totally\n", o->class_id);
-      FlushDefaultChannels();
+      ERROR_NO_CLASS(o->class_id);
       ISCLASS_STORE_FALSE_PROP
       return;
    }

@@ -14,12 +14,12 @@ constants:
 
    include blakston.khd
    
-
-   ANIM_BREATH = 1
-   ANIM_BITE = 2
-   ANIM_SPIT = 3
-
    SPIT_COLOR = 82
+
+   LUPOGG_KING_MOVE = 0
+   LUPOGG_KING_CAST = -1
+   LUPOGG_KING_MELEE = 1
+   LUPOGG_KING_RANGED = 2
 
 resources:
 
@@ -65,6 +65,27 @@ classvars:
    vrDead_icon = lupoggking_dead_icon_rsc
    vrDead_name = lupoggking_dead_name_rsc
 
+   viRest_frame = 1
+   viLook_start_frame = 2
+   viLook_end_frame = 21
+   viLook_duration = 200      // Duration per frame.
+   viMove_start_frame = 7
+   viMove_end_frame = 11
+   viMove_duration = 200      // Duration per frame.
+   viAttack_start_frame = 12
+   viAttack_end_frame = 16
+   viAttack_duration = 200    // Duration per frame.
+   viHit_start_frame = 17
+   viHit_end_frame = 19
+   viHit_duration = 500       // Maximum total duration of animation.
+
+   viCast_start_frame = 2
+   viCast_end_frame = 6
+   viCast_duration = 200      // Duration per frame.
+   viFire_start_frame = 17
+   viFire_end_frame = 21
+   viFire_duration = 200      // Duration per frame.
+
    viTreasure_type = TID_LUPOGG_KING
    viSpeed = SPEED_SLOW
    viAttack_type = ATK_TYPE_CLAW
@@ -105,6 +126,9 @@ classvars:
    viBonusTP = 30
 
    viSecondsBetweenQuakes = 15
+
+   // Too boss to be pushed around.
+   vbCan_be_pushed = FALSE
 
 properties:
 
@@ -177,7 +201,7 @@ messages:
 
    DoMeleeAnimation(what = $)
    {
-      piAnimation = ANIM_BITE;
+      piAnimation = ANIM_ATTACK;
       Send(poOwner,@SomethingChanged,#what=self);
       piAnimation = ANIM_NONE;
 
@@ -219,7 +243,7 @@ messages:
 
    GetProjectileSpeed()
    {
-      return 8;
+      return 20;
    }
    
    SendProjectileAnimation()
@@ -244,52 +268,12 @@ messages:
       return;
    }
 
-   SendMoveAnimation()
-   {
-      AddPacket(1,ANIMATE_CYCLE, 4,200, 2,7, 2,11);
-
-      return;
-   }
-
-   SendLookAnimation()
-   {
-      AddPacket(1,ANIMATE_CYCLE, 4,200, 2,2, 2,21);
-
-      return;
-   }
-
-   SendAnimation()
-   {
-      if piAnimation = ANIM_BITE
-      {
-         AddPacket(1,ANIMATE_ONCE, 4,200, 2,12, 2,16, 2,1);
-
-         return;
-      }
-
-      if piAnimation = ANIM_SPIT
-      {
-         AddPacket(1,ANIMATE_ONCE, 4,200, 2,17, 2,21, 2,1);
-
-         return;
-      }
-
-      if piAnimation = ANIM_BREATH
-      {
-         AddPacket(1,ANIMATE_ONCE, 4,200, 2,2, 2,6, 2,1);
-
-         return;
-      }
-
-      propagate;
-   }
-
    MonsterAction(distance=0,sight=TRUE)
    "Figure out what the monster is going to attack with."
    "Depending on our action, return an appropriate delay."
    {
       local i, iPriority, lActions, lAction, iNum, oSpell, iAttacks,
-         iFactor, iSpellPower, lTargets, iDelay, iPowerLevel,
+         iFactor, iSpellPower, lTargets, iType, iPowerLevel,
          iAction;
 
       lActions = $;
@@ -388,19 +372,32 @@ messages:
       // We have our action at this point, let's check its ID.
       iNum = First(lAction);
 
-      // It's clear we will be acting now. Get our action delay.
-      iDelay = Send(self,@GetAttackTime);
+      if piAction % 1000 = iNum
+      {
+         if piAction % 10000 < 9000
+         {
+            piAction += 1000;
+         }
+      }
+      else
+      {
+         piAction = iNum;
+      }
+
+      iType = LUPOGG_KING_MOVE;
 
       // Standard melee attack. Let's initiate the attack.
       if (iNum = SKID_SLASH) OR (iNum = SKID_PUNCH)
       {
+         iType = LUPOGG_KING_MELEE;
          iAttacks = 100 + viBonusSwing;
          i = 0;
 
          while (iAttacks > 0) AND poTarget <> $ AND Send(poTarget,@GetOwner) <> $
          {
             if (Random(1,100) <= iAttacks)
-               AND Send(self,@TryAttack,#what=poTarget,#stroke_obj=self,#factor=Nth(lAction,7))
+               AND Send(self,@TryAttack,#what=poTarget,#stroke_obj=self,
+                        #factor=Nth(lAction,7),#iNum=iNum,#count=i,#type=iType)
             {
                ++i;
             }
@@ -414,6 +411,11 @@ messages:
          }
          else if poOwner <> $
          {
+            // Not facing the target when slapping them is rude. Let's be polite.
+            Send(self,@MonsterOrient,#new_row=Send(poTarget,@GetRow),
+                  #new_col=Send(poTarget,@GetCol),
+                  #new_finerow=Send(poTarget,@GetFineRow),
+                  #new_finecol=Send(poTarget,@GetFineCol),#face_target=TRUE);
             // We actually attack. Do the animation if we're still around.
             Send(self,@DoMeleeAttack,#swings=i);
          }
@@ -421,13 +423,15 @@ messages:
       // If we are a ranged attack, shoot something.
       else if (iNum = SKID_FIRE)
       {
+         iType = LUPOGG_KING_RANGED;
          iAttacks = 100 + viBonusShot;
          i = 0;
 
          while (iAttacks > 0) AND poTarget <> $ AND Send(poTarget,@GetOwner) <> $
          {
             if (Random(1,100) <= iAttacks)
-               AND Send(self,@TryAttack,#what=poTarget,#stroke_obj=self,#factor=Nth(lAction,7))
+               AND Send(self,@TryAttack,#what=poTarget,#stroke_obj=self,
+                        #factor=Nth(lAction,7),#iNum=iNum,#count=i,#type=iType)
             {
                ++i;
 
@@ -449,6 +453,11 @@ messages:
          }
          else if poOwner <> $
          {
+            // Same goes for shooting them in the face...
+            Send(self,@MonsterOrient,#new_row=Send(poTarget,@GetRow),
+                  #new_col=Send(poTarget,@GetCol),
+                  #new_finerow=Send(poTarget,@GetFineRow),
+                  #new_finecol=Send(poTarget,@GetFineCol),#face_target=TRUE);
             // We actually attack. Do the animation if we're still around.
             Send(self,@DoMissileAttack,#shots=i);
          }
@@ -457,6 +466,7 @@ messages:
       // Time to set our local variables.
       else if iNum < 400
       {
+         iType = LUPOGG_KING_CAST;
          oSpell = Send(SYS,@FindSpellByNum,#num=iNum);
          lTargets = [poTarget];
          lTargets = Send(oSpell,@GetTargets,#who=self,#lTargets=lTargets);
@@ -498,8 +508,6 @@ messages:
             {
                Send(self,@DoBreath);
             }
-
-            iDelay = 2000;
          }
          else if iNum = SID_HOLD
          {
@@ -514,8 +522,6 @@ messages:
 
             Send(oSpell,@DoSpellEffects,#who=self,#lTargets=[poTarget],
                   #iDuration=8000);
-
-            iDelay = 500;
          }
 
          // We cast something. Let's check if we want to switch targets.
@@ -523,11 +529,6 @@ messages:
          {
             Send(self,@FindNewTarget);
          }
-      }
-      // If none of the above was true, we simply moved.
-      else
-      {
-         iDelay = FALSE;
       }
 
       // We did something. Pay the cost.
@@ -558,14 +559,13 @@ messages:
          }
       }
 
-      // Standing too close. Pass on a negative delay which
-      // allows the monster to take a free side step.
+      // Standing too close.
       if distance < 2500
       {
-         return -iDelay;
+         Send(self,@RandomCombatMove,#direction=-10);
       }
 
-      return iDelay;
+      return iType;
    }
 
    HitSideEffect()
@@ -580,7 +580,7 @@ messages:
    "chasing, or we attack. Note that even if we can't move,"
    "we can still be 'engaging'...."
    {
-      local i,oVictim, iDistance, iChaseRange, iDelay, bSight;
+      local i,oVictim, iDistance, iChaseRange, iType, bSight;
       oVictim = poTarget;
 
       Send(self,@ClearBehavior,#timer=timer);
@@ -633,11 +633,18 @@ messages:
 
       if Send(self,@MonsterCombatCheck)
       {
-         iDelay = Send(self,@MonsterAction,#distance=iDistance,#sight=bSight);
+         iType = Send(self,@MonsterAction,#distance=iDistance,#sight=bSight);
       }
       else
       {
-         iDelay = 0;
+         iType = LUPOGG_KING_MOVE;
+      }
+
+      // We may no longer be around after the attack
+      // (e.g. damage shield).
+      if poOwner = $
+      {
+         return;
       }
 
       // Got gassed after acting and is currently resting. Quit.
@@ -647,32 +654,23 @@ messages:
       }
 
       // If we can move, we physically try to get closer.
-      if iDelay = 0
+      if iType = LUPOGG_KING_MOVE
       {
          Send(poBrain,@GetEngageBehavior,#mob=self,#target=poTarget,#behavior=piBehavior);
       }
 
-      if poTarget <> $
+      // Monster acted in some way. Let's figure out what to do next.
+      if poOwner <> $
       {
-         // A negative delay means that we are too close to our target. Move away.
-         // Else, do a random move with a one in three chance to move towards our
-         // target.
-         if iDelay < 0
+         if iType = LUPOGG_KING_MOVE
          {
-            Send(self,@MoveAway,#oTarget=poTarget,#face_target=TRUE);
+            Send(poBrain,@PostEngageTimer,#mob=self,#delay=0);
          }
-         else
+         else if iType = LUPOGG_KING_CAST
          {
-            Send(self,@MoveTowards,#oTarget=poTarget,#face_target=TRUE);
+            Send(poBrain,@PostEngageTimer,#mob=self,
+               #delay=Send(self,@GetAttackTime)/Random(2,5));
          }
-
-         // Monster acted. Pass on the appriopriate delay.
-         Send(poBrain,@PostEngageTimer,#mob=self,#delay=Abs(iDelay));
-      }
-      else
-      {
-         // Target died. Move on.
-         Send(self,@EnterStateMove);
       }
 
       return;
@@ -816,10 +814,16 @@ messages:
 
    AngeredByWallElement(what=$)
    {
-      local i, oSpell, lFinalTargets, iTime;
+      local i, oSpell, lFinalTargets, iTime, iTimeDiff;
 
       iTime = GetTickCount();
-      if (iTime - piLastEQTime < viSecondsBetweenQuakes * 1000)
+      iTimeDiff = iTime - piLastEQTime;
+
+      // Have to handle the case where GetTickCount() rolls over, e.g.
+      // piLastEQTime = 134,000,000, iTime will return <134m for 37hr and
+      // iTimeDiff will stay negative even when pogg king should quake again.
+      if (iTimeDiff >= 0
+         AND iTimeDiff < viSecondsBetweenQuakes * 1000)
       {
          return;
       }

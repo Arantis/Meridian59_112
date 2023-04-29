@@ -97,14 +97,14 @@ Author: https://www.youtube.com/c/FreeSoundEffectsFX
 Adapted from video https://www.youtube.com/watch?v=XGcOsZrZNRk
 
 -----
-loutsoul_awr.ogg
+lostsoul_awr.ogg
 Author: Ogrebane
 (https://opengameart.org/content/ghost)
 
 -----
 
-loutsoul_atk.ogg
-loutsoul_dth.ogg
+lostsoul_atk.ogg
+lostsoul_dth.ogg
 
 Author: Vinrax
 https://opengameart.org/content/zombie-pain
@@ -165,7 +165,7 @@ https://sketchfab.com/3d-models/hammer-aced5ce841c94f0ea2b80d80cd539967
 -----
 fire sword
 Author: Freddy drabble
-https://sketchfab.com/3d-models/dragon-sword-88bfc6f93cc643b5ad6227302c84fa50#download
+https://sketchfab.com/3d-models/dragon-sword-88bfc6f93cc643b5ad6227302c84fa50
 
 -----
 bread
@@ -305,3 +305,48 @@ https://sketchfab.com/3d-models/plague-mask-a54d7994219343a28b03b1206b4591f2
 cowboyhat.bgf
 Author: Anthony Yanez
 https://sketchfab.com/3d-models/low-poly-cowboy-hat-16c504d81f5843c3985d7f208c27b79a
+
+------
+desert.ogg
+Author: Spring Spring
+https://opengameart.org/content/simple-desert
+
+------
+Msnowman.bgf
+MsnowmanX.bgf
+Author: Mutte (https://www.blendswap.com/profile/622)
+https://www.blendswap.com/blend/4221
+
+------
+Msnowman.bgf
+MsnowmanX.bgf
+Author: Adler2019 (https://www.blendswap.com/profile/978712)
+https://www.blendswap.com/blend/24379
+
+------
+iwallice.bgf
+woice.bgf
+Author:der_On (https://www.blendswap.com/profile/21)
+https://www.blendswap.com/blend/1857
+
+proj_ice.bgf, proj_shock.bgf
+Author: JoesAlotofthings
+https://opengameart.org/content/alotofimpacts-5-frame-impacts-4-variations-light-blue-impacts-16of20
+------
+proj_drain.bgf
+Author: JoesAlotofthings
+https://opengameart.org/content/alot-of-particles-staroutarea-special-effect-alotofparticles20
+------
+proj_fire.bgf
+Author: Cethiel
+https://opengameart.org/content/fire-wrath-magic-effect
+------
+proj_acid.bgf
+Author: rubberduck
+https://opengameart.org/content/sparkling-fireball-effect#
+------
+
+gshqm.bgf
+gshqmov.bgf
+Author:ShaunBr		(https://www.turbosquid.com/Search/Artists/ShaunBr)
+https://www.turbosquid.com/3d-models/christsmas-wreath-with-bells-3d-model-1826567

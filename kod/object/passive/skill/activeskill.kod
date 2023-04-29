@@ -17,16 +17,20 @@ resources:
 
    include activeskill.lkod
 
-   ActiveSkill_wrong_weapon_rsc = "You are not wielding a suitable weapon for this attack."
-   ActiveSkill_no_weapon_rsc = "You can't use this skill with your bare hands!"
-   ActiveSkill_no_targets_rsc = "There is nothing to attack within your weapon's range."
+   ActiveSkill_no_melee_rsc = "You are not wielding a suitable weapon for this attack!"
+   ActiveSkill_no_ranged_rsc = "You can't use this skill with a ranged weapon!"
+   ActiveSkill_no_martial_rsc = "You can't use this skill with your bare hands!"
+   ActiveSkill_no_touch_rsc = "You can't use this skill with your hands looking like - this!"
+   ActiveSkill_no_targets_rsc = "There is nothing to attack within your range!"
 
 classvars:
 
    viSignatureBuffSID = $
-   vbIsRangedAttack = FALSE
-   vbIsMeleeAttack = FALSE
-   vbIsUnarmedAttack = FALSE
+   vbIsRangedAttack = FALSE         // Bows & throwing weapons
+   vbIsMeleeAttack = FALSE          // Any melee weapon
+   vbIsMartialAttack = FALSE        // Punching and kicking
+   vbIsTouchAttack = FALSE          // Active touch attack enchantment
+   vbCheckTargetsPreTrance = TRUE
 
 properties:
 
@@ -43,8 +47,6 @@ messages:
    {
       // Check for advancement conditions.
       Send(self,@ImproveAbility,#who=who);
-
-      Send(who,@SetAttackTime,#time=viPostPerform_time);
 
       Send(self,@PlaySkillSound,#room_obj=Send(who,@GetOwner),#what=who);
 
@@ -67,49 +69,51 @@ messages:
          return FALSE;
       }
 
-      // Make sure we are using an appropriate weapon.
-      oWeapon = Send(who,@GetWeapon);
-
-      if oWeapon = $
+      if vbIsMeleeAttack
+         OR vbIsRangedAttack
+         OR vbIsMartialAttack
+         OR vbIsTouchAttack
       {
-         if NOT vbIsUnarmedAttack
+         // Make sure we are using an appropriate weapon.
+         oWeapon = Send(who,@GetWeapon);
+
+         if IsClass(oWeapon,&Punch)
+            AND NOT vbIsMartialAttack
          {
-            Send(who,@MsgSendUser,#message_rsc=ActiveSkill_no_weapon_rsc);
+            Send(who,@MsgSendUser,#message_rsc=ActiveSkill_no_martial_rsc);
 
             return FALSE;
          }
-      }
-      else if NOT IsClass(oWeapon,&Weapon)
-      {
-         Send(who,@MsgSendUser,#message_rsc=ActiveSkill_wrong_weapon_rsc);
-
-         return FALSE;
-      }
-      // Assume both can use ranged active skills.
-      else if IsClass(oWeapon,&RangedWeapon)
-         OR IsClass(oWeapon,&ThrownWeapon)
-      {
-         if NOT vbIsRangedAttack
+         else if IsClass(oWeapon,&Touch)
+            AND NOT vbIsTouchAttack
          {
-            Send(who,@MsgSendUser,#message_rsc=ActiveSkill_wrong_weapon_rsc);
+            Send(who,@MsgSendUser,#message_rsc=ActiveSkill_no_touch_rsc);
 
             return FALSE;
          }
-      }
-      else if NOT vbIsMeleeAttack
-      {
-         Send(who,@MsgSendUser,#message_rsc=ActiveSkill_wrong_weapon_rsc);
+         // Assume both can use ranged active skills.
+         else if (IsClass(oWeapon,&RangedWeapon) OR IsClass(oWeapon,&ThrownWeapon))
+            AND NOT vbIsRangedAttack 
+         {
+            Send(who,@MsgSendUser,#message_rsc=ActiveSkill_no_ranged_rsc);
 
-         return FALSE;
-      }
+            return FALSE;
+         }
+         else if NOT vbIsMeleeAttack
+         {
+            Send(who,@MsgSendUser,#message_rsc=ActiveSkill_no_melee_rsc);
 
-      // If the skill is an attack, it needs some targets.
-      if (vbIsMeleeAttack OR vbIsRangedAttack OR vbIsUnarmedAttack)
-         AND (lTargets = $)
-      {
-         Send(who,@MsgSendUser,#message_rsc=ActiveSkill_no_targets_rsc);
+            return FALSE;
+         }
 
-         return FALSE;
+         // If the skill is an attack, it needs some targets.
+         if vbCheckTargetsPreTrance
+            AND (lTargets = $)
+         {
+            Send(who,@MsgSendUser,#message_rsc=ActiveSkill_no_targets_rsc);
+
+            return FALSE;
+         }
       }
 
       if viSignatureBuffSID <> $
@@ -131,7 +135,7 @@ messages:
    SkillFailed(who=$)
    "Active skills will delay actions by their post perform time if they fail."
    {
-      Send(who,@SetAttackTime,#time=viPostPerform_time);
+      Send(who,@SetAttackTime,#time=Send(self,@GetPostActionDelay,#who=who));
 
       propagate;
    }

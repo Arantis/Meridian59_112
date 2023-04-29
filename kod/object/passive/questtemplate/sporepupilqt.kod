@@ -129,6 +129,9 @@ properties:
 
    piTimeLimit = 2 * 24 * 3600 // 2 days
 
+   piQuestDuration = 5
+   piQuestDifficulty = 3
+
 messages:
 
    Constructor()
@@ -155,7 +158,8 @@ messages:
 
       // Template #95 is sporeburst learn quest
       // QNT_ID_SPORE_PUPIL_ONE
-      if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_SHOWUP,
+      if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MESSAGE,
+               #NPC_modifier=QN_NPCMOD_NONE,#cargolist=[ quest_hello_trigger ],
                #quest_node_index=QNT_ID_SPORE_PUPIL_ONE)
       {
          lNPCs = $;

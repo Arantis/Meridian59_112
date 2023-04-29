@@ -51,7 +51,9 @@ classvars:
    viInventory_group = 3
    viBroken_group = 2
 
-   viRange = 4 * FINENESS
+   viUnleash_type = UNLEASH_LUNGE
+
+   viRange = 3 * FINENESS
 
 properties:
 

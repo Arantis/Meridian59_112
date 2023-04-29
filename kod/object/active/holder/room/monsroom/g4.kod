@@ -70,7 +70,8 @@ messages:
    SetMonsterGenPoints()
    {
       plGenerators = [ [ 5, 42], [15, 16], [22,  7], [21, 44], [30, 43],
-                       [47, 47], [45, 33], [35, 32], [46, 11], [38,  6]
+                       [47, 47], [45, 33], [35, 32], [46, 11], [38,  6],
+                       [45, 40], [15,  8], [38, 19]
                      ];
 
       return;
@@ -91,6 +92,14 @@ messages:
                            ROW_IS_GREATER_THAN,37], plEdge_exits);
       plEdge_Exits = Cons([LEAVE_WEST, RID_F4, 18, 48, ROTATE_NONE,
                            ROW_IS_LESS_THAN,38], plEdge_exits);
+
+      propagate;
+   }
+
+   CreateStandardObjects()
+   {
+      Send(self,@NewHold,#what=Create(&PlantSoil),
+           #new_row=6,#new_col=40,#fine_row=32,#fine_col=32,#angle=ANGLE_EAST);
 
       propagate;
    }

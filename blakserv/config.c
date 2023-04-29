@@ -191,6 +191,7 @@ config_table_type config_table[] =
 { DEBUG_HASH,             T, "Hash",          CONFIG_BOOL,  "No" },
 { DEBUG_TIME_CALLS,       T, "TimeCalls",     CONFIG_BOOL,  "No" },
 { DEBUG_UDP,              T, "UDP",           CONFIG_BOOL,  "No" },
+{ DEBUG_DUMPSTACK,        T, "DumpStack",     CONFIG_BOOL,  "Yes" },
 
 { SECURITY_GROUP,         F, "[Security]",    CONFIG_GROUP, "" },
 { SECURITY_LOG_SPOOFS,    T, "LogSpoofs",     CONFIG_BOOL,  "Yes" }, 
@@ -210,6 +211,7 @@ config_table_type config_table[] =
 { MYSQL_USERNAME,         F, "Username",      CONFIG_STR,   "root" },
 { MYSQL_PASSWORD,         F, "Password",      CONFIG_STR,   "" },
 { MYSQL_HOST,             F, "Host",          CONFIG_STR,   "localhost" },
+{ MYSQL_CPORT,            F, "Port",          CONFIG_INT,   "3306" },
 { MYSQL_DB,               F, "Database",      CONFIG_STR,   "meridian" },
 
 { BLAKOD_GROUP,           F, "[Blakod]",      CONFIG_GROUP, "" },

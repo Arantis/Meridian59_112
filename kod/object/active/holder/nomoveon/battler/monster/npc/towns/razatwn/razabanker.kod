@@ -1,0 +1,95 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+RazaBanker is RazaTown
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include razabanker.lkod
+
+   RazaBanker_name_rsc = "Gamos"
+   RazaBanker_icon_rsc = gamos.bgf
+   RazaBanker_desc_rsc = \
+      "As a self-proclaimed disciple of the goddess Shal'ille, Gamos "
+      "has made it his holy mission to spread the blessed teachings of "
+      "fiscal responsibility to the masses - and where better to start "
+      "than in the quaint town of Raza with its near endless supply of "
+      "young and impressionable adventurers ready to spread the gospel.  "
+      "Enthusiastically embracing his role as a mentor, he never tires of "
+      "familiarizing his 'acolytes' with important theological concepts "
+      "such as 'wicked be the poor' or 'no loans'."
+
+
+classvars:
+
+   vrName = RazaBanker_name_rsc
+   vrDesc = RazaBanker_desc_rsc
+   vrIcon = RazaBanker_icon_rsc
+
+   viAttributes = \
+      MOB_NOFIGHT | MOB_BANKER | MOB_NOMOVE | MOB_LISTEN | MOB_RANDOM \
+      | MOB_RECEIVE | MOB_LAWFUL | MOB_NOQUEST
+   viOccupation = MOB_ROLE_BANKER
+
+   viBank = BID_TOS
+   viMerchant_markup = MERCHANT_BARGAIN
+
+properties:
+
+messages:
+
+   AffectMood(why=$,what=$)
+   {
+      if why = MOODMOD_BANK_DEPOSIT
+      {
+         Send(self,@SetMood,#new_mood=piMood+2);
+      }
+
+      if why = MOODMOD_BANK_WITHDRAWAL
+      {
+         Send(self,@SetMood,#new_mood=piMood-2);
+      }
+
+      return;
+   }
+
+   UserEntered(who=$)
+   {
+      if Send(who,@GetAction) = UA_HAPPY
+      {
+         Send(self,@SetMood,#new_mood=piMood+1);
+      }
+
+      if Send(who,@GetAction) = UA_WRY
+      {
+         Send(self,@SetMood,#new_mood=piMood-1);
+      }
+
+      propagate;
+   }
+
+   Constructor()
+   {
+      plWantedItems = [&Money];
+
+      propagate;
+   }
+
+   GetBankNum()
+   {
+      return viBank;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

@@ -46,6 +46,8 @@ classvars:
    viSchool = SS_RIIJA
    viSpell_level = 1
 
+   vbFragile = TRUE
+
    viHarmful = FALSE
 
 properties:
@@ -251,14 +253,6 @@ messages:
       propagate;
    }
 
-   TranceEnding(who=$,state=$)
-   "Allow maintained spells to do something when their trance breaks."
-   {
-      Send(who,@RemoveEnchantment,#what=self,#state=state);
-
-      propagate;
-   }
-
    StartPeriodicEnchantment(who = $, state = $, iSpellPower = 0)
    {
       Send(who,@StartEnchantment,#what=self,#time=viTickDuration,
@@ -270,10 +264,9 @@ messages:
 
    SetSpellPlayerFlag(who=$, state=$)
    {
-      Send(who,@SetTranceFlag);
       Send(who,@SetPlayerFlag,#flag=PFLAG_ANONYMOUS,#value=TRUE);
 
-      return;
+      propagate;
    }
 
    //// Stuff we handle to be a defense modifier.
@@ -303,7 +296,7 @@ messages:
       return damage;
    }
 
-   DefendingHit(who = $, what = $)
+   DamageItem(who = $, what = $)
    {
       return;
    }

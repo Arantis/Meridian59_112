@@ -39,8 +39,6 @@ classvars:
    vrIcon = Conveyance_icon_rsc
    vrDesc = Conveyance_desc_rsc
 
-   viCast_time = 0
-
    viSpell_num = SID_CONVEYANCE
    viSpell_level = 1
    viSchool = SS_KRAANAN
@@ -101,7 +99,7 @@ messages:
 
       oRoom = Send(who,@GetOwner);
       if oRoom = $
-         OR Send(oRoom,@GetRegion) <> RID_KOCATAN
+         OR Send(oRoom,@GetRegion) <> REGION_KOCATAN
       {
          oVault = Send(SYS,@FindVaultByNum,#num=VID_BARLOQUE);
          iFee = Send(oTarget,@GetBulk);

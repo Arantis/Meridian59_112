@@ -45,9 +45,7 @@ resources:
    BergMerchant_Full_rsc = "You nyrphling, I cannot carry no more."
    BergMerchant_Not_Interested = "As if I'm interested."
 
-   BergMerchant_too_many_rsc = \
-      "Can't you see, I already have so many."
-
+   BergMerchant_unwanted_rsc = "You're wasting my time."
    BergMerchant_sold_rsc = "I'll see you again."
 
 classvars:
@@ -59,8 +57,12 @@ classvars:
       MOB_NOFIGHT | MOB_RANDOM | MOB_LISTEN \
       | MOB_NOMOVE | MOB_BUYER | MOB_SELLER | MOB_NOQUEST
    viOccupation = MOB_ROLE_MERCHANT
-   viMerchant_markup = MERCHANT_RIPOFF
+   viMerchant_markup = MERCHANT_FLAT
    viGender = GENDER_FEMALE
+
+   // For each new item we only have limited inventory
+   viBaseStock = 50
+   viWindrootMax = 20
 
    // We sell what other people have given us
    vbSellFromInventory = TRUE
@@ -137,7 +139,7 @@ messages:
    {
       local i, oInventory, lForSale;
 
-      oInventory = Create(&WindrootSeed,#number=3);
+      oInventory = Create(&WindrootLeaf,#number=viWindrootMax);
       lForSale = [ oInventory ];
       Send(self,@NewHold,#what=oInventory);
 
@@ -145,10 +147,10 @@ messages:
       {
          oInventory = Send(self,@PickInventory);
 
-         if IsClass(oInventory,&WindrootSeed)
+         if IsClass(oInventory,&WindrootLeaf)
          {
             Send(oInventory,@Delete);
-            oInventory = Create(&Knife);
+            oInventory = Create(&WindrootSeed,#number=viWindrootMax);
          }
 
          lForSale = Cons(oInventory,lForSale);
@@ -176,8 +178,7 @@ messages:
       }
       else if (iRandom < 8)
       {
-         lInventoryList = [  &WindrootLeaf,
-                             &TwinkleCap,
+         lInventoryList = [  &TwinkleCap,
                              &SpessartineRock
                           ];
       }
@@ -193,7 +194,8 @@ messages:
          lInventoryList = [  &PurpleMushroom,
                              &Ruby,
                              &PolishedSeraphym,
-                             &ShamanBlood
+                             &ShamanBlood,
+                             &WindrootLeaf
                           ];
       }
       else if (iRandom < 40)
@@ -224,14 +226,13 @@ messages:
                              &Elderberry,
                              &Snack,
                              &Mushroom,
-                             &WindrootSeed,
                              &Emerald,
                              &RedMushroom
                           ];
       }
 
       iRan = Random(1,Length(lInventoryList));
-      oInventory = Create(Nth(lInventoryList,iRan));
+      oInventory = Create(Nth(lInventoryList,iRan),#number=viBaseStock);
 
       return oInventory;
    }
@@ -269,7 +270,7 @@ messages:
                 return TRUE;
             }
 
-            vrBuyer_Unwanted = BergMerchant_too_many_rsc;
+            vrBuyer_Unwanted = BergMerchant_unwanted_rsc;
 
             return FALSE;
          }
@@ -351,7 +352,7 @@ messages:
    {
       if Send(who,@CheckPlayerFlag,#flag=PFLAG_OUTLAW)
       {
-         Send(self,@SetMood,#new_mood=piMood-2);
+         Send(self,@SetMood,#new_mood=piMood+2);
       }
 
       Post(who,@SomeoneSaid,#what=self,#string=BergMerch_entry_welcome,

@@ -29,6 +29,80 @@ properties:
 
 messages:
 
+   UpdateDatabase()
+   {
+      local i, iFlags, oLib, oObj;
+
+      // Wiki Export: Sold items, skills and spells by each NPC
+      // List of all NPC's and a list of rooms where the NPC is in
+
+      if (plFor_Sale <> $)
+      {
+         // Exclude NPCs who sell items from players, because their sell list
+         // is variable and shouldn't be in the database.
+         if (NOT vbSellFromInventory)
+         {
+            foreach i in First(plFor_sale) //items
+            {
+               // Hacky - skip Bonji if not in the first guildhall.
+               // Sell items are duplicates and won't be inserted into DB anyway.
+               if (GetClass(self) = &GuildDecorator
+                  AND Send(poOwner,@GetRoomNum) <> RID_GUILDH1)
+               {
+                  break;
+               }
+               RecordStat(STAT_NPC_SELLITEM, TAG_RESOURCE, vrName, TAG_RESOURCE,
+                     Send(i,@GetName,#number=3), TAG_INT,
+                     Send(i,@GetPaletteTranslation));
+            }
+         }
+         foreach i in Nth(plFor_sale,2) //skills
+         {
+            RecordStat(STAT_NPC_SELLSKILL, TAG_RESOURCE, vrName, TAG_INT, i);
+         }
+         foreach i in Nth(plFor_sale,3) //spells
+         {
+            RecordStat(STAT_NPC_SELLSPELL, TAG_RESOURCE, vrName, TAG_INT, i);
+         }
+      }
+
+      if Send(self,@MobIsCondSeller)
+      {
+         oLib = Send(SYS,@GetLibrary);
+         foreach i in Send(oLib,@GetConditionalSaleItems,#mob=self)
+         {
+            oObj = First(i);
+            RecordStat(STAT_NPC_SELLCOND, TAG_RESOURCE, vrName, TAG_RESOURCE,
+                  Send(oObj,@GetName,#number=3), TAG_INT,
+                  Send(oObj,@GetPaletteTranslation), TAG_INT, Nth(i,2));
+         }
+      }
+
+      iFlags = Send(self,@IsExpansionNPC);
+
+      RecordStat(STAT_NPCS, TAG_RESOURCE, vrName, RESOURCE_GER, vrName, 
+            TAG_RESOURCE, vrIcon, TAG_RESOURCE, vrDesc, RESOURCE_GER, vrDesc, 
+            TAG_INT, viMerchant_markup, TAG_INT, iFlags);
+
+      // STAT_NPC_ZONE
+      Send(self,@UpdateDatabaseNPCZone);
+
+      return;
+   }
+
+   UpdateDatabaseNPCZone()
+   "For normal NPC, this is just the owner."
+   {
+      // Must be instantiated.
+      if (poOwner <> $)
+      {
+         RecordStat(STAT_NPC_ZONE, TAG_RESOURCE, vrName, TAG_INT,
+               Send(poOwner,@GetRoomNum), TAG_INT, piRow, TAG_INT, piCol);
+      }
+
+      return;
+   }
+
    CanMorphTo()
    {
       return FALSE;
@@ -73,6 +147,11 @@ messages:
    }
 
    IsArenaMonster()
+   {
+      return FALSE;
+   }
+
+   IsExpansionNPC()
    {
       return FALSE;
    }

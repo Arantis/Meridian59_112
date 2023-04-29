@@ -165,5 +165,20 @@ messages:
       return viProjectileLightColor;
    }
 
+   AddChargeTime()
+   {
+      return TRUE;
+   }
+
+   RemoveChargeTime()
+   {
+      return TRUE;
+   }
+
+   SetTimeValues()
+   {
+      return TRUE;
+   }
+
 end
 ////////////////////////////////////////////////////////////////////////////////

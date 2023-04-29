@@ -35,6 +35,7 @@ classvars:
    viWeaponQuality = WEAPON_QUALITY_HIGH
 
    viProficiency_Needed = SKID_PROFICIENCY_SWORD
+   viDefault_stroke_number = SKID_SLASH
 
    viValue_average = 500
    viWeight = 85
@@ -52,8 +53,6 @@ classvars:
    viFlameWave_Chance = 15
    viFlameWave_Spellpower = 15
 
-   viRange = 4 * FINENESS
-
 properties:
 
    piAttack_type = ATK_TYPE_MAGIC+ATK_TYPE_SLASH+SPL_TYPE_FIRE
@@ -70,7 +69,7 @@ messages:
         }
         propagate;
    }
-   
+
    NewUnused()
    {
         if IsClass(poOwner, &Player)
@@ -80,8 +79,8 @@ messages:
         }
         propagate;
    }
-   
-   WeaponHitTarget()
+
+   HitSideEffect(what=$,who=$,amount=0,stroke_obj=$)
    {
       local oSpell;
       
@@ -89,21 +88,26 @@ messages:
       
       if Random(1,100) <= viFlameWave_Chance
       {
-         Send(oSpell,@CastSpell,#who=poOwner,#lTargets=[Send(poOwner,@GetTarget)],
+         Send(oSpell,@CastSpell,#who=who,#lTargets=[what],
             #iSpellPower=viFlameWave_Spellpower,#bItemCast=TRUE);
       }
 
       propagate;
    }
-   
+
    CanEnchant()
    {
       return FALSE;
    }
-   
+
    CanMend()
    {
       return FALSE;
+   }
+
+   IsExpansionItem()
+   {
+      return TRUE;
    }
 
 end

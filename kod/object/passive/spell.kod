@@ -90,9 +90,18 @@ resources:
    spell_desc_level = "LEVEL : %i"
    spell_desc_mana = "MANA : %i"
    spell_desc_vigor = "VIGOR : %i"
-   spell_desc_rsc = "%s%s%s%r%r%r%r"
+   spell_desc_rsc = "%s%s%s%r%r%r%r%r"
    spell_reg_desc = "\n\nRequired reagents:%r"
    spell_reg_one = "\n   %i %s"
+   spell_level_enough_rsc = "\n\nYou have earned enough points in this level to advance "
+      "to the next one!"
+   spell_level_needed_rsc = "\n\nYou need %i more percentage point(s) in this level to "
+      "advance to the next one."
+   spell_level_other_needed_rsc = \
+      "\n\nThis is not one of your top three spells at this level!"
+      "\nYou would need %i more percentage point(s) in this level to advance to the next one "
+      "using this spell."
+
    spell_school_riija = "Riija"
    spell_school_shalille = "Shal'ille"
    spell_school_qor = "Qor"
@@ -134,6 +143,8 @@ resources:
       "You finish channeling your %s spell!"
    spell_trance_fumble = \
       "You struggle to shape your %s spell!"
+   spell_charge_stopped = \
+      "You shape the %s spell with whatever energy you have gathered!"
    spell_trance_begin_sound = spell_trance_begin.ogg
    spell_trance_break_sound = spell_trance_break.ogg
    spell_trance_cancel_sound = spell_trance_cancel.ogg
@@ -153,10 +164,16 @@ resources:
 
    Spell_too_few_hp_rsc = "You are not powerful enough to cast this spell."
 
-   cannot_cast_cooldown = \
-      "You cannot cast %s - this spell is still on cooldown!"
    cannot_cast_on_phased_out = \
       "You can't cast anything on %s while %s is phased out of existence!"
+
+   spell_charge_min = charge_min.ogg
+   spell_charge_low = charge_low.ogg
+   spell_charge_mid = charge_mid.ogg
+   spell_charge_high = charge_high.ogg
+   spell_charge_max = charge_max.ogg
+
+   spell_charge_end = charge_end.ogg
 
 classvars:
 
@@ -198,11 +215,6 @@ classvars:
    viAnimation_end = 1
    viIcon_animation_start = 2
    viIcon_animation_end = 2
-
-   // viCast_time is in milliseconds.
-   viCast_time = 0
-   // viPostCast_time in seconds, since it works off GetTime().
-   viPostCast_time = 1
 
    // Cooldown classvars: SID is the ID of the cooldown spell to use.
    viCooldownSID = 0
@@ -263,7 +275,30 @@ classvars:
 
    vbCombatOnly = TRUE
 
+   // Does this spells ongoing effect constitute a trance?
+   vbFragile = FALSE
+
+   vrCharge_min = spell_charge_min
+   vrCharge_low = spell_charge_low
+   vrCharge_mid = spell_charge_mid
+   vrCharge_high = spell_charge_high
+   vrCharge_max = spell_charge_max
+   vrCharge_end = spell_charge_end
+   viCharge_loop_duration = 200
+
+   //// Spellpower adjustments for charge spells that haven't been fully charged.
+   // Fully charged spells cast at 100 percent of their original spellpower.
+   // Base spellpower at 0 charge.
+   viCharge_base = 20
+
+   // Additional spellpower gained while charging.
+   viCharge_boost = 80
+
 properties:
+
+   // Both piCast_time and piPostCast_time are in milliseconds.
+   piCast_time = 0
+   piPostCast_time = 1000
 
    // Format of reagents:  Each element of plReagents is a list, describing a
    // single reagent of format [class of reagent, # of reagent required].
@@ -289,7 +324,53 @@ properties:
    // How much threat do our non damage spells cause?
    piSpellThreatPercentage = 100
 
-messages:      
+   // How much does this spell's trance slow us down?
+   piTranceMovementSpeedReduction = 50
+
+   // Is this spell a spell that is charged by holding a key?
+   pbKey_hold = FALSE
+
+messages:
+
+   UpdateDatabase()
+   {
+      // Wiki Exports: Information for each spell and reagents needed by each spell
+      local i, iFlag, oItem, bDelete;
+
+      iFlag = pbEnabled + 2 * pbAccessible + 4 * Send(self,@IsExpansionSpell);
+
+      RecordStat(STAT_SPELLS, TAG_INT, viSpell_num, TAG_RESOURCE, vrName, RESOURCE_GER, vrName,
+            TAG_RESOURCE, vrIcon, TAG_RESOURCE, vrDesc, RESOURCE_GER, vrDesc,
+            TAG_INT, viSchool, TAG_INT, viSpell_level, TAG_INT, viMana,
+            TAG_INT, viChance_To_Increase, TAG_INT, viMeditate_ratio,
+            TAG_INT, viSpellExertion, TAG_INT, piCast_time, TAG_INT, iFlag);
+
+      foreach i in plReagents
+      {
+         bDelete = FALSE;
+         if (First(i) = &Heartstone)
+         {
+            // Create heartstone because 'abstract' class Heartstone isn't in
+            // item template list. Must delete it afterwards.
+            oItem = Create(&Heartstone);
+            bDelete = TRUE;
+         }
+         else
+         {
+            oItem = Send(SYS,@FindTemplateItemByClass,#cClass=First(i));
+         }
+
+         RecordStat(STAT_SPELL_REAGENT, TAG_INT, viSpell_num, TAG_RESOURCE,
+               Send(oItem,@GetName,#number=3), TAG_INT, Nth(i,2));
+
+         if (bDelete)
+         {
+            Send(oItem,@Delete);
+         }
+      }
+
+      return;
+   }
 
    Constructed()
    {
@@ -330,6 +411,11 @@ messages:
    "Can any object learn this spell? Includes accessibility to DMs."
    {
       return pbCanBeLearned;
+   }
+
+   IsExpansionSpell()
+   {
+      return FALSE;
    }
 
    GetSchoolStr(iSchool=-1)
@@ -400,6 +486,7 @@ messages:
          Send(self,@SendReagentCost,#who=who);
          Send(self,@SendStatsDesc,#who=who);
          Send(self,@SendTimeDesc,#who=who);
+         Send(self,@SendAbilityLevelUpInfo,#who=who);
 
          return;
       }
@@ -460,6 +547,32 @@ messages:
    {
       // Adds a blank time resource.
       Send(self,@SendTimeRemaining,#iTime=0,#parm1=self);
+
+      return;
+   }
+
+   SendAbilityLevelUpInfo(who = $)
+   {
+      local iNeed;
+
+      iNeed = Send(who,@PlayerNewAbilityLevel,#spell_num=vispell_Num,#bAlert=FALSE);
+
+      if iNeed = $
+      {
+         AddPacket(4,system_blank_resource);
+      }
+      else if iNeed = 0
+      {
+         AddPacket(4,spell_level_enough_rsc);
+      }
+      else if iNeed < 0
+      {
+         AddPacket(4,spell_level_other_needed_rsc,4,-iNeed);
+      }
+      else
+      {
+         AddPacket(4,spell_level_needed_rsc,4,iNeed);
+      }
 
       return;
    }
@@ -742,7 +855,7 @@ messages:
 
    CanPayManaVigor(who=$,lTargets=$,iSpellPower=0,bFreeCast=FALSE)
    {
-      local iCrystalizeManaAbility, oCrystalizeMana;
+      local iCrystalizeManaAbility, oCrystalizeMana, iManaCost;
 
       if Send(who,@PlayerIsImmortal)
       {
@@ -751,6 +864,28 @@ messages:
 
       if bFreeCast
       {
+         return TRUE;
+      }
+
+      // If we are a held ability, any sort of positive mana and vigor value
+      // will suffice. The charge will be ended upon running out of either
+      // via EVENT_NO_MANA or EVENT_NO_VIGOR in BreakTrance.
+      if pbKey_hold
+      {
+         // If we are stuck at zero mana or zero vigor, don't allow casting.
+         if viMana AND NOT Send(who,@GetMana)
+         {
+            Send(who,@MsgSendUser,#message_rsc=spell_insufficient_magic,
+                  #parm1=vrName);
+            return FALSE;
+         }
+
+         if viSpellExertion AND NOT Send(who,@GetVigor)
+         {
+            Send(who,@MsgSendUser,#message_rsc=spell_too_tired,#parm1=vrName);
+            return FALSE;
+         }
+
          return TRUE;
       }
 
@@ -763,9 +898,10 @@ messages:
          return FALSE;
       }
 
+      iManaCost = Send(self,@GetManaCost,#who=who,#iSpellpower=iSpellpower);
+
       // Make sure caster has enough magic
-      if Send(who,@GetMana)
-            < Send(self,@GetManaCost,#who=who,#iSpellpower=iSpellpower)
+      if NOT Send(who,@HasMana,#amount=iManaCost)
       {
          iCrystalizeManaAbility = Send(who,@GetSpellAbility,
                                        #spell_num=SID_CRYSTALIZE_MANA);
@@ -790,6 +926,39 @@ messages:
       }
 
       return TRUE;
+   }
+
+   StartChargeDrain(who=$,iPower=0,bFreeCast=FALSE)
+   "Applies a resource drain in proportion to the spell's cost for charging."
+   {
+      local iTime, iMana, iDrainRate;
+
+      // Apply a dummy drain for the sound effect if it's a freecast.
+      if bFreeCast
+      {
+         Send(who,@StartOverTimeEffect,#strength=0,#what=self,#who=who,
+            #removable=REMOVE_INTERNAL,#showicon=FALSE,#type=TYPE_MANA);
+
+         return;
+      }
+
+      // Let's start our mana and vigor drains...
+      // First, get our adjusted cast time and mana cost.
+      iTime = Send(self,@GetTranceTime,#iSpellpower=iPower,#who=who);
+      iMana = Send(self,@GetManaCost,#who=who,#iSpellpower=iPower);
+
+      // Now, let's calculate our drain rate. We need to drain the mana
+      // cost of the spell over the cast time of the spell.
+      iDrainRate = iMana*(1000000/iTime);         
+      Send(who,@StartOverTimeEffect,#strength=-iDrainRate,#what=self,#who=who,
+         #removable=REMOVE_INTERNAL,#showicon=FALSE,#type=TYPE_MANA);
+
+      // Same for exertion.
+      iDrainRate = viSpellExertion*(1000000/iTime);         
+      Send(who,@StartOverTimeEffect,#strength=-iDrainRate,#what=self,#who=who,
+         #removable=REMOVE_INTERNAL,#showicon=FALSE,#type=TYPE_VIGOR);
+
+      return;
    }
 
    CanPayReagents(who=$,lTargets=$,iSpellPower=0,bFreeCast=FALSE)
@@ -829,7 +998,8 @@ messages:
             foreach oUserObject in lItems
             {
                if (IsClass(oUserObject,cReagentClass)
-                  OR IsClass(oUserObject,cSubReagentClass))
+                  OR (cSubReagentClass <> $ // Might not exist e.g. heartstones.
+                     AND IsClass(oUserObject,cSubReagentClass)))
                {
                   if Send(oUserObject,@IsStackable)
                   {
@@ -840,12 +1010,12 @@ messages:
                      }
                      else
                      {
-                        iNumNeeded = iNumNeeded - iNum;
+                        iNumNeeded -= iNum;
                      }
                   }
                   else
                   {
-                     iNumNeeded = iNumNeeded - 1;
+                     --iNumNeeded;
                   }
 
                   if iNumNeeded = 0
@@ -884,12 +1054,9 @@ messages:
       return TRUE;
    }
 
-   CooldownCastTried(who = $, rName = $)
-   "rName is the name of the spell being cast."
+   GetCooldownSID()
    {
-      Send(who,@MsgSendUser,#message_rsc=cannot_cast_cooldown,#parm1=rName);
-
-      return;
+      return viCooldownSID;
    }
 
    CanPayCosts(who=$,lTargets=$,iSpellPower=0,bItemCast=FALSE,bFreeCast=FALSE)
@@ -903,9 +1070,6 @@ messages:
          if (oSpell <> $
             AND Send(who,@IsEnchanted,#what=oSpell))
          {
-            // Cooldown might want to do specific things here.
-            Send(oSpell,@CooldownCastTried,#who=who,#rName=vrName);
-
             return FALSE;
          }
       }
@@ -982,7 +1146,7 @@ messages:
 
          // Don't check the attack time for itemcast spells. The items
          // themselves will allow or disallow this.
-         if NOT Send(who,@IsOkayAttackTime,#seconds=viPostCast_Time)
+         if NOT Send(who,@IsOkayAttackTime,#time=piPostCast_time)
          {
             return FALSE;
          }
@@ -1385,6 +1549,13 @@ messages:
    {
       local lReagent;
 
+      // No need to refund anything for charge spells. They drain resources
+      // during the channel instead of an upfront payment.
+      if pbKey_hold
+      {
+         return;
+      }
+
       // Ignore any mana restrictions, else it'll wipe out any mana over max.
       // Important for users w/ cryst mana active e.g. breaking a trance that
       // triggers cryst mana leaving user with >10x their new max mana.
@@ -1506,6 +1677,12 @@ messages:
          return TRUE;
       }
 
+      // Held abilities pay their cost via resource drain while charging.
+      if pbKey_hold
+      {
+         return TRUE;
+      }
+
       if NOT (bSuccess OR Send(SETTINGS_OBJECT,@NoFizzles))
       {
          Send(self,@SpellFailed,#who=who,#iSpellpower=iSpellpower);
@@ -1552,11 +1729,22 @@ messages:
 
             if NOT (iLeftover = iNumNeeded)
             {
-               iNumNeeded = iNumNeeded - iLeftover;
+               iNumNeeded -= iLeftover;
             }
 
-            Send(self,@PayReagent,#who=who,
-               #cReagentClass=cReagentClass,#iAmount=iNumNeeded);
+            if (cReagentClass <> $)
+            {
+               Send(self,@PayReagent,#who=who,
+                     #cReagentClass=cReagentClass,#iAmount=iNumNeeded);
+            }
+            else
+            {
+               // Shouldn't be able to get to this point since CanPayReagents
+               // should fail the spell cast if not enough reagents exist. Log
+               // a debug message if we do get here though.
+               Debug("ALERT: Tried to substitute for a reagent that has no sub! ",
+                     "Reagent is ",Send(oReg,@GetName));
+            }
          }
       }
 
@@ -1580,14 +1768,19 @@ messages:
                if Send(oUserObject,@IsStackable)
                {
                   // SubtractNumber will return anything left over
-                  iLeftover = Send(oUserObject,@SubtractNumber,#number=iAmount);
-                  return iLeftover;
+                  iLeftover = Send(oUserObject,@SubtractNumber,#number=iLeftover);
+                  if (iLeftOver <= 0)
+                  {
+                     return iLeftover;
+                  }
                }
                else
                {
                   Send(oUserObject,@Delete);
-                  iLeftover--;
-                  return iLeftover;
+                  if (--iLeftOver <= 0)
+                  {
+                     return iLeftover;
+                  }
                }
             }
          }
@@ -1794,6 +1987,7 @@ messages:
                if viHarmful
                   AND who <> $
                   AND IsClass(who,&User)
+                  AND who <> oTarget
                {
                   Send(oTarget,@DoPvpNotify);
                }
@@ -2120,6 +2314,11 @@ messages:
 
    SetSpellPlayerFlag(who=$)
    {
+      if vbFragile
+      {
+         Send(who,@SetFragileFlag);
+      }
+
       return;
    }
 
@@ -2352,11 +2551,11 @@ messages:
 
       iCastTime = Send(self,@GetTranceTime,#iSpellpower=iSpellpower,#who=who);
 
-      //If we fumble, we increase cast time by viPostCast_Time
+      //If we fumble, we increase cast time by piPostCast_time
       if NOT bSuccess
          AND Send(SETTINGS_OBJECT,@NoFizzles)
       {
-         iCastTime += viPostCast_Time*1000;
+         iCastTime += piPostCast_time;
 
          Send(who,@MsgSendUser,#message_rsc=spell_trance_fumble,
             #parm1=Send(self,@GetName));
@@ -2413,14 +2612,19 @@ messages:
       Send(who,@MsgSendUser,#message_rsc=spell_trance_begin,
            #parm1=Send(self,@GetName));
 
-      Send(who,@WaveSendUser,#wave_rsc=spell_trance_begin_sound);
+      // Held abilities handle sound via PeriodicSound().
+      if NOT pbKey_hold
+      {
+         Send(who,@WaveSendUser,#wave_rsc=spell_trance_begin_sound);
+      }
 
       Send(oTrance,@BeginTrance,#what=self,#who=who,#lTargets=lTargets,
-           #time=iCastTime,#bFreeCast=bFreeCast,#power=iSpellpower);
+           #time=iCastTime,#bFreeCast=bFreeCast,#power=iSpellpower,
+           #iHold=pbKey_hold);
 
       // If our cast time is the result of a fumble, increase post cast delay
       // by trance time.
-      if NOT viCast_time
+      if NOT piCast_time
       {
          Send(who,@SetAttackTime,#time=iCastTime,#bAdd=TRUE);
       }
@@ -2437,7 +2641,7 @@ messages:
          Debug("Bad iSpellpower passed to GetTranceTime");
       }
 
-      if viCast_time = 0
+      if piCast_time = 0
          OR (IsClass(who,&DM) AND Send(who,@PlayerIsImmortal))
       {
          return 0;
@@ -2446,17 +2650,17 @@ messages:
       // 51% for high, 149% for low
       iPercent = 150 - iSpellPower;
 
-      return (viCast_time*iPercent)/100;
+      return (piCast_time*iPercent)/100;
    }
 
    GetRawTranceTime()
    {
-      return viCast_time;
+      return piCast_time;
    }
 
-   GetPostCastDelay()
+   GetPostActionDelay()
    {
-      return viPostCast_Time;
+      return piPostCast_time;
    }
 
    DoPreTranceEffects(who=$,lTargets=$,iSpellpower=$)
@@ -2503,33 +2707,68 @@ messages:
       return;
    }
 
-   BreakTrance(who=$,state=$,event=$)
-   "Determines when a maintained ability (mana focus etc.) can be disrupted."
+   // Determines if the casting trance (&Trance) can be disrupted.
+   CanBreakTrance(who=$,state=$,event=EVENT_NONE,disruption=0)
    {
-      if event = EVENT_OOM AND viManaDrain = 0
+      // Only charged spells have an issue with running oom...
+      if (event = EVENT_NO_MANA)
+         AND NOT (pbKey_hold AND viMana)
       {
          return FALSE;
       }
 
-      Send(self,@TranceEnding,#who=who,#state=state);
+      // or out of vigor.
+      if (event = EVENT_NO_VIGOR)
+         AND NOT (pbKey_hold AND viSpellExertion)
+      {
+         return FALSE;
+      }
+
+      // Some events can cancel any trance. Not the ones below though.
+      // These events can only break trance, if vbCanBreakTrance = TRUE.
+      if NOT vbCanBreakTrance
+      {
+         if (event = EVENT_CANCEL)
+            OR (event = EVENT_ABILITY)
+            OR (event = EVENT_ATTACK)         
+            OR (event = EVENT_DAMAGE)
+            OR (event = EVENT_DISRUPT)
+            OR (event = EVENT_USE)
+         {
+            return FALSE;
+         }
+      }
 
       return TRUE;
    }
 
-   CanBreakTrance(who=$,state=$,event=1,disruption=0)
-   "Determines if the casting trance (&Trance) can be disrupted."
+   BreakFragileEffect(who=$,state=$,event=$)
+   "Determines when a maintained ability (mana focus etc.) can be disrupted."
    {
-      return vbCanBreakTrance;
+      if (event = EVENT_NO_MANA AND viManaDrain = 0)
+         OR (event = EVENT_NO_VIGOR)
+      {
+         return FALSE;
+      }
+
+      if vbFragile
+      {
+         Send(self,@FragileEffectBroken,#who=who,#state=state);
+      }
+
+      return vbFragile;
    }
 
-   TranceEnding()
-   "Spells override this to do spell-ending specific stuff.  Note that this "
+   FragileEffectBroken(who=$,state=$)
+   "Spells can override this to do spell-ending specific stuff.  Note that this "
    "is ONLY called (through BreakTrance) if the spell ends via resting, "
    "out-of-mana etc., and not if the spell ends forcefully (arena match, "
    "RecreateAll, purge/purify).  Ideally spells overriding this add a call "
    "to RemoveEnchantment, which calls RemoveEnchantmentEffects, which calls "
    "EndEnchantment."
    {
+      Send(who,@RemoveEnchantment,#what=self,#state=state);
+
       return;
    }
 
@@ -2599,7 +2838,7 @@ messages:
       return viOutlaw;
    }
 
-   WeaponHitTarget()
+   DamageItem()
    "This is needed by all the spells (such as bless and Killing Fields)"
    "which offer an attack modifier."
    {
@@ -2708,8 +2947,7 @@ messages:
       iItemModifier = 0;
       foreach i in Send(who,@GetPlayerUsing)
       {
-         iItemModifier = iItemModifier + Send(i,@GetSpellModifier,
-                                              #oSpell=self);
+         iItemModifier += Send(i,@GetSpellModifier,#oSpell=self);
       }
    
       // Each school has a bonus for different things.
@@ -2902,17 +3140,36 @@ messages:
       return viSchool = SS_RIIJA;
    }
 
-
    TranceBroken(who=$,state=$,event=$)
    {
-      if (event = EVENT_CAST) OR (event = EVENT_ATTACK)
+      local iTime, oSkill;
+
+      if (event = EVENT_ABILITY) OR (event = EVENT_ATTACK)
       {
       // Reset attack timer to allow instant switching without recast.
          Send(who,@SetAttackTime);
       }
-      else
+      else if NOT (event = EVENT_DAMAGE)
       {
-         Send(who,@SetAttackTime,#time=viPostCast_Time*1000,#bAdd=TRUE);
+         iTime = piPostCast_time;
+
+         // We have been crushed. Let's see if that sets us back.
+         if event = EVENT_CRUSH
+         {
+            oSkill = Send(SYS,@FindSkillByNum,#num=SKID_CRUSHING_BLOWS);
+            iTime += Send(oSkill,@GetCrushDelay,#who=who);
+         }
+
+         Send(who,@SetAttackTime,#time=iTime,#bAdd=TRUE);
+      }
+
+      // If we are a held ability, running out of resources is
+      // treated the same as no longer holding the key down.
+      if pbKey_hold
+         AND ((event = EVENT_NO_MANA) OR (event = EVENT_NO_VIGOR))
+      {
+         Send(self,@StoppedHolding,#who=who,#state=state);
+         return;
       }
 
       Send(who,@MsgSendUser,#message_rsc=spell_trance_break,
@@ -2921,7 +3178,6 @@ messages:
 
       return;
    }
-
 
    TranceCanceled(who=$,state=$)
    {
@@ -2943,6 +3199,22 @@ messages:
       Send(who,@MsgSendUser,#message_rsc=spell_trance_complete,
            #parm1=Send(self,@GetName));
 
+      return;
+   }
+
+   TranceEnded(who=$,state=$)
+   {
+      if pbKey_hold
+      {
+         Send(who,@DeleteOverTimeEffect,#what=self,#who=who,
+            #removal=REMOVE_INTERNAL);
+      }
+
+      return;
+   }
+
+   TranceFailed(who=$)
+   {
       return;
    }
 
@@ -3095,8 +3367,13 @@ messages:
    }
 
    OverTimeEffectStarting(who=$,overtimeeffect=$,bReport=TRUE)
-   "Just a dummy catching over time effects without message."
    {
+      if IsClass(who,&Player)
+         AND pbKey_hold
+      {
+         Send(who,@PeriodicSounds);
+      }
+
       return;
    }
 
@@ -3180,9 +3457,45 @@ messages:
       return viSpellExertion;
    }
 
-   GetPeriodicSound()
+   GetPeriodicSound(level=$)
    {
-      return;
+      local rSound;
+
+      if level <> $
+      {
+         level /= 20;
+
+         switch(level)
+         {
+            case 0:
+               rSound = vrCharge_min;
+               break;
+            case 1:
+               rSound = vrCharge_low;
+               break;
+            case 2:
+               rSound = vrCharge_mid;
+               break;
+            case 3:
+               rSound = vrCharge_high;
+               break;
+            default:
+               rSound = vrCharge_max;
+               break;
+         }
+      }
+
+      return rSound;
+   }
+
+   GetPeriodicSoundEnd()
+   {
+      return vrCharge_end;
+   }
+
+   GetPeriodicSoundDuration()
+   {
+      return viCharge_loop_duration;
    }
 
    GetLightColor(state=$)
@@ -3243,6 +3556,90 @@ messages:
       }
 
       return TRUE;
+   }
+
+   GetMovementSpeedReduction()
+   {
+      return piTranceMovementSpeedReduction;
+   }
+
+   CaughtInPreparation(who=$,what=$,use_weapon=$,stroke_obj=$)
+   {
+      return;
+   }
+
+   // Dummies. Only relevant for attackspells.
+   AddTrance()
+   {
+      return TRUE;
+   }
+
+   RemoveTrance()
+   {
+      return TRUE;
+   }
+
+   SetTimeValues()
+   {
+      return TRUE;
+   }
+
+   StoppedHolding(who=$,state=$)
+   {
+      local oAbility, lTargets, iSpellPower, iBase, iBoost, lOldTargets,
+         iDelta;
+
+      // Cast our spell with whatever charge we have accumulated.
+      lOldTargets = Nth(state,3);
+
+      // Double-check to get valid targets.  Don't report 'cause we've already 
+      // spammed them during the first check – unless we are dealing with a regular
+      // autoattack here.
+      lTargets = Send(self,@GetGoodTargets,#who=who,#lTargets=lOldTargets,#report=FALSE);
+
+      iSpellPower = Send(self,@GetSpellPower,#who=who);
+
+      iBase = iSpellPower*viCharge_base/100;
+
+      iBoost = iSpellPower*viCharge_boost*Send(who,@GetChargePercentage)/10000;
+
+      iSpellPower = iBase + iBoost;
+
+      if Send(self,@DoubleCheckAfterTrance,#who=who,#lTargets=lTargets,
+               #iSpellPower=iSpellPower)
+      {
+         Send(who,@MsgSendUser,#message_rsc=spell_charge_stopped,
+            #parm1=Send(self,@GetName));
+
+         if lTargets <> $
+            AND isClass(First(lTargets),&Battler)
+            AND Send(First(lTargets),@TryDeflect,#what=self,#caster=who)
+         {
+            Post(self,@CastSpell,#who=who,#lTargets=[who],
+                  #iSpellPower=iSpellPower/2);
+         }
+         else
+         {
+            Post(self,@CastSpell,#who=who,#lTargets=lTargets,
+                  #iSpellPower=iSpellPower);
+         }
+      }
+
+      iDelta = Bound(piPostCast_time - piCast_time,0,$);
+
+      // Let's make sure we obey the minimum delay between casts,
+      // even if our cast took longer because of disruptions.
+      if iDelta > Send(who,@GetAttackTimeRemaining)
+      {
+         Send(who,@SetAttackTime,#time=iDelta);
+      }
+
+      return;
+   }
+
+   IsHeld()
+   {
+      return pbKey_hold;
    }
 
 end

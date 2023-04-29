@@ -14,15 +14,19 @@ BOFS = shaldiscqt.bof krandiscqt.bof farendiscqt.bof qordiscqt.bof \
        stunteddwarfqt.bof hypochondriacqt.bof offeringqt.bof seraphymqt.bof \
        priestessinsigniaqt.bof monkinsigniaqt.bof factioninsigniaqt.bof \
        mysterymobqt.bof moxalscamoneqt.bof moxalscamtwoqt.bof oreqt.bof \
-       councilletterqt.bof chessqt.bof loveletterqt.bof necroguildqt.bof \
+       councilletterqt.bof chessqt.bof loveletterqt.bof spawnlichqt.bof \
        aphrodisiacqt.bof necrowarnevilqt.bof necrowarngoodqt.bof taxqt.bof \
        barrestockqt.bof cateringqt.bof apothecaryqt.bof kocweaponqt.bof \
        kocaleqt.bof warletterqt.bof idpotionqt.bof idwandqt.bof \
-       jalanecklaceqt.bof murderqt.bof abstainpvp.bof mananodeqt.bof \
+       jalanecklaceqt.bof murderqt.bof abstainpvpqt.bof mananodeqt.bof \
        razamumqt.bof ratkingqt.bof nerugolemqt.bof swamphuntqt.bof \
        firegolemqt.bof eastloversqt.bof dangelqt.bof wendigohuntqt.bof \
        bergkingpoliticsqt.bof bergkingspdrqt.bof wolfhuntqt.bof \
-       jixainnescort.bof escortassassination.bof jixabanditqt.bof \
-       spinebeastbossqt.bof monstercharmqt.bof
+       jixainnescort.bof escortassnqt.bof jixabanditqt.bof \
+       spinebeastbossqt.bof monstercharmqt.bof resignqt.bof \
+       findjasbankqt.bof findcornothqt.bof tosgraveqt.bof marmummiesqt.bof \
+       marstatuesqt.bof castlevicqt.bof marentqt.bof fungushuntqt.bof \
+       marthrashqt.bof orchuntqt.bof goodfeyhuntqt.bof evfeyhuntqt.bof \
+       molluskhuntqt.bof nerutrollhuntqt.bof lupogghuntqt.bof
 
 !include $(KODDIR)\kod.mak

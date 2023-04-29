@@ -57,6 +57,9 @@ resources:
    system_killed_self = "~B~U~k[###]~n ~B~v%q was just slain by %s own folly."
    system_user_killed_room = \
       "~B~U~k[###]~n ~B~v%q has met an unfortunate end in %s."
+   system_user_killed_room_angel = \
+      "~B~U~k[###]~n ~B~vShal'ille has come to the aid of %q, who has met "
+      "an unfortunate end in %s."
    system_user_killed_bridge_faith = \
       "~B~U~k[###]~n ~B~v%q just hurled %sself from the cliffs of Riija to find a watery "
       "grave."
@@ -578,43 +581,6 @@ properties:
 
 messages:
 
-   PrintNumberExisting(classtype=&Reagent,bIncludeDMs=FALSE,who=$)
-   {
-      local i;
-
-      plTempList = $;
-
-      Send(classtype,@PrintExisting,#bIncludeDMs=bIncludeDMs,#who=who);
-
-      if (who <> $)
-      {
-         GodLog(Send(who,@GetTrueName)," owns: ");
-      }
-      else if (bIncludeDMs)
-      {
-         GodLog("Total number including DMs:");
-      }
-      else
-      {
-         GodLog("Total number NOT including DMs:");
-      }
-
-      foreach i in plTempList
-      {
-         GodLog(First(i),": ",Nth(i,2));
-      }
-
-      return;
-   }
-
-   ReportExisting(sName=$,iNumber=0)
-   {
-      plTempList = Send(self,@AddToSortedList,#what=sName,#lList=plTempList,
-                        #number=iNumber);
-
-      return;
-   }
-
    GetName()
    {
       return system_name_rsc;
@@ -673,12 +639,12 @@ messages:
       Send(self,@RecreateAllTreasureTypes);
       Send(self,@RecreateAllBackgroundObjects);
 
+      Send(self,@RecreateAllSpells,#figure_totals=FALSE);
+      Send(self,@RecreateAllSkills,#figure_totals=FALSE);
+
       Send(self,@RecreateAllRooms);
       Send(self,@RecreateNodeAttack);
       Send(self,@RecreateParliament);
-
-      Send(self,@RecreateAllSpells,#figure_totals=FALSE);
-      Send(self,@RecreateAllSkills,#figure_totals=FALSE);
 
       Send(self,@RecreateMonsterTemplates);
       Send(self,@RecreateItemTemplates);
@@ -1574,6 +1540,25 @@ messages:
       return plReflections;
    }
 
+   GetReflections(who=$)
+   "Returns the list of reflections for the original object 'who'."
+   {
+      local i;
+
+      if (who <> $)
+      {
+         foreach i in plReflections
+         {
+            if First(i) = who
+            {
+               return Nth(i,2);
+            }
+         }
+      }
+
+      return;
+   }
+
    CleanReflectionList()
    {
       local i, j;
@@ -1938,6 +1923,21 @@ messages:
       return plRooms;
    }
 
+   FindRoomByString(string = $)
+   {
+      local i;
+
+      foreach i in plRooms
+      {
+         if StringEqual(Send(i,@GetTrueName),string)
+         {
+            return i;
+         }
+      }
+
+      return $;
+   }
+
    FindUserByString(string = $)
    {
       return GetTableEntry(phUsers,string);
@@ -2018,28 +2018,18 @@ messages:
       {
          // Could be a war kill.  Check for it.
          Send(Send(SYS,@GetWarEvent),@RecordWarKill,#who=killer,#victim=what);
-
-         Send(poNecromancerBalance,@IncrementPKCounter);
-         if Send(killer,@IsUsingA,#class=&NecromancerAmulet)
-         {
-            Send(poNecromancerBalance,@IncrementNKCounter);
-         }
-
-         if (Send(killer,@FindHoldingActive,#class=&HunterSword) <> $)
-         {
-            Send(poNecromancerBalance,@IncrementHKCounter);
-         }
+         Send(poNecromancerBalance,@RecordWarKill,#who=killer,#victim=what);
 
           // PvP flag set to TRUE.
-         RecordStat(STAT_PLAYERDEATH,Send(what,@GetTrueName),
-               Send(killer,@GetTrueName),Send(oRoom,@GetName),
-               oKillingBlow,TRUE);
+         RecordStat(STAT_PLAYERDEATH, TAG_RESOURCE, Send(what,@GetTrueName),
+               TAG_RESOURCE, Send(killer,@GetTrueName), TAG_RESOURCE,
+               Send(oRoom,@GetName), TAG_RESOURCE, oKillingBlow, TAG_INT, TRUE);
       }
       else
       {
-         RecordStat(STAT_PLAYERDEATH,Send(what,@GetTrueName),
-               Send(killer,@GetName),Send(oRoom,@GetName),
-               oKillingBlow,FALSE);
+         RecordStat(STAT_PLAYERDEATH, TAG_RESOURCE, Send(what,@GetTrueName),
+               TAG_RESOURCE, Send(killer,@GetName), TAG_RESOURCE,
+               Send(oRoom,@GetName), TAG_RESOURCE, oKillingBlow, TAG_INT, FALSE);
       }
 
       Send(Send(self,@FindRoomByNum,#num=RID_TOS_GRAVEYARD),@PlayerKilled,
@@ -2062,15 +2052,32 @@ messages:
          }
          else
          {
-            rMessage = system_user_killed_room;
-            param2 = Send(killer,@GetTrueName);
+            // For other rooms, if the player's current owner differs from
+            // the room that killed them, list the current owner. Players
+            // who die from overtime effects (e.g. burning) could make it
+            // to an adjacent room before expiring, making the death message
+            // incorrect if it uses the originating room.
+            if (oRoom <> $ AND oRoom <> killer)
+            {
+               killer = oRoom;
+            }
+
+            if (Send(what,@DoesPlayerTakeNewbieDeath))
+            {
+               rMessage = system_user_killed_room_angel;
+               param2 = Send(killer,@GetTrueName);
+            }
+            else
+            {
+               rMessage = system_user_killed_room;
+               param2 = Send(killer,@GetTrueName);
+            }
          }
 
          // Eliminate param3 that was set by default
          param3 = $;
       }
-
-      if what = killer
+      else if what = killer
       {
          rMessage = System_killed_self;
          param2 = Send(what,@GetHisHer);
@@ -2856,6 +2863,8 @@ messages:
       Send(self,@CreateOneRoomIfNew,#num=RID_RAZA_BAR,#class=&RazaBar);
       Send(self,@CreateOneRoomIfNew,#num=RID_RAZA_MUSEUM,#class=&RazaMuseum);
       Send(self,@CreateOneRoomIfNew,#num=RID_RAZA_HALL,#class=&RazaHall);
+      Send(self,@CreateOneRoomIfNew,#num=RID_RAZA_BANK,#class=&RazaBank);
+      Send(self,@CreateOneRoomIfNew,#num=RID_RAZA_VAULT,#class=&RazaVault);
 
       Send(self,@CreateOneRoomIfNew,#num=RID_FAROL_WEST,#class=&FarolWest);
       Send(self,@CreateOneRoomIfNew,#num=RID_RAZA_FOREST,#class=&RazaForest);
@@ -2877,6 +2886,7 @@ messages:
       Send(self,@CreateOneRoomIfNew,#num=RID_GUILDH15,#class=&GuildHall15);
       Send(self,@CreateOneRoomIfNew,#num=RID_GUILDH16,#class=&GuildHall16);
       Send(self,@CreateOneRoomIfNew,#num=RID_GUILDH17,#class=&GuildHall17);
+      Send(self,@CreateOneRoomIfNew,#num=RID_GUILDH18,#class=&GuildHall18);
 
       Send(self,@CreateOneRoomIfNew,#num=RID_TEMPLE_KRAANAN,#class=&TempleKraanan);
       Send(self,@CreateOneRoomIfNew,#num=RID_TEMPLE_QOR,#class=&TempleQor);
@@ -2950,27 +2960,20 @@ messages:
       Send(self,@CreateOneRoomIfNew,#num=RID_OLD_TOS_APOTH,#class=&OldTosApoth);
       Send(self,@CreateOneRoomIfNew,#num=RID_OLD_TOS_SMITH,#class=&OldTosSmith);
 
-      Send(self,@CreateOneRoomIfNew,#num=RID_DESERTPATH1,#class=&DesertPath1);
-      Send(self,@CreateOneRoomIfNew,#num=RID_DESERTCLIFFACCESS,#class=&DesertCliffAccess);
-      Send(self,@CreateOneRoomIfNew,#num=RID_DESERTCLIFFNOACCESS1,#class=&DesertCliffNoAccess1);
-      Send(self,@CreateOneRoomIfNew,#num=RID_DESERTCLIFFNOACCESS2,#class=&DesertCliffNoAccess2);
-      Send(self,@CreateOneRoomIfNew,#num=RID_DESERTCLIFFNOACCESS3,#class=&DesertCliffNoAccess3);
-      Send(self,@CreateOneRoomIfNew,#num=RID_DESERTDUNES,#class=&DesertDunes);
-      Send(self,@CreateOneRoomIfNew,#num=RID_WAYLAYOASIS,#class=&WaylayOasis);
-      Send(self,@CreateOneRoomIfNew,#num=RID_DESERTSHORE1,#class=&DesertShore1);
-      Send(self,@CreateOneRoomIfNew,#num=RID_DESERTSHORE2,#class=&DesertShore2);
-      Send(self,@CreateOneRoomIfNew,#num=RID_DESERTSHORE3,#class=&DesertShore3);
-      Send(self,@CreateOneRoomIfNew,#num=RID_DESERTRIVER1,#class=&DesertRiver1);
-      Send(self,@CreateOneRoomIfNew,#num=RID_DESERTRIVER2,#class=&DesertRiver2);
-      Send(self,@CreateOneRoomIfNew,#num=RID_DESERTBRIDGE,#class=&DesertBridge);
+   // Desert Maps
+      Send(self,@CreateOneRoomIfNew,#num=RID_HAKKA,#class=&HakkaCity);
+      Send(self,@CreateOneRoomIfNew,#num=RID_HAKKA_INN,#class=&HakkaInn);
+      Send(self,@CreateOneRoomIfNew,#num=RID_DESERT_MAZE,#class=&HakkaDesert1);
+      Send(self,@CreateOneRoomIfNew,#num=RID_DESERT_MAZE,#class=&DesertMaze1);
 
       Send(self,@CreateOneRoomIfNew,#num=RID_RATCAVE1,#class=&RatCave1);
       Send(self,@CreateOneRoomIfNew,#num=RID_RATCAVE2,#class=&RatCave2);
       Send(self,@CreateOneRoomIfNew,#num=RID_RATCAVE3,#class=&RatCave3);
       
+      // Special
       Send(self,@CreateOneRoomIfNew,#num=RID_QORMASLAND,#class=&QormasLand);
 
-      // BERG City
+   // Berg City
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_CITY,#class=&BergCity);
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_VAULT,#class=&BergVault);
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_SMITH,#class=&BergSmith);
@@ -2983,7 +2986,7 @@ messages:
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_LEADER_HALL,#class=&BergLeaderHall);
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_JAIL,#class=&BergJail);
 
-      // Berg Monsroom
+   // Berg Outskirts
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_MG,#class=&BergMG);
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_1,#class=&Berg1);
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_2,#class=&Berg2);
@@ -2997,17 +3000,18 @@ messages:
       Send(self,@CreateOneRoomIfNew,#num=RID_SURVIVAL_ARENA,#class=&SurvivalArena);
       Send(self,@CreateOneRoomIfNew,#num=RID_GOLEM_DUNGEON,#class=&GolemDungeon);
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_GRAVE,#class=&BergGrave);
-
-      // Berg Room
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_JALA,#class=&BergJala);
 
-      // DeathValley
+      // Death Valley
       Send(self,@CreateOneRoomIfNew,#num=RID_DVALLEY_1,#class=&DValley1);
       Send(self,@CreateOneRoomIfNew,#num=RID_DVALLEY_2,#class=&DValley2);
       Send(self,@CreateOneRoomIfNew,#num=RID_DVALLEY_3,#class=&DValley3);
       Send(self,@CreateOneRoomIfNew,#num=RID_DVALLEY_4,#class=&DValley4);
       Send(self,@CreateOneRoomIfNew,#num=RID_DVALLEY_5,#class=&DValley5);
       Send(self,@CreateOneRoomIfNew,#num=RID_DVALLEY_5B,#class=&DValley5B);
+
+      Send(self,@CreateOneRoomIfNew,#num=RID_DVALLEY_TEMPLE,#class=&DValleyTemple);
+      
 
       // Connect Queensway
       Send(self,@CreateOneRoomIfNew,#num=RID_J3_1,#class=&OutdoorsJ3_1);
@@ -3834,6 +3838,7 @@ messages:
       Send(self,@CreateOneSpellIfNew,#num=SID_FLAME_WAVE,#class=&FlameWave);
       Send(self,@CreateOneSpellIfNew,#num=SID_ARCTIC_BREATH,#class=&ArcticBreath);
       Send(self,@CreateOneSpellIfNew,#num=SID_METEOR,#class=&Meteor);
+      Send(self,@CreateOneSpellIfNew,#num=SID_ICEWALL,#class=&Icewall);
       Send(self,@CreateOneSpellIfNew,#num=SID_GAZE_OF_THE_BASILISK,#class=&Paralyze);
 
       Send(self,@CreateOneSpellIfNew,#num=SID_SPORE_BURST,#class=&SporeBurst);
@@ -3938,6 +3943,9 @@ messages:
       Send(self,@CreateOneSpellIfNew,#num=SID_DISSONANCE,#class=&Dissonance);
       Send(self,@CreateOneSpellIfNew,#num=SID_SPIRITUAL_WINGS,#class=&CreateSpiritualWings);
       Send(self,@CreateOneSpellIfNew,#num=SID_COOLDOWN_SPIRITUAL_WINGS,#class=&CooldownCreateSpiritualWings);
+      Send(self,@CreateOneSpellIfNew,#num=SID_NODE_TRAVEL,#class=&NodeTravel);
+      Send(self,@CreateOneSpellIfNew,#num=SID_COOLDOWN_SPRINT,#class=&CooldownSprint);
+      Send(self,@CreateOneSpellIfNew,#num=SID_COOLDOWN_UNLEASH,#class=&CooldownUnleash);
 
       // Trance may be searched for frequently, leave at end of list
       Send(self,@CreateOneSpellIfNew,#num=SID_TRANCE,#class=&Trance);
@@ -4148,36 +4156,43 @@ messages:
    "Admin supported\n"
    "Call this to create any skills in this function that don't currently exist."
    {
-       Send(self,@CreateOneSkillIfNew,#num=SKID_DODGE,#class=&Dodge);
-       Send(self,@CreateOneSkillIfNew,#num=SKID_PARRY,#class=&Parry);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_SLASH,#class=&Slash);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_PUNCH,#class=&Punch);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_THRUST,#class=&Thrust);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_KICK,#class=&Kick);
+      Send(self,@CreateOneSkillIfNew,#num=SKID_DODGE,#class=&Dodge);
+      Send(self,@CreateOneSkillIfNew,#num=SKID_PARRY,#class=&Parry);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_SLASH,#class=&Slash);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_PUNCH,#class=&Punch);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_THRUST,#class=&Thrust);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_KICK,#class=&Kick);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_STAB,#class=&Stab);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_STRIKE,#class=&Strike);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_TOUCH,#class=&Touch);
 
-       Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_SWORD,#class=&SwordProficiency);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_MACE,#class=&MaceProficiency);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_SCIMITAR,#class=&ScimitarProficiency);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_HAMMER,#class=&HammerProficiency);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_AXE,#class=&AxeProficiency);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_SHORT_SWORD,#class=&ShortSwordProficiency);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_SWORD,#class=&SwordProficiency);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_MACE,#class=&MaceProficiency);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_SCIMITAR,#class=&ScimitarProficiency);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_HAMMER,#class=&HammerProficiency);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_AXE,#class=&AxeProficiency);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_SHORT_SWORD,#class=&ShortSwordProficiency);
 
-       Send(self,@CreateOneSKillIfNew,#num=SKID_BRAWLING,#class=&Brawling);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_ASSESS,#class=&Assess);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_FIRE,#class=&Fire);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_BOW,#class=&Archery);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_BRAWLING,#class=&Brawling);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_ASSESS,#class=&Assess);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_FIRE,#class=&Fire);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_BOW,#class=&Archery);
 
-       Send(self,@CreateOneSKillIfNew,#num=SKID_THROW,#class=&Throw);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_THROW_WEAPON,#class=&ThrowWeaponProficiency);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_THROW,#class=&Throw);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_THROW_WEAPON,#class=&ThrowWeaponProficiency);
 
-       Send(self,@CreateOneSKillIfNew,#num=SKID_BLOCK,#class=&Block);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_BLOCK,#class=&Block);
 
-       Send(self,@CreateOneSKillIfNew,#num=SKID_SECOND_WIND,#class=&SecondWind);
-       Send(self,@CreateOneSKillIfNew,#num=SKID_DISARM,#class=&Disarm);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_SECOND_WIND,#class=&SecondWind);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_DISARM,#class=&Disarm);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_CRUSHING_BLOWS,#class=&CrushingBlows);
 
-       Send(self,@CreateOneSKillIfNew,#num=SKID_CLEAVE,#class=&Cleave);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_CLEAVE,#class=&Cleave);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_UNLEASH,#class=&Unleash);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_SPRINT,#class=&Sprint);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_MARK,#class=&Mark);
 
-       return;
+      return;
    }
 
    RecreateAllSkills(figure_totals = TRUE)
@@ -4465,6 +4480,7 @@ messages:
       Create(&ZombieTreasure);
       Create(&EntTreasure);
       Create(&MummyTreasure);
+      Create(&YetiTreasure);
 
       Create(&CaveOrcTreasure);
       Create(&OrcWizardTreasure);
@@ -4501,6 +4517,7 @@ messages:
       Create(&IceElementalTreasure);
       Create(&NeruditeElementalTreasure);
 
+      Create(&SnowmanTreasure);
       Create(&EasterBunnyTreasure);
       Create(&KillerBunnyTreasure);
 
@@ -4529,6 +4546,7 @@ messages:
       Create(&EasternAreaTreasure);
 
       Create(&NeruTrollTreasure);
+      Create(&DesertMummyTreasure);
 
       return;
    }
@@ -4939,7 +4957,7 @@ messages:
    "Returns error codes for failure depending on the cause. Zero return (CC_OK) "
    "indicates success, failure is > 0."
    {
-      local i, lBadNameContain, lBadNameIs, oLookup;
+      local i, lBadNameContain, lBadNameIs, oLookup, iLen;
 
       if sName = $
          OR StringLength(sName) < MIN_CHAR_NAME_LEN
@@ -4951,7 +4969,18 @@ messages:
          }
          else
          {
+            // TODO: Break this into 3 errors (no name, short name, long name)
+            // and consolidate the strlen calls above.
+            iLen = StringLength(sName);
             Debug("Got char name length out of range for user ", oUser);
+            if (iLen < 500)
+            {
+               Debug("Name out of range: ", sName);
+            }
+            else
+            {
+               Debug("ALERT: Name was excessively long: ", iLen, " chars.");
+            }
          }
 
          return CC_NAME_TOO_LONG;
@@ -5990,6 +6019,8 @@ messages:
       plMonsterTemplates = Cons(Create(&Frogman,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&FungusBeast,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&Ghost,#template=TRUE),plMonsterTemplates);
+      // Duplicate Ghost for "Ghost of Far'Nohl" entry.
+      plMonsterTemplates = Cons(Create(&Ghost,#template=TRUE,#bFarNohl=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&GiantRat,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&SewerRat,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&OldRat,#template=TRUE),plMonsterTemplates);
@@ -6022,6 +6053,12 @@ messages:
       plMonsterTemplates = Cons(Create(&Avar,#template=TRUE,#clan=AVARCLAN_PROMAGIC),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&AvarShaman,#template=TRUE,#clan=AVARCLAN_PROMAGIC),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&AvarChieftain,#template=TRUE,#clan=AVARCLAN_PROMAGIC),plMonsterTemplates);
+      plMonsterTemplates = Cons(Create(&Avar,#template=TRUE,#clan=AVARCLAN_ANTIMAGIC),plMonsterTemplates);
+      plMonsterTemplates = Cons(Create(&AvarShaman,#template=TRUE,#clan=AVARCLAN_ANTIMAGIC),plMonsterTemplates);
+      plMonsterTemplates = Cons(Create(&AvarChieftain,#template=TRUE,#clan=AVARCLAN_ANTIMAGIC),plMonsterTemplates);
+      plMonsterTemplates = Cons(Create(&Avar,#template=TRUE,#clan=AVARCLAN_BONE_FACTION),plMonsterTemplates);
+      plMonsterTemplates = Cons(Create(&AvarShaman,#template=TRUE,#clan=AVARCLAN_BONE_FACTION),plMonsterTemplates);
+      plMonsterTemplates = Cons(Create(&AvarChieftain,#template=TRUE,#clan=AVARCLAN_BONE_FACTION),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&CaveOrc,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&OrcPitBoss,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&Shadowbeast,#template=TRUE),plMonsterTemplates);
@@ -6057,6 +6094,8 @@ messages:
       plMonsterTemplates = Cons(Create(&Necromancer,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&Follower,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&Bandit,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = Cons(Create(&BanditSniper,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = Cons(Create(&BanditCaptain,#template=TRUE),plMonsterTemplates);
 
       plMonsterTemplates = Cons(Create(&XeoFire,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&XeoWater,#template=TRUE),plMonsterTemplates);
@@ -6103,6 +6142,8 @@ messages:
       plMonsterTemplates = Cons(Create(&SpinebeastBoss,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&Wendigo,#template=TRUE),plMonsterTemplates);
       plMonsterTemplates = Cons(Create(&Dragon,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = Cons(Create(&MummyLord,#template=TRUE),plMonsterTemplates);
+      plMonsterTemplates = Cons(Create(&Snowman,#template=TRUE),plMonsterTemplates);
 
       return;
    }
@@ -6306,14 +6347,14 @@ messages:
       plItemTemplates = Cons(Create(&RingDefense),plItemTemplates);
 
       plItemTemplates = Cons(Create(&RingWedding),plItemTemplates);
-      plItemTemplates = Cons(Create(&RingInvisibility),plItemTemplates);
-      plItemTemplates = Cons(Create(&BerserkerRing),plItemTemplates);
-      plItemTemplates = Cons(Create(&RingOfLethargy),plItemTemplates);
+      plItemTemplates = Cons(Create(&RingInvisibility,#bReveal=TRUE),plItemTemplates);
+      plItemTemplates = Cons(Create(&BerserkerRing,#bReveal=TRUE),plItemTemplates);
+      plItemTemplates = Cons(Create(&RingOfLethargy,#bReveal=TRUE),plItemTemplates);
 
-      plItemTemplates = Cons(Create(&AcidRing),plItemTemplates);
-      plItemTemplates = Cons(Create(&ShockRing),plItemTemplates);
-      plItemTemplates = Cons(Create(&FireRing),plItemTemplates);
-      plItemTemplates = Cons(Create(&ColdRing),plItemTemplates);
+      plItemTemplates = Cons(Create(&AcidRing,#bReveal=TRUE),plItemTemplates);
+      plItemTemplates = Cons(Create(&ShockRing,#bReveal=TRUE),plItemTemplates);
+      plItemTemplates = Cons(Create(&FireRing,#bReveal=TRUE),plItemTemplates);
+      plItemTemplates = Cons(Create(&ColdRing,#bReveal=TRUE),plItemTemplates);
 
       // Potions
       plItemTemplates = Cons(Create(&ForgetPotionFaren),plItemTemplates);
@@ -6373,6 +6414,9 @@ messages:
       plItemTemplates = Cons(Create(&WhiteHeartStone),plItemTemplates);
       plItemTemplates = Cons(Create(&DarkGreenHeartStone),plItemTemplates);
       plItemTemplates = Cons(Create(&PurpleHeartStone),plItemTemplates);
+      // Generic heartstone for reagents/spell code, must come after
+      // other heartstones in this list.
+      plItemTemplates = Cons(Create(&HeartStone),plItemTemplates);
 
       plItemTemplates = Cons(Create(&TheurgicRemnant),plItemTemplates);
       plItemTemplates = Cons(Create(&EssenceDust),plItemTemplates);
@@ -6891,7 +6935,7 @@ messages:
 
       foreach i in plUsers
       {
-         Send(i,@RemoveInaccessibleSpells);
+         Send(i,@RemoveInaccessibleAbilities);
       }
 
       piServer_type = server_type;
@@ -8377,31 +8421,23 @@ messages:
       return;
    }
 
-   BitwiseXOR(value1 = 0, value2 = 0)
-   "Returns the bitwise XOR of the two values."
+   #region Mail Adjustment
+   RemoveMailsBySender(max=10000, what=$, iDays=0)
    {
-      local iDiv, bit1, bit2, retVal;
+      local i, iCount;
 
-      retVal = 0;
-      // iDiv = 2 to the 26th power = the 5th most significant bit.
-      //  Blakod integers use bits 0-3 as type info, then 1 bit for sign.
-      iDiv = 67108864;
+      iCount = 0;
 
-      while iDiv > 0
+      foreach i in plUsers
       {
-         bit1 = value1 & iDiv;
-         bit2 = value2 & iDiv;
-
-         if (bit1 <> 0 OR bit2 <> 0)
-            AND (bit1 = 0 OR bit2 = 0)
+         iCount += Send(i,@RemoveMailBySender,#what=what,#iDays=iDays);
+         if (iCount > max)
          {
-            retVal = retVal + iDiv;
+            break;
          }
-
-         iDiv = iDiv / 2;
       }
 
-      return retVal;
+      return iCount;
    }
 
    RemoveOldMails(max=10000, iDays=180)
@@ -8435,6 +8471,30 @@ messages:
       return total;
    }
 
+   ListMailSenders()
+   "Returns a list of each mail sender with a count of how many mails they've "
+   "sent.  Listed in descending order, with a total mail count appended.  "
+   "Useful to find mail that needs to be cleaned up."
+   {
+      local i, iTotal, j, lMail, lSenders, sender;
+
+      iTotal = 0;
+      foreach i in plUsers
+      {
+         lMail = Send(i,@GetMail);
+         foreach j in lMail
+         {
+            ++iTotal;
+            sender = Nth(j,MAIL_SENDER);
+            lSenders = Send(self,@AddToSortedList,#what=sender,#lList=lSenders,
+                              #number=1);
+         }
+      }
+
+      return [lSenders, iTotal];
+   }
+   #endregion Mail Adjustment
+
    GetBanks()
    {
       return plBanks;
@@ -8461,6 +8521,18 @@ messages:
       }
 
       return unknown_resistance_name;
+   }
+
+   GetWeaponTypeName(type=-1)
+   {
+      switch (type)
+      {
+      case WEAPON_TYPE_BLUDGEON: return bludgeon_damage_name;
+      case WEAPON_TYPE_THRUST: return thrust_damage_name;
+      case WEAPON_TYPE_SLASH: return slash_damage_name;
+      }
+
+      return unknown_damage_name;
    }
 
    GetAttackDamageTypeName(type=ATK_TYPE_ALL)
@@ -8614,6 +8686,50 @@ messages:
       {
          plPlantSoils = DelListElem(plPlantSoils,what);
       }
+
+      return;
+   }
+
+#region Export into SQL (Wiki)
+   UpdateDatabase()
+   {
+      local i, oTresType;
+
+      // Empty (truncate) the appropriate tables before updating the database.
+      // This is done because some of the tables contain data that may be
+      // deleted from kod during an update (e.g. spell reagents, mob loot tables).
+      EmptyStatTable(STAT_SPELL_REAGENT);
+      EmptyStatTable(STAT_MONSTER_ZONE);
+      EmptyStatTable(STAT_TREASURE_GEN);
+      EmptyStatTable(STAT_TREASURE_EXTRA);
+      EmptyStatTable(STAT_TREASURE_MAGIC);
+      EmptyStatTable(STAT_NPC_SELLITEM);
+      EmptyStatTable(STAT_NPC_SELLCOND);
+      EmptyStatTable(STAT_NPC_SELLSKILL);
+      EmptyStatTable(STAT_NPC_SELLSPELL);
+      EmptyStatTable(STAT_NPC_ZONE);
+      EmptyStatTable(STAT_QUESTS);
+      EmptyStatTable(STAT_QUESTGIVER);
+
+      SendList(plSpells,0,@UpdateDatabase); // Spells and Spell Reagent Export
+      SendList(plSkills,0,@UpdateDatabase); // Skill Export
+      SendList(plMonsterTemplates,0,@UpdateDatabase); // Monster Export
+      SendList(plRooms,0,@UpdateDatabase); // Rooms and Monster Spawn Exports
+      SendList(plItemTemplates,0,@UpdateDatabase); // Item Exports
+
+      // Monster Loot / TreasureType Export
+      for (i = TID_MIN; i <= TID_MAX; ++i)
+      {
+         oTresType = Send(self,@FindTreasureByNum,#num=i);
+         if (oTresType <> $)
+         {
+            Send(oTresType,@UpdateDatabase);
+         }
+      }
+
+      SendList(Send(poLibrary,@GetNPCs), 0, @UpdateDatabase); // NPC, NPC Zone and NPC Sell List Export
+
+      Send(poQuestEngine,@UpdateDatabase);
 
       return;
    }
@@ -8777,6 +8893,66 @@ messages:
          GodLog(Send(i,@GetName), " | ", Send(oOwner,@GetName), " | ",
             Send(oOwner,@GetNumMembers));
       }
+
+      return;
+   }
+
+   PrintWeaponInfo()
+   {
+      local i, lWeapons;
+
+      SendListByClass(plItemtemplates,0,&Weapon,@PrintWeaponInfo);
+
+      // Handle weapons that aren't in item templates
+      lWeapons = Cons(Create(&RiijaSword),lWeapons);
+      lWeapons = Cons(Create(&BlackDagger),lWeapons);
+      lWeapons = Cons(Create(&SpiritualHammer),lWeapons);
+
+      SendList(lWeapons,0,@PrintWeaponInfo);
+      foreach i in lWeapons
+      {
+         Send(i,@Delete);
+      }
+
+      return;
+   }
+
+   PrintNumberExisting(classtype=&Reagent,bIncludeDMs=FALSE,who=$)
+   "Prints the number of a specific class in existence, including number "
+   "for number items.  Specifying 'who' allows printing of class instances "
+   "that only 'who' owns."
+   {
+      local i;
+
+      plTempList = $;
+
+      Send(classtype,@PrintExisting,#bIncludeDMs=bIncludeDMs,#who=who);
+
+      if (who <> $)
+      {
+         GodLog(Send(who,@GetTrueName)," owns: ");
+      }
+      else if (bIncludeDMs)
+      {
+         GodLog("Total number including DMs:");
+      }
+      else
+      {
+         GodLog("Total number NOT including DMs:");
+      }
+
+      foreach i in plTempList
+      {
+         GodLog(First(i),": ",Nth(i,2));
+      }
+
+      return;
+   }
+
+   ReportExisting(sName=$,iNumber=0)
+   {
+      plTempList = Send(self,@AddToSortedList,#what=sName,#lList=plTempList,
+                        #number=iNumber);
 
       return;
    }
@@ -8978,6 +9154,41 @@ messages:
       {
          if GetClass(i) = cClass
          {
+            return i;
+         }
+      }
+
+      foreach i in plMonsterTemplates
+      {
+         if GetClass(i) = cClass
+         {
+            return i;
+         }
+      }
+
+      return $;
+   }
+
+   FindMonsterTemplateByClass(cClass=$,bFarNohl=FALSE,clan=AVARCLAN_PROMAGIC)
+   "Search for monster by class but with some specific modifiers."
+   {
+      local i, bAvar, bGhost;
+
+      bAvar = (cClass = &Avar
+               OR cClass = &AvarShaman
+               OR cClass = &AvarChieftain);
+      bGhost = cClass = &Ghost;
+
+      foreach i in plMonsterTemplates
+      {
+         if GetClass(i) = cClass
+         {
+            if ((bAvar AND Send(i,@GetClan) <> clan)
+               OR (bGhost AND Send(i,@IsFarNohl) <> bFarNohl))
+            {
+               continue;
+            }
+
             return i;
          }
       }
@@ -9417,6 +9628,59 @@ messages:
       }
 
       return;
+   }
+
+   AttackSpellTranceOn()
+   {
+      local i, bSuccess;
+
+      bSuccess = TRUE;
+
+      foreach i in plSpells
+      {
+         if IsClass(i,&AttackSpell) AND NOT Send(i,@AddTrance)
+         {
+            bSuccess = FALSE;
+         }
+      }
+
+      return bSuccess;
+   }
+
+   AttackSpellTranceOff()
+   {
+      local i, bSuccess;
+
+      bSuccess = TRUE;
+
+      foreach i in plSpells
+      {
+         if IsClass(i,&AttackSpell) AND NOT Send(i,@RemoveTrance)
+         {
+            bSuccess = FALSE;
+         }
+      }
+
+      return bSuccess;
+   }
+
+   SetAttackSpellTimeValues(iCast_time=$,iPostCast_time=$)
+   {
+      local i, bSuccess;
+
+      bSuccess = TRUE;
+
+      foreach i in plSpells
+      {
+         if IsClass(i,&AttackSpell)
+            AND NOT Send(i,@SetTimeValues,#iCast_time=iCast_time,
+               #iPostCast_time=iPostCast_time)
+         {
+            bSuccess = FALSE;
+         }
+      }
+
+      return bSuccess;
    }
 
 end

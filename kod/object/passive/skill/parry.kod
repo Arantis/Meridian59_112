@@ -46,7 +46,35 @@ properties:
 
    plPrerequisites = $
 
+   piParry_base_chance = 25
+   piParry_ability_factor = 50
+   piParry_vigor_cost = 200
+
+   piSuccess_time = 400
+   piFail_time = 2400
+   piFeint_time = 1000
+
 messages:
+
+   GetActiveParryChance(who=$,ability=0)
+   {
+      if NOT ability
+      {
+         return 0;
+      }
+
+      return piParry_base_chance*Send(who,@GetAim)/50 + ability*piParry_ability_factor/100;
+   }
+
+   GetActiveParryCost(ability=0)
+   {
+      if NOT ability
+      {
+         return 0;
+      }
+
+      return piParry_vigor_cost;
+   }
 
    CanPayCosts(who=$,oTarget=$)
    {
@@ -59,6 +87,23 @@ messages:
       propagate;
    }
 
+   // How much does a successful active defense delay us?
+   GetSuccessTime()
+   {
+      return piSuccess_time;
+   }
+
+   // How much does a late active defense delay us?
+   GetFailTime()
+   {
+      return piFail_time;
+   }
+
+   // How much does a feinted attack delay us?
+   GetFeintTime()
+   {
+      return piFeint_time;
+   }
 
 end
 ////////////////////////////////////////////////////////////////////////////////

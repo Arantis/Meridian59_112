@@ -38,6 +38,7 @@ classvars:
    viWeaponQuality = WEAPON_QUALITY_HIGH
 
    viProficiency_Needed = SKID_PROFICIENCY_SWORD
+   viDefault_stroke_number = SKID_SLASH
 
    viValue_average = 500
    viWeight = 85
@@ -46,7 +47,7 @@ classvars:
    vrWeapon_window_overlay = LightningSword_window_overlay_rsc
    vrWeapon_overlay = LightningSword_player_overlay
    
-   viRange = 5 * FINENESS
+   viRange = 3 * FINENESS
 
    viGround_group = 1
    viInventory_group = 3
@@ -71,7 +72,7 @@ messages:
         }
         propagate;
    }
-   
+
    NewUnused()
    {
         if IsClass(poOwner, &Player)
@@ -82,34 +83,35 @@ messages:
         propagate;
    }
 
-
-   WeaponHitTarget()
+   HitSideEffect(what=$,who=$,amount=0,stroke_obj=$)
    {
       local oSpell;
-      
+
       oSpell = Send(SYS,@FindSpellByNum,#num=SID_LIGHTNING_WALL);
       
       if Random(1,100) <= viLightning_Chance
       {
-         Send(oSpell,@CastSpell,#who=poOwner,#lTargets=[Send(poOwner,@GetTarget)],
+         Send(oSpell,@CastSpell,#who=who,#lTargets=[what],
             #iSpellPower=viLightning_Spellpower,#bItemCast=TRUE);
       }
 
       propagate;
    }
-   
+
    CanEnchant()
    {
       return FALSE;
    }
-   
+
    CanMend()
    {
       return FALSE;
    }
 
+   IsExpansionItem()
+   {
+      return TRUE;
+   }
+
 end
 ////////////////////////////////////////////////////////////////////////////////
-
-
-

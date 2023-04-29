@@ -36,6 +36,7 @@ classvars:
    viWeaponQuality = WEAPON_QUALITY_HIGH
 
    viProficiency_Needed = SKID_PROFICIENCY_SHORTSWORD
+   viDefault_stroke_number = SKID_STAB
 
    viValue_average = 250
    viWeight = 40
@@ -48,7 +49,7 @@ classvars:
    viInventory_group = 3
    viBroken_group = 2
    
-   viRange = 3 * FINENESS
+   viRange = 2 * FINENESS
    
    viArcticBreath_Chance = 25
    viArcticBreath_Spellpower = 15
@@ -59,8 +60,10 @@ properties:
 
 messages:
 
+   IsExpansionItem()
+   {
+      return TRUE;
+   }
+
 end
 ////////////////////////////////////////////////////////////////////////////////
-
-
-

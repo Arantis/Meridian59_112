@@ -47,14 +47,17 @@ classvars:
    viSchool = SS_FAREN
    viSpell_level = 3
 
-   viCast_time = 3000            /// 3 seconds
    viChance_To_Increase = 15
    viMeditate_ratio = 20
 
    vbCanCastOnOthers = FALSE
    vbIsMoveSpeedModifier = TRUE
 
+   vbFragile = TRUE
+
 properties:
+
+   piCast_time = 3000
 
    // The effectiveness of purge on the target spell as a percentage.
    // 100 will cause purge to remove its entire spellpower, 0 will
@@ -69,14 +72,6 @@ messages:
    {
       plReagents = $;
       plReagents = Cons([&Mushroom,1],plReagents);
-
-      return;
-   }
-
-   SetSpellPlayerFlag(who=$)
-   {
-      Send(who,@SetTranceFlag);
-      Send(who,@SetPlayerFlag,#flag=PFLAG_MANA_FOCUS,#value=TRUE);
 
       return;
    }
@@ -128,7 +123,7 @@ messages:
    {
       if Send(who,@IsEnchanted,#what=self)
       {
-         Send(self,@BreakTrance,#who=who,#event=EVENT_CANCEL,
+         Send(self,@BreakFragileEffect,#who=who,#event=EVENT_CANCEL,
             #state=Send(who,@GetEnchantedState,#what=self));
 
          return FALSE;
@@ -137,21 +132,16 @@ messages:
       propagate;
    }
 
-   BreakTrance(event=$,what=$,state=$)
+   BreakFragileEffect(who=$,event=$,what=$,state=$)
    {
-      if event = EVENT_CAST
+      if event = EVENT_ABILITY
          AND ((what = self) OR IsClass(what,&AttackSpell))
       {
+         // Restore fragile flag if effect remains active.
+         Send(who,@SetFragileFlag);
+
          return FALSE;
       }
-
-      propagate;
-   }
-
-   TranceEnding(who=$,state=$)
-   "Allow maintained spells to do something when their trance breaks."
-   {
-      Send(who,@RemoveEnchantment,#what=self,#state=state);
 
       propagate;
    }

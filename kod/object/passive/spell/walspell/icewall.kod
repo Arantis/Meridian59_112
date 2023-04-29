@@ -1,0 +1,82 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+IceWall is WallSpell
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   IceWall_name_rsc = "icewall"
+   IceWall_icon_rsc = iwallice.bgf
+   IceWall_desc_rsc = \
+      "Creates a wall of ice in front of the caster."
+
+   IceWall_cast_rsc = "Chilling spikes of ice appear before you!"
+   IceWall_sound = faren.ogg
+
+classvars:
+
+   vrName = IceWall_name_rsc
+   vrIcon = IceWall_icon_rsc
+   vrDesc = IceWall_desc_rsc
+
+   viSpell_num = SID_ICEWALL
+   viSchool = SS_FAREN
+   viSpell_level = 4
+   viMana = 15
+   viSpellExertion = 3
+   viMeditate_ratio = 30
+
+   viCast_time = 1000
+   vrSucceed_wav = IceWall_sound
+   vrSuccess = IceWall_cast_rsc
+
+   viHarmful = TRUE
+
+   //// Seed parameters
+   viElementStep = 40
+
+properties:
+
+messages:
+
+   ResetReagents()
+   {
+      plReagents = $;
+      plReagents = Cons([&TwinkleCap,1],plReagents);
+
+      return;
+   }
+
+   PlaceWallElements(seed = $, lTargets = $)
+   {
+      local oTarget, lSeed;
+
+      oTarget = First(seed);
+
+      if lTargets <> $
+      {
+         oTarget = First(lTargets);
+      }
+
+      lSeed = ListCopy(seed);
+      SetNth(lSeed,6,0);
+
+      Send(self,@SpawnElement,#seed=lSeed,#who=oTarget,#walltype=&WallOfIce,
+         #yfineoffset=FINENESS_HALF*5/2,#xfineoffset=FINENESS_HALF*3/2);
+
+      propagate;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

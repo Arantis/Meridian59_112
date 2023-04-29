@@ -71,7 +71,7 @@ messages:
 
    Constructed()
    {
-      plMonsters = [ [&Bandit, 100] ];
+      plMonsters = [ [&Bandit, 85], [&BanditSniper, 12], [&BanditCaptain, 3] ];
 
       plGenerators = [ [11, 23], [7, 23], [10, 31], [4, 27], [7, 17], [12, 27] ];
 
@@ -105,11 +105,6 @@ messages:
       Send(self,@NewHold,#what=Create(&PlantSoil),
             #new_row=16,#new_col=36,#fine_row=32,#fine_col=32);
       propagate;
-   }
-
-   SeanceCheck()
-   {
-      return FALSE;
    }
 
 end

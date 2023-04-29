@@ -199,6 +199,8 @@ classvars:
    viFlag_row = $
    viFlag_col = $
 
+   viRegion = REGION_DEFAULT
+
    viWeatherZone = WEATHER_ZONE_DEFAULT
    viWeatherMask = WEATHER_MASK_DEFAULT
 
@@ -357,6 +359,21 @@ properties:
 
 messages:
 
+   UpdateDatabase()
+   {
+      local iFlags;
+
+      // 1 for expansion room, 0 default room.
+      iFlags = Send(self,@IsExpansionRoom);
+
+      // Wiki Exports Room Name 
+      RecordStat(STAT_ROOMS, TAG_RESOURCE, vrName, RESOURCE_GER, vrName, 
+            TAG_RESOURCE, prRoom, TAG_INT, piRoom_num,
+            TAG_INT, Send(self,@GetRegion), TAG_INT, iFlags);
+
+      return;
+   }
+
    Constructor()
    {
       local iDelay;
@@ -503,7 +520,7 @@ messages:
    TestRoomExits()
    {
       local i, iRoom, oRoom, iQflags, iRflags, iHeightF, iHeightFWD, iHeightC,
-            iServerID;
+            iServerID, j, k, bInside;
 
       iQflags = LIQ_GET_SECTORINFO;
 
@@ -525,7 +542,7 @@ messages:
                OR NOT (iRflags & LIR_SECTOR_HASFTEX))
             {
                Debug("Invalid edge exit going from ",Send(self,@GetName), " to ",
-                     Send(oRoom,@GetName));
+                     Send(oRoom,@GetName), " exit coords ", Nth(i,3), Nth(i,4));
             }
          }
       }
@@ -533,19 +550,64 @@ messages:
       foreach i in plExits
       {
          iRoom = Nth(i,3);
+         if (iRoom <> ROOM_LOCKED_DOOR)
+         {
+            oRoom = Send(SYS,@FindRoomByNum,#num=iRoom);
+            if (oRoom = $)
+            {
+               Debug("Room ",Send(self,@GetName)," has invalid room ",
+                  iRoom, " in exit list!");
+
+               continue;
+            }
+         }
+
+         // Test the exit point in this room.
+         bInside = FALSE;
+         foreach j in [0, FINENESS_HALF, FINENESS - 1]
+         {
+            foreach k in [0, FINENESS_HALF, FINENESS - 1]
+            {
+               if (GetLocationInfoBSP(Send(self,@GetRoomData), iQflags,
+                     First(i),Nth(i,2), j, k,
+                     *iRflags, *iHeightF, *iHeightFWD, *iHeightC, *iServerID))
+               {
+                  if ((iRflags & LIR_SECTOR_INSIDE)
+                     AND (iRflags & LIR_SECTOR_HASFTEX))
+                  {
+                     bInside = TRUE;
+                     break;
+                  }
+               }
+            }
+            if (bInside)
+            {
+               break;
+            }
+         }
+
+         if (NOT bInside)
+         {
+            if (iRoom = ROOM_LOCKED_DOOR)
+            {
+               Debug("Invalid exit coords in origin room ",Send(self,@GetName),
+                     "going to locked door with coords ", First(i), Nth(i,2));
+            }
+            else
+            {
+               Debug("Invalid exit coords in origin room going from ",
+                     Send(self,@GetName), " to ", Send(oRoom,@GetName),
+                     " coords ", First(i), Nth(i,2));
+            }
+         }
+
+         // No destination to check for locked doors.
          if (iRoom = ROOM_LOCKED_DOOR)
          {
             continue;
          }
 
-         oRoom = Send(SYS,@FindRoomByNum,#num=iRoom);
-         if (oRoom = $)
-         {
-            Debug("Room ",Send(self,@GetName)," has invalid room in exit list!");
-
-            continue;
-         }
-
+         // Text entrance coordinates in the destination room.
          if (GetLocationInfoBSP(Send(oRoom,@GetRoomData), iQflags,
                   Nth(i,4),Nth(i,5),FINENESS_HALF,FINENESS_HALF,
                   *iRflags, *iHeightF, *iHeightFWD, *iHeightC, *iServerID))
@@ -553,8 +615,9 @@ messages:
             if (NOT (iRflags & LIR_SECTOR_INSIDE)
                OR NOT (iRflags & LIR_SECTOR_HASFTEX))
             {
-               Debug("Invalid exit going from ",Send(self,@GetName), " to ",
-                     Send(oRoom,@GetName));
+               Debug("Invalid entrance coords in destination room going from ",
+                     Send(self,@GetName), " to ", Send(oRoom,@GetName),
+                     " coords ", Nth(i,4), Nth(i,5));
             }
          }
       }
@@ -920,6 +983,22 @@ messages:
       propagate;
    }
 
+   KilledSomething(what=$,use_weapon=$,stroke_obj=$)
+   "Possible if the room is doing damage, or is the source of an "
+   "overtime effect.  Just passes on Killed() to the victim."
+   {
+      if what = $
+      {
+         Debug("Got $ what in KilledSomething().");
+
+         return;
+      }
+
+      Send(what,@Killed,#what=self,#stroke_obj=stroke_obj);
+
+      return;
+   }
+
    GetTeleportRow()
    {
       return viTeleport_row;
@@ -1071,49 +1150,54 @@ messages:
 
    GetRegion()
    {
-      // region ids are simply key room ids:
-      //    rid_default for most of the mainland
-      //    rid_outofgrace for the outofgrace room only
-      //    rid_kocaton for all kocaton island areas
-      //    rid_orc_cave for all orc cave (mainland-to-island-cave) areas
-
-      // this is ugly to do it here, but was lowest risk to add as an emergency patch
-      // change this later by overriding GetRegion() please!
+      // REGION_DEFAULT is the default outdoors region for most of the mainland
+      // REGION_OUTOFGRACE for the outofgrace room only
+      // REGION_KOCATAN for all kocaton island areas
+      // REGION_ORCCAVES for all orc cave (mainland-to-island-cave) areas
+      // Mainland cities, historic region and desert each have their own region
 
       if (piRoom_num >= RID_KOCATAN) AND (piRoom_num <= RID_KOCATAN_END)
       {
-         return RID_KOCATAN;
+         return REGION_KOCATAN;
       }
 
       if (piRoom_num >= RID_ORC_CAVE1) AND (piRoom_num <= RID_ORC_CAVE_END)
       {
-         return RID_ORC_CAVE1;
+         return REGION_ORCCAVES;
       }
 
       if (piRoom_num >= RID_BRAX_START) AND (piRoom_num <= RID_BRAX_END)
       {
-         return RID_BRAX;
+         return REGION_BRAX;
       }
 
-      return RID_DEFAULT;
+      return viRegion;
    }
 
    GetCurrentRegionHomeroom()
    "Returns the RID of the region's default safe location.\n"
    "Regions without safe rooms will default to Cor Noth inn."
    {
-      local iRegion;
-
-      iRegion = Send(self,@GetRegion);
-
-      if iRegion = RID_OUTOFGRACE
+      switch(Send(self,@GetRegion))
       {
-         return RID_OUTOFGRACE;
-      }
-
-      if iRegion = RID_KOCATAN
-      {
-         return RID_KOC_INN;
+         case REGION_RAZA:
+            return RID_RAZA_INN;
+         case REGION_MARION:
+            return RID_MAR_INN;
+         case REGION_JASPER:
+            return RID_JAS_INN;
+         case REGION_TOS:
+            return RID_TOS_INN;
+         case REGION_BARLOQUE:
+            return RID_BAR_INN;
+         case REGION_JIXA:
+            return RID_JIXA_INN;
+         case REGION_BERG:
+            return RID_BERG_INN;
+         case REGION_KOCATAN:
+            return RID_KOC_INN;
+         case REGION_OUTOFGRACE:
+            return RID_OUTOFGRACE;
       }
 
       return RID_COR_INN;
@@ -1897,6 +1981,25 @@ messages:
       return;
    }
 
+   SetDisposeTimer(iSeconds=60)
+   {
+      if (iSeconds <= 0 OR iSeconds > MAX_INT / 1000)
+      {
+         Debug("Invalid value ", iSeconds, " passed to SetDisposeTimer.");
+
+         return;
+      }
+
+      if (ptDispose <> $)
+      {
+         DeleteTimer(ptDispose);
+      }
+
+      ptDispose = CreateTimer(self,@DisposeTimer,iSeconds * 1000);
+
+      return;
+   }
+
    DisposeTimer()
    {
       local iTime, i, oEachObj, count, delete_index,
@@ -2027,7 +2130,7 @@ messages:
    "Doing this this way allows us to have some zones, such as Ko'catan, have "
    "different skies."
    {
-      if Send(self,@GetRegion) = RID_KOCATAN
+      if Send(self,@GetRegion) = REGION_KOCATAN
       {
          switch(iSkyBox)
          {
@@ -2615,6 +2718,107 @@ messages:
       return $;
    }
 
+   GetAngleBetween(who=$, what=$)
+   "Returns the room angle of who facing what."
+   {
+      local iColDiff, iRowDiff;
+
+      if (who = $ OR what = $)
+         OR (Send(who,@GetOwner) <> Send(what,@GetOwner))
+      {
+         return $;
+      }
+
+      iColDiff = Send(what,@GetCol)*FINENESS + Send(what,@GetFineCol)
+               - (Send(who,@GetCol)*FINENESS + Send(who,@GetFineCol));
+
+      iRowDiff = Send(what,@GetRow)*FINENESS + Send(what,@GetFineRow)
+               - (Send(who,@GetRow)*FINENESS + Send(who,@GetFineRow));
+
+      return Send(self,@GetAngleFromDifferences,
+         #coldiff=iColDiff,#rowdiff=iRowDiff);
+   }
+
+   GetAngleFromDifferences(coldiff=0,rowdiff=0)
+   "Returns the room angle between two locations based on delta x/y."
+   {
+      local iCase, iTan;
+
+      // If we are stacked right on top of each other, return nil.
+      if (coldiff = 0) AND (rowdiff = 0)
+      {
+         return $;
+      }
+
+      // The numerator gets the >=. That allows us to cover all cases
+      // while avoiding division by zero.
+      // Keeping track of the 4 quadrants with cases allows us to
+      // use the same conditionals multiple times simply adding a quarter
+      // circle rotation to the results per quadrant beyond the first.
+      if coldiff > 0 AND rowdiff >= 0
+      {
+         iCase = 0;
+         iTan = 1000*rowdiff/coldiff;
+      }
+      else if coldiff <= 0 AND rowdiff > 0
+      {
+         iCase = 1;
+         iTan = -1000*coldiff/rowdiff;
+      }
+      else if coldiff < 0 AND rowdiff <= 0
+      {
+         iCase = 2;
+         iTan = 1000*rowdiff/coldiff;
+      }
+      else
+      {
+         iCase = 3;
+         iTan = -1000*coldiff/rowdiff;
+      }
+
+      if iTan > 10153
+      {
+         return iCase*MAX_ANGLE/4 + 8*MAX_ANGLE/32;
+      }
+
+      if iTan > 3297
+      {
+         return iCase*MAX_ANGLE/4 + 7*MAX_ANGLE/32;
+      }
+
+      if iTan > 1871
+      {
+         return iCase*MAX_ANGLE/4 + 6*MAX_ANGLE/32;
+      }
+
+      if iTan > 1219
+      {
+         return iCase*MAX_ANGLE/4 + 5*MAX_ANGLE/32;
+      }
+
+      if iTan > 821
+      {
+         return iCase*MAX_ANGLE/4 + 4*MAX_ANGLE/32;
+      }
+
+      if iTan > 535
+      {
+         return iCase*MAX_ANGLE/4 + 3*MAX_ANGLE/32;
+      }
+
+      if iTan > 303
+      {
+         return iCase*MAX_ANGLE/4 + 2*MAX_ANGLE/32;
+      }
+
+      if iTan > 98
+      {
+         return iCase*MAX_ANGLE/4 + MAX_ANGLE/32;
+      }
+
+       return iCase*MAX_ANGLE/4;
+   }
+
    // This returns the difference in fine_col to move 1 step in angle's direction.
    GetXFineStep(angle=0)
    "Filthy beast of a function that returns the cosine values based on angle."
@@ -2629,7 +2833,7 @@ messages:
       angle = angle % MAX_ANGLE;
 
       // Since cosine(x) = cosine(2pi-x), let's only deal with angles between 0 and 2048.
-      // Equivalent to transforming angles beyond 180Â° to their corresponding negative values,
+      // Equivalent to transforming angles beyond 180° to their corresponding negative values,
       // then treating them the same as positive angles for cosine considerations.
       if angle > MAX_ANGLE/2
       {
@@ -4422,21 +4626,32 @@ messages:
       return vrDoor_sound;
    }
 
-   SomethingWaveRoom(what = 0,wave_rsc = $)
+   SomethingWaveRoom(wave_rsc=$,what=0,where=0,flags=0,row=0,col=0,cutoff_radius=0,
+                     max_volume=0)
    "Don't send <what> if not from any particular object"
    {
       // Don't play sounds made by stealthed DMs.
       // Handled here because a lot of things might accidentally cause
       // stealthed DMs to give themselves away by sound.
-      if (what <> 0
-         AND IsClass(what,&DM)
-         AND Send(what,@IsDMStealthed))
+      if what <> 0
       {
-         return;
+         if IsClass(what,&DM)
+            AND Send(what,@IsDMStealthed)
+         {
+            return;
+         }
+
+         if where <> 0
+         {
+            row = (Send(what,@GetRow)+Send(where,@GetRow))/2;
+            col = (Send(what,@GetCol)+Send(where,@GetCol))/2;
+            what = 0;
+         }
       }
 
       SendListByClass(plActive,1,&User,@WaveSendUser,
-            #wave_rsc=wave_rsc,#source_obj=what);
+            #wave_rsc=wave_rsc,#source_obj=what,#flags=flags,#row=row,#col=col,
+            #cutoff_radius=cutoff_radius,#max_volume=max_volume);
 
       return;
    }
@@ -5391,32 +5606,6 @@ messages:
       return viTerrain_Type;
    }
 
-   BreakTrance(who=$, event=$)
-   {
-      local i, oEnch, lState, bRetVal;
-
-      bRetVal = FALSE;
-
-      foreach i in plEnchantments
-      {
-         oEnch = Nth(i,2);
-
-         // It's a room enchantment! It's a trance spell! It's both!
-         //  It's Silence!  Handle the special case here.
-         if IsClass(oEnch,&Silence)
-         {
-            lState = Nth(i,3);
-            if who = First(lState)
-            {
-               bRetVal = Send(oEnch,@BreakTrance,#who=who,#event=event,
-                              #state=lState,#location=self);
-            }
-         }
-      }
-
-      return bRetVal;
-   }
-
    RemoveSchoolEnchantments(school = $,report=TRUE)
    {
       local i,pSpell,each_obj,oSpell;
@@ -5863,6 +6052,14 @@ messages:
          return;
       }
 
+      if vbIsExpansionRoom
+         AND NOT Send(SETTINGS_OBJECT,@IsExpansionEnabled)
+      {
+         Send(mob,@NextDest);
+         Debug(mob," entered expansion room while it is disabled, porting");
+         return;
+      }
+
       foreach i in plActive
       {
          oMonster = First(i);
@@ -5959,6 +6156,12 @@ messages:
 
    SeanceCheck()
    {
+      if vbIsExpansionRoom
+         AND NOT Send(SETTINGS_OBJECT,@IsExpansionEnabled)
+      {
+         return FALSE;
+      }
+
       return TRUE;
    }
 
@@ -6225,7 +6428,7 @@ messages:
    "Return whether it's permissible to have a player-created portal in this room. "
    {
       // No portals into "historic" (i.e. inaccessible, dead) areas
-      if Send(self, @GetRegion) = RID_HISTORIC
+      if Send(self,@GetRegion) = REGION_HISTORIC
       {
          return FALSE;
       }

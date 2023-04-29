@@ -35,7 +35,8 @@ classvars:
    viWeaponType = WEAPON_TYPE_THRUST
    viWeaponQuality = WEAPON_QUALITY_HIGH
 
-   viProficiency_Needed = SKID_PROFICIENCY_SWORD
+   viProficiency_Needed = SKID_PROFICIENCY_AXE
+   viDefault_stroke_number = SKID_STRIKE
 
    viValue_average = 250
    viWeight = 40
@@ -47,17 +48,23 @@ classvars:
    viGround_group = 1
    viInventory_group = 3
    viBroken_group = 2
+
+   viUnleash_type = UNLEASH_CHARGE
+
+   vbCrush_enemies = TRUE
    
-   viRange = 4 * FINENESS
+   viRange = 2 * FINENESS + FINENESS_HALF
 
 properties:
 
-   piAttack_type = ATK_TYPE_NONMAGIC+ATK_TYPE_THRUST
+   piAttack_type = ATK_TYPE_NONMAGIC+ATK_TYPE_SLASH
 
 messages:
 
+   IsExpansionItem()
+   {
+      return TRUE;
+   }
+
 end
 ////////////////////////////////////////////////////////////////////////////////
-
-
-

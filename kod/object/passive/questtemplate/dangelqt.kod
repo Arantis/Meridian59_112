@@ -89,12 +89,17 @@ classvars:
 
 properties:
 
+   pbDisabled = TRUE
+
    piNumPlayers = 1
    piPlayerRestrict = Q_PLAYER_NOTSUCCEEDED | Q_PLAYER_NOTFAILED_RECENTLY
    plSpecialRestrict = $
    piMaxPlayers = 30
    piSchedulePct = 100
    piTimeLimit = 2 * 3600 // 2 hours.
+
+   piQuestDuration = 40
+   piQuestDifficulty = 12
 
 messages:
 

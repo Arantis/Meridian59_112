@@ -106,14 +106,14 @@ player_spent_training = de "Du hast ~B%i~B Trainingspunkte benutzt!"
 player_logon_bonus = de \
    "Du hast deinen täglichen Trainingspunkte Bonus in Höhe von ~B%i~B Punkten bekommen. "
    "Komm morgen wieder, um mehr davon zu bekommen!"
-player_experience_gained = de "Du hast ~B~s%i~v~B XP erhalten."
+player_experience_gained = de "Du hast ~B~3%i~v~B XP erhalten."
 player_experience_lost = de "Du hast ~B~r%i~B~v XP verloren!"
 player_unbound_energy_wiped = de "Die instabile Energie, die dich umgibt, verflüchtigt "
       "sich in den Weiten des wirbelnden Äthers."
-player_unbound_energy_gained = de "Du absorbierst ~B~t%i~v~B ungebundene Energie "
-      "von Deinem gefallenen Gegner. (~B~t%i ~v~Bgesamt)"
-player_unbound_energy_lost = de "Du kanalisierst ~B~t%i~v~B ungebundene Energie "
-      "um deinen Zauberspruch zu formen. Dir verbleiben ~B~t%i ~B~vungebundene Energie."
+player_unbound_energy_gained = de "Du absorbierst ~B~s%i~v~B ungebundene Energie "
+      "von Deinem gefallenen Gegner (~B~i%i~v~B gesamt)."
+player_unbound_energy_lost = de "Du kanalisierst ~B~q%i~v~B ungebundene Energie "
+      "um deinen Zauberspruch zu formen (~B~i%i~v~B verbleibend)."
 player_unbound_energy_wasted = de "Deine Gedanken sind zu sehr mit den jüngsten "
       "Ereignissen beschäftigt, als dass du irgendeinen Nutzen aus der sich vor "
       "deinen Augen verflüchtigenden Energie ziehen könntest."
@@ -134,6 +134,14 @@ player_kill_zone = de \
    "Dein Schutzengel flüstert Dir zu, \"Ich kann Dich hier nicht beschützen.\""
 player_angel_rejoins = de "Dein Schutzengel kehrt zu Dir zurück."
 player_lose_node = de "Du verlierst Deine Verbindung zur Mananode in %s!"
+player_lose_karma_evil = de \
+   "~I~BQor ist über deine gute Tat erzürnt!  Deine bösen Mächte schwinden."
+player_lose_karma_good = de \
+   "~I~BShal'ille ist von deiner bösen Tat entsetzt!  Deine heiligen Kräfte schwinden."
+player_gain_karma_evil = de \
+   "~IDeine abscheulichen Taten erheitern Qor.  Deine bösen Mächte wachsen."
+player_gain_karma_good = de \
+   "~IDeine heldenhaften Taten erfreuen Shal'ille.  Deine heiligen Mächte wachsen."
 player_hit_immunity = de "%s%s%s lacht über Deinen schwachen Treffer."
 player_hit_resisted = de "%s%s%s grinst und nimmt den Treffer gelassen hin."
 player_hit_anti_resisted = de "%s%s%s wird von Deinem Treffer zurückgeworfen."
@@ -162,7 +170,7 @@ player_was_bitten = de \
    "%s%s%s beißt Dich mehrmals und hinterläßt blutige Wunden."
 player_was_clawed = de \
    "%s%s%s reißt Dein Fleisch mit seinen scharfen Krallen in Stücke."
-player_was_punched = de "%s%s%s trifft Dich mit einem kräftigen Haken."
+player_was_punched = de "%s%s%s grinst und holt weit aus..."
 player_was_kicked = de "%s%s%s tritt Dir kräftig in den Leib."
 player_attack_out_of_range = de \
    "%s%s ist zu weit entfernt. %s%s kann nicht treffen."
@@ -258,13 +266,13 @@ player_intro_no_follower = de \
    "zum Laden."
 player_follower_join_newbie = de \
    "Ist bei dir alles in Ordnung, mein Freund? Du hast mich für einen Moment "
-   "beunruhigt! Ich sagte dir ja, du hättest den Helm, den wir bei dem toten Typen"
-   "gefunden haben, tragen sollen, egal wie ekelhaft er war... und nur für ein "
-   "einziges Mal in deinem Leben, hätte es dich getötet, einfach mal ein SCHILD "
+   "beunruhigt! Ich sagte dir ja, du hättest den Helm, den wir bei dem toten Typen "
+   "gefunden haben, tragen sollen, egal wie ekelhaft das ist... und nur für ein "
+   "einziges Mal in deinem Leben, hätte es dich umgebracht, einfach mal ein SCHILD "
    "ZU LESEN? Ernsthaft... "
    "War dennoch irgendwie urkomisch, dich den Vorsprung, wie ein Lemming, herunter "
    "fallen zu sehen.  ~IHaha!~I Weniger witzig war es, allein deinen Körper aus dem "
-   "Mausoleum heraus zu tragen. Wie dem auch sei, du siehst ein wenig fertig, von "
+   "Mausoleum heraus zu tragen.  Wie dem auch sei, du siehst ein wenig fertig, von "
    "dem Fall aus.  Nimm dir ein wenig Zeit zu rasten und lass mich wissen, wenn "
    "du irgendwie ~I~BHilfe~I~B benötigst, bevor wir wieder dort rausgehen. Alles was "
    "du tun musst, ist es einfach zu ~I~Bsagen~I~B!  [Geh nun, und versuche es! Zuerst "
@@ -553,3 +561,17 @@ player_honor_rank_5_alt = de "PvP Rang: Schläger\n"
 player_honor_title_on = de "Dein Ehren-Rang wird nun angezeigt."
 player_honor_title_off = de "Dein Ehren-Rang wird nicht mehr angezeigt."
 player_honor_title_alt = de "Dein alternativer Ehren-Rang wird nun angezeigt."
+player_ability_level_up = de "~BDu fühlt dich bereit für den nächsten %s Zirkel!"
+
+player_no_east = de "Eine unsichtbare Kraft hält dich davon ab, dieses Gebiet zu betreten."
+
+player_active_block_failed = de "Dein Versuch, den Angriff entschieden zu blocken, versagt."
+player_active_parry_failed = de "Dein Versuch, den Angriff elegant zu parieren, versagt."
+player_active_dodge_failed = de "Dein Versuch, dem Angriff geschmeidig auszuweichen, versagt."
+
+player_off_guard = de "%s%s hat dich auf dem falschen Fuß erwischt!"
+
+player_feint_victim = de "%s%s legt dich rein!"
+player_feint_attacker = de "%s%s wird von dir überlistet!"
+
+player_must_attack_battler = de "Du kannst das nicht angreifen!"

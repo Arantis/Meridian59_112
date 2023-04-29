@@ -28,34 +28,79 @@ classvars:
    // Whether trance has any effect on movement speed.
    vbIsMoveSpeedModifier = TRUE
 
+   // How much time inbetween checks for a held down ability key.
+   viHold_interval = 250
+
 properties:
 
-   piMovementSpeedReduction = 50
    vbIsLightSource = FALSE
 
 messages:
+
+   UpdateDatabase()
+   {
+
+      return;
+   }
 
    GetSpellNum()
    {
       return SID_TRANCE;
    }
 
-   BeginTrance(what=$,who=$,lTargets=$,time=0,bFreeCast=FALSE,power=0)
+   BeginTrance(what=$,who=$,lTargets=$,time=0,bFreeCast=FALSE,power=0,iHold=FALSE)
    {
       local lState, iPower;
 
-      lState = Send(who,@GetRadiusEnchantmentState,#byclass=&WarpTime);
-      if (lState <> $)
+      if IsClass(what,&Spell)
       {
-         iPower = Nth(lState,5);
-         // Up to an extra second.
-         time += iPower * 10;
+         lState = Send(who,@GetRadiusEnchantmentState,#byclass=&WarpTime);
+         if (lState <> $)
+         {
+            iPower = Nth(lState,5);
+            // Up to an extra second.
+            time += iPower * 10;
+         }
       }
 
-      Send(who,@StartEnchantment,#what=self,#time=time,#addicon=FALSE,
-           #state=[what,who,lTargets,TRUE,bFreeCast,100,power]);
+      // We are dealing with a charge ability that requires holding a key.
+      if iHold AND time
+      {
+         // Convert cast time to hold time.
+         iHold = time;
+      }
 
-      Send(who,@AddMovementSpeedPercent,#iSpeed=-piMovementSpeedReduction);
+      lState = [what,who,lTargets,TRUE,bFreeCast,100,power,FALSE];
+
+      if NOT iHold
+      {
+         Send(who,@StartEnchantment,#what=self,#time=time,#addicon=FALSE,
+            #state=lState);
+      }
+      else
+      {
+         if iHold > viHold_interval
+         {
+            // Trance time is limited to viHold_interval. If the trance expires without
+            // the same ability key being pressed again, EndEnchantment() will call
+            // StoppedHolding instead of CastSkill() or PerformSpell().
+            Send(who,@StartEnchantment,#what=self,#time=viHold_interval,#addicon=FALSE,
+               #state=[what,who,lTargets,TRUE,bFreeCast,100,power,iHold-viHold_interval]);
+            Send(who,@SetAttackTime,#time=Send(what,@GetPostActionDelay));
+         }
+         else
+         {
+            Send(who,@StartEnchantment,#what=self,#time=iHold,#addicon=FALSE,
+               #state=lState);
+            Send(who,@SetAttackTime,#time=Send(what,@GetPostActionDelay));
+         }
+
+         // Apply the appropriate resource drain.
+         Send(what,@StartChargeDrain,#who=who,#iPower=power,#bFreeCast=bFreeCast);
+      }
+
+      Send(who,@AddMovementSpeedPercent,
+         #iSpeed=-Send(what,@GetMovementSpeedReduction,#state=lState));
 
       return;
    }
@@ -71,21 +116,53 @@ messages:
    "Called when:"
    " 1) Casting time expires, time to call CastSpell"
    " 2) Spell expires"
+   " 3) Hold interval expires"
    {
-      local oAbility, lTargets, iSpellPower;
+      local oAbility, lTargets, iSpellPower, lOldTargets;
 
       oAbility = First(state);
-      lTargets = Nth(state,3);
 
       // Let's clear up our trance related effects before proceeding further.
-      Send(who,@AddMovementSpeedPercent,#iSpeed=piMovementSpeedReduction);
+      Send(who,@AddMovementSpeedPercent,
+         #iSpeed=Send(oAbility,@GetMovementSpeedReduction,#state=state));
+
+      // Wraps up any unfinished business that has to be taken care of
+      // regardless of how the trance came to an end.
+      Send(oAbility,@TranceEnded,#who=who,#state=state);
+
+      // Check if we have any charge time left.
+      if Nth(state,8)
+      {
+         Send(oAbility,@StoppedHolding,#who=who,#state=state);
+
+         return;
+      }
+
+      lOldTargets = Nth(state,3);
 
       // Double-check to get valid targets.  Don't report 'cause we've already 
-      //  spammed them during the first check.
-      lTargets = Send(oAbility,@GetGoodTargets,#who=who,#lTargets=lTargets,
-                      #report=FALSE);
+      // spammed them during the first check – unless we are dealing with a regular
+      // autoattack here.
+      lTargets = Send(oAbility,@GetGoodTargets,#who=who,#lTargets=lOldTargets,
+                      #report=(IsClass(oAbility,&Stroke) OR IsClass(oAbility,&Unleash)));
 
-      if IsClass(oAbility,&Spell)
+      if IsClass(oAbility,&Monster)
+      {
+         // Right now, monsters only use trances for regular attacks to allow players
+         // to actively defend. lTargets contains a single target and extra bits of
+         // information that are passed on in slots 2 to 4.
+         if lTargets <> $
+         {
+            Send(oAbility,@TryAttack,#what=First(lTargets),#stroke_obj=oAbility,
+                  #factor=Nth(state,7),#iNum=Nth(lTargets,2),#bNow=TRUE,
+                  #count=Nth(lTargets,3),#ambush=Nth(lTargets,4));
+         }
+         else
+         {
+            Send(oAbility,@TargetUnavailable,#what=First(lOldTargets));
+         }
+      }
+      else if IsClass(oAbility,&Spell)
       {
          iSpellPower = Send(oAbility,@GetSpellPower,#who=who);
 
@@ -107,6 +184,11 @@ messages:
                     #iSpellPower=iSpellPower);
             }
          }
+         else
+         {
+            Send(oAbility,@TranceFailed,#who=who,#state=state,
+                  #iSpellPower=iSpellPower);
+         }
       }
       else
       {
@@ -116,26 +198,34 @@ messages:
 
             Post(oAbility,@PerformSkill,#who=who,#lTargets=lTargets);
          }
+         else
+         {
+            Send(oAbility,@TranceFailed,#who=who,#state=state);
+         }
       }
 
       return;
    }
 
-   BreakTrance(who=$,state=$,event=1,disruption=0)
+   BreakTrance(who=$,state=$,event=EVENT_ABILITY,disruption=0,what=$)
    {
-      local oAbility, iTime;
-
-      if event = EVENT_OOM
-      {
-         return;
-      }
+      local oAbility, iTime, iFocus, bHeld;
 
       oAbility = First(state);
+      bHeld = Send(oAbility,@IsHeld);
+
+      // Hacky, allows item use while sprinting.
+      // Return TRUE here but don't break the trance.
+      if (event = EVENT_USE
+         AND IsClass(oAbility,&Sprint))
+      {
+         return TRUE;
+      }
 
       if NOT Send(oAbility,@CanBreakTrance,#who=who,#state=state,#event=event,
-         #disruption=disruption)
+         #disruption=disruption,#what=what)
       {
-         return;
+         return FALSE;
       }
 
       if event <> EVENT_STEER
@@ -145,31 +235,78 @@ messages:
             Send(oAbility,@TranceCanceled,#who=who,#state=state);
          }
          else if (event = EVENT_DAMAGE)
-            AND Send(who,@SetTranceFocus,#focus=-disruption,#bAdd=TRUE)
          {
+            iFocus = Send(who,@SetTranceFocus,#focus=-disruption,#bAdd=TRUE);
             iTime = Send(oAbility,@GetRawTranceTime);
-            iTime = iTime * disruption / 100;
-            Send(who,@SetTranceTime,#time=iTime,#bAdd=TRUE);
-            Send(who,@MsgSendUser,#message_rsc=trance_disturbed);
 
-            return;
-         }
-         else
-         {
-            Send(oAbility,@TranceBroken,#who=who,#state=state,#event=event);
+            // We have some focus left. See, how much the disruption has set us back.
+            if iFocus > 0
+            {
+               iTime = iTime * disruption / 100;
+
+               Send(who,@MsgSendUser,#message_rsc=trance_disturbed);
+
+               if bHeld
+               {
+                  // For charged abilities, increase the total time
+                  // instead extending the current charge frame.
+                  Send(who,@SetChargeTime,#time=iTime,#bAdd=TRUE);
+               }
+               else
+               {
+                  // Regular trance abilities have their timer increased.
+                  Send(who,@SetTranceTime,#time=iTime,#bAdd=TRUE);
+               }
+
+               // Extend our post cast time by the same delay.
+               Send(who,@SetAttackTime,#time=iTime,#bAdd=TRUE);
+
+               return FALSE;
+            }
+            else
+            {
+               // Extend our post cast time in proportion to how much focus
+               // we had left before it was broken. We have to switch polarity
+               // since our previous focus is returned as a negative integer.
+               iTime = - iTime * iFocus / 100;
+               Send(who,@SetAttackTime,#time=iTime,#bAdd=TRUE);
+            }
          }
       }
 
-      Send(who,@AddMovementSpeedPercent,#iSpeed=piMovementSpeedReduction);
-      Send(who,@RemoveEnchantment,#what=self);
+      // Any fallout from having our trance broken will be handled in
+      // RemoveEnchantmentEffects below (called by RemoveEnchantment).
+      Send(who,@RemoveEnchantment,#what=self,#event=event);
 
-      return;
+      return TRUE;
    }
 
-   RemoveEnchantmentEffects( who = $, state = $ )
-   "This is normally translated to EndEnchantment in spell.kod"
-   "For trance, it is just swallowed."
+   // This is normally translated to EndEnchantment in spell.kod.
+   // However, this is only triggered when trance is interrupted
+   // EndEnchantment should be the result of a successful trance.
+   // RemoveEnchantment is usually called by BreakTrance().
+   // It can also be the result of a deletion though.
+   RemoveEnchantmentEffects(who=$,state=$,event=FALSE)
    {
+      local oAbility;
+
+      oAbility = First(state);
+
+      Send(who,@AddMovementSpeedPercent,
+         #iSpeed=Send(oAbility,@GetMovementSpeedReduction,#state=state));
+
+      // Wraps up any unfinished business that has to be taken care of
+      // regardless of how the trance came to an end.
+      Send(oAbility,@TranceEnded,#who=who,#state=state);
+
+      // We already handled any potential fallout in TranceCanceled.
+      if (event = EVENT_CANCEL) OR (event = EVENT_STEER)
+      {
+         return;
+      }
+
+      Send(oAbility,@TranceBroken,#who=who,#state=state,#event=event);
+     
       return;
    }
 
@@ -213,9 +350,19 @@ messages:
       return 100;
    }
 
-   GetSpellMoveSpeedBonus()
+   GetBuffStat()
    {
-      return -piMovementSpeedReduction;
+      return FALSE;
+   }
+
+   ModifyMonsterBehavior()
+   {
+      return;
+   }
+
+   GetHoldInterval()
+   {
+      return viHold_interval;
    }
 
 end

@@ -169,6 +169,8 @@ resources:
    follower_return_lost = \
       "Sorry about that.  I must have gotten lost somewhere along the way...  "
       "Good thing I knew that you were going to come here sooner or later!"
+   follower_return_summoned = \
+      "Ready for battle!"
 
    // Message triggered by FollowerDing()
    follower_learn = \
@@ -190,7 +192,22 @@ resources:
    follower_quest_finished_i = "There we go..."
    follower_quest_finished_j = "What's up with all the running around?  That's such poor quest design..."
    follower_quest_finished_k = "Looks like we're done here..."
-   follower_quest_finished_l = "I think we've earned ourselves a drink or two... Your treat."
+   follower_quest_finished_l = "I think we've earned ourselves a drink or two...  Your treat."
+   follower_quest_finished_m = "%s%s!  Awesome!"
+   follower_quest_finished_n = "Oooh... %s%s!  I like it!"
+   follower_quest_finished_o = "Meh... after all ~Ithat~I I would have expected something better "
+      "than %smeasly %s."
+   follower_quest_finished_p = "%s%s?  I guess we could use that.  Somehow..."
+   follower_quest_finished_q = "What's that?  %s%s?  I miss those times when you'd get "
+      "something actually worth your while."
+   follower_quest_finished_r = "We got %s%s?  Well, that's a bit...  Nevermind."
+   follower_quest_finished_s = "Hmmm... %s%s!  Not bad!"
+   follower_quest_finished_t = "%s%s...  I wonder if we can trade that in for something better."
+   follower_quest_finished_u = "Wow!  %s%s!!! No irony.  I swear."
+   follower_quest_finished_v = "Woot!  %s%s! No irony.  At all.  Not even a tiny little bit."
+   follower_quest_finished_w = "Well, would you look at this: %s%s!"
+   follower_quest_finished_x = "Not sure what we are going to do with %s%s.  But hey, it's "
+      "better than nothing."
 
    // Messages triggered by KilledSomething()
    follower_killed_something_a = "And yet another foe has met it's timely end..."
@@ -279,6 +296,8 @@ resources:
    follower_far = "Fine, I'll stay far back..."
    follower_farther = "Fine, staying a bit farther back..."
    follower_not_farther = "Are you trying to ditch me?!"
+   follower_torch_on = "Leave it to me. I'll use my torch when needed."
+   follower_torch_off = "Alright. Stowing that torch away again."
    follower_help = \
       "Need help with something? You can ask me to...\n"
       "...tell you about the basic game ~I~Bcommands~I~B that you can enter in the chat.\n"
@@ -289,6 +308,9 @@ resources:
       "...tell you what ~I~Bspells~I~B I have learned so far.\n"
       "...move in a little ~I~Bcloser~I~B, or really ~I~Bclose~I~B so I don't fall behind.\n"
       "...stay a bit ~I~Bfarther~I~B back or stay ~I~Bfar~I~B back to stay out of trouble.\n"
+      "...stow away my ~I~Btorch~I~B or keep it handy in case we need it.\n"
+      "...toggle between ~I~Bhold~I~Bing my position and moving with you.  (You can also use ~I~Bon~I~B/~I~Boff~I~B.)\n"
+      "...toggle between ~I~Bstay~I~Bing out of combat and engaging enemies as usual.  (You can also use ~I~Bon~I~B/~I~Boff~I~B.)\n"
       "...~I~Bmeet up~I~B with you later in case you don't need me at the moment.\n"
       "You could also tell me that ~I~Bit's time to part ways again~I~B.\n"
       "I'd think twice about that if I were you though.  I bet you'd never "
@@ -355,6 +377,7 @@ resources:
    follower_brief_leader_requested_start_d = "From what I remember, we are expected to..."
    follower_brief_leader_requested_start_e = "Where's my travel log?  Ah, there we go!  We need to..."
    follower_brief_leader_requested_kill = "~MThe follower tells you, \"...kill "
+   follower_brief_leader_requested_tame = "~MThe follower tells you, \"...tame "
    follower_brief_leader_requested_visit = "~MThe follower tells you, \"...visit "
    follower_brief_leader_requested_obtain = "~MThe follower tells you, \"... obtain "
    follower_brief_leader_requested_deliver = " and deliver "
@@ -384,7 +407,8 @@ resources:
    follower_brief_leader_we_b = "you and I "
    follower_brief_leader_we_c = "the two of us "
    follower_brief_leader_we_d = "the local heroes "
-   follower_brief_leader_monster_start = "have to kill "
+   follower_brief_leader_monsterkill_start = "have to kill "
+   follower_brief_leader_monstertame_start = "have to tame "
    follower_brief_leader_npc_start = "should visit "
    follower_brief_leader_cargo_start = "have to get "
    follower_brief_leader_end_a = ".  Sounds easy enough.~n~M\""
@@ -395,6 +419,12 @@ resources:
 
    follower_cant_accept_item = \
       "I couldn't possibly bear the responsibility of carrying %s%s!"
+
+   follower_hold_on = "Holding position!"
+   follower_hold_off = "On the move!"
+
+   follower_stay_on = "Staying clear of the enemy!"
+   follower_stay_off = "Engaging the enemy!"
 
    // Triggers for MercenaryCommand()
    follower_commands_trigger = "command"
@@ -408,6 +438,7 @@ resources:
    follower_closer_trigger = "closer"
    follower_far_trigger = "far"
    follower_farther_trigger = "farther"
+   follower_torch_trigger = "torch"
    follower_help_trigger = "help"
    follower_info_trigger = "info"
    follower_brief_trigger = "brief"
@@ -428,6 +459,10 @@ resources:
    follower_tips_bank_trigger = "ba"
    follower_tips_vault_trigger = "va"
    follower_tips_mend_trigger = "me"
+   follower_hold_trigger = "hold"
+   follower_stay_trigger = "stay"
+   follower_on_trigger = "on"
+   follower_off_trigger = "off"
 
    follower_hello_trigger_a = "hi"
    follower_hello_trigger_b = "hey"
@@ -452,10 +487,14 @@ classvars:
    vrMercenaryLeave = follower_leave
    vrFollowerReturnDeath = follower_return_death
    vrFollowerReturnLost = follower_return_lost
+   vrFollowerReturnSummoned = follower_return_summoned
    viSocial = 100
    vrInfo = $
    viInfo_time = 1800
    viChat_frequency = 100
+
+   viBulk_hold_max = 1700
+   viWeight_hold_max = 1700
 
 properties:
 
@@ -473,6 +512,7 @@ properties:
    piCombatCheck = 0
    viNaturalVigorRegeneration = 0
    piStayClose = 2
+   pbTorch = FALSE
    ptChat = $
    piMonsterFlags = MFLAG_DONT_DISPOSE
    poInfo = $
@@ -769,9 +809,6 @@ messages:
             if IsClass(i,&RangedWeapon)
                OR IsClass(i,&Ammo)
                OR IsClass(i,&Lute)
-               OR IsClass(i,&Torch)
-               OR (IsClass(i,&Shield)
-                  AND GetListElemByClass(plUsing,&Torch) <> $)
                OR NOT Send(self,@TryUseItem,#what=i)
             {
                // If we can't, return them.
@@ -798,7 +835,7 @@ messages:
       propagate;
    }
 
-   UnuseItem(what=$,bDrop=TRUE)
+   UnuseItem(what=$,bDrop=FALSE)
    {
       local i;
 
@@ -832,47 +869,28 @@ messages:
 
    SetLeader(oLeader=$,report=TRUE,bContracted=FALSE)
    {
-      local i, oObject;
+      local lItems, i, oObject;
 
       // Time for a farewell...
       if (poLeader <> $) AND (oLeader = $)
       {
-         // Let's return all the stuff.
-         foreach i in plUsing
+         foreach lItems in [plActive,plPassive]
          {
-            if NOT (IsClass(i,&ShirtBase)
-               OR IsClass(i,&Pants)
-               OR IsClass(i,&Torch))
+            foreach i in lItems
             {
-               plUsing = DelListElem(plUsing,i);
-
-               Send(i,@NewUnused,#what=self);
-
-               Send(poOwner,@NewHold,#what=i,#new_row=piRow,#new_col=piCol,
-                     #fine_row=piFine_row+2,#fine_col=piFine_col+2);
+               if IsClass(i,&ShirtBase)
+                  OR IsClass(i,&Pants)
+                  OR IsClass(i,&Torch)
+               {
+                  continue;
+               }
+               else if Send(poOwner,@ReqNewHold,#what=i,#new_row=piRow,#new_col=piCol)
+               {
+                  Send(poOwner,@NewHold,#what=i,#merge=FALSE,
+                        #new_row=piRow,#new_col=piCol,
+                        #fine_row=piFine_row,#fine_col=piFine_col);
+               }
             }
-         }
-
-         // Check if we still have a shield stashed somewhere.
-         foreach i in plPassive
-         {
-            oObject = Send(self,@HolderExtractObject,#data=i);
-
-            if IsClass(oObject,&Shield)
-               AND NOT IsClass(oObject,&Torch)
-            {
-               break;
-            }
-            else
-            {
-               oObject = $;
-            }
-         }
-
-         if oObject <> $
-         {
-            Send(poOwner,@NewHold,#what=oObject,#new_row=piRow,#new_col=piCol,
-                  #fine_row=piFine_row+2,#fine_col=piFine_col+2);
          }
 
          if ptAction <> $
@@ -1040,9 +1058,9 @@ messages:
       return;
    }
 
-   FollowerReturn(oBody=$)
+   FollowerReturn(oBody=$,bSummoned=FALSE)
    {
-      local oOwner;
+      local oOwner, oSmoke, iCol, iRow, iFineCol, iFineRow;
 
       // Just a precaution. Followers shouldn't occupy the merc slot
       // if the feature is disabled.
@@ -1071,8 +1089,31 @@ messages:
             Send(self,@FollowerReturnMessage,#what=poLeader,#bDeath=TRUE);
          }
       }
-      // Not called by our corpse. That means our leader has entered a
-      // safe house. Let's join him again.
+      // Not called by our corpse. Let's see if we got summoned by our leader.
+      else if bSummoned
+      {
+         oOwner = Send(poLeader,@GetOwner);
+
+         iRow = Send(poLeader,@GetRow);
+         iFineRow = Send(poLeader,@GetFineRow);
+         iCol = Send(poLeader,@GetCol);
+         iFineCol = Send(poLeader,@GetFineCol);
+
+         Send(oOwner,@NewHold,#what=self,#new_row=iRow,#fine_row=iFineRow,
+            #new_col=iCol,#fine_col=iFineCol);
+
+         // Let's add a bit of flair...
+         oSmoke = Create(&FogCloud,#seed=[self,99,5000,0,0,0,0,0,0]);
+         Send(oOwner,@NewHold,#what=oSmoke,#new_row=iRow,#new_col=iCol,
+               #fine_row=iFineRow,#fine_col=iFineCol);
+
+         Send(self,@GainHealth,#amount=piMax_health*50/100);
+
+         Send(self,@UpdateRates);
+
+         Send(self,@FollowerReturnMessage,#what=poLeader,#bSummoned=TRUE);
+      }
+      // Nope, that means our leader has entered a safe house. Let's join him again.
       else
       {
          // If we meet up with our follower in a safe place
@@ -1101,11 +1142,20 @@ messages:
       return;
    }
 
-   FollowerReturnMessage(what=$,bDeath=FALSE)
+   GetCorpse()
+   {
+      return poBody;
+   }
+
+   FollowerReturnMessage(what=$,bDeath=FALSE,bSummoned=FALSE)
    {
       if bDeath
       {
          Post(self,@MercenarySayToOne,#target=what,#message_rsc=vrFollowerReturnDeath);
+      }
+      else if bSummoned
+      {
+         Post(self,@MercenarySayToOne,#target=what,#message_rsc=vrFollowerReturnSummoned);         
       }
       else
       {
@@ -1134,7 +1184,22 @@ messages:
          return;
       }
 
-      propagate;
+      // Only proceed if this is a PvE attack.
+      if IsClass(what,&Monster)
+         AND NOT Send(what,@IsOwnedByPlayer)
+      {
+         // Must be PvE if the attacker is a monster.
+         propagate;
+      }
+
+      if IsClass(victim,&Monster)
+         AND NOT Send(victim,@IsOwnedByPlayer)
+      {
+         // Must be PvE if the victim is a monster.
+         propagate;
+      }
+
+      return;
    }
 
    SomethingEntered(what = $,where=$)
@@ -1184,9 +1249,21 @@ messages:
       return;
    }
 
-   FollowerDing(bCreation=FALSE)
+   FollowerDing(bCreation=FALSE,bReset=FALSE)
    {
-      local iSpell, oSpell, iMana, iExertion, iPriority, iPower, iAttacks, iCount, iLevelPercentage;
+      local iSpell, oSpell, iMana, iExertion, iPriority, iPower, iAttacks, iCount,
+         iLevelPercentage, oWeapon;
+
+      if poLeader = $
+      {
+         return;
+      }
+
+      if bReset
+      {
+         Send(self,@RemoveCombatAction,#bALL=TRUE);
+         Send(self,@UpdateMeleeRange);
+      }
 
       iLevelPercentage = 100*Send(poLeader,@GetBaseMaxHealth)/(100 + Send(poLeader,@GetRawStamina));
       viLevel = FOLLOWER_MAX_LEVEL*iLevelPercentage/100;
@@ -1197,32 +1274,42 @@ messages:
       Send(self,@GainMana,#amount=200);
       Send(self,@GainVigor,#amount=200);
 
+      // Let's start with the appropriate default skill. This will be updated as needed
+      // when items are unequipped or equipped by NewUsing() and UnuseItem() in human.kod.
+      oWeapon = Send(self,@GetWeapon);
+
+      if oWeapon = $
+      {
+         iAttacks = ATTACK_PUNCH;
+      }
+      else
+      {
+         iAttacks = ATTACK_SLASH;
+      }
+
       // Update our combat abilities depending on role.
       if piRole = FOLLOWER_ROLE_WARRIOR
       {
-         if viLevel < FOLLOWER_EXPERIENCED
+         if viLevel >= FOLLOWER_EXPERIENCED
          {
-            iAttacks = ATTACK_SLASH;
+            iAttacks |= ATTACK_TAUNT; 
          }
-         else if viLevel < FOLLOWER_SEASONED
+         if viLevel >= FOLLOWER_SEASONED
          {
-            iAttacks = ATTACK_SLASH | ATTACK_TAUNT; 
+            iAttacks |= ATTACK_WEAKEN; 
          }
-         else if viLevel < FOLLOWER_HARDENED
+         if viLevel >= FOLLOWER_HARDENED
          {
-            iAttacks = ATTACK_SLASH | ATTACK_TAUNT | ATTACK_WEAKEN;
+            iAttacks |= ATTACK_STUN;
          }
-         else if viLevel < FOLLOWER_VETERAN
+         if viLevel >= FOLLOWER_VETERAN
          {
-            iAttacks = ATTACK_SLASH | ATTACK_TAUNT | ATTACK_WEAKEN | ATTACK_FRIGHTEN; 
-         }
-         else
-         {
-            iAttacks = ATTACK_SLASH | ATTACK_TAUNT | ATTACK_WEAKEN | ATTACK_FRIGHTEN | ATTACK_STUN; 
+            iAttacks |= ATTACK_CONFUSE; 
          }
 
          // Update our list of default attacks if necessary.
-         if iAttacks <> viAttacks
+         if (iAttacks <> viAttacks)
+            OR bReset
          {
             viAttacks = iAttacks;
             Send(self,@AddDefaultAttacks,#bUpdate=TRUE);
@@ -1234,25 +1321,22 @@ messages:
 
       if piRole = FOLLOWER_ROLE_BARD
       {
-         if viLevel < FOLLOWER_EXPERIENCED
+         if viLevel >= FOLLOWER_EXPERIENCED
          {
-            iAttacks = ATTACK_SLASH;
+            iAttacks |= ATTACK_SNARE; 
          }
-         else if viLevel < FOLLOWER_SEASONED
+         if viLevel >= FOLLOWER_SEASONED
          {
-            iAttacks = ATTACK_SLASH | ATTACK_SNARE; 
+            iAttacks |= ATTACK_DISTRACT; 
          }
-         else if viLevel < FOLLOWER_HARDENED
+         if viLevel >= FOLLOWER_HARDENED
          {
-            iAttacks = ATTACK_SLASH | ATTACK_SNARE | ATTACK_DISTRACT;
-         }
-         else
-         {
-            iAttacks = ATTACK_SLASH | ATTACK_SNARE | ATTACK_DISTRACT | ATTACK_DAZE; 
+            iAttacks |= ATTACK_DAZE;
          }
 
          // Update our list of default attacks if necessary.
-         if iAttacks <> viAttacks
+         if (iAttacks <> viAttacks)
+            OR bReset
          {
             viAttacks = iAttacks;
             Send(self,@AddDefaultAttacks,#bUpdate=TRUE);
@@ -1264,21 +1348,18 @@ messages:
 
       if piRole = FOLLOWER_ROLE_WARLOCK
       {
-         if viLevel < FOLLOWER_SEASONED
+         if viLevel >= FOLLOWER_SEASONED
          {
-            iAttacks = ATTACK_SLASH;
+            iAttacks |= ATTACK_CRIPPLE; 
          }
-         else if viLevel < FOLLOWER_VETERAN
+         if viLevel >= FOLLOWER_HARDENED
          {
-            iAttacks = ATTACK_SLASH | ATTACK_CRIPPLE; 
-         }
-         else
-         {
-            iAttacks = ATTACK_SLASH | ATTACK_CRIPPLE | ATTACK_FRIGHTEN; 
+            iAttacks |= ATTACK_CONFUSE;
          }
 
          // Update our list of default attacks if necessary.
-         if iAttacks <> viAttacks
+         if (iAttacks <> viAttacks)
+            OR bReset
          {
             viAttacks = iAttacks;
             Send(self,@AddDefaultAttacks,#bUpdate=TRUE);
@@ -1289,11 +1370,23 @@ messages:
 
       if piRole = FOLLOWER_ROLE_WIZARD
       {
+         // Update our list of default attacks if necessary.
+         if bReset
+         {
+            Send(self,@AddDefaultAttacks,#bUpdate=TRUE);
+         }
+
          viBurnChance = viLevel*FOLLOWER_EFFECT_CHANCE_FAIR/FOLLOWER_EFFECT_BASE;
       }
 
       if piRole = FOLLOWER_ROLE_PRIEST
       {
+         // Update our list of default attacks if necessary.
+         if bReset
+         {
+            Send(self,@AddDefaultAttacks,#bUpdate=TRUE);
+         }
+
          viFatigueChance = viLevel*FOLLOWER_EFFECT_CHANCE_GOOD/FOLLOWER_EFFECT_BASE;
       }
 
@@ -1334,6 +1427,7 @@ messages:
                                        #iPower=iPower)
          {
             if NOT bCreation
+               AND NOT bReset
             {
                Send(self,@FollowerLearnMessage,#iNum=iSpell);
             }
@@ -1437,7 +1531,7 @@ messages:
                   iSpell = SID_MYSTIC_TOUCH;
                   break;
                case FOLLOWER_ROLE_PRIEST:
-                  iSpell = SID_HOLY_SYMBOL;
+                  iSpell = SID_LIGHT;
                   break;
                case FOLLOWER_ROLE_WARLOCK:
                   iSpell = SID_KARAHOLS_CURSE;
@@ -1717,13 +1811,13 @@ messages:
          iLight = Send(poOwner,@GetRoomLight);
          iLight += Send(poLeader,@GetLightLevel);
 
-         if (iLight >= LIGHT_NICE)
+         if (iLight >= LIGHT_NICE) OR NOT pbTorch
          {
             foreach i in plUsing
             {
                if IsClass(i,&Torch)
                {
-                  Send(self,@UnuseItem,#what=i,#bDrop=FALSE);
+                  Send(self,@UnuseItem,#what=i);
                   break;
                }
             }
@@ -1759,7 +1853,7 @@ messages:
                {
                   if IsClass(i,&Shield)
                   {
-                     Send(self,@UnuseItem,#what=i,#bDrop=FALSE);
+                     Send(self,@UnuseItem,#what=i);
                      break;
                   }
                }
@@ -1889,7 +1983,7 @@ messages:
             Send(self,@MonsterAction);
          }
 
-         // REs are no longer maintained when out of combat for too long secs.
+         // REs are no longer maintained when out of combat for too long.
          // Neither are minions such as Reflections, Evil Twins etc.
          if (GetTime() - piCombatCheck > FOLLOWER_MAINTAIN_TIME)
          {
@@ -1899,7 +1993,7 @@ messages:
                state = Nth(i,3);
                if (Send(oEnch,@GetCaster,#state=state) = self)
                {
-                  Send(oEnch,@BreakTrance,#who=self,#state=state,#event=EVENT_REST);
+                  Send(oEnch,@BreakFragileEffect,#who=self,#state=state,#event=EVENT_REST);
                }
             }
 
@@ -1984,11 +2078,13 @@ messages:
 
    EnterStateEngage( target = $, actnow = TRUE, delay = 0)
    {
-      // Can't engage against the leader.
+      // Can't engage against the leader...
       if (poLeader <> $
          AND poLeader = target)
+      // ...or engage when we are told to stay.
+         OR piMonsterflags & MFLAG_STAYING
       {
-         Send(self,@EnterStateMove,#actnow=FALSE);
+         Send(self,@EnterStateMove);
 
          return;
       }
@@ -2149,6 +2245,27 @@ messages:
          return TRUE;
       }
 
+      // Ask follower to light our way in dark environments.
+      if StringEqual(message,follower_torch_trigger)
+      {
+         pbTorch = NOT pbTorch;
+
+         if pbTorch
+         {
+            Post(self,@MercenarySayToOne,#target=what,#message_rsc=follower_torch_on);
+         }
+         else
+         {
+            Post(self,@MercenarySayToOne,#target=what,#message_rsc=follower_torch_off);
+         }   
+
+         Send(self,@FaceLeader);
+
+         Send(self,@FollowerAdjustLight);
+
+         return TRUE;
+      }
+
       // Ask follower for information about the environment.
       if StringEqual(message,follower_info_trigger)
       {
@@ -2279,18 +2396,83 @@ messages:
          return TRUE;
       }
 
+      // Ask follower to hold their position (or not).
+      if StringContain(message,follower_hold_trigger)
+      {
+         if StringContain(message,follower_on_trigger)
+         {
+            piMonsterflags |= MFLAG_HOLDING;
+         }
+         else if StringContain(message,follower_off_trigger)
+         {
+            piMonsterflags &= ~MFLAG_HOLDING;
+         }
+         else if piMonsterflags & MFLAG_HOLDING
+         {
+            piMonsterflags &= ~MFLAG_HOLDING;
+         }
+         else
+         {
+            piMonsterflags |= MFLAG_HOLDING;
+         }
+
+         if piMonsterflags & MFLAG_HOLDING
+         {
+            Post(self,@MercenarySayToOne,#target=what,#message_rsc=follower_hold_on);
+         }
+         else
+         {
+            Post(self,@MercenarySayToOne,#target=what,#message_rsc=follower_hold_off);
+         }
+
+         return TRUE;
+      }
+
+      // Ask follower to stay out of combat (or not).
+      if StringContain(message,follower_stay_trigger)
+      {
+         if StringContain(message,follower_on_trigger)
+         {
+            piMonsterflags |= MFLAG_STAYING;
+         }
+         else if StringContain(message,follower_off_trigger)
+         {
+            piMonsterflags &= ~MFLAG_STAYING;
+         }
+         else if piMonsterflags & MFLAG_STAYING
+         {
+            piMonsterflags &= ~MFLAG_STAYING;
+         }
+         else
+         {
+            piMonsterflags |= MFLAG_STAYING;
+         }
+
+         if piMonsterflags & MFLAG_STAYING
+         {
+            Post(self,@MercenarySayToOne,#target=what,#message_rsc=follower_stay_on);
+         }
+         else
+         {
+            Post(self,@MercenarySayToOne,#target=what,#message_rsc=follower_stay_off);
+         }
+
+         return TRUE;
+      }
+
       propagate;
    }
 
    GiveInfo(bRequested=FALSE,iInfo=FALSE)
    {
-      local rIntro, i, rInfo, lInfo, oObject, iTime,cClass;
+      local rIntro, i, rInfo, lInfo, iTime, rName;
 
       rIntro = follower_info_repeat_none;
 
       // No spamming veterans unless requested!
       if (NOT bRequested) AND Send(poLeader,@IsVeteran)
       {
+         poInfo = $;
          return FALSE;
       }
 
@@ -2299,33 +2481,21 @@ messages:
          poInfo = poOwner;
       }
 
+      // We store poInfo's name in plInfo to avoid spamming
+      // info on identical objects and to make sure we don't
+      // keep zombie objects around during garbage collection.
+      rName = Send(poInfo,@GetTrueName);
+
       // Check if we have recently mentioned the info object...
       if plInfo <> $
       {
-         if IsClass(poInfo,&Monster)
+         foreach i in plInfo
          {
-            cClass = GetClass(poInfo);
-
-            foreach i in plInfo
+            if (Nth(i,2) = rName)
+               AND (Nth(i,3) = iInfo)
             {
-               if (Nth(i,2) = cClass)
-                  AND (Nth(i,3) = iInfo)
-               {
-                  lInfo = i;
-                  break;
-               }
-            }
-         }
-         else
-         {
-            foreach i in plInfo
-            {
-               if (Nth(i,2) = poInfo)
-                  AND (Nth(i,3) = iInfo)
-               {
-                  lInfo = i;
-                  break;
-               }
+               lInfo = i;
+               break;
             }
          }
 
@@ -2344,6 +2514,7 @@ messages:
             // No one cares. Let's not be repetitive.
             else
             {
+               poInfo = $;
                return FALSE;
             }
 
@@ -2369,6 +2540,10 @@ messages:
       // We have an object and we'd like to talk about it. What though?
       rInfo = Send(poInfo,@GetFollowerInfo,#who=poLeader,#iInfo=iInfo);
 
+      // Set our info object to nil again to make sure we don't obstruct garbage
+      // collection.
+      poInfo = $;
+
       // Looks like we have nothing to say about that object. Awkward...
       if rInfo = $
       {
@@ -2385,15 +2560,8 @@ messages:
          }
       }
 
-      // You are not so different, you and the exactly identical creature next to you...
-      // It's probably good enough if we inform our leader once per monsterclass.
-      if IsClass(poInfo,&Monster)
-      {
-         poInfo = GetClass(poInfo);
-      }
-
       // Since we're gonna say something on the matter, let's keep track of it.
-      plInfo = Cons([GetTime(),poInfo,iInfo],plInfo);
+      plInfo = Cons([GetTime(),rName,iInfo],plInfo);
 
       Send(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_info,
          #parm1=rIntro,#parm2=rInfo);
@@ -2438,6 +2606,91 @@ messages:
       return;
    }
 
+   ClearpoInfo()
+   {
+      poInfo = $;
+
+      return;
+   }
+
+   // Needs to be called manually once to convert entries formerly
+   // listed as objects to their corresponding classes.
+   ConvertInfo()
+   {
+      local oMonster, lInfo, entity, rName, lTemplates;
+
+      lTemplates = Send(SYS,@GetMonsterTemplates);
+
+      foreach lInfo in plInfo
+      {
+         rName = $;
+
+         entity = Nth(lInfo,2);
+
+         if IsObject(entity)
+         {
+            rName = Send(entity,@GetTrueName);
+         }
+         else
+         {
+            foreach oMonster in lTemplates
+            {
+               if GetClass(oMonster) = entity
+               {
+                  rName = Send(oMonster,@GetTrueName);
+               }
+            }
+         }
+
+         if rName = $
+         {
+            continue;
+         }
+
+         SetNth(lInfo,2,rName);
+      }
+
+      return;
+   }
+
+   // Checks for potential doubled entries.
+   CheckDuplicates()
+   {
+      local lInfo, i, j, entityone, entitytwo, rNameOne,
+         rNameTwo;
+
+      foreach i in plInfo
+      {
+         entityone = Nth(i,2);
+
+         if NOT IsObject(entityone)
+         {
+            continue;
+         }
+
+         rNameOne = Send(entityone,@GetTrueName);
+
+         foreach j in plInfo
+         {
+            entitytwo = Nth(j,2);
+
+            if IsObject(entitytwo)
+            {
+               rNameTwo = Send(entitytwo,@GetTrueName);
+
+               if (entityone <> entitytwo)
+                  AND (rNameOne = rNameTwo)
+               {
+                  Debug("Duplicate objects",entityone,entitytwo,rNameOne);
+                  plInfo = DelListElem(plInfo,j);
+               }
+            }
+         }
+      }
+
+      return;
+   }
+
    MercenaryJoinMessage(what=$,bContracted=FALSE)
    {
       if bContracted
@@ -2450,15 +2703,19 @@ messages:
 
    GreetLeader(bRequested=FALSE)
    {
-      local lInfo, rGreet, rEnd, iTime;
+      local lInfo, rGreet, rEnd, rName, iTime;
 
       rEnd = follower_greet_leader_end_a;
+
+      // Keep our leader's name ready. Would be kinda embarrassing
+      // if we had forgot that.
+      rName = Send(poLeader,@GetTrueName);
 
       // Check if we have recently exchanged pleasantries.
       // We simply use our plInfo list and check for our leader.
       if plInfo <> $
       {
-         lInfo = GetListNode(plInfo,2,poLeader);
+         lInfo = GetListNode(plInfo,2,rName);
 
          // Looks like we have. How recently?
          if lInfo <> $
@@ -2504,17 +2761,17 @@ messages:
       }
 
       Send(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_greet_leader_template,
-         #parm1=rGreet,#parm2=Send(poLeader,@GetTrueName),#parm3=rEnd);
+         #parm1=rGreet,#parm2=rName,#parm3=rEnd);
 
       // We said hello. Let's keep track of it.
-      plInfo = Cons([GetTime(),poLeader,FALSE],plInfo);
+      plInfo = Cons([GetTime(),rName,FALSE],plInfo);
 
       return;
    }
 
    BriefLeader(template=$,node=$)
    {
-      local lQuests, i, oMonster, oNPC, oCargo, rQuest, iCount;
+      local lQuests, i, oMonster, oNPC, oCargo, rQuest, iCount, rQType;
 
       // This only happens when we request a briefing.
       if (template = $ OR node = $)
@@ -2544,9 +2801,18 @@ messages:
                // Monster kills don't really involve anything else.
                if oMonster <> $
                {
+                  switch (Send(node,@GetQuestNodeType))
+                  {
+                     case QN_TYPE_MONSTER_BRING:
+                        rQType = follower_brief_leader_requested_tame;
+                        break;
+                     default:
+                        rQType = follower_brief_leader_requested_kill;
+                        break;
+                  }
                   Send(poLeader,@MsgSendUser,
                      #message_rsc=follower_brief_leader_requested_template,
-                     #parm1=follower_brief_leader_requested_kill,
+                     #parm1=rQType,
                      #parm2=Send(oMonster,@GetIndef),#parm3=Send(oMonster,@GetName),
                      #parm4=follower_brief_leader_requested_period);
                }
@@ -2647,11 +2913,21 @@ messages:
       oMonster = Send(node,@GetQuestMonster);
       if oMonster <> $
       {
+         switch (Send(node,@GetQuestNodeType))
+         {
+            case QN_TYPE_MONSTER_BRING:
+               rQType = follower_brief_leader_monstertame_start;
+               break;
+            default:
+               rQType = follower_brief_leader_monsterkill_start;
+               break;
+         }
+
          Send(poLeader,@MsgSendUser,
             #message_rsc=follower_brief_leader_template,
             #parm1=Send(self,@GetBriefingStarter),
             #parm2=Send(self,@GetBriefingWe),
-            #parm3=follower_brief_leader_monster_start,
+            #parm3=rQType,
             #parm4=Send(oMonster,@GetIndef),#parm5=Send(oMonster,@GetName),
             #parm6=Send(self,@GetBriefingEnd));
 
@@ -2835,9 +3111,20 @@ messages:
       return rEnd;
    }
 
-   QuestFinished()
+   QuestFinished(oReward=$)
    {
-      switch(Random(1,12))
+      local iRandom;
+
+      if oReward = $
+      {
+         iRandom = Random(1,12);
+      }
+      else
+      {
+         iRandom = Random(1,24);
+      }
+
+      switch(iRandom)
       {
          case 1:
             Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_a);
@@ -2874,6 +3161,54 @@ messages:
             break;
          case 12:
             Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_l);
+            break;
+         case 13:
+            Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_m,
+               #parm1=Send(oReward,@GetCapIndef),#parm2=Send(oReward,@GetName));
+            break;
+         case 14:
+            Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_n,
+               #parm1=Send(oReward,@GetIndef),#parm2=Send(oReward,@GetName));
+            break;
+         case 15:
+            Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_o,
+               #parm1=Send(oReward,@GetIndef),#parm2=Send(oReward,@GetName));
+            break;
+         case 16:
+            Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_p,
+               #parm1=Send(oReward,@GetCapIndef),#parm2=Send(oReward,@GetName));
+            break;
+         case 17:
+            Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_q,
+               #parm1=Send(oReward,@GetCapIndef),#parm2=Send(oReward,@GetName));
+            break;
+         case 18:
+            Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_r,
+               #parm1=Send(oReward,@GetIndef),#parm2=Send(oReward,@GetName));
+            break;
+         case 19:
+            Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_s,
+               #parm1=Send(oReward,@GetIndef),#parm2=Send(oReward,@GetName));
+            break;
+         case 20:
+            Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_t,
+               #parm1=Send(oReward,@GetCapIndef),#parm2=Send(oReward,@GetName));
+            break;
+         case 21:
+            Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_u,
+               #parm1=Send(oReward,@GetCapIndef),#parm2=Send(oReward,@GetName));
+            break;
+         case 22:
+            Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_v,
+               #parm1=Send(oReward,@GetCapIndef),#parm2=Send(oReward,@GetName));
+            break;
+         case 23:
+            Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_w,
+               #parm1=Send(oReward,@GetCapIndef),#parm2=Send(oReward,@GetName));
+            break;
+         case 24:
+            Post(self,@MercenarySayToOne,#target=poLeader,#message_rsc=follower_quest_finished_x,
+               #parm1=Send(oReward,@GetIndef),#parm2=Send(oReward,@GetName));
             break;
       }
 
@@ -3056,7 +3391,7 @@ messages:
          return;
       }
 
-      if Send(self,@ChatTimer) AND NOT Send(self,@GiveInfo,#iInfo=iInfo)
+      if Send(self,@ChatTimer)
       {
          switch(Random(1,4))
          {
@@ -3399,6 +3734,7 @@ messages:
          if (bArmor AND (IsClass(i,&Armor) OR IsClass(i,&Helmet)))
             OR (bWeapon AND (IsClass(i,&Weapon) OR IsClass(i,&Shield)))
             OR (bClothes AND (IsClass(i,&Pants) OR IsClass(i,&ShirtBase)))
+            OR (bArmor AND bWeapon AND bClothes AND NOT IsClass(i,&Torch))
          {
             plUsing = DelListElem(plUsing,i);
 
@@ -3463,6 +3799,63 @@ messages:
    }
 
    IsOwnedByPlayer()
+   {
+      return TRUE;
+   }
+
+   IsServant(what=$)
+   {
+      return (what = poLeader);
+   }
+
+   ReqNewHold(what = $)
+   {
+      if NOT Send(what,@CanBeStoredInVault)
+         OR (Send(what,@GetBulk) <= 0)
+      {
+         return FALSE;
+      }
+
+      propagate;
+   }
+
+   GetBulkMax()
+   {
+      local iLoad;
+
+      iLoad = Send(SETTINGS_OBJECT,@GetFollowerLoad);
+
+      if iLoad
+      {
+         return iLoad;
+      }
+
+      return (viBulk_hold_max + (Send(self,@GetMight) * 20)) *
+         Send(SETTINGS_OBJECT,@GetFollowerLoadPercentage) / 100;
+   }
+
+   GetWeightMax()
+   {
+      local iLoad;
+
+      iLoad = Send(SETTINGS_OBJECT,@GetFollowerLoad);
+
+      if iLoad
+      {
+         return iLoad;
+      }
+
+      return (viWeight_hold_max + (Send(self,@GetMight) * 20)) *
+         Send(SETTINGS_OBJECT,@GetFollowerLoadPercentage) / 100;
+   }
+
+   IsFullTalk()
+   {
+      return TRUE;
+   }
+
+   // Followers are quick on their feet.
+   ActiveMoveCheck()
    {
       return TRUE;
    }

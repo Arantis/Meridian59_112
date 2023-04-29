@@ -47,15 +47,19 @@ classvars:
    viNoNewbieOffense = TRUE
    viMana = 15
    viSpell_level = 6
-   viCast_time = 600
    viChance_To_Increase = 10
    viMeditate_ratio = 75
 
 properties:
 
+   piCast_time = 600
+
    // What percentage of AMA's spellpower is removed from the
    // spellpower of any spells cast.
    piAMAEffectPercent = 100
+
+   // Not sold anywhere.
+   pbAccessible = FALSE
 
 messages:
 

@@ -36,23 +36,20 @@ classvars:
 
    viSpell_type = SPL_TYPE_ALL
 
-   // No delay.
-   viPostCast_time = 0
-
    viMana = 0
    viSpell_level = 50
    viSpellExertion = 0
 
    viSchool = SS_DM_COMMAND
 
-   // Projectile lighting information.
-   viProjectileLightFlags = LIGHT_FLAG_ON | LIGHT_FLAG_DYNAMIC
-   // Intensity, out of 255.
    viProjectileLightIntensity = 50
-   // Default color is bright red.
    viProjectileLightColor = LIGHT_BRED
+   viProjectileSpeed = 13
 
 properties:
+
+   // No delay.
+   piPostCast_time = 0
 
    piDamageMin = 5000
    piDamageMax = 5000
@@ -94,11 +91,6 @@ messages:
       return TRUE;
    }
 
-   GetProjectileSpeed()
-   {
-      return 13;
-   }
-
    SendLookAnimation()
    {
       AddPacket(1,ANIMATE_NONE, 2,1);
@@ -117,6 +109,21 @@ messages:
    "DM spells can't be forgotten."
    {
       return FALSE;
+   }
+
+   AddChargeTime()
+   {
+      return TRUE;
+   }
+
+   RemoveChargeTime()
+   {
+      return TRUE;
+   }
+
+   SetTimeValues()
+   {
+      return TRUE;
    }
 
 end

@@ -28,6 +28,20 @@ constants:
 
    EQUIPMENT_DROP_PERCENT = 20
 
+   HUMAN_HIT_BASE_DURATION = 150
+   HUMAN_HIT_RANDOM_DURATION = 300
+
+   HUMAN_HIT_TORSO = 15
+   HUMAN_HIT_LEFT_ARM = 19
+   HUMAN_HIT_RIGHT_ARM = 27
+   HUMAN_HIT_LEGS = 17
+   HUMAN_HIT_FRAME_COUNT = 2
+
+   HUMAN_REST_FRAME = 1
+   HUMAN_WEAPON_REST_FRAME = 17
+
+
+
 resources:
 
    include human.lkod
@@ -92,33 +106,12 @@ resources:
    human_hair_dr_icon = ptdr.bgf  //female
    human_hair_xb_icon = ptxb.bgf  //female
 
-   human_sound_swish1 = swswish1.ogg             //no ouch
-   human_sound_swish2 = swswish2.ogg             //no ouch
-   human_sound_swish3 = swswish3.ogg             //no ouch
-   human_sound_sword1 = sword1.ogg             //no ouch
-   human_sound_sword2 = sword2.ogg             //no ouch
-   human_sound_sword3 = sword3.ogg             //no ouch
-   human_sound_metal1 = swrdmtl1.ogg             //no ouch
-   human_sound_metal2 = swrdmtl2.ogg             //no ouch
-   human_sound_metal3 = swrdmtl3.ogg             //no ouch
-   human_sound_hit_monster_flesh1 = fhit1b.ogg             //no ouch
-   human_sound_hit_monster_flesh2 = fhit2b.ogg             //no ouch
-   human_sound_hit_monster_flesh3 = fhit3b.ogg             //no ouch
-   human_sound_hit_monster_leather1 = lhit1b.ogg             //no ouch
-   human_sound_hit_monster_leather2 = lhit2b.ogg             //no ouch
-   human_sound_hit_monster_leather3 = lhit3b.ogg             //no ouch
-   human_sound_hit_monster_metal1 = mhit1b.ogg             //no ouch
-   human_sound_hit_monster_metal2 = mhit2b.ogg             //no ouch
-   human_sound_hit_monster_metal3 = mhit3b.ogg             //no ouch
+   human_sound_swish1 = HumanSwish1.ogg
+   human_sound_swish2 = HumanSwish2.ogg
+   human_sound_swish3 = HumanSwish3.ogg
+   human_sound_swish4 = HumanSwish4.ogg
+   human_sound_swish5 = HumanSwish5.ogg
 
-   human_male_sound_ouch1 = ouchm1.ogg     // in increasing order of agony
-   human_male_sound_ouch2 = ouchm2.ogg
-   human_male_sound_ouch3 = ouchm3.ogg
-   human_male_sound_ouch4 = ouchm4.ogg
-   human_female_sound_ouch1 = ouchf1.ogg
-   human_female_sound_ouch2 = ouchf2.ogg
-   human_female_sound_ouch3 = ouchf3.ogg
-   human_female_sound_ouch4 = ouchf4.ogg
    human_male_sound_death = pdeath.ogg
    human_female_sound_death = pdeathf.ogg
    human_sound_aware = trps1awr.ogg
@@ -149,8 +142,8 @@ classvars:
    viCashMin = 200
    viCashMax = 600
 
-   // AI humans have a considerably lower chance to damage gear.
-   viGearDamageChance = 20
+   // AI humans don't take gear damage. It's not fun.
+   viGearDamageChance = 0
 
    // Can't seduce human mobs.
    vbCanSeduce = FALSE
@@ -173,8 +166,9 @@ properties:
    viDifficulty = 4     // piBaseDifficulty
    viKarma = 0
 
-   vrSound_hit = human_sound_hit_monster_flesh2
-   vrSound_miss = human_sound_swish3
+   // Handled by GetHitSound() and GetMissSound()
+   vrSound_hit = $
+   vrSound_miss = $
    vrSound_aware = human_sound_aware
    vrSound_death = human_male_sound_death
 
@@ -230,17 +224,21 @@ messages:
       Send(self,@SetClothes);
 
       Send(self,@SetShield);
-      Send(self,@SetEquipment);
 
       propagate;
    }
 
-   Constructed()
+   SetMobEquipment()
+   "Called from monster.kod Constructed.  Stats have been set at this point, "
+   "but human mobs need to redo those after setting equipment and potentially "
+   "adjusting difficulty/level."
    {
-      // Have to set attack range for mobs with weapon.
-      piMeleeRange = Send(self,@GetAttackRange);
+      Send(self,@SetEquipment);
+      // Have to redo stats since they might be based on what equip we have.
+      Send(self,@CreateStats);
+      Send(self,@SetResources);
 
-      propagate;
+      return;
    }
 
    // Child classes override these.
@@ -359,6 +357,8 @@ messages:
             Send(what,@NewUnused,#what=self);
             if (IsClass(what,&Weapon))
             {
+               Send(self,@UpdateMeleeRange);
+               Send(self,@AddDefaultAttacks,#bUpdate=TRUE);
                Send(self,@RemoveWeaponAction,#what=what);
             }
             return TRUE;
@@ -411,12 +411,11 @@ messages:
       }
 
       iRange = Send(what,@GetRange);
-      iRange *= iRange;
 
       if (IsClass(what,&ThrownWeapon)
          OR IsClass(what,&RangedWeapon))
       {
-         lTemp = [SKID_FIRE,0,100,iRange,viFirePriority,0,100,COMBAT_ACTION_HARM];
+         lTemp = [SKID_FIRE,0,100,iRange*iRange,viFirePriority,0,100,COMBAT_ACTION_HARM];
          // Don't add a duplicate.
          if (GetListNode(plActions, 1, SKID_FIRE) = $)
          {
@@ -425,20 +424,49 @@ messages:
       }
       else
       {
+         // Melee weapon range is cut in half for mobs.
+         iRange /= 2;
          // Find our existing SKID_SLASH action, and update the range.
          lTemp = GetListNode(plActions, 1, SKID_SLASH);
          if (lTemp <> $)
          {
-            SetNth(lTemp,4, iRange);
+            SetNth(lTemp,4, iRange*iRange);
          }
          else
          {
-            lTemp = [SKID_SLASH,0,100,iRange,viMeleePriority,0,100,COMBAT_ACTION_HARM];
+            lTemp = [SKID_SLASH,0,100,iRange*iRange,viMeleePriority,0,100,COMBAT_ACTION_HARM];
             plActions = Cons(lTemp,plActions);
          }
       }
 
       return;
+   }
+
+   UpdateMeleeRange()
+   {
+      local oWeapon, iRange;
+
+      oWeapon = Send(self,@GetWeapon);
+
+      if oWeapon = $
+      {
+         piMeleeRange = viMeleeRange;
+         return;
+      }
+
+      iRange = Send(oWeapon,@GetRange);
+
+      if IsClass(oWeapon,&ThrownWeapon)
+         OR IsClass(oWeapon,&RangedWeapon)
+      {
+         piMeleeRange = iRange;
+      }
+      else
+      {
+         piMeleeRange = Bound(iRange/2,FINENESS*2,$);
+      }
+
+      return piMeleeRange;
    }
 
    LeaveHold(what = $)
@@ -838,23 +866,22 @@ messages:
       return viDifficulty * 11;
    }
 
-   // Returns weapon used.
+   // Returns weapon used. Code copied and adapted from player.kod.
    GetWeapon()
    {
       local oWeapon;
 
       oWeapon = Send(self,@LookupPlayerWeapon);
-      // If there is no wielded melee weapon, then see if we
-      // have a touch attack active.
+
       if oWeapon = $
       {
-         // This will return $ if there's no Touch Attacks enchanting player.
-         oWeapon = Send(self,@GetEnchantmentsByClass,
-               #EnchClass=&TouchAttackSpell);
-         if oWeapon <> $
+         if Send(self,@GetEnchantmentsByClass,#EnchClass=&TouchAttackSpell) <> $
          {
-            // The spell object is the second element of the list. Get that.
-            oWeapon = Nth(first(oWeapon),2);
+            return Send(SYS,@FindSkillByNum,#num=SKID_TOUCH);
+         }
+         else
+         {
+            return Send(SYS,@FindSkillByNum,#num=SKID_PUNCH);
          }
       }
 
@@ -960,7 +987,7 @@ messages:
 
       oWeapon = Send(self,@GetWeapon);
 
-      if oWeapon = $
+      if IsClass(oWeapon,&Punch)
       {
          Send(self,@DoFistAttack);
       }
@@ -968,7 +995,7 @@ messages:
       {
          Send(oWeapon,@WeaponAttack);
       }
-      else if IsClass(oWeapon,&TouchAttackSpell)
+      else if IsClass(oWeapon,&Touch)
       {
          Send(self,@DoCast);
       }
@@ -1129,26 +1156,52 @@ messages:
       return TRUE;
    }
 
+   MonsterHitAnimation()
+   {
+      piAnimation = PANM_HIT;
+      Send(poOwner,@SomethingChanged,#what=self);
+      piAnimation = PANM_NONE;
+
+      return;
+   }
+
    GetAttackRange()
    {
-      local iWeapon;
+      local oWeapon, iRange;
 
-      iWeapon = Send(Self,@GetWeapon);
+      oWeapon = Send(Self,@GetWeapon);
 
-      if iWeapon <> $
+      if oWeapon <> $
       {
-         return Send(iWeapon,@GetRange);
+         iRange = Send(oWeapon,@GetRange);
+
+         if (IsClass(oWeapon,&ThrownWeapon)
+            OR IsClass(oWeapon,&RangedWeapon))
+         {
+            return iRange;
+         }
+
+         return Bound(iRange/2,FINENESS*2,$);
       }
 
       propagate;
+   }
+
+   SendLookAnimation()
+   "Same as object.kod's version, monster.kod now has an override for "
+   "mobs with no overlays."
+   {
+      // Send animation info to user for when the user looks at the object.
+      Send(self,@SendAnimation);
+
+      return;
    }
 
    SendMoveAnimation()
    {
       local iBody_xlat;
 
-      iBody_xlat = (piBody_translations & HUMAN_TRANSLATION_BODY_MASK)
-                        / HUMAN_TRANSLATION_BODY_MUL;
+      iBody_xlat = Send(self,@GetBodyTranslation);
       if iBody_xlat <> 0
       {
          AddPacket(1,ANIMATE_TRANSLATION,1,iBody_xlat);
@@ -1162,11 +1215,10 @@ messages:
 
    SendAnimation()
    {
-      local iBody_xlat;
+      local iBody_xlat, iTime, iFrame;
 
-      iBody_xlat = (piBody_translations & HUMAN_TRANSLATION_BODY_MASK)
-                        / HUMAN_TRANSLATION_BODY_MUL;
-      if (piBody_translations & HUMAN_TRANSLATION_BODY_MASK) <> 0
+      iBody_xlat = Send(self,@GetBodyTranslation);
+      if (iBody_xlat <> 0)
       {
          AddPacket(1,ANIMATE_TRANSLATION,1,iBody_xlat);
       }
@@ -1188,6 +1240,25 @@ messages:
       if piAnimation = PANM_BOW_FIRE
       {
          AddPacket(1,ANIMATE_ONCE, 4,1200, 2,5, 2,5, 2,1);
+
+         return;
+      }
+
+      // Players and humans also have hit animations, yet because of the various
+      // overlays in place, we have to mix and match overlays to get a reasonable
+      // result. As such, there is no designated hit start frame or end frame as
+      // other mobs have it since the frame selection is overlay specific.
+      if piAnimation = PANM_HIT
+      {
+         // In order to keep frames synchronized across overlays, we have to use
+         // timestamp-based randomness. We use GetTime to pick frames and
+         // GetTickCount to determine animation speed.
+         // Introduce persistent randomness across animation components.
+         iTime = GetTime();
+         iFrame = HUMAN_HIT_TORSO + iTime % HUMAN_HIT_FRAME_COUNT;
+         AddPacket(1,ANIMATE_ONCE, 4,HUMAN_HIT_BASE_DURATION
+            + GetTickCount() % HUMAN_HIT_RANDOM_DURATION,
+            2,iFrame, 2,iFrame, 2,HUMAN_REST_FRAME);
 
          return;
       }
@@ -1310,7 +1381,8 @@ messages:
    SendOverlays()
    {
       local i,iOverlays,hotspot,iLeft_group,iRight_group,iSkin_xlat,
-            iArms_xlat, iLegs_xlat;
+            iArms_xlat, iLegs_xlat, iFrame, iTime, bWeapon;
+
 
       // Send overlay bitmap info to user.  
 
@@ -1344,6 +1416,13 @@ messages:
          }
       }
 
+      // In case of a knockback, GetTime() decides which frames are used.
+      if piAnimation = PANM_HIT
+      {
+         iTime = GetTime();
+         bWeapon = IsClass(Send(self,@GetWeapon),&Weapon);
+      }
+
       AddPacket(1, iOverlays);
       iArms_xlat = (piBody_translations2 & HUMAN_TRANSLATION2_ARMS_MASK)
                         / HUMAN_TRANSLATION2_ARMS_MUL;
@@ -1369,6 +1448,14 @@ messages:
       else if piAnimation = PANM_WEAPON_ATTACK
       {
          AddPacket(1,ANIMATE_ONCE, 4,300, 2,4, 2,6, 2,iLeft_group);
+      }
+      // See SendAnimation for details.
+      else if piAnimation = PANM_HIT
+      {
+         iFrame = HUMAN_HIT_LEFT_ARM + iTime % HUMAN_HIT_FRAME_COUNT;
+         AddPacket(1,ANIMATE_ONCE, 4,HUMAN_HIT_BASE_DURATION
+            + GetTickCount() % HUMAN_HIT_RANDOM_DURATION,
+            2,iFrame, 2,iFrame, 2,iLeft_group);
       }
       else if piAnimation = PANM_DANCE
       {
@@ -1413,6 +1500,23 @@ messages:
       {
          AddPacket(1,ANIMATE_ONCE, 4,300, 2,4, 2,6, 2,17);
       }
+      else if piAnimation = PANM_HIT
+      {
+         iFrame = HUMAN_HIT_RIGHT_ARM + iTime % HUMAN_HIT_FRAME_COUNT;
+         // Need different animations for targets wielding a weapon.
+         if bWeapon
+         {
+            AddPacket(1,ANIMATE_ONCE, 4,HUMAN_HIT_BASE_DURATION
+               + GetTickCount() % HUMAN_HIT_RANDOM_DURATION,
+               2,iFrame, 2,iFrame, 2,HUMAN_WEAPON_REST_FRAME);
+         }
+         else
+         {
+            AddPacket(1,ANIMATE_ONCE, 4,HUMAN_HIT_BASE_DURATION
+               + GetTickCount() % HUMAN_HIT_RANDOM_DURATION,
+               2,iFrame, 2,iFrame, 2,iRight_group);
+         }
+      }
       else if piAnimation = PANM_DANCE
       {
          AddPacket(1,ANIMATE_CYCLE, 4,150, 2,18, 2,34);
@@ -1438,9 +1542,12 @@ messages:
       {
          AddPacket(1,ANIMATE_ONCE, 4,1200, 2,7, 2,7, 2,1);
       }
-      else if piAnimation = PANM_DANCE
+      else if piAnimation = PANM_HIT
       {
-         AddPacket(1,ANIMATE_CYCLE, 4,150, 2,8, 2,24);
+         iFrame = HUMAN_HIT_LEGS + iTime % HUMAN_HIT_FRAME_COUNT;
+         AddPacket(1,ANIMATE_ONCE, 4,HUMAN_HIT_BASE_DURATION
+            + GetTickCount() % HUMAN_HIT_RANDOM_DURATION,
+            2,iFrame, 2,iFrame, 2,HUMAN_REST_FRAME);
       }
       else
       {
@@ -1472,6 +1579,66 @@ messages:
       }
 
       return;
+   }
+
+   // Human animation durations vary from case to case.
+   // These durations are extracted from SendAnimations
+   // by multiplying frame count and frame duration.
+   GetAnimationTime()
+   {
+      local iAction, iTime;
+
+      iAction = piAction % 1000;
+      iTime = 900;
+
+      // Slash animation
+      if (iAction = SKID_SLASH) OR
+         (iAction = SKID_THRUST) OR
+         (iAction = SKID_STRIKE) OR
+         (iAction = SKID_PUNCH) OR
+         (iAction = SKID_CLAW) OR
+         (iAction = SKID_STING) OR
+         (iAction = SKID_BITE) OR
+         (iAction = SKID_SPIT) OR
+         (iAction = SKID_SPIN)
+      {
+         iTime = 900;
+      }
+      // Punch animation
+      else if iAction = SKID_WEAKEN
+         OR iAction = SKID_SNARE
+         OR iAction = SKID_CONFUSE
+      {
+         iTime = 1200;
+      }
+      // Cast animation
+      else if iAction < SKID_MINIMUM
+         OR iAction = SKID_STUN
+         OR iAction = SKID_CRIPPLE
+         OR iAction = SKID_DAZE
+      {
+         iTime = 300;
+      }
+      // Wave animation
+      else if iAction = SKID_DISTRACT
+      {
+         iTime = 400;
+      }
+      // Point animation
+      else if iAction = SKID_TAUNT
+      {
+         iTime = 700;
+      }
+      // Fire animation
+      else if iAction = SKID_FIRE
+      {
+         iTime = 1200;
+      }
+
+      // Multiply by the number of times the animation is played.
+      iTime *= (1 + piAction/10000);
+
+      return iTime; 
    }
 
    SetPlayerIcon(what = $,new_icon = $,translation = $, alldone = TRUE)
@@ -1817,6 +1984,12 @@ messages:
       return FALSE;
    }
 
+   PlayerIsImmortal()
+   "Called for items e.g. lethargy ring where an immortal can always remove it."
+   {
+      return FALSE;
+   }
+
    GetPlayerUsing()
    {
       return plUsing;
@@ -1951,6 +2124,8 @@ messages:
       if (what <> $
          AND IsClass(what,&Weapon))
       {
+         Send(self,@UpdateMeleeRange);
+         Send(self,@AddDefaultAttacks,#bUpdate=TRUE);
          Send(self,@AddWeaponAction,#what=what);
       }
 
@@ -2280,7 +2455,7 @@ messages:
       {
          foreach i in plDefense_modifiers
          {
-            Send(i,@DefendingHit,#who=self,#what=what);
+            Send(i,@DamageItem,#who=self,#what=what);
          }
       }
 
@@ -2299,12 +2474,12 @@ messages:
 
          if oWeapon <> $
          {
-            Send(oWeapon,@WeaponHitTarget);
+            Send(oWeapon,@DamageItem,#bAttack=TRUE);
          }
 
          foreach i in plAttack_modifiers
          {
-            Send(i,@WeaponHitTarget);
+            Send(i,@DamageItem,#bAttack=TRUE);
          }
       }
 
@@ -2506,6 +2681,45 @@ messages:
    "might call GetGuild."
    {
       return $;
+   }
+
+   GetHitSound()
+   {
+      local rSound;
+
+      switch(Random(0,4))
+      {
+         case 1: rSound = human_sound_swish1; break;
+         case 2: rSound = human_sound_swish2; break;
+         case 3: rSound = human_sound_swish3; break;
+         case 4: rSound = human_sound_swish4; break;
+         default : rSound = human_sound_swish5; break;
+      }
+
+      return rSound;
+   }
+
+   GetMissSound()
+   {
+      local rSound;
+
+      switch(Random(0,4))
+      {
+         case 1: rSound = human_sound_swish1; break;
+         case 2: rSound = human_sound_swish2; break;
+         case 3: rSound = human_sound_swish3; break;
+         case 4: rSound = human_sound_swish4; break;
+         default : rSound = human_sound_swish5; break;
+      }
+
+      return rSound;
+   }
+
+   UpdateAddEquippedFlag()
+   {
+      SendList(plUsing,0,@AddEquippedFlag);
+
+      return;
    }
 
 end

@@ -93,9 +93,9 @@ messages:
 
    CreateDestinationList()
    {
-      plDestinations = [ [RID_TEMPLE_QOR, 22, 14] , [RID_DUKE3, 13, 20],
+      plDestinations = [ [RID_TEMPLE_QOR, 22, 14] , [RID_DUKE3, 34, 31],
                          [RID_TOS_APOTH, 2, 6, 32, 32],[RID_MARION, 78, 38],
-                         [RID_DUKE1, 19, 16] ];
+                         [RID_DUKE1, 16, 11],[RID_BERG_STORE, 5, 5]  ];
 
       return;
    }
@@ -114,8 +114,7 @@ messages:
             SID_BLAST_OF_FIRE,
             SID_EXPLOSIVE_FROST,
             SID_SPLASH_OF_ACID,
-            SID_VAMPIRIC_DRAIN,
-            SID_SHADOW_RIFT
+            SID_VAMPIRIC_DRAIN
          ],
        $];
 

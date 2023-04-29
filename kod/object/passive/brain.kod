@@ -142,12 +142,16 @@ messages:
          return;
       }
 
+      // Possible for this to happen if mobs are fighting on a map and a
+      // player exits and re-enters. Kept the old debug msg for now since we
+      // may want to allow them to move but not kill each other, and this is
+      // at least a reminder.
       // Monsters should ONLY be waiting at this point.
-      if (state & STATE_ENGAGE)
+      /*if (state & STATE_ENGAGE)
       {
          Debug("Unreachable. Illegal state",state," for ",mob," in room ",
                Send(Send(mob,@GetOwner),@GetName));
-      }
+      }*/
 
       return;
    }
@@ -611,10 +615,12 @@ messages:
       oTarget = Send(mob,@GetTarget);
 
       // Nope.
-      if oTarget = $ OR Send(oTarget,@GetOwner) = $
+      if oTarget = $
+         OR Send(oTarget,@GetOwner) = $
       {
          // Check if we can find a substitute.
          oTarget = Send(mob,@GetTopHurter);
+
          if oTarget <> $
          {
             // Yup!
@@ -630,9 +636,6 @@ messages:
          return;
       }
 
-      // Move time is our lower bound for delay between actions.
-      delay = Bound(delay,Send(mob,@GetMoveTime),$);
-
       // We have a new potential target.
       if bSwitch
       {
@@ -642,7 +645,7 @@ messages:
          {
             // Yeah, we do.
             Send(mob,@EnterStateEngage,#target=oTarget,#actnow=FALSE,
-                  #delay=delay);
+                  #delay=Bound(delay,Send(mob,@GetMoveTime),$));
          }
          else
          {
@@ -653,7 +656,8 @@ messages:
       // Our old clubbing buddy is still around. Club 'em.
       else
       {
-         Send(mob,@EnterStateEngage,#target=oTarget,#actnow=FALSE,#delay=delay);
+         Send(mob,@EnterStateEngage,#target=oTarget,#actnow=FALSE,
+            #delay=Bound(delay,Send(mob,@GetMoveTime),$));
       }
 
       return;
@@ -730,7 +734,8 @@ messages:
          if Send(self,@AttemptTargetSwitch,#what=oHurter,
                   #event=TS_FIGHT_DEFEND_SELF,#mob=mob)
          {
-            Send(mob,@EnterStateEngage,#target=oHurter,#actnow=TRUE);
+            Send(mob,@EnterStateEngage,#target=oHurter,
+               #actnow=TRUE);
          }
          else
          {
@@ -739,16 +744,19 @@ messages:
       }
       else if oHurter = $
       {
-         Send(mob,@EnterStateEngage,#target=oTarget,#actnow=TRUE);
+         Send(mob,@EnterStateEngage,#target=oTarget,
+            #actnow=TRUE);
       }
       else if Send(self,@AttemptTargetSwitch,#what=oHurter,
                   #event=TS_FIGHT_DEFEND_SELF,#mob=mob)
       {
-         Send(mob,@EnterStateEngage,#target=oHurter,#actnow=TRUE);
+         Send(mob,@EnterStateEngage,#target=oHurter,
+            #actnow=TRUE);
       }
       else
       {
-         Send(mob,@EnterStateEngage,#target=oTarget,#actnow=TRUE);
+         Send(mob,@EnterStateEngage,#target=oTarget,
+            #actnow=TRUE);
       }
 
       return;
@@ -791,6 +799,7 @@ messages:
       }
 
       if (behavior & AI_NOMOVE)
+         OR Send(mob,@CheckMonsterFlag,#flag=MFLAG_HOLDING)
       {
          // Monster is immobile.
          return;
@@ -1100,6 +1109,7 @@ messages:
 
       // Monster is immobile.
       if (behavior & AI_NOMOVE)
+         OR Send(mob,@CheckMonsterFlag,#flag=MFLAG_HOLDING)
       {
          return;
       }

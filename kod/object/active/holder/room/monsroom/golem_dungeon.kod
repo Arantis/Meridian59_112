@@ -279,7 +279,7 @@ messages:
                           [ 5, TREASURE_OBJECT, &Money, 25000 ],
                           [ 5, TREASURE_OBJECT, &GreenMushroom, 20 ],
                           [ 5, TREASURE_OBJECT, &Truffle, 25 ],
-                          [ 5, TREASURE_OBJECT, &WindrootSeed, 25 ]
+                          [ 5, TREASURE_OBJECT, &WindrootSeed, 12 ]
                         ];
 
       return;
@@ -658,11 +658,6 @@ messages:
               #height=432,#speed=0);
       }
       return;
-   }
-
-   SeanceCheck()
-   {
-      return FALSE;
    }
 
 end

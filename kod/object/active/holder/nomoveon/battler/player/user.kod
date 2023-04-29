@@ -61,6 +61,15 @@ constants:
    STAT_GROUP_SKILLS = 4
    STAT_GROUP_QUESTS = 5
 
+   // Amount of ms an action can be queued for before we are ready to execute.
+   ACTION_QUEUE_TIME = 250
+
+   // Amount of ms inbetween telling a user that his action is on CD.
+   ACTION_COOLDOWN_TIME = 1000
+
+   // How much vigor does it cost us to defend late?
+   ACTIVE_DEFENSE_PENALTY = 5
+
 resources:
 
    include user.lkod
@@ -77,6 +86,7 @@ resources:
    user_got_some = "You can't pick up all the %s."
    user_cant_pickup_item_wav_rsc = player_cannot_carry.ogg
    user_disallow_drop = "You are unable to drop %s%s."
+   user_follower_no_space = "Your follower is unable to hold %s%s."
    user_err_drop = "You're not holding that."
    user_err_put = "You can't put %s%s in %s%s; %s%s can't hold things!"
    user_disallow_put = "You're unable to put %s%s in %s%s."
@@ -135,6 +145,8 @@ resources:
    user_was_killed = \
       "You are dead, poor soul.  Go now, and take revenge on %s%s!"
    user_was_killed_bridge_faith = "Ouch, that last step was a doozy."
+   user_was_killed_room = \
+      "You have succumbed to the injuries you sustained in %s!"
 
    user_is_resting = "You are sitting and resting."
    user_is_standing = "You are standing."
@@ -514,6 +526,9 @@ resources:
    user_accept_lift_helper = "%s%s grabs your hand."
    user_accept_lift = "You grab %s%s's hand."
 
+   // Tried to actively defend an attack post impact.
+   user_active_defense_late = "You leave yourself exposed."
+
 classvars:
 
    viIndefinite = ARTICLE_NONE
@@ -566,6 +581,10 @@ properties:
    // Moves are accepted unless there is not enough tokens in the bucket left.
    piMovementBucket = 0
 
+   // Most recent user move speeds. Server-calculated, not client. Used to
+   // avoid bouncing when changing move speed from high->low.
+   plUserSpeedEntries = $
+
    // Keeps track of when mobs have last been alerted of our presence.
    piLastMoveNotification = 0
 
@@ -580,7 +599,11 @@ properties:
    // keep track of how much this player triggers flood protection
    piFloodCount = 0
 
-   // Checks for actual changes before drawing. Removes flicker.
+   // Checks for actual changes before drawing. Removes flicker (in stats?).
+   // Has 7 elements:
+   // [ current_health, max_health,
+   //   current_mana, max_mana,
+   //   current_vigor, max_vigor, vigor_rest_threshold ]
    plDraw = $
 
    // Keeps track of the most recent steps a user has taken.
@@ -595,6 +618,9 @@ properties:
    // Uses GetTickCount, must be reset after detection period ends.
    piLastAutologTest = -1
    piLastAutologHP = 0
+
+   // Keeps track of the last received, but yet to be processed action.
+   plLastReceived = $
 
 messages:
 
@@ -845,7 +871,7 @@ messages:
    {
       if piLastLoginTime = 0 AND piLast_Restart_Time = 0
       {
-         Debug("Sending first time appeal");
+         Debug("Sending first time appeal for ", self, vrName);
          Send(self,@SendFirstTimeAppeal);
       }
 
@@ -856,7 +882,7 @@ messages:
 
    UserLogon(session_id = $)
    {
-      local i, sGuild, oBRoom, oHRoom;
+      local i, tagGuild, sGuild, oBRoom, oHRoom, rHallName;
 
       poSession = session_id;
       plIPAddress = GetSessionIP(poSession);
@@ -869,7 +895,7 @@ messages:
       piLastLoginTime = GetTime();
 
       // Reset draw list to make sure we load our vitals.
-      plDraw = [-1,-1,-1,-1,-1,-1];
+      plDraw = [-1,-1,-1,-1,-1,-1,-1];
 
       // Gotta load interface early!
       Send(self,@UserLoadModule,#module=user_interface_module);
@@ -957,17 +983,30 @@ messages:
       sGuild = $;
 
       if poGuild <> $
-      {  
+      {
          sGuild = Send(poGuild,@GetName);
+         tagGuild = TAG_STRING;
 
+         // Rent -ve in RecordStat because GetRentDue returns +ve for rent
+         // owed and -ve for credited rent.
          if Send(poGuild,@GetGuildHall) <> $
          {
-            RecordStat(STAT_GUILD, sGuild, Send(Send(poGuild,@GetGuildMaster),@GetName), Send(Send(poGuild,@GetGuildHall),@GetName) );
+            rHallName = Send(Send(poGuild,@GetGuildHall),@GetName);
+            RecordStat(STAT_GUILD, TAG_STRING, sGuild, TAG_RESOURCE,
+                  Send(Send(poGuild,@GetGuildMaster),@GetName),
+                  TAG_RESOURCE, Send(Send(poGuild,@GetGuildHall),@GetName),
+                  TAG_INT, -Send(poGuild,@GetRentDue));
          }
          else
          {
-            RecordStat(STAT_GUILD, sGuild, Send(Send(poGuild,@GetGuildMaster),@GetName), system_blank_resource );
+            RecordStat(STAT_GUILD, TAG_STRING, sGuild, TAG_RESOURCE,
+                  Send(Send(poGuild,@GetGuildMaster),@GetName),
+                  TAG_NIL, $, TAG_INT, -Send(poGuild,@GetRentDue));
          }
+      }
+      else
+      {
+         tagGuild = TAG_NIL;
       }
 
       // Finally, give a new user a proper introduction and possibly a friend.
@@ -976,10 +1015,14 @@ messages:
          Post(self,@PlayIntro);
       }
 
-      RecordStat(STAT_PLAYER, poSession, Send(self,@GetTrueName), Send(oHRoom,@GetName), Send(oBRoom,@GetName), 
-                  sGuild, Send(self,@GetBaseMaxHealth), piMax_mana, Send(self,@GetRawMight), 
-                  Send(self,@GetRawIntellect), Send(self,@GetRawMysticism), Send(self,@GetRawStamina), Send(self,@GetRawAgility), 
-                  Send(self,@GetRawAim));
+      RecordStat(STAT_PLAYER, TAG_SESSION, poSession, TAG_RESOURCE,
+            Send(self,@GetTrueName), TAG_RESOURCE, Send(oHRoom,@GetName),
+            TAG_RESOURCE, Send(oBRoom,@GetName), tagGuild, sGuild, TAG_INT,
+            Send(self,@GetBaseMaxHealth), TAG_INT, piMax_mana, TAG_INT,
+            Send(self,@GetRawMight), TAG_INT, Send(self,@GetRawIntellect),
+            TAG_INT, Send(self,@GetRawMysticism), TAG_INT,
+            Send(self,@GetRawStamina), TAG_INT, Send(self,@GetRawAgility),
+            TAG_INT, Send(self,@GetRawAim));
 
       return;
    }
@@ -1023,6 +1066,12 @@ messages:
    {
       local i, iTime;
 
+      // Clear last received commands.
+      plLastReceived = $;
+
+      // Clear recent movement speeds.
+      plUserSpeedEntries = $;
+
       // Autolog time check.
       if (piLastAutologTest >= 0)
       {
@@ -1039,7 +1088,7 @@ messages:
       piLastAutologTest = -1;
 
       piTimeLoggedIn = Send(self,@GetTimeLoggedIn);
-      Send(self,@BreakTrance);
+      Send(self,@BreakConcentration);
 
       pbLogged_on = FALSE;
 
@@ -1150,6 +1199,9 @@ messages:
          }
       }
 
+      // Gets re-initialised when we log on next.
+      plDraw = $;
+
       poSession = $;
 
       return;
@@ -1214,9 +1266,8 @@ messages:
    CalculatePenalties(what=$)
    "'what' is the calling object, i.e. logoff ghost, phase spell."
    {
-      local iPenCount, iEquivDeath, iPointLoss, iItemLoss, oDrop,
-            iXPLoss, iNumItems, iNumSpellPts, iNumSkillPts, oSoldierShield,
-            iHonorLoss;
+      local iPenCount, iEquivDeath, iPointLoss, iItemLoss, oDrop, lItems, iRoom,
+            iXPLoss, iNumSpellPts, iNumSkillPts, oSoldierShield, iHonorLoss;
 
       // Check if we're eligible for a free pen.
       if (Send(SETTINGS_OBJECT,@GetFreeNoPvPPenActive,
@@ -1294,7 +1345,7 @@ messages:
       // Potentially lose XP
       iXPLoss = Send(self,@PenaltyLoseXP,#iPenCount=iPenCount,
                      #iEquivDeath=iEquivDeath);
-      iNumItems = Send(self,@PenaltyDropItems,#iNumDrop=iItemloss,
+      lItems = Send(self,@PenaltyDropItems,#iNumDrop=iItemLoss,
                         #iPenCount=iPenCount,#iEquivDeath=iEquivDeath,
                         #where=oDrop);
       iNumSpellPts = Send(self,@PenaltyLoseSpellPoints,
@@ -1304,6 +1355,20 @@ messages:
                            #iNumPoints=iPointLoss,#iPenCount=iPenCount,
                            #iEquivDeath=iEquivDeath);
       iHonorLoss = Send(self,@PenaltyLoseHonor,#where=oDrop);
+
+      // Room ID for recording where the pen happened.
+      if (poOwner <> $)
+      {
+         iRoom = Send(poOwner,@GetRoomNum);
+      }
+      else
+      {
+         iRoom = piSave_Room;
+      }
+
+      RecordStat(STAT_LOGPEN, TAG_RESOURCE, vrName, TAG_INT, iRoom,
+            TAG_INT, iXPLoss, TAG_INT, iHonorLoss, TAG_INT, iNumSpellPts,
+            TAG_INT, iNumSkillPts, TAG_INT, Length(lItems));
 
       // Let the faction shield know of this person's naughtiness if we took a
       // penalty.
@@ -1323,7 +1388,7 @@ messages:
       if (what <> $)
       {
          Send(what,@SendPenaltyInfo,#who=self,#iXPLost=iXPLoss,
-               #iItemsLost=iNumItems,#iSpellPtLost=iNumSpellPts,
+               #lItemsLost=lItems,#iSpellPtLost=iNumSpellPts,
                #iSkillPtLost=iNumSkillPts,#iHonorLost=iHonorLoss);
       }
 
@@ -1470,11 +1535,11 @@ messages:
 
    PenaltyDropItems(iPenCount=0, iEquivDeath=0, iNumDrop=0, where=$)
    {
-      local i, iNumInventory, iNumItemsLeft;
+      local i, iNum, iNumInventory, iNumItemsLeft, oItem, lItems;
 
       if (where = $)
       {
-         return 0;
+         return;
       }
 
       iNumInventory = Send(self,@GetNumItemsInInventory);
@@ -1505,8 +1570,10 @@ messages:
          i = 1;
          while i <= iNumDrop
          {
-            if Send(self,@DropItem,#index=i,#targetGhost=where)
+            oItem = Send(self,@FindItemByIndex,#index=i);
+            if Send(self,@DropItem,#droppedItem=oItem,#targetGhost=where,#bPen=TRUE)
             {
+               lItems = Cons(oItem,lItems);
                --iNumDrop;
             }
             else
@@ -1524,17 +1591,21 @@ messages:
          {
             // Try to drop a random item.
             i = Random(1,iNumItemsLeft);
-            if Send(self,@DropItem,#index=i,#targetGhost=where)
+            oItem = Send(self,@FindItemByIndex,#index=i);
+            if Send(self,@DropItem,#droppedItem=oItem,#targetGhost=where,#bPen=TRUE)
             {
+               lItems = Cons(oItem,lItems);
                --iNumItemsLeft;
             }
             else
             {
                // If the Random drop fails, scan through and drop one.
                i = 1;
+               oItem = Send(self,@FindItemByIndex,#index=i);
                while i <= iNumItemsLeft
-                     AND NOT Send(self,@DropItem,#index=i,#targetGhost=where)
+                  AND NOT Send(self,@DropItem,#droppedItem=oItem,#targetGhost=where,#bPen=TRUE)
                {
+                  oItem = Send(self,@FindItemByIndex,#index=i);
                   ++i;
                }
 
@@ -1544,12 +1615,26 @@ messages:
                {
                   break;
                }
+               lItems = Cons(oItem,lItems);
             }
          }
       }
 
-      // iNumItemsLeft is still accurate here.
-      return iNumInventory - iNumItemsLeft;
+      foreach i in lItems
+      {
+         if (Send(i,@IsStackable))
+         {
+            iNum = Send(i,@GetNumber);
+         }
+         else
+         {
+            iNum = 1;
+         }
+         RecordStat(STAT_LOGPEN_ITEM, TAG_RESOURCE, vrName,
+               TAG_RESOURCE, Send(i,@GetName), TAG_INT, iNum);
+      }
+
+      return lItems;
    }
 
    PenaltyLoseSpellPoints(iPenCount=0, iEquivDeath=0, iNumPoints=0)
@@ -1816,7 +1901,7 @@ messages:
    "It is dynamically allocated each time (wasting list nodes)."
    {
       local liClient_cmd, oWhat, oRoom, iRow, iCol, lUsers, iAngle, sBody,
-            iSpeed, i, sStr_said, bCancel, oOldOwner;
+            iSpeed, i, sStr_said, bCancel, iTimeLeft, oAbility, iState, oOldOwner;
 
       // This checks to see if the user is trying to Send too many packets
       //  per second.  If they are, then we mark them as a spammer and
@@ -1881,13 +1966,40 @@ messages:
             return;
          }
 
-         oOldOwner = poOwner;
+         if Send(SETTINGS_OBJECT,@IsActiveDefenseEnabled)
+            AND (iSpeed = USER_WALKING_SPEED)
+         {
+            iState = Send(self,@CheckAttackers);
+
+            if iState <> $
+               AND Send(self,@CheckAttackTimer)
+            {
+               if iState = ACTIVE_DEFENSE_READY
+               {
+                  oAbility = Send(SYS,@FindSkillByNum,#num=
+                     Send(self,@ActiveDefense,#iRow=iRow,
+                     #iCol=iCol,#iAngle=iAngle));
+                  Send(self,@SetAttackTime,#time=Send(oAbility,@GetSuccessTime));
+               }
+               else if iState = ACTIVE_DEFENSE_LATE
+               {
+                  oAbility = Send(SYS,@FindSkillByNum,#num=
+                     Send(self,@ActiveDefense,#iRow=iRow,
+                     #iCol=iCol,#iAngle=iAngle,#bLate=TRUE));
+                  Send(self,@MsgSendUser,#message_rsc=user_active_defense_late);
+                  Send(self,@SetAttackTime,#time=Send(oAbility,@GetFailTime));
+                  Send(self,@LoseVigor,#amount=ACTIVE_DEFENSE_PENALTY);
+               }
+            }
+         }
 
          Send(self,@UserMove,#new_row=iRow/FINENESS,#new_col=iCol/FINENESS,
               #fine_row=(iRow % FINENESS),#fine_col=(iCol % FINENESS),
               #speed=iSpeed);
 
-        // Only use the sent angle if we stayed in the same room.
+         oOldOwner = poOwner;
+
+         // Only use the sent angle if we stayed in the same room.
          if (poOwner = oOldOwner)
          {
             Send(self,@UserTurn,#what=self,#new_angle=iAngle);
@@ -2073,7 +2185,23 @@ messages:
 
       if liClient_cmd = BP_REQ_ATTACK
       {
-         Send(self,@UserAttack,#type=Nth(client_msg,2),#what=Nth(client_msg,3));
+         // We are ready to act. Let's do just that.
+         if ptAttackTimer = $
+         {
+            Send(self,@UserAttack,#what=Nth(client_msg,3));
+         }
+         // We are not ready yet.
+         else
+         {
+            iTimeLeft = GetTimeRemaining(ptAttackTimer);
+
+            // But maybe we are going to be ready soon enough to queue the next attack?
+            if iTimeLeft < ACTION_QUEUE_TIME
+            {
+               // Indeed. Whatever we were going to do before, we are doing this now.
+               plLastReceived = [BP_REQ_ATTACK,Nth(client_msg,3)];
+            }
+         }
 
          return;
       }
@@ -2125,15 +2253,9 @@ messages:
 
          // This is purely for cancelling currently channeled spells.
          // Maintained spells are unaffected.
-         if Send(self,@GetTranceAbility) <> $
+         if piFlags & PFLAG_TRANCE
+            AND Send(self,@BreakTrance,#event=EVENT_CANCEL)
          {
-            oWhat = Send(SYS,@FindSpellByNum,#num=SID_TRANCE);
-
-            // Send this directly to &Trance, not self. We don't want
-            // any other trance effects to be affected.
-            Send(oWhat,@BreakTrance,#event=EVENT_CANCEL,#who=self,
-               #state=Send(self,@GetEnchantedState,#what=oWhat));
-
             bCancel = TRUE;
          }
 
@@ -2249,16 +2371,141 @@ messages:
 
       if liClient_cmd = BP_REQ_CAST
       {
-         Send(self,@UserCast,#oSpell=Nth(client_msg,2),
+         oAbility = Nth(client_msg,2);
+
+         // Check validity here, because user can send this with any data.
+         if (oAbility = $
+            OR NOT IsClass(oAbility,&Spell))
+         {
+            return;
+         }
+
+         // We are currently charging a held ability. Let's consider this to
+         // be an attempt to bring this endeavor to its fruition.
+         if Send(self,@GetTranceAbility) = oAbility
+            AND Send(oAbility,@IsHeld,#who=self)
+         {
+            Send(self,@ContinueHold);
+         }
+         // We aren't busy with anything really.
+         else if ptAttackTimer = $
+         {
+            // Repurposing variable.
+            iState = Send(oAbility,@GetCooldownSID);
+
+            // Check whether we have a cooldown.
+            if iState
+            {
+               // We do, iState is now set to the CD object.
+               iState = Send(SYS,@FindSpellByNum,#num=iState);
+
+               if (iState <> $
+                  AND Send(self,@IsEnchanted,#what=iState))
+               {
+                  iTimeLeft = Send(self,@GetEnchantedTime,#what=iState);
+                  iTimeLeft = Bound(iTimeLeft,$,ACTION_COOLDOWN_TIME);
+
+                  plLastReceived = [BP_REQ_CAST,oAbility,Nth(client_msg,3)];
+                  ptAttackTimer = CreateTimer(self,@ActionTimer,iTimeLeft);
+                  Send(iState,@CooldownTried,#who=self,#oAbility=oAbility);
+               
+                  return;
+               }
+            }
+
+            Send(self,@UserCast,#oSpell=oAbility,
                #lTargets=Nth(client_msg,3));
+         }
+         else if IsClass(oAbility,&Phase)
+            AND Send(self,@CanPhaseAgain)
+         {
+            DeleteTimer(ptAttackTimer);
+            ptAttackTimer = $;
+            plLastReceived = $;
+
+            Send(self,@BreakConcentration);
+            Send(self,@UserCast,#oSpell=oAbility,
+               #lTargets=Nth(client_msg,3));
+         }
+         // Our attack timer hasn't expired yet.
+         else
+         {
+            // Check how much time we have left.
+            iTimeLeft = GetTimeRemaining(ptAttackTimer);
+
+            // Not much. Let's think ahead.
+            if iTimeLeft < ACTION_QUEUE_TIME
+            {
+               // Regardless of what our plans were before, we have new ones.
+               // (Which might be similar to the old ones.)
+               plLastReceived = [BP_REQ_CAST,oAbility,Nth(client_msg,3)];
+            }
+         }
 
          return;
       }
 
       if liClient_cmd = BP_REQ_PERFORM
       {
-         Send(self,@UserPerform,#oSkill=Nth(client_msg,2),
+         oAbility = Nth(client_msg,2);
+
+         // Check validity here, because user can send this with any data.
+         if (oAbility = $
+            OR NOT IsClass(oAbility,&ActiveSkill))
+         {
+            return;
+         }
+
+         // We are currently charging a held ability. Let's consider this to
+         // be an attempt to bring this endeavor to its fruition.
+         if Send(self,@GetTranceAbility) = oAbility
+            AND Send(oAbility,@IsHeld,#who=self)
+         {
+            Send(self,@ContinueHold);
+         }
+         // We aren't busy with anything really.
+         else if ptAttackTimer = $
+         {
+            // Repurposing variable.
+            iState = Send(oAbility,@GetCooldownSID);
+
+            // Check whether we have a cooldown.
+            if iState
+            {
+               // We do, iState is now set to the CD object.
+               iState = Send(SYS,@FindSpellByNum,#num=iState);
+
+               if (iState <> $
+                  AND Send(self,@IsEnchanted,#what=iState))
+               {
+                  iTimeLeft = Send(self,@GetEnchantedTime,#what=iState);
+                  iTimeLeft = Bound(iTimeLeft,$,ACTION_COOLDOWN_TIME);
+
+                  plLastReceived = [BP_REQ_PERFORM,oAbility,Nth(client_msg,3)];
+                  ptAttackTimer = CreateTimer(self,@ActionTimer,iTimeLeft);
+                  Send(iState,@CooldownTried,#who=self,#oAbility=oAbility);
+               
+                  return;
+               }
+            }
+
+            Send(self,@UserPerform,#oSkill=oAbility,
                #lTargets=Nth(client_msg,3));
+         }
+         // Our attack timer hasn't expired yet.
+         else
+         {
+            // Check how much time we have left.
+            iTimeLeft = GetTimeRemaining(ptAttackTimer);
+
+            // Not much. Let's think ahead.
+            if iTimeLeft < ACTION_QUEUE_TIME
+            {
+               // Regardless of what our plans were before, we have new ones.
+               // (Which might be identical to our old ones.)
+               plLastReceived = [BP_REQ_PERFORM,oAbility,Nth(client_msg,3)];
+            }
+         }
 
          return;
       }
@@ -2412,6 +2659,60 @@ messages:
       return;
    }
 
+   ActionTimer()
+   {
+      local iAction;
+
+      ptAttackTimer = $;
+
+      if (poOwner = $)
+      {
+         // Logged out with action timer running,
+         // do nothing & clear plLastReceived just in case.
+         plLastReceived = $;
+         return;
+      }
+
+      // Redraw our defense if we had our guard down.
+      if Send(self,@GuardRecovery)
+      {
+         Post(self,@DrawDefense);
+      }
+
+      // Whatever thing we were just involved in, it's over now.
+      // Reset our animation.
+      if piAnimation <> PANM_NONE
+      {
+         piAnimation = PANM_NONE;
+         Send(poOwner,@SomethingChanged,#what=self);
+      }
+
+      // Let's see if we had something planned already.
+      if plLastReceived <> $
+      {
+         iAction = First(plLastReceived);
+
+         if iAction = BP_REQ_ATTACK
+         {
+            Send(self,@UserAttack,#what=Nth(plLastReceived,2));
+         }
+         else if iAction = BP_REQ_CAST
+         {
+            Send(self,@UserCast,#oSpell=Nth(plLastReceived,2),
+               #lTargets=Nth(plLastReceived,3));
+         }
+         else if iAction = BP_REQ_PERFORM
+         {
+            Send(self,@UserPerform,#oSkill=Nth(plLastReceived,2),
+               #lTargets=Nth(plLastReceived,3));
+         }
+
+         plLastReceived = $;
+      }
+
+      return;
+   }
+
    PerformGuildDisband()
    "Admin supported.\n"
    "UserCommand() will check to stop a player from disbanding when not "
@@ -2461,7 +2762,8 @@ messages:
       piXP_total = 0;
       piTraining_points = 0;
 
-      RecordStat(STAT_PLAYERSUICIDE, poSession, Send(self,@GetTrueName));
+      RecordStat(STAT_PLAYERSUICIDE, TAG_SESSION, poSession, TAG_RESOURCE,
+            Send(self,@GetTrueName));
 
       // Change the name to a unique placeholder one.
       ClearTempString();
@@ -4903,6 +5205,13 @@ messages:
       return;
    }
 
+   ClearUserSpeedEntries()
+   {
+      plUserSpeedEntries = $;
+
+      return;
+   }
+
    GetSpeedMax()
    "Returns the maximum possible move speed according to the current situation of the user"
    "and its active limitations like PFLAG_NO_MOVE, low vigor, deep water or others."
@@ -4966,7 +5275,7 @@ messages:
       local iCurrentTime, iDelta, iAngle, iRow, iCol, iFineRow, 
             iFineCol, iRoomNum, iDx, iDy, iMoveLength, iMaxMoveRun, 
             iQflags, iRflags, iHeightF, iHeightFWD, iHeightC, iServerID,
-            iSpeedMax, iNewBucket, bBucketMoveAllowed;
+            iSpeedMax, iNewBucket, bBucketMoveAllowed, i;
 
       ////////////////////////////////////////////////////////////////////////////////////////
       // 1 - INIT AND SILENT DISCARDS
@@ -5057,6 +5366,23 @@ messages:
       //  Important: This must be the upper bound on the tokens we add to the bucket below.
       //  Continously exceeding the current max. will cause rubberbanding
       iSpeedMax = Send(self, @GetSpeedMax);
+
+      // Keep track of recent move speeds, so we can give some leeway
+      // when dropping sprint or other drastic speed changes. Use the
+      // largest value when determining max move speed.
+      plUserSpeedEntries = AppendListElem(iSpeedMax, plUserSpeedEntries);
+      if (Length(plUserSpeedEntries) > Send(SETTINGS_OBJECT,@GetUserSpeedEntries))
+      {
+         plUserSpeedEntries = Rest(plUserSpeedEntries);
+      }
+
+      foreach i in plUserSpeedEntries
+      {
+         if (i > iSpeedMax)
+         {
+            iSpeedMax = i;
+         }
+      }
 
       // 2.2.2 Move validity/token use calculated in C due to kod int overflows.
       // Returns the new value for piMovementBucket in iNewBucket.
@@ -6062,7 +6388,7 @@ messages:
 
    UserPut(what = $,where = $,number = $)
    {
-      local i, lObjects, lItem_pos, oNumber;
+      local i, lObjects, lItem_pos, oNumber, bFollower;
 
       // Detect if someone's using an exploit to put items into another player.
       if IsClass(where,&User)
@@ -6099,6 +6425,8 @@ messages:
          return;
       }
 
+      bFollower = IsClass(where,&Follower) AND Send(where,@IsServant,#what=self);
+
       if Send(what,@IsStackable)
       {
          if number <= 0
@@ -6128,14 +6456,22 @@ messages:
                      #number=Send(oNumber,@GetNumber));
             }
 
-            Send(where,@NewHold,#what=oNumber);
+            Send(where,@NewHold,#what=oNumber,#bLast=bFollower);
          }
          else
          {
-            Send(self,@NewHold,#what=oNumber); // rejoin, usually
+            if bFollower
+            {
+               Send(self,@MsgSendUser,#message_rsc=user_follower_no_space, 
+                  #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName));
+            }
+            else
+            {
+               Send(self,@MsgSendUser,#message_rsc=user_disallow_drop, 
+                  #parm1=Send(oNumber,@GetDef),#parm2=Send(oNumber,@GetName));
+            }
 
-            Send(self,@MsgSendUser,#message_rsc=user_disallow_drop, 
-                 #parm1=Send(oNumber,@GetDef),#parm2=Send(oNumber,@GetName));
+            Send(self,@NewHold,#what=oNumber); // rejoin, usually
          }
 
          return;
@@ -6144,13 +6480,21 @@ messages:
       if Send(what,@ReqNewOwner,#what=where)
          AND Send(where,@ReqNewHold,#what=what,#who=self)
       {
-         Send(where,@NewHold,#what=what);
+         Send(where,@NewHold,#what=what,#bLast=bFollower);
       }
       else
       {
-         Send(self,@MsgSendUser,#message_rsc=user_disallow_put,
-              #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName),
-              #parm3=Send(where,@GetDef),#parm4=Send(where,@GetName));
+         if bFollower
+         {
+            Send(self,@MsgSendUser,#message_rsc=user_follower_no_space, 
+               #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName));
+         }
+         else
+         {
+            Send(self,@MsgSendUser,#message_rsc=user_disallow_put,
+               #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName),
+               #parm3=Send(where,@GetDef),#parm4=Send(where,@GetName));
+         }
       }
 
       return;
@@ -6164,7 +6508,7 @@ messages:
          AND NOT IsClass(what,&ReagentBag))
          OR (IsClass(what,&User)
              AND NOT (what = self OR IsClass(self,&Admin)))
-         OR IsClass(what,&Monster)
+         OR (IsClass(what,&Monster) AND NOT Send(what,@IsServant,#what=self))
       {
          Debug("ALERT!!  User ",self,Send(self,@GetTrueName),"trying to look ",
                "inside ",what,Send(what,@GetTrueName));
@@ -6242,7 +6586,7 @@ messages:
 
    UserSay(type=$,string=$)
    {
-      local i, oSpell, lEnchantData, bTranceBlocksSay;
+      local i, oAbility, lEnchantData, bTranceBlocksSay;
 
       // A room can completely block a piece of communication if it chooses.
       // An excellent example is Out Of Grace, which blocks all tells to 
@@ -6315,7 +6659,7 @@ messages:
          if (piFlags & PFLAG_TRANCE)
          {
             // See if the trance spell does anything special 
-            //  with says.  Note that the 'say' will still go off.
+            // with says.  Note that the 'say' will still go off.
 
             bTranceBlocksSay = FALSE;
             
@@ -6324,11 +6668,11 @@ messages:
                if IsClass(nth(i,2),&Trance)
                {
                   lEnchantData = nth(i,3);
-                  oSpell = first(lEnchantData);
-                  Post(oSpell,@SomethingSaidDuringTrance,
+                  oAbility = first(lEnchantData);
+                  Post(oAbility,@SomethingSaidDuringTrance,
                        #who=self,#string=string,#lTargets=Nth(lEnchantData,3));
                   
-                  if Send(oSpell,@TranceBlocksSay)
+                  if Send(oAbility,@TranceBlocksSay)
                   {
                      bTranceBlocksSay = TRUE;
                   }
@@ -7291,7 +7635,7 @@ messages:
          }
          else
          {
-            // nested // things as mail
+            // nested % things as mail
             AddPacket(4,user_show_nested_mail);
             j = 1;
             while j <= Length(lMail_strings)
@@ -7367,14 +7711,15 @@ messages:
    {
       // check if valid, if item, if holding
 
-      if piFlags & PFLAG_TRANCE
+      if (piFlags & PFLAG_TRANCE)
+         AND (NOT Send(self,@BreakTrance,#event=EVENT_USE))
       {
-         if (NOT Send(self,@CanBreakTrance))
-         {
-            return;
-         }
+         return;
+      }
 
-         Send(self,@BreakTrance,#event=EVENT_USE);
+      if piFlags & PFLAG_FRAGILE
+      {
+         Send(self,@BreakFragileEffects,#event=EVENT_USE);
       }
 
       if NOT IsClass(what,&Item)
@@ -7389,14 +7734,15 @@ messages:
 
    UserUnuseItem(what = $)
    {
-      if piFlags & PFLAG_TRANCE
+      if (piFlags & PFLAG_TRANCE)
+         AND (NOT Send(self,@BreakTrance,#event=EVENT_USE))
       {
-         if (NOT Send(self,@CanBreakTrance))
-         {
-            return;
-         }
+         return;
+      }
 
-         Send(self,@BreakTrance,#event=EVENT_USE);
+      if piFlags & PFLAG_FRAGILE
+      {
+         Send(self,@BreakFragileEffects,#event=EVENT_USE);
       }
 
       if NOT IsClass(what,&Item)
@@ -7414,113 +7760,84 @@ messages:
       return;
    }
 
-   UserAttack(type=STROKE_NORMAL,what=$)
+   UserAttack(what=$)
    {
-      local i, use_weapon, stroke_id, stroke_obj, is_spell;
+      local i, oTarget, lFinalTargets, oAbility;
 
       Send(self,@CancelLift);
 
-      if piFlags & PFLAG_TRANCE
+      // Before we do anything else, let's check if our target is still around.
+      // It might have died since we queued our action.
+      if Send(what,@GetOwner) = $
       {
-         if (NOT Send(self,@CanBreakTrance))
-         {
-            return FALSE;
-         }
-
-         Send(self,@BreakTrance,#event=EVENT_ATTACK);
+         return;
       }
 
-      if (piFlags & PFLAG_NO_FIGHT)
-      {
-         Send(self,@MsgSendUser,#message_rsc=user_no_fight);
-
-         return FALSE;
-      }
-
-      // Get use_weapon
-      use_weapon = Send(self,@GetWeapon);
-
-      // Convert type over to a stroke here.
-      if type = STROKE_NORMAL
-      {
-         // Kludgeish (at least sloppy code): If we have a spell-weapon,
-         //  we just use punch to pass the checks below.
-         if (use_weapon = $) OR IsClass(use_weapon,&Spell)
-         {
-            stroke_id = SKID_PUNCH;
-         }
-         else
-         {
-            stroke_id = Send(use_weapon,@GetDefaultStrokeNumber);
-         }
-      }
-      else
-      {
-         Debug("Non-normal stroke received.");
-
-         return FALSE;
-      }
-
-      // except for punch and slash, a player cannot use an attack type he
-      // doesn't have.  This in to prevent hacking.
-      if stroke_id <> SKID_PUNCH
-         AND stroke_ID <> SKID_SLASH
-         AND stroke_ID <> SKID_FIRE 
-         AND stroke_ID <> SKID_THROW 
-      {
-         if NOT Send(self,@HasSkill,#num=stroke_id)
-         {
-            stroke_obj = Send(SYS,@FindSkillByNum,#num=stroke_ID);
-            Send(self,@MsgSendUser,#message_rsc=user_doesnt_know_stroke,
-                 #parm1=Send(stroke_obj,@GetName));
-
-            return FALSE;
-         }
-      }
-
-      // Get what's possible
+      // Let's also make sure to prevent any kind of shenanigans involving
+      // non battlers.
       if NOT IsClass(what,&Battler)
       {
-         // tell 'em
-         Send(self,@MsgSendUser,#message_rsc=user_cant_attack_non_battler,
-              #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName));
+         Send(self,@MsgSendUser,#message_rsc=player_must_attack_battler);
 
-         return FALSE;
+         return;
       }
-      else if IsClass(what,&User)
+
+      oAbility = Send(self,@GetStrokeObject);
+
+      if piFlags & PFLAG_TRANCE
+      {
+         // The first check should never return TRUE unless swing time
+         // exceeds ptAttackTimer, which might happen at some point
+         // in the future.
+         if (Send(self,@GetTranceAbility) = oAbility)
+            OR NOT Send(self,@BreakTrance,#event=EVENT_ATTACK,#what=oAbility)
+         {
+            return;
+         }
+      }
+
+      if piFlags & PFLAG_FRAGILE
+      {
+         Send(self,@BreakFragileEffects,#event=EVENT_ABILITY,#what=oAbility);
+      }
+
+      // Check whether we are even able to attack someone.
+      if (piFlags & PFLAG_NO_FIGHT)
+         OR Send(self,@IsInCannotInteractMode)
+      {
+         Send(self,@MsgSendUser,#message_rsc=user_no_fight);
+         return;
+      }
+
+      // If we happen to be attacking a follower, assist them if possible.
+      if IsClass(what,&Follower)
+      {
+         oTarget = Send(what,@GetTarget);
+
+         if oTarget <> $
+         {
+            what = oTarget;
+         }
+      }
+
+      // Check if our target can even be attacked.
+      if IsClass(what,&User)
          AND Send(what,@IsOfflineOrCannotInteract)
       {
-         return FALSE;
+         return;
       }
 
-      // kludgish: If morphed, use punch as our stroke object, we use the
-      //  monster's stats for combat.
-      if Send(self,@IsEnchanted,#byClass=&Morph)
-      {
-         stroke_id = SKID_PUNCH;
-         use_weapon = $;
-      }
-
-      if use_weapon = $ OR NOT IsClass(use_weapon,&Spell)
-      {
-         stroke_obj = Send(SYS,@FindSkillByNum,#num=stroke_id);
-      }
-      else
-      {
-         // Use the "weapon" (spell) as the stroke object.
-         stroke_obj = use_weapon;
-      }
+      // Do we need a specific set of targets?
+      lFinalTargets = Send(oAbility,@GetTargets,#who=self,#lTargets=[what]);
 
       // Set flag so that wall elements can affect us.
       Send(self,@SetPlayerFlag,#flag=PFLAG_MOVED_SINCE_ENTRY,#value=TRUE);
 
-      if (Send(self,@TryAttack,#what=what,#use_weapon=use_weapon,
-                  #stroke_obj=stroke_obj)
-         AND (use_weapon <> $ AND Send(use_weapon,@HasSecondAttack)))
-      {
-         Send(self,@TryAttack,#what=what,#use_weapon=use_weapon,
-                  #stroke_obj=stroke_obj,#iTargetNum=2,#bCheck=FALSE);
-      }
+      // Alright, perform that skill already.
+      Send(oAbility,@BeginPerformPreparation,#who=self,#lTargets=lFinalTargets);
+
+      // Keep a record of our heroic deed.
+      piLastTimeAttacked = GetTickCount();
 
       return;
    }
@@ -7541,27 +7858,22 @@ messages:
 
       Send(self,@CancelLift);
 
-      // PFLAG_TRANCE can stem from...
-      // 1) ...&Trance when a spell with cast time is being cast
-      // such as fire wall, or a steered spell like elusion.
-      // 2) ...any kind of maintained spell that can be disrupted,
-      // such as mana focus or a song.
       if piFlags & PFLAG_TRANCE
       {
          // GetTranceAbility returns the spell that &Trance is preparing
-         // to cast. If we are already preparing to cast the same spell,
-         // don't interrupt our cast.
+         // to cast. We don't interrupt our trance...
+         // ...to start the same trance over.
+         // ...if it can't be interrupted.
          if Send(self,@GetTranceAbility) = oSpell
-            OR NOT Send(self,@CanBreakTrance)
+            OR NOT Send(self,@BreakTrance,#event=EVENT_ABILITY,#what=oSpell)
          {
             return;
          }
-         // We are trying to cast a different spell or not casting at all.
-         // Either way, our cast may disrupt &Trance or a maintained spell.
-         else
-         {
-            Send(self,@BreakTrance,#event=EVENT_CAST,#what=oSpell);
-         }
+      }
+
+      if piFlags & PFLAG_FRAGILE
+      {
+         Send(self,@BreakFragileEffects,#event=EVENT_ABILITY,#what=oSpell);
       }
 
       if ((piFlags & PFLAG_NO_MAGIC)
@@ -7667,6 +7979,9 @@ messages:
          Send(oSpell,@BeginCastingTrance,#who=self,#lTargets=lFinalTargets,
                #iSpellPower=iSpellPower,#bFreeCast=bFreeCast,
                #bSuccess=bSuccess);
+
+         // Keep a record of our heroic deed.
+         piLastTimeAttacked = GetTickCount();
       }
 
       return;
@@ -7691,20 +8006,19 @@ messages:
       if piFlags & PFLAG_TRANCE
       {
          if Send(self,@GetTranceAbility) = oSkill
-            OR NOT Send(self,@CanBreakTrance)
+            OR NOT Send(self,@BreakTrance,#event=EVENT_ABILITY,#what=oSkill)
          {
             return;
          }
-         else
-         {
-            Send(self,@BreakTrance,#event=EVENT_ATTACK,#what=oSkill);
-         }
+      }
+
+      if piFlags & PFLAG_FRAGILE
+      {
+         Send(self,@BreakFragileEffects,#event=EVENT_ABILITY,#what=oSkill);
       }
 
       if (piFlags & PFLAG_NO_FIGHT)
-         OR (piFlags & PFLAG_NO_MOVE)
          OR Send(self,@IsInCannotInteractMode)
-
       {
          Send(self,@MsgSendUser,#message_rsc=user_no_perform);
 
@@ -7751,6 +8065,9 @@ messages:
          // Alright, perform that skill already.
          Send(oSkill,@BeginPerformPreparation,#who=self,#lTargets=lFinalTargets,
             #bSuccess=bSuccess);
+
+         // Keep a record of our heroic deed.
+         piLastTimeAttacked = GetTickCount();
       }
 
       return;
@@ -7773,11 +8090,12 @@ messages:
       oCommand = Send(SYS,@FindGuildCommandByNum,#num=Command_num);
 
       // If a player is in a trance, break it
-      if piFlags & PFLAG_TRANCE
+      if (piFlags & PFLAG_TRANCE
          AND (Command_num = GCID_RENOUNCE
-            OR Command_num = GCID_DISBAND)
+            OR Command_num = GCID_DISBAND))
+         AND NOT Send(self,@BreakTrance,#event=EVENT_DISRUPT,#what=oCommand)
       {
-         Send(self,@BreakTrance,#event=EVENT_CAST,#what=oCommand);
+         return;
       }
 
       // Be sure player has guild command.
@@ -8919,8 +9237,14 @@ messages:
    UserApply(what = $,apply_on = $)
    {
       if (piFlags & PFLAG_TRANCE)
+         AND (NOT Send(self,@BreakTrance,#event=EVENT_USE))
       {
-         Send(self,@BreakTrance,#event=EVENT_USE);
+         return;
+      }
+
+      if piFlags & PFLAG_FRAGILE
+      {
+         Send(self,@BreakFragileEffects,#event=EVENT_USE);
       }
 
       if NOT IsClass(what,&Item) 
@@ -9148,6 +9472,16 @@ messages:
          Send(self,@ToCliObject,#what=what,#show_type=SHOW_INVENTORY);
          SendPacket(poSession);
 
+         // So items at this point (i.e. the point at which we are drawing it
+         // in our inventory) are still owned by the previous owner. Given a
+         // slow enough server, the player will physically see the item while
+         // it still has the old owner server-side. This is not ideal because
+         // ToCliObject (including object flags) assume the old owner. Fix this
+         // by asking for item flags again, but posted. Ugh. Longer term the
+         // NewHoldObject call should probably be Posted, but this is more
+         // likely to have bad effects given everything is written assuming
+         // it works the way it does.
+         Post(self,@SomethingChangedFlags,#what=what);
          Post(self,@DrawCapacity);
          Post(self,@DrawBulk);
       }
@@ -9277,12 +9611,21 @@ messages:
       }
 
       // This removes Death Rift's protection when the user enters any
-      // non-Underworld room. Does the same for death arena killed flag.
+      // non-Underworld room. Does the same for cheap death and death arena 
+      // killed flag.
       if iNewRoomNum <> RID_UNDERWORLD
       {
          if (piflags & PFLAG_DEATH_RIFTING)
          {
             Send(self,@SetDeathRiftProtection,#value=FALSE);
+            if (NOT Send(poOwner,@CheckRoomFlag,#flag=ROOM_SAFELOGOFF))
+            {
+               piLastSafeRoom = Send(self,@GetHomeRoom);
+            }
+         }
+         else if (piflags & PFLAG2_CHEAP_DEATH)
+         {
+            piFlags2 &= ~PFLAG2_CHEAP_DEATH;
             if (NOT Send(poOwner,@CheckRoomFlag,#flag=ROOM_SAFELOGOFF))
             {
                piLastSafeRoom = Send(self,@GetHomeRoom);
@@ -10259,14 +10602,20 @@ messages:
 
    DrawVigor()
    {
+      local iRestThreshold;
+
+      iRestThreshold = Send(self,@GetVigorRestThreshold,#base=FALSE);
       if pbLogged_on
-      AND (Nth(plDraw,5)/100 - piVigor/100 OR Nth(plDraw,6) - piMax_vigor)
+         AND (Nth(plDraw,5)/100 - piVigor/100
+            OR Nth(plDraw,6) - piMax_vigor
+            OR Nth(plDraw,7) - iRestThreshold)
       {
          AddPacket(1,BP_STAT, 1,1);
          Send(self,@SendStatVigor);
          SendPacket(poSession);
          SetNth(plDraw,5,piVigor);
          SetNth(plDraw,6,piMax_vigor);
+         SetNth(plDraw,7,iRestThreshold);
       }
 
       return;
@@ -10893,24 +11242,25 @@ messages:
       Send(self,@CancelLift);
 
       if what = self
+         OR what = $
       {
          propagate;
       }
 
-      if what <> $ AND IsClass(what,&TempleRiija)
-      {
-         Send(self,@MsgSendUser,#message_rsc=user_was_killed_bridge_faith);
-         
-         propagate;
-      }
-
-      if what <> $ AND IsClass(what,&Battler)
+      if IsClass(what,&Battler)
       {
          // Victim learns the real identity of a morphed/anonymous killer here.
          Send(self,@MsgSendUser,#message_rsc=user_was_killed,
-              #parm1=Send(what,@GetDef),#parm2=Send(what,@GetTrueName));
-
-         propagate;
+               #parm1=Send(what,@GetDef),#parm2=Send(what,@GetTrueName));
+      }
+      else if IsClass(what,&TempleRiija)
+      {
+         Send(self,@MsgSendUser,#message_rsc=user_was_killed_bridge_faith);
+      }
+      else if IsClass(what,&Room)
+      {
+         Send(self,@MsgSendUser,#message_rsc=user_was_killed_room,
+               #parm1=Send(what,@GetTrueName));
       }
 
       // any other causes of death get no special messages.
@@ -11097,62 +11447,68 @@ messages:
    {
       local oCurrentRoom, iCurrentRegion, oLastSafeRoom, iLastSafeRegion, oTargetRoom;
 
-      if piLastSafeRoom <> $
+      if (piLastSafeRoom = $)
+      {
+         // Nowhere to send them, default to Raza Inn.
+         oLastSafeRoom = Send(SYS,@FindRoomByNum,#num=RID_RAZA_INN);
+      }
+      else
       {
          oLastSafeRoom = Send(SYS,@FindRoomByNum,#num=piLastSafeRoom);
-         iLastSafeRegion = Send(oLastSafeRoom,@GetRegion);
+      }
 
-         if pbLogged_on
+      iLastSafeRegion = Send(oLastSafeRoom,@GetRegion);
+
+      if pbLogged_on
+      {
+         oCurrentRoom = poOwner;
+         iCurrentRegion = Send(oCurrentRoom,@GetRegion);
+
+         if iCurrentRegion = iLastSafeRegion
+            OR from_special
          {
-            oCurrentRoom = poOwner;
-            iCurrentRegion = Send(oCurrentRoom,@GetRegion);
-
-            if iCurrentRegion = iLastSafeRegion
-               OR from_special
-            {
-               Send(oLastSafeRoom,@Teleport,#what=self);
-               Send(self,@MsgSendUser,#message_rsc=user_goto_lastsaferoom);
-            }
-            else
-            {
-               // If the user is in a different region from their last
-               // safe room, use region default homeroom instead.
-               // This can happen if a player goes to a new region but
-               // never stops in at a safe room.
-
-               oTargetRoom = Send(SYS,@FindRoomByNum,
-                                 #num=Send(oCurrentRoom,@GetCurrentRegionHomeroom));
-               Send(oTargetRoom,@Teleport,#what=self);
-               Send(self,@MsgSendUser,#message_rsc=user_goto_safety);
-            }
+            Send(oLastSafeRoom,@Teleport,#what=self);
+            Send(self,@MsgSendUser,#message_rsc=user_goto_lastsaferoom);
          }
          else
          {
-            // If the user is logged off, we can't teleport.
-            // Instead, we update their saved logoff location.
+            // If the user is in a different region from their last
+            // safe room, use region default homeroom instead.
+            // This can happen if a player goes to a new region but
+            // never stops in at a safe room.
 
-            oCurrentRoom = Send(SYS,@FindRoomByNum,#num=piSave_Room);
-            iCurrentRegion = Send(oCurrentRoom,@GetRegion);
-            
-            if iCurrentRegion = iLastSafeRegion
-               OR from_special
-            {
-               piSave_room = piLastSafeRoom;
-               piSave_row = Send(oLastSafeRoom,@GetTeleportRow);
-               piSave_col = Send(oLastSafeRoom,@GetTeleportCol);
-               piSave_fine_row = 32;
-               piSave_fine_col = 32;
-            }
-            else
-            {
-               oTargetRoom = Send(SYS,@FindRoomByNum,#num=Send(oCurrentRoom,@GetCurrentRegionHomeroom));
+            oTargetRoom = Send(SYS,@FindRoomByNum,
+                              #num=Send(oCurrentRoom,@GetCurrentRegionHomeroom));
+            Send(oTargetRoom,@Teleport,#what=self);
+            Send(self,@MsgSendUser,#message_rsc=user_goto_safety);
+         }
+      }
+      else
+      {
+         // If the user is logged off, we can't teleport.
+         // Instead, we update their saved logoff location.
 
-               piSave_room = Send(oTargetRoom,@GetRoomNum);
-               piSave_row = Send(oTargetRoom,@GetTeleportRow);
-               piSave_col = Send(oTargetRoom,@GetTeleportCol);
-               piSave_fine_row = 32;
-               piSave_fine_col = 32;
-            }
+         oCurrentRoom = Send(SYS,@FindRoomByNum,#num=piSave_Room);
+         iCurrentRegion = Send(oCurrentRoom,@GetRegion);
+         
+         if iCurrentRegion = iLastSafeRegion
+            OR from_special
+         {
+            piSave_room = piLastSafeRoom;
+            piSave_row = Send(oLastSafeRoom,@GetTeleportRow);
+            piSave_col = Send(oLastSafeRoom,@GetTeleportCol);
+            piSave_fine_row = 32;
+            piSave_fine_col = 32;
+         }
+         else
+         {
+            oTargetRoom = Send(SYS,@FindRoomByNum,#num=Send(oCurrentRoom,@GetCurrentRegionHomeroom));
+
+            piSave_room = Send(oTargetRoom,@GetRoomNum);
+            piSave_row = Send(oTargetRoom,@GetTeleportRow);
+            piSave_col = Send(oTargetRoom,@GetTeleportCol);
+            piSave_fine_row = 32;
+            piSave_fine_col = 32;
          }
       }
 
@@ -11696,9 +12052,9 @@ messages:
 
    AddCurrentQuest(node = $, template = $)
    "Adds a quest to the user's plActiveQuests list.  Each element in "
-   "this list is a quest template ID followed by the current active "
-   "quest node.  Quests are removed from this list by AddQuestHistory "
-   "when the quest finishes."
+   "this list is a quest template ID, the current active quest node and the "
+   "time the user started the quest (in logged-in time).  Quests are removed "
+   "from this list by AddQuestHistory when the quest finishes."
    {
       local i;
 
@@ -11729,14 +12085,23 @@ messages:
       }
 
       // Add to the end, so quests are displayed in the order given.
-      plActiveQuests = AppendListElem([template,node],plActiveQuests);
+      plActiveQuests = AppendListElem([template,node,Send(self,@GetTimeLoggedIn)]
+                           ,plActiveQuests);
 
-      // Notice for quest log updating (added or advanced quest).
-      Send(self,@WaveSendUser,#what=self,#wave_rsc=user_quest_advance_wav);
-      Send(self,@MsgSendUser,#message_rsc=user_quest_log_updated);
+      // Tells the user they had something quest-related happen.
+      Send(self,@InformQuestAdvance);
 
       // Update the user's quest log.
       Send(self,@ToCliStats,#group=STAT_GROUP_QUESTS);
+
+      return;
+   }
+
+   InformQuestAdvance()
+   {
+      // Notice for quest log updating (added or advanced quest).
+      Send(self,@WaveSendUser,#what=self,#wave_rsc=user_quest_advance_wav);
+      Send(self,@MsgSendUser,#message_rsc=user_quest_log_updated);
 
       return;
    }
@@ -11792,19 +12157,26 @@ messages:
       return $;
    }
 
-   HasQuest(index=$)
+   GetQuestStartTimeLoggedIn(index=$)
    {
       local i;
 
       foreach i in plActiveQuests
       {
-         if First(i) = index
+         if (First(i) = index)
          {
-            return TRUE;
+            return Nth(i,3);
          }
       }
 
-      return FALSE;
+      Debug("Unable to find ",index, " in active quests for ",self, vrName);
+
+      return 0;
+   }
+
+   HasQuest(index=$)
+   {
+      return GetListNode(plActiveQuests, 1, index) <> $;
    }
 
    HasQuestNode(index=$)
@@ -12237,6 +12609,23 @@ messages:
       return piSave_Angle;
    }
 
+   FixDrawList()
+   "Adjusts for the addition of the 7th element in the draw list (vigor rest "
+   "threshold). Message can be deleted after use on 105 and 112."
+   {
+      if pbLogged_on
+         AND Length(plDraw) = 6
+      {
+         plDraw = AppendListElem(-1, plDraw);
+      }
+      else
+      {
+         plDraw = $;
+      }
+
+      return;
+   }
+
    FixMailTimestamps()
    "Adds the new timestamp field to each mail in plNew_mail."
    {
@@ -12252,6 +12641,57 @@ messages:
       }
 
       return;
+   }
+
+   GetMail()
+   {
+      return plNew_mail;
+   }
+
+   RemoveMailBySender(what=$,iDays=0)
+   {
+      local iCutoff_time, iRemoved, iTime, lNew_mail, lRecent_mail, sender;
+
+      if (what = $)
+      {
+         return 0;
+      }
+
+      iCutoff_time =  GetTime() - (iDays * DAY);
+      iRemoved = 0;
+
+      foreach lNew_mail in plNew_mail
+      {
+         // Skip newer mails first if iDays is set.
+         if (iDays > 0)
+         {
+            iTime = Nth(lNew_mail,MAIL_SHORT_TIME); // use GetTime() here
+            if (iTime > iCutoff_time)
+               AND iTime < GetTime()
+            {
+               lRecent_mail = Cons(lNew_mail,lRecent_mail);
+               continue;
+            }
+         }
+         // Mail is old enough, check sender.
+         sender = Nth(lNew_mail,MAIL_SENDER);
+         if (sender <> what)
+         {
+            lRecent_mail = Cons(lNew_mail,lRecent_mail);
+         }
+         else
+         {
+            ++iRemoved;
+         }
+      }
+      if Length(plNew_mail) <> Length(lRecent_mail)
+      {
+         Debug("User",self,vrName,"had",Length(plNew_mail),"now",
+               Length(lRecent_mail));
+      }
+      plNew_mail = lRecent_mail;
+
+      return iRemoved;
    }
 
    RemoveOldMail(iDays=180)

@@ -51,7 +51,7 @@ classvars:
    viChance_to_Increase = 30
    viMeditate_ratio = 100
 
-   viSkillExertion = 10
+   viSkillExertion = 100
    vbCheck_exertion = FALSE
 
    vbAutomatic = TRUE
@@ -75,7 +75,7 @@ messages:
          return FALSE;
       }
 
-      Send(who,@LoseVigor,#precision=TRUE,#amount=10*viSkillExertion);
+      Send(who,@LoseVigor,#precision=TRUE,#amount=viSkillExertion);
 
       return TRUE;
    }
@@ -110,7 +110,8 @@ messages:
          return FALSE;
       }
 
-      if oWeapon=$
+      if IsClass(oWeapon,&Unarmed)
+         OR IsClass(oWeapon,&Monster)
       {
          // Talented people can disarm even bare-handed.
          iAbil = Send(who,@GetSkillAbility,#Skill_num=SKID_BRAWLING);
@@ -173,7 +174,7 @@ messages:
             // about 5x more. This adds the additional 4x extra in
             // addition to the amount already taken. This is because
             // it's much more harmful to players.
-            Send(who,@LoseVigor,#precision=TRUE,#amount=4 * (10 * viSkillExertion));
+            Send(who,@LoseVigor,#precision=TRUE,#amount=4 * viSkillExertion);
          }
       }
       else

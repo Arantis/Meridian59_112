@@ -9,6 +9,7 @@ user_disallow_get = de \
 user_got_some = de \
    "Du kannst das nicht mehr aufheben. Das wird Dir zu schwer.%s$0"
 user_disallow_drop = de "%s%s kann nicht weggeworfen werden."
+user_follower_no_space = de "%s%s passt nicht mehr in Charlies Inventar."
 user_err_drop = de "Der Gegenstand ist nicht in Deinem Besitz."
 user_err_put = de \
    "%s%s kann nicht in die Truhe gelegt werden. %s%s ist schon zu voll! %s%s "
@@ -65,6 +66,8 @@ user_mail_forcedignore = de \
 user_was_killed = de \
    "%s%s hat Dich getötet. Geh nun, Du arme Seele, und räche Dich!"
 user_was_killed_bridge_faith = de "Autsch, die letzte Stufe war kaputt.."
+user_was_killed_room = de \
+   "Du erliegst den Strapazen, die du in der Karte \"%s\" erlitten hast."
 user_is_resting = de "Du sitzt da und ruhst Dich aus."
 user_is_standing = de "Du stehst."
 user_stat_might = de "Stärke"
@@ -396,3 +399,4 @@ user_cancel_lift_helper = de "Du ziehst deine Hand zurück."
 user_cancel_lift = de "%s%s%s zieht die Hand zurück."
 user_accept_lift_helper = de "%s%s ergreift deine Hand."
 user_accept_lift = de "Du ergreifst %s%ss Hand."
+user_active_defense_late = de "Du hast deine Deckung aufgegeben!"

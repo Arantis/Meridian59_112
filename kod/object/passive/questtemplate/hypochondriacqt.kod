@@ -117,7 +117,10 @@ properties:
    piNumPlayers = 1
    piPlayerRestrict = Q_PLAYER_NOTTRIED_RECENTLY
    piMaxPlayers = 5
-   piSchedulePct = 10
+   piSchedulePct = 20
+
+   piQuestDuration = 35
+   piQuestDifficulty = 4
 
 messages:
 
@@ -144,7 +147,8 @@ messages:
 
       // Template #59 is hypochondriac quest kickoff
       // QNT_ID_SACCHAQUA_ONE
-      if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_SHOWUP,
+      if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MESSAGE,
+               #NPC_modifier=QN_NPCMOD_NONE,#cargolist=[ letter_trigger ],
                #quest_node_index=QNT_ID_SACCHAQUA_ONE)
       {
          Send(oQE,@SetQuestNodeNPCList,#index=QNT_ID_SACCHAQUA_ONE,

@@ -15,8 +15,6 @@ constants:
    include blakston.khd
    include protocol.khd
 
-   ARMOR_TAKE_DAMAGE_PCT = 75
-   
 resources:
 
    include item.lkod
@@ -75,6 +73,9 @@ resources:
    item_stats_resistance = "%i%% %s\n"
    item_stats_dmg_type = "Deals %s damage\n"
 
+   item_durability_warning = "~B%s%s is about to break!"
+   item_durability_warning_sound = durabilitywarning.ogg
+
 classvars:
 
    vrItem_broken = item_broken_battle
@@ -112,6 +113,8 @@ classvars:
    vrLegs_male       = $
    vrLegs_female     = $
 
+   vbCanDropInPenalty = TRUE
+
    vbShow_condition =  FALSE
    vrCondition_exc =   item_condition_exc
    vrCondition_exc_mended = item_condition_exc_mended
@@ -127,6 +130,7 @@ classvars:
    // If this item is a light source, what is its color and intensity? Max intensity: 255
    viLightColor = LIGHT_FIRE
    viBaseLightIntensity = 0
+   vrDurabilityWarning = item_durability_warning
 
 properties:
 
@@ -138,6 +142,34 @@ properties:
    piItem_flags = 0
 
 messages:
+
+   GetDatabaseFlags()
+   {
+      local iFlags;
+   
+      iFlags = 0;
+      if (Send(self,@IsStackable))
+      {
+         iFlags |= FLAG_STACKABLE;
+      }
+
+      if (Send(self,@CanMend))
+      {
+         iFlags |= FLAG_MENDABLE;
+      }
+
+      if (Send(self,@CanBeStoredInVault))
+      {
+         iFlags |= FLAG_VAULTABLE;
+      }
+
+      if (Send(self,@IsExpansionItem))
+      {
+         iFlags |= FLAG_EXPANSION;
+      }
+
+      return iFlags;
+   }
 
    Constructor(corpse=$, oDMCreator=$)
    {
@@ -1044,12 +1076,13 @@ messages:
       return TRUE;
    }
 
-   NewUsed()
+   NewUsed(what=$)
    {
       local i, iNum, iSpeed;
 
       Send(self,@DoPlayerArt);
       if IsClass(poOwner,&Player)
+         OR IsClass(poOwner,&Human)
       {
          Post(poOwner,@RefreshPlayerVisualGear);
       }
@@ -1059,6 +1092,17 @@ messages:
       if (iSpeed <> 0)
       {
          Send(poOwner,@AddMovementSpeedPercent,#iSpeed=iSpeed);
+      }
+
+      viObject_flags |= OF_EQUIPPED;
+
+      // Item completely equipped, let the owner know in case
+      // anything has to be done afterwards. Handles reflections
+      // and ETs who need to handle item equipping.
+      // Use 'Equip' vs 'Use' here to distinguish from using a consumable.
+      if (what <> $)
+      {
+         Send(what,@EquippedItem,#what=self);
       }
 
       return;
@@ -1114,7 +1158,7 @@ messages:
       return TRUE;
    }
 
-   NewUnused()
+   NewUnused(what=$)
    {
       local i, iNum, iSpeed;
 
@@ -1125,6 +1169,23 @@ messages:
       if (iSpeed <> 0)
       {
          Send(poOwner,@AddMovementSpeedPercent,#iSpeed=-iSpeed);
+      }
+
+      viObject_flags &= ~OF_EQUIPPED;
+
+      if (poOwner <> $
+         AND IsClass(poOwner,&Player))
+      {
+         Send(poOwner,@SomethingChangedFlags,#what=self);
+      }
+
+      // Item completely removed, let the old owner know in case
+      // anything has to be done afterwards. Handles reflections
+      // and ETs who need to handle item removal.
+      // Use 'Equip' vs 'Use' here to distinguish from using a consumable.
+      if (what <> $)
+      {
+         Send(what,@UnequippedItem,#what=self);
       }
 
       return;
@@ -1282,19 +1343,13 @@ messages:
       return defense_power;
    }
 
-   DefendingHit(who = $,what = $)
+   DamageItem(who = $,what = $)
    {
-      // Set to 75% currently
-      if Random(1,100) < ARMOR_TAKE_DAMAGE_PCT
-      {
-         --piHits;
-      }
-
       if piHits <= 0
       {
          Send(self,@ItemBrokenInBattle);
       }
-      
+
       return;
    }
 
@@ -1311,11 +1366,25 @@ messages:
          Send(oItemAtt,@RemoveFromItem,#oItem=self);
       }
    
-      Send(poOwner,@SomethingChanged,#what=self);        
+      Send(poOwner,@SomethingChanged,#what=self);
       Send(poOwner,@MsgSendUser,#message_rsc=vrItem_broken,
            #parm1=Send(self,@GetName));
       Send(poOwner,@TryUnuseItem,#what=self);
-      
+
+      return;
+   }
+
+   DurabilityWarning()
+   {
+      if (poOwner <> $)
+         AND IsClass(poOwner,&User)
+      {
+         Send(poOwner,@MsgSendUser,#message_rsc=vrDurabilityWarning,
+                 #parm1=Send(self,@GetCapDef),#parm2=Send(self,@GetName));
+         Send(poOwner,@WaveSendUser,#what=poOwner,
+                  #wave_rsc=item_durability_warning_sound);
+      }
+
       return;
    }
 
@@ -1589,6 +1658,14 @@ messages:
       }
 
       return TRUE;
+   }
+
+   CanDropInPenalty()
+   "Some items are droppable on death but not in penalties.  This is needed "
+   "to handle lightweight, cheap non-stackables which players might fill "
+   "their inventory with to avoid dropping useful items in pens."
+   {
+      return vbCanDropInPenalty;
    }
 
    CanBeGivenToNPC()
@@ -2630,6 +2707,21 @@ messages:
       return;
    }
 
+   // These aren't normally used, but can call from admin window if necessary.
+   AddEquippedFlag()
+   {
+      viObject_flags |= OF_EQUIPPED;
+
+      return;
+   }
+
+   RemoveEquippedFlag()
+   {
+      viObject_flags &= ~OF_EQUIPPED;
+
+      return;
+   }
+
    SetAuctioned(who=$)
    {
       local oItemAtt;
@@ -2790,6 +2882,11 @@ messages:
    }
 
    IsCookingIngredient()
+   {
+      return FALSE;
+   }
+
+   IsExpansionItem()
    {
       return FALSE;
    }

@@ -41,6 +41,7 @@ resources:
    disciplerobe_jala_male = emblm-jm.bgf
    disciplerobe_kraanan_female = emblm-kf.bgf
    disciplerobe_kraanan_male = emblm-km.bgf
+   disciplerobe_mastery_band = masteryband.bgf
 
 classvars:
 
@@ -169,13 +170,6 @@ messages:
          return;
       }
 
-      if (IsClass(poOwner,&DM) AND pbImmortalColor)
-      {
-         Send(self,@SetXLATTranslation,#translation=viXLAT_immortal);
-
-         return;
-      }
-
       foreach i in Send(poOwner,@GetSpellList)
       {
          oSpell = Send(SYS,@FindSpellByNum,#num=Send(poOwner,@DecodespellNum,#compound=i));
@@ -189,6 +183,13 @@ messages:
       }
 
       piLevel = iHigh_level;
+
+      if (IsClass(poOwner,&DM) AND pbImmortalColor)
+      {
+         Send(self,@SetXLATTranslation,#translation=viXLAT_immortal);
+
+         return;
+      }
 
       bFound = FALSE;
 
@@ -310,7 +311,7 @@ messages:
       return HS_EMBLEM;
    }
 
-   SendOverlayAnimation(iAnimation = $)
+   SendOverlayAnimation(iAnimation = $, iDelay = 1)
    {
       if (piItem_flags & ITEM_PALETTE_MASK) <> 0
       {
@@ -319,21 +320,21 @@ messages:
 
       if iAnimation = PANM_WEAPON_ATTACK
       {
-         AddPacket(1,ANIMATE_ONCE,4,300,2,2,2,4,2,1);
+         AddPacket(1,ANIMATE_ONCE,4,300*iDelay/1200,2,2,2,4,2,1);
 
          return;
       }
 
       if iAnimation = PANM_FIST_ATTACK
       {
-         AddPacket(1,ANIMATE_ONCE,4,600,2,3,2,4,2,1);
+         AddPacket(1,ANIMATE_ONCE,4,600*iDelay/1200,2,3,2,4,2,1);
 
          return;
       }
 
       if iAnimation = PANM_BOW_FIRE
       {
-         AddPacket(1,ANIMATE_ONCE,4,1200,2,5,2,5,2,1);
+         AddPacket(1,ANIMATE_ONCE,4,1200*iDelay/1200,2,5,2,5,2,1);
 
          return;
       }
@@ -400,11 +401,53 @@ messages:
       return;
    }
 
-   SendOverlayInformation(ianimation = $)
+   GetLevel()
    {
-      AddPacket(4,Send(self,@GetOverlay));
-      AddPacket(1,Send(self,@GetOverlayHotspot));
-      Send(self,@SendOverlayAnimation,#iAnimation=iAnimation);
+      return piLevel;
+   }
+
+   SendMasteryOverlay()
+   {
+      local iTranslation;
+
+      if piLevel = 6
+      {
+         switch (piSchool)
+         {
+         case SS_JALA:
+            iTranslation = viXLAT_jala_master;
+            break;
+         case SS_FAREN:
+            iTranslation = viXLAT_faren_master;
+            break;
+         case SS_KRAANAN:
+            iTranslation = viXLAT_kraanan_master;
+            break;
+         case SS_SHALILLE:
+            iTranslation = viXLAT_shalille_master;
+            break;
+         case SS_QOR:
+            iTranslation = viXLAT_qor_master;
+            break;
+         case SS_RIIJA:
+            iTranslation = viXLAT_riija_master;
+            break;
+         }
+
+         iTranslation = Send(SYS,@EncodeTwoColorXLAT,#color1=iTranslation,#color2=XLAT_TO_SKIN2);
+
+         AddPacket(4, disciplerobe_mastery_band, 1 , HS_TOUPEE,
+            1, ANIMATE_TRANSLATION, 1, iTranslation,
+            1, ANIMATE_NONE, 2, 1);
+      }
+
+      return;
+   }
+
+   SendOverlayInformation(ianimation = $, iDelay = 1)
+   {
+      AddPacket(4,Send(self,@GetOverlay), 1,Send(self,@GetOverlayHotspot));
+      Send(self,@SendOverlayAnimation,#iAnimation=iAnimation,#iDelay=iDelay);
 
       return;
    }

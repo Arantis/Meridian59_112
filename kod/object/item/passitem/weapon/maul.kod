@@ -40,6 +40,7 @@ classvars:
    viWeaponQuality = WEAPON_QUALITY_LOW
 
    viProficiency_Needed = SKID_PROFICIENCY_HAMMER
+   viDefault_stroke_number = SKID_STRIKE
 
    viValue_average = 650
    viWeight = 100
@@ -55,7 +56,9 @@ classvars:
    viInventory_group = 3
    viBroken_group = 2
 
-   viRange = 4 * FINENESS
+   vbCrush_enemies = TRUE
+
+   viRange = 2 * FINENESS
 
 properties:
 
@@ -68,6 +71,11 @@ messages:
       Send(self,@SetSpellFlag,#flag=SPL_TYPE_UNHOLY,#value=TRUE);
       
       propagate;
+   }
+
+   IsExpansionItem()
+   {
+      return TRUE;
    }
 
 end

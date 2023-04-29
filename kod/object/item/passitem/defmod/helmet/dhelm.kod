@@ -125,11 +125,6 @@ messages:
       return damage;
    }
 
-   WeaponHitTarget()
-   {
-      return;
-   }
-
    ModifyHitRoll(who = $,what = $,hit_roll = $)
    {
       return hit_roll;
@@ -187,6 +182,17 @@ messages:
    CanDyeItem()
    {
       return FALSE;
+   }
+
+   DamageItem(bAttack=FALSE)
+   {
+      // Only gets damaged if we get hit, not if we use its passive ability.
+      if (bAttack)
+      {
+         return;
+      }
+
+      propagate;
    }
 
 end

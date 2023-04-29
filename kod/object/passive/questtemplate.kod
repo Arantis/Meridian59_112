@@ -68,6 +68,8 @@ resources:
 
    // General quest resources, used by multiple quests.
    letter_trigger = "need a courier"
+   quest_trigger = "quest"
+   quest_hello_trigger = "hello"
    chess_trigger = "yes"
    duke_standard1_trigger = "loyalty"
    duke_join1_trigger = "join"
@@ -173,7 +175,25 @@ properties:
 
    piTimeLimit = 3 * 3600 // 3 hour default timelimit.
 
+   // Expected time required for completion in minutes.
+   piQuestDuration = 5
+
+   // Quest difficulty on a scale from 0 to 10.
+   piQuestDifficulty = 5
+
 messages:
+
+   UpdateDatabase()
+   {
+      // Wiki Export: all Quests into a table
+      RecordStat(STAT_QUESTS, TAG_INT, viQuestID, TAG_RESOURCE, vrName,
+            RESOURCE_GER, vrName, TAG_RESOURCE, vrIcon,
+            TAG_INT, viIcon_Animation_start, TAG_RESOURCE, vrDesc,
+            RESOURCE_GER, vrDesc, TAG_INT, piQuestHistoryRecentTime, TAG_INT,
+            piSchedulePct, TAG_INT, piQuestDuration, TAG_INT, piQuestDifficulty);
+
+      return;
+   }
 
    Constructor()
    {
@@ -1226,6 +1246,26 @@ messages:
       }
 
       return;
+   }
+
+   QuestSpecialAction()
+   {
+      return;
+   }
+
+   GetQuestDuration()
+   {
+      return piQuestDuration;
+   }
+
+   GetQuestDifficulty()
+   {
+      return piQuestDifficulty;
+   }
+
+   NumQuestNodes()
+   {
+      return Length(plQuestNodes);
    }
 
 end

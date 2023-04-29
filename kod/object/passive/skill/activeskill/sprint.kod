@@ -1,0 +1,180 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+Sprint is ActiveSkill
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include sprint.lkod
+
+   Sprint_name_rsc = "sprint"
+   Sprint_icon_rsc = isprint.bgf
+   Sprint_desc_rsc = \
+      "Allows an agile and enduring warrior to run significantly faster at the "
+      "cost of becoming winded at an accelerated rate."
+      "\n\nNOTE: This is an actively held skill, which requires you to create and "
+      "hold down a hotkey."
+
+   Sprint_start = "You begin to sprint!"
+   Sprint_end = "You stop sprinting."
+   Sprint_exhaust = "You are too exhausted to sprint!"
+
+   Sprint_sound_rsc = sprint.ogg
+   Sprint_end_sound_rsc = sprintend.ogg
+
+classvars:
+
+   vrName = Sprint_name_rsc
+   vrIcon = Sprint_icon_rsc
+   vrDesc = Sprint_desc_rsc
+   vrSkill_tired = Sprint_exhaust
+
+   // Sprint handles sounds a bit differently.
+   // Set regular sound resources nil.
+   vrTrance_begin
+   vrTrance_break
+   vrTrance_cancel
+
+   viIndefinite = ARTICLE_NONE
+   viDefinite = ARTICLE_NONE
+
+   viSkill_num = SKID_SPRINT
+   viSchool = SKS_WEAPONCRAFT
+   viSkill_level = 3
+   viChance_to_Increase = 15
+   viMeditate_ratio = 50
+
+   viSkillExertion = 500
+   vbCheck_exertion = TRUE
+
+   vbAutomatic = FALSE
+
+   vbReportTrance = FALSE
+   vbCanBreakTrance = FALSE
+
+   vbFixedTrance = TRUE
+
+   viPreperation_time = 10000
+   viPostPerform_time = 0
+
+   viCooldownSID = SID_COOLDOWN_SPRINT
+
+   vbShowIcon = TRUE
+
+properties:
+
+   plPrerequisites = $
+   piTranceMovementSpeedReduction = -50
+
+   pbKey_hold = TRUE
+
+messages:
+
+   GetRequisiteStat(who=$)
+   {
+      return (2*Send(who,@GetAgility)+Send(who,@GetStamina))/3;
+   }
+
+   SuccessChance()
+   {
+      return TRUE;
+   }
+
+   GetTranceTime(iSkillPower=0)
+   {
+      return viPreperation_time*(33+iSkillPower)/132;
+   }
+
+   BeginPerformPreparation(who=$,lTargets=$,bSuccess=TRUE)
+   {
+      local iSkillPower;
+
+      iSkillPower = Send(self,@GetSkillPower,#who=who);
+
+      Send(Send(who,@GetOwner),@SomethingWaveRoom,#what=who,
+         #wave_rsc=Sprint_sound_rsc);
+         
+      Send(who,@MsgSendUser,#message_rsc=Sprint_start);
+
+      Send(Send(SYS,@FindSpellByNum,#num=SID_TRANCE),@BeginTrance,
+         #what=self,#who=who,#power=iSkillPower,#iHold=pbKey_hold,
+         #time=Send(self,@GetTranceTime,#iSkillPower=iSkillPower));
+
+      return;
+   }
+
+   // Not much going on...
+   PerformSkill(who=$,lTargets=$)
+   {
+      return;
+   }
+
+   TranceCompleted(who=$,state=$)
+   {
+      // Check for advancement conditions.
+      if Abs(Send(who,@GetLastMoveUpdate) - GetTickCount()) < 1000
+      {
+         Send(self,@ImproveAbility,#who=who);
+      }
+
+      propagate;
+   }
+
+   TranceEnded(who=$,state=$)
+   {
+      // Handles post use effects.
+      Send(self,@SprintEnded,#who=who,#state=state);
+
+      propagate;
+   }
+
+   SprintEnded(who=$,state=$)
+   {
+      local iPower, oSpell;
+
+      iPower = Nth(state,7);
+      Send(who,@MsgSendUser,#message_rsc=Sprint_end);
+
+      Send(who,@WaveSendUser,#wave_rsc=Sprint_end_sound_rsc);
+
+      oSpell = Send(SYS,@FindSpellByNum,#num=viCooldownSID);
+ 
+      Send(oSpell,@CastSpell,#who=self,#oTarget=who,
+         #iSpellPower=iPower);
+ 
+      return;
+   }
+
+   GetMovementSpeedReduction(state=$)
+   {
+      return -Nth(state,7)/2;
+   }
+
+   GetPeriodicSound()
+   {
+      return;
+   }
+
+   GetPeriodicSoundEnd()
+   {
+      return;
+   }
+
+   GetPeriodicSoundDuration()
+   {
+      return;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,192 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+CrushingBlows is Skill
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include crushblow.lkod
+   Crushing_blows_name_rsc = "crushing blows"
+   Crushing_blows_icon_rsc = icrushingblows.bgf
+   Crushing_blows_desc_rsc = \
+      "Allows your blows with heavy weapons to interrupt your enemies' attacks."
+
+   Crushing_blows_success = "You land a crushing blow!"
+   Crushing_blows_success_victim = "%s%s lands a crushing blow on you!"
+   Crushing_blows_interrupt = "Your crushing blow staggers %s%s!"
+
+classvars:
+
+   vrName = Crushing_blows_name_rsc
+   vrIcon = Crushing_blows_icon_rsc
+   vrDesc = Crushing_blows_desc_rsc
+
+   viIndefinite = ARTICLE_NONE
+   viDefinite = ARTICLE_NONE
+
+   viSkill_num = SKID_CRUSHING_BLOWS
+   viSchool = SKS_WEAPONCRAFT
+   viSkill_Level = 6
+   viChance_to_Increase = 10
+   viMeditate_ratio = 100
+
+   viSkillExertion = 30
+   vbCheck_exertion = FALSE
+
+   vbAutomatic = TRUE
+
+properties:
+
+   // Threshold for primany and secondary checks.
+   // Increase piPrimary to increase the minimum damage
+   // required to see any interrupts at all.
+   // piPrimary corresponds to the distance in fine units
+   // that the monster needs to be pushed back.
+   // Note: The distance that is passed has been increased
+   // by between 50% and 100% depending on skill and may
+   // have had a flat crush modifer added.
+   piPrimary = 32
+
+   // Increase piSecondary to decrease the chance to getting
+   // an interrupt once we have crossed the primary threshold.
+   piSecondary = 64
+
+   // Amount of requisite stat we expect the battler
+   // to operate at for regular results. Going beyond
+   // piStat_base will lower the threshold, while going
+   // below it will increase the threshold.
+   piStat_base = 50
+
+   // How much does a crushing blow delay a player?
+   piDelay_player = 500
+
+   // How much does a crushing blow delay a monster?
+   piDelay_monster = 2000
+
+   // This throttles improvements. At 100, players with 50 might
+   // will get a chance to improve every time.
+   // At 200, these players will have a chance every second swing.
+   // At 300, these players will have a chance every third swing etc.
+   // At 50, even 1 might characters will have a chance to improve every time.
+   piImprovement_throttle = 200
+messages:
+
+   GetRequisiteStat(who=$)
+   "Varies from skill to skill and spell to spell."
+   {
+      return Send(who,@GetMight);
+   }
+
+   PayCosts(who=$,modifier=0)
+   "Some skills may require certain stats to be depleted."
+   "return TRUE if they were successfully depleted."
+   {
+      if NOT Send(self,@SuccessChance,#who=who,#modifier=modifier)
+      {
+         return FALSE;
+      }
+
+      Send(who,@LoseVigor,#precision=TRUE,#amount=viSkillExertion);
+
+      return TRUE;
+   }
+
+   DoCrush(who=$,what=$,distance=0,ability=0,crush=0)
+   {
+      local iReqStat, iThreshold, iChance, iRandom;
+
+      // No attempt if we don't have any ability with the skill
+      // or some other way of boosting our ability to inflict
+      // crushing blows.
+      if NOT ability
+      {
+         return;
+      }
+
+      iReqStat = Send(self,@GetRequisiteStat,#who=who);
+
+      iThreshold = piPrimary * piStat_base / iReqStat;
+
+      if distance < iThreshold
+      {
+         return FALSE;
+      }
+
+      // If we got this far, we deserve a chance at improving
+      // regardless of whether we pass the random check.
+      Send(self,@ImproveAbility,#who=who,#target=what);
+
+      distance += Random(0,distance*ability/SPELLPOWER_MAXIMUM);
+
+      // Add a scaled crush bonus.
+      distance += crush*piSecondary/piPrimary;
+
+      if distance < iThreshold*piSecondary/piPrimary
+      {
+         return FALSE;
+      }
+
+      Send(who,@MsgSendUser,#message_rsc=Crushing_blows_success);
+
+      if IsClass(what,&Player)
+      {
+         Send(what,@MsgSendUser,#message_rsc=Crushing_blows_success_victim,
+            #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName));
+      }
+
+      if Send(what,@BreakConcentration,#event=EVENT_CRUSH)
+      {
+         Post(who,@MsgSendUser,#message_rsc=Crushing_blows_interrupt,
+            #parm1=Send(what,@GetDef),#parm2=Send(what,@GetName));
+      }
+
+      // Add visual feedback.
+      if IsClass(what,&Player)
+      {
+         Send(what,@DoKnockback);
+         return TRUE;
+      }
+
+      if Send(what,@MonsterHitAnimation) 
+      {
+         return TRUE;
+      }
+
+      // We only return TRUE if we have actually played an animation.
+      return FALSE;
+   }
+
+   GetCrushDelay(who=$)
+   {
+      if IsClass(who,&Player)
+      {
+         return piDelay_player;
+      }
+
+      return piDelay_monster;
+   }
+
+   // About a 1 in 2 chance to improve at 50 might with default settings.
+   ImproveAbility(who=$)
+   {
+      if Random(1,100)*piImprovement_throttle/100 > 50 + Send(who,@GetMight)
+      {
+         return;
+      }
+
+      propagate;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

@@ -72,7 +72,6 @@ classvars:
    viMana = 5                   // Initial mana cost of the spell.
    viManaDrain = 600            // Mana drained per second (10^3)
    viRegenerationEffect = FALSE // If true, will call UpdateRates() in battler.
-   viPostCast_time = 1
    viBaseRange = 5 * FINENESS
 
    vbCanCastonOthers = FALSE
@@ -103,6 +102,8 @@ classvars:
    viAffectsEnemies = FALSE     // Hostile, can cause outlaw status
    viAffectsInnocents = FALSE   // Unaffiliated white characters
    viAffectsNewbies = FALSE     // Angeled characters
+
+   vbFragile = TRUE
 
 properties:
 
@@ -139,7 +140,7 @@ messages:
                lState = Nth(i,3);
                if First(lState) = who
                {
-                  Send(self,@BreakTrance,#who=who,#state=lState,#event=EVENT_CANCEL);
+                  Send(self,@BreakFragileEffect,#who=who,#state=lState,#event=EVENT_CANCEL);
 
                   return FALSE;
                }
@@ -864,7 +865,7 @@ messages:
       return hit_roll;
    }
 
-   DefendingHit()
+   DamageItem()
    {
       return;
    }
@@ -982,11 +983,12 @@ messages:
    }
 
    // Overrides spell.kod entirely.
-   BreakTrance(who=$,state=$,event=$)
+   BreakFragileEffect(who=$,state=$,event=$)
    {
       local oRoom, bRecheck;
 
-      if event = EVENT_OOM AND viManaDrain = 0
+      if (event = EVENT_NO_MANA AND viManaDrain = 0)
+         OR (event = EVENT_NO_VIGOR)
       {
          return FALSE;
       }
@@ -996,9 +998,10 @@ messages:
       if event = EVENT_DAMAGE
          OR event = EVENT_ATTACK
          OR event = EVENT_DISRUPT
-         OR event = EVENT_CAST
+         OR event = EVENT_ABILITY
          OR event = EVENT_USE
          OR event = EVENT_STEER
+         OR event = EVENT_DEBUFF
       {
          return FALSE;
       }
@@ -1018,13 +1021,13 @@ messages:
 
       bRecheck = (event = EVENT_REST OR event = EVENT_CANCEL);
 
-      Send(self,@TranceEnding,#who=who,#state=state,#bRecheck=bRecheck);
+      Send(self,@FragileEffectBroken,#who=who,#state=state,#bRecheck=bRecheck);
 
       return TRUE;
    }
 
-   TranceEnding(who=$,state=$,bRecheck=FALSE)
-   "Allow maintained spells to do something when their trance breaks."
+   FragileEffectBroken(who=$,state=$,bRecheck=FALSE)
+   "Overrides default."
    {
       Send(who,@RemoveRadiusEnchantment,#what=self,#state=state,#recheck=bRecheck);
 

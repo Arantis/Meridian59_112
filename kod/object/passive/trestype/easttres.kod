@@ -24,11 +24,11 @@ messages:
 
    InitTreasureLists()
    {
-      plTreasure = [ [ &WindrootSeed, 29],
+      plTreasure = [ [ &Cheese, 29],
                      [ &Sapphire, 30],
                      [ &RedMushroom, 25],
-                     [ &MelancholyScroll, 5],
-                     [ &GreenMushroom, 2 ],
+                     [ &GreenMushroom, 5],
+                     [ &MelancholyScroll, 2 ],
                      [ &Mallet, 2],
                      [ &Knife, 2],
                      [ &Hatchet, 2],

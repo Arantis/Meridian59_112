@@ -64,6 +64,9 @@ namespace m59bind
             buttonDeposit.Text = m59BindProgram.GetIni(configFile, "keys", "deposit", "i+shift");
             buttonWithdraw.Text = m59BindProgram.GetIni(configFile, "keys", "withdraw", "o+shift");
             buttonAttack.Text = m59BindProgram.GetIni(configFile, "keys", "attack", "e+any");
+            buttonQuest.Text = m59BindProgram.GetIni(configFile, "keys", "quest", "q+ctrl");
+            buttonPut.Text = m59BindProgram.GetIni(configFile, "keys", "put", "p+ctrl");
+            buttonActivate.Text = m59BindProgram.GetIni(configFile, "keys", "activate", "a+ctrl");
 
             // Targeting Tab
             buttonTargetNext.Text = m59BindProgram.GetIni(configFile, "keys", "targetnext", "]");
@@ -162,6 +165,9 @@ namespace m59bind
             buttonDeposit.Text = "i+shift";
             buttonWithdraw.Text = "o+shift";
             buttonAttack.Text = "e+any";
+            buttonQuest.Text = "q+ctrl";
+            buttonPut.Text = "p+ctrl";
+            buttonActivate.Text = "a+ctrl";
 
             // Targeting Tab
             buttonTargetNext.Text = "]";
@@ -231,6 +237,9 @@ namespace m59bind
             m59BindProgram.WriteIni(configFile, "keys", "deposit", buttonDeposit.Text);
             m59BindProgram.WriteIni(configFile, "keys", "withdraw", buttonWithdraw.Text);
             m59BindProgram.WriteIni(configFile, "keys", "attack", buttonAttack.Text);
+            m59BindProgram.WriteIni(configFile, "keys", "quest", buttonQuest.Text);
+            m59BindProgram.WriteIni(configFile, "keys", "put", buttonPut.Text);
+            m59BindProgram.WriteIni(configFile, "keys", "activate", buttonActivate.Text);
 
             // Targeting Tab
             m59BindProgram.WriteIni(configFile, "keys", "targetnext", buttonTargetNext.Text);
@@ -1454,7 +1463,94 @@ namespace m59bind
             modForm.Location = position;
             modForm.ShowDialog(this);
         }
-        #endregion
+      #endregion
+
+      #region Quest Keybind
+      // Quest Keybind
+      private void buttonQuest_KeyDown(object sender, KeyEventArgs e)
+      {
+         buttonQuest.Text = handleKeyDown(e);
+      }
+
+      private void buttonQuest_MouseDown(object sender, MouseEventArgs e)
+      {
+         buttonQuest.Text = handleMouseDown(e);
+      }
+
+      private void buttonQuest_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+      {
+         previewKeySetIsInputKey(e);
+      }
+
+      private void buttonQuestMod_Click(object sender, EventArgs e)
+      {
+         KeyModForm modForm = new KeyModForm(buttonQuest);
+         Point position = Cursor.Position;
+         position.Y -= 115;
+
+         modForm.StartPosition = FormStartPosition.Manual;
+         modForm.Location = position;
+         modForm.ShowDialog(this);
+      }
+      #endregion
+
+      #region Put Keybind
+      // Put Keybind
+      private void buttonPut_KeyDown(object sender, KeyEventArgs e)
+      {
+         buttonPut.Text = handleKeyDown(e);
+      }
+
+      private void buttonPut_MouseDown(object sender, MouseEventArgs e)
+      {
+         buttonPut.Text = handleMouseDown(e);
+      }
+
+      private void buttonPut_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+      {
+         previewKeySetIsInputKey(e);
+      }
+
+      private void buttonPutMod_Click(object sender, EventArgs e)
+      {
+         KeyModForm modForm = new KeyModForm(buttonPut);
+         Point position = Cursor.Position;
+         position.Y -= 115;
+
+         modForm.StartPosition = FormStartPosition.Manual;
+         modForm.Location = position;
+         modForm.ShowDialog(this);
+      }
+      #endregion
+
+      #region Activate Keybind
+      // Activate Keybind
+      private void buttonActivate_KeyDown(object sender, KeyEventArgs e)
+      {
+         buttonActivate.Text = handleKeyDown(e);
+      }
+
+      private void buttonActivate_MouseDown(object sender, MouseEventArgs e)
+      {
+         buttonActivate.Text = handleMouseDown(e);
+      }
+
+      private void buttonActivate_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+      {
+         previewKeySetIsInputKey(e);
+      }
+
+      private void buttonActivateMod_Click(object sender, EventArgs e)
+      {
+         KeyModForm modForm = new KeyModForm(buttonActivate);
+         Point position = Cursor.Position;
+         position.Y -= 115;
+
+         modForm.StartPosition = FormStartPosition.Manual;
+         modForm.Location = position;
+         modForm.ShowDialog(this);
+      }
+      #endregion
 
         #region Target Next Keybind
         // Target Next Keybind

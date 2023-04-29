@@ -188,6 +188,33 @@ properties:
 
 messages:
 
+   UpdateDatabase()
+   {
+      local i, iQT, iQNT, j, lNPCList, lQNT;
+
+      SendList(plQuestTemplates,QT_QUEST_OBJECT,@UpdateDatabase);
+
+      foreach i in plQuestTemplates
+      {
+         iQT = Nth(i,QT_QST_ID);
+         iQNT = First(Nth(i,QT_QUEST_NODES));
+         lQNT = Send(self,@GetQuestNodeTemplate,#index=iQNT);
+         lNPCList = Nth(lQNT,QNT_NPC_LIST);
+
+         foreach j in lNPCList
+         {
+            if (j = $)
+            {
+               continue;
+            }
+            RecordStat(STAT_QUESTGIVER, TAG_INT, iQT, TAG_RESOURCE,
+                  Send(j,@GetName));
+         }
+      }
+
+      return;
+   }
+
    Constructor()
    {
       Send(self,@Recreate);
@@ -384,7 +411,10 @@ messages:
       Create(&DukeJoinQuest);
       // QST_ID_REBEL_JOIN
       Create(&RebelJoinQuest);
-      
+
+      // QST_ID_RESIGN_FACTION
+      Create(&ResignFactionQuest);
+
       // QST_ID_PRINCESS_SOLDIER
       Create(&PrincessSoldierQuest);
       // QST_ID_DUKE_SOLDIER
@@ -522,8 +552,8 @@ messages:
       // QST_ID_WARLETTER
       Create(&WarLetterQuest);
 
-      // QST_ID_ESTABLISH_NECROGUILD
-      Create(&NecroGuildQuest);
+      // QST_ID_SPAWN_LICH
+      Create(&SpawnLichQuest);
 
       // QST_ID_POTION_ID
       Create(&IdentifyPotionQuest);
@@ -578,7 +608,7 @@ messages:
       //QNT_ID_JIXA_ESCORT
       Create(&JixaInnEscortQuest);
       //QNT_ID_ESCORT_ASSASSINATION
-      Create(&EscortAssassination);
+      Create(&EscortAssassinationQuest);
       //QNT_ID_JIXA_BANDIT
       Create(&JixaInnBanditQuest);
       //QNT_ID_SPINEBEAST_BOSS
@@ -586,36 +616,37 @@ messages:
       //QNT_ID_MONSTER_CHARM
       Create(&MonsterCharmQuest);
 
-      // Now we fix up the faction service quests, since they need to have as
-      // many scheduled as members. This worked well enough for low numbers of
-      // factioned players, however with large numbers the amount of quests
-      // might get a little bulky. Since we don't *need* to have a quest
-      // available for every member, lets try this out at 30 scheduled quests
-      // and go from there. Old scheduling code commented out here for now.
-      //foreach i in Send(Send(SYS,@GetParliament),@GetFactionList)
-      //{
-      //   if Nth(i,1) = FACTION_PRINCESS
-      //   {
-      //      Send(self,@SetQuestMaxActive,#index=QST_ID_PRINCESS_SERVICE,
-      //           #new_max =(1+Length(Nth(i,2))));
-      //   }
-      //   if Nth(i,1) = FACTION_DUKE
-      //   {
-      //      Send(self,@SetQuestMaxActive,#index=QST_ID_DUKE_SERVICE,
-      //           #new_max =(1+Length(Nth(i,2))));
-      //   }
-      //   if Nth(i,1) = FACTION_REBEL
-      //   {
-      //      Send(self,@SetQuestMaxActive,#index=QST_ID_REBEL_SERVICE,
-      //           #new_max=(1+Length(Nth(i,2))));
-      //   }
-      //}
-      // New scheduling code here:
-
-      Send(self,@SetQuestMaxActive,#index=QST_ID_PRINCESS_SERVICE,#new_max=30);
-      Send(self,@SetQuestMaxActive,#index=QST_ID_DUKE_SERVICE,#new_max=30);
-      Send(self,@SetQuestMaxActive,#index=QST_ID_REBEL_SERVICE,#new_max=30);
-
+      //QNT_ID_FIND_JASPERBANK
+      Create(&FindJasperBankQuest);
+      //QNT_ID_FIND_CORNOTH
+      Create(&FindCorNothQuest);
+      // QNT_ID_TOS_ZOMBIES
+      Create(&TosGraveQuest);
+      // QNT_ID_MAR_MUMMIES
+      Create(&MarionCryptMummiesQuest);
+      // QNT_ID_MAR_STATUES
+      Create(&MarionCryptStatuesQuest);
+      // QNT_ID_CASTLEVIC
+      Create(&CastleVicQuest);
+      // QNT_ID_MAR_ENTS
+      Create(&LivingTreeHuntQuest);
+      // QNT_ID_FUNGUSHUNT
+      Create(&FungusBeastHuntQuest);
+      // QNT_ID_MAR_THRASHERS
+      Create(&MarionCryptThrashersQuest);
+      // QNT_ID_ORCHUNT
+      Create(&OrcCaveHuntQuest);
+      // QNT_ID_FEYHUNT_GOOD
+      Create(&GoodFeyHuntQuest);
+      // QNT_ID_FEYHUNT_EVIL
+      Create(&EvilFeyHuntQuest);
+      //QNT_ID_MOLLUSKHUNT
+      Create(&MolluskHuntQuest);
+      //QNT_ID_NERUTROLLHUNT
+      Create(&NeruTrollHuntQuest);
+      //QNT_ID_LUPOGG_HUNT
+      Create(&LupoggHuntQuest);
+      
       return;
    }
 
@@ -2074,6 +2105,9 @@ messages:
                // Found the questnode waiting for this player to kill this type of monster 
                Send(self,@RemoveQNFromAwaitingMonsterDeathList,#QN=QN);
 
+               // UI/sound effect so they notice.
+               Send(killing_player,@InformQuestAdvance);
+
                return;
             }
          }
@@ -2286,6 +2320,23 @@ messages:
       }
 
       return iCount;
+   }
+
+   GetActiveQuests(index = 0)
+   "Returns the active quests for the given quest template index."
+   {
+      local lQuest;
+
+      if (index = 0)
+      {
+         Debug("GetActiveQuests called with 0 index.");
+
+         return $;
+      }
+
+      lQuest = Send(self,@GetQuestTemplate,#index=index);
+
+      return Nth(lQuest, QT_ACTIVE_QUESTS);
    }
 
    QuestReport(who = $)

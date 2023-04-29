@@ -47,8 +47,6 @@ classvars:
 
    vrSucceed_wav = Dissonance_sound
 
-   viPostCast_time = 2        // in seconds, since it works off gettime()
-
    // Projectile lighting information.
    viProjectileLightFlags = LIGHT_FLAG_ON | LIGHT_FLAG_DYNAMIC
    // Medium light range, out of 255.
@@ -71,7 +69,7 @@ messages:
    ResetReagents()
    {
       plReagents = $;
-      plReagents = Cons([&GreenMushroom,1],plReagents);
+      plReagents = Cons([&TwinkleCap,1],plReagents);
 
       return;
    }
@@ -123,6 +121,10 @@ messages:
       return 20;
    }
 
-end
+   IsExpansionSpell()
+   {
+      return TRUE;
+   }
 
+end
 ////////////////////////////////////////////////////////////////////////////////

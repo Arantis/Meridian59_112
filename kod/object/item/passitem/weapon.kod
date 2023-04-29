@@ -18,8 +18,14 @@ constants:
    UNUSED = 2
    ATTACKING = 3
    PARRYING = 4
+   UNLEASHING = 5
+   EXPOSED = 6
 
    WEAPON_TAKE_DAMAGE_PCT = 75  //chance to be damaged
+   WEAPON_WARN_DURABILITY_HITS = 10  // warn user when piHits reaches this
+
+   // Weapon base delay in ms.
+   WEAPON_BASE_DELAY = 1000
 
    // Weapon tuning factors
    //  Edit these constants to tune weapon power
@@ -122,6 +128,7 @@ classvars:
    vrWeapon_window_attack_start = 1
    vrWeapon_window_attack_end = 4
    vrWeapon_window_hold = 5
+   vrWeapon_window_exposed = 4
 
    vrWeapon_window_parry_start = 3
    vrWeapon_window_parry_end = 3
@@ -131,12 +138,13 @@ classvars:
    // if it's set to a number, it's always used
    viBroken_group = $
    // Message when the weapon breaks.
-   vrWeaponBroke = weapon_broken
+   vrItem_broken = weapon_broken
 
    viWeaponType = WEAPON_TYPE_THRUST
    viWeaponQuality = WEAPON_QUALITY_NORMAL
 
    viProficiency_needed = SKID_PROFICIENCY_SWORD
+   viDefault_stroke_number = SKID_THRUST
 
    viHits_init_min = 250
    viHits_init_max = 300
@@ -149,7 +157,11 @@ classvars:
    vrCondition_poor = weapon_condition_poor 
    vrCondition_broken = weapon_condition_broken
 
-   viRange = 3 * FINENESS
+   viUnleash_type = UNLEASH_NONE
+
+   vbCrush_enemies = FALSE
+
+   viRange = 2 * FINENESS
 
 properties:
 
@@ -162,6 +174,37 @@ properties:
    piUsed = UNUSED
 
 messages:
+
+   UpdateDatabase()
+   {
+      local rName;
+
+      // Wiki Export: all weapon into a table
+      rName = Send(self,@GetName,#number=3);
+      RecordStat(STAT_WEAPONS, TAG_RESOURCE, rName, RESOURCE_GER, rName, 
+            TAG_RESOURCE, vrIcon, TAG_INT, viInventory_group, TAG_INT,
+            Send(self,@GetPaletteTranslation), TAG_RESOURCE, vrDesc,
+            RESOURCE_GER, vrDesc, TAG_INT, viValue_average,
+            TAG_INT, viWeight, TAG_INT, viBulk, TAG_INT, viRange,
+            TAG_INT, Send(self,@GetDefaultStrokeNumber),
+            TAG_INT, Send(self,@GetProfNumber),
+            TAG_INT, Send(self,@GetDatabaseFlags));
+
+      return;
+   }
+
+   PrintWeaponInfo()
+   {
+      local oBaseSkill, oSkill;
+
+      oBaseSkill = Send(SYS,@FindSkillByNum,#num=Send(self,@GetDefaultStrokeNumber));
+      oSkill = Send(SYS,@FindSkillByNum,#num=Send(self,@GetProfNumber));
+
+      Debug(vrName, viRange, Send(SYS,@GetWeaponTypeName,#type=viWeaponType),
+            Send(oBaseSkill,@GetName), Send(oSkill,@GetName));
+
+      return;
+   }
 
    Constructed()
    {
@@ -584,7 +627,7 @@ messages:
 
    GetDefaultStrokeNumber()
    {
-      return SKID_SLASH;
+      return viDefault_stroke_number;
    }
 
    ImproveProficiency(who=$,target=$,bonus=0)
@@ -643,18 +686,25 @@ messages:
       propagate;
    }
 
-   WeaponHitTarget()
+   DamageItem()
    {
       if Random(1,100) < WEAPON_TAKE_DAMAGE_PCT
       {
          piHits--;
+
+         if piHits = WEAPON_WARN_DURABILITY_HITS
+         {
+            Send(self,@DurabilityWarning);
+         }
+
+         propagate;
       }
 
-      if piHits <= 0
-      {
-         Send(self,@WeaponBroke);
-      }
+      return;
+   }
 
+   HitSideEffect(what=$,who=$,amount=0,stroke_obj=$)
+   {
       return;
    }
 
@@ -684,7 +734,7 @@ messages:
       return TRUE;
    }
 
-   WeaponBroke()
+   ItemBrokenInBattle()
    {
       local i, oItemAtt;
 
@@ -701,7 +751,7 @@ messages:
 
       if (poOwner <> $) AND IsClass(poOwner,&Battler)
       {
-         Send(poOwner,@MsgSendUser,#message_rsc=vrWeaponBroke,
+         Send(poOwner,@MsgSendUser,#message_rsc=vrItem_broken,
                #parm1=Send(self,@GetCapDef),#parm2=vrName);
          Send(poOwner,@TryUnuseItem,#what=self);
       }
@@ -725,6 +775,38 @@ messages:
       }
 
       piUsed = USED;
+
+      return;
+   }
+
+   WeaponUnleash(who=$)
+   "Called by ReqWeaponAttack when the weapon is actually used in an attack."
+   {
+      piUsed = UNLEASHING;
+      
+      if vrWeapon_window_overlay <> $
+      {
+         Send(poOwner,@ChangeWindowOverlay,#what=self);
+      }
+
+      if vrWeapon_overlay <> $
+      {
+         Send(poOwner,@DoUnleash);
+      }
+
+      piUsed = EXPOSED;
+
+      return;
+   }
+
+   BackToGuard()
+   {
+      piUsed = USED;
+      
+      if vrWeapon_window_overlay <> $
+      {
+         Send(poOwner,@ChangeWindowOverlay,#what=self);
+      }
 
       return;
    }
@@ -786,6 +868,11 @@ messages:
    }
 
    //// Attack Type Functions (Enchanted weapons, Qor weapons, burning blades, etc.)
+
+   GetWeaponType()
+   {
+      return viWeaponType;
+   }
 
    GetSpellType()
    {
@@ -863,7 +950,7 @@ messages:
 
    SendWindowOverlayAnimation()
    {
-      local iFlags;
+      local iFlags, iDelay;
 
       iFlags = piItem_flags & ITEM_PALETTE_MASK;
       if iFlags <> 0
@@ -875,6 +962,14 @@ messages:
       {
          AddPacket(1,ANIMATE_ONCE, 4,150, 2,vrWeapon_window_attack_start,
                    2,vrWeapon_window_attack_end, 2,vrWeapon_window_hold);
+      }
+      else if piUsed = UNLEASHING
+      {
+         iDelay = Send(Send(SYS,@FindSkillByNum,#num=SKID_UNLEASH),
+                     @GetTranceTime,#who=poOwner);
+                     iDelay = Bound(iDelay,150,600);
+         AddPacket(1,ANIMATE_ONCE, 4,150*iDelay/450, 2,vrWeapon_window_attack_start,
+                   2,vrWeapon_window_attack_end, 2,vrWeapon_window_exposed);
       }
       else if piUsed = PARRYING
       {
@@ -913,7 +1008,7 @@ messages:
 
    SendOverlayAnimation(iAnimation=$)
    {
-      local iFlags;
+      local iFlags, iDelay;
 
       iFlags = piItem_flags & ITEM_PALETTE_MASK;
       if iFlags <> 0
@@ -921,9 +1016,21 @@ messages:
          AddPacket(1,ANIMATE_TRANSLATION, 1,iFlags);
       }
 
-      if iAnimation = PANM_WEAPON_ATTACK 
+      if iAnimation = PANM_WEAPON_ATTACK
       {
-         AddPacket(1,ANIMATE_ONCE, 4,300, 2,1, 2,3, 2,4);
+         iDelay = Bound(Send(poOwner,@GetAttackTime),300,1200);
+         AddPacket(1,ANIMATE_ONCE, 4,300*iDelay/1200, 2,1, 2,3, 2,4);
+      }
+      else if iAnimation = PANM_WEAPON_UNLEASH 
+      {
+         iDelay = Send(Send(SYS,@FindSkillByNum,#num=SKID_UNLEASH),
+                     @GetTranceTime,#who=poOwner);
+         iDelay = Bound(iDelay,150,600);
+         AddPacket(1,ANIMATE_ONCE, 4,300*iDelay/450, 2,1, 2,3, 2,3);
+      }
+      else if iAnimation = PANM_HIT 
+      {
+         AddPacket(1,ANIMATE_ONCE, 4,150 + GetTickCount() % 300, 2,3, 2,3, 2,4);
       }
       else
       {
@@ -935,8 +1042,7 @@ messages:
 
    SendOverlayInformation(ianimation=$)
    {
-      AddPacket(4,Send(self,@GetOverlay));
-      AddPacket(1,Send(self,@GetOverlayHotspot));
+      AddPacket(4,Send(self,@GetOverlay), 1,Send(self,@GetOverlayHotspot));
       Send(self,@SendOverlayAnimation,#iAnimation=iAnimation);
 
       return;
@@ -1028,36 +1134,29 @@ messages:
       return TRUE;
    }
 
-   ValidateWeaponAttributes(num = 1)
+   ValidateWeaponAttributes(bAreYouSure=0, num = 1)
    "Deletes any items with more major weapon attributes than num. Default 1."
    {
-      local iNum;
+      local i, iNum;
 
-      iNum = 0;
+      if (bAreYouSure <> 144114)
+      {
+         return;
+      }
 
       if plItem_attributes = $
       {
          return;
       }
 
-      if Send(self,@HasAttribute,#itematt=WA_BLINDER)
-      {
-         iNum = iNum + 1;
-      }
+      iNum = 0;
 
-      if Send(self,@HasAttribute,#itematt=WA_PARALYZER)
+      foreach i in [WA_BLINDER, WA_PARALYZER, WA_VAMPER, WA_PURGER]
       {
-         iNum = iNum + 1;
-      }
-
-      if Send(self,@HasAttribute,#itematt=WA_VAMPER)
-      {
-         iNum = iNum + 1;
-      }
-
-      if Send(self,@HasAttribute,#itematt=WA_PURGER)
-      {
-         iNum = iNum + 1;
+         if Send(self,@HasAttribute,#itematt=i)
+         {
+            ++iNum;
+         }
       }
 
       if iNum > num
@@ -1124,51 +1223,6 @@ messages:
       return TRUE;
    }
 
-   FixSpellItemAtts(bAreYouSure=FALSE)
-   "Swaps spell objects in WA_SPELLCASTER weapons for the SID. "
-   "Essentially it just removes and readds the enchantment."
-   {
-      local i, oAttribute, oSpell;
-
-      if NOT bAreYouSure
-      {
-         Debug("This is an OLD update fix message, do NOT run it unless you ",
-            "are absolutely sure you know what you are doing!");
-
-         return system_failure_rsc;
-      }
-
-      if Send(self,@HasAttribute,#itematt=WA_SPELLCASTER)
-      {
-         oAttribute = Send(SYS,@FindItemAttByNum,#num=WA_SPELLCASTER);
-         oSpell = $;
-
-         foreach i in plItem_Attributes
-         {
-            if Send(self,@GetNumFromCompound,#compound=First(i)) = WA_SPELLCASTER
-            {
-               oSpell = Nth(i,2);
-               break;
-            }
-         }
-
-         if oSpell = $
-         {
-            Debug("$ spell found when fixing WA_SPELLCASTER itematts!",
-                  " object is ",self);
-
-            return;
-         }
-
-         Send(oAttribute,@RemoveFromItem,#oItem=self);
-         Send(oAttribute,@AddToItem,#oItem=self,
-               #spellNum=Send(oSpell,@GetSpellNum),#random_gen=TRUE);
-         Debug("readded enchantment to ",self);
-      }
-
-      return;
-   }
-
    GetLightColor()
    {
       if Send(self,@HasAttribute,#ItemAtt=WA_GLOWING)
@@ -1206,9 +1260,29 @@ messages:
       return TRUE;
    }
 
-   HasSecondAttack()
+   GetMultiAttack()
    {
       return FALSE;
+   }
+
+   GetDelay()
+   {
+      return WEAPON_BASE_DELAY;
+   }
+
+   CanAmbush(who=$,what=$)
+   {
+      return FALSE;
+   }
+
+   GetUnleashType()
+   {
+      return viUnleash_type;
+   }
+
+   CanCrushEnemy()
+   {
+      return vbCrush_enemies;
    }
 
 end

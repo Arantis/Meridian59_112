@@ -1,0 +1,64 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+HakkaDesert1 is DesertRoom
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   //include desert1.lkod
+
+   room_HakkaDesert1 = desert1.roo
+   room_name_HakkaDesert1 = "Hakka Desert"
+
+classvars:
+
+   vrName = room_name_HakkaDesert1
+
+   viTeleport_row = 65
+   viTeleport_col = 16
+
+properties:
+
+   piOutside_factor = OUTDOORS_5 
+
+   piDirectional_percent = DIRECTIONAL_PERCENT_OUTDOORS
+
+   prRoom = room_HakkaDesert1
+   piRoom_num = RID_DESERT1
+
+   piInit_count_min = 8
+   piInit_count_max = 16
+
+   piMonster_count_max = 20
+
+messages:
+
+   Constructed()
+   {
+      plMonsters = [ [&DarkAngel, 20], [&GiantDaemonSkeleton, 30], 
+                     [&MummyLord, 50] ];
+
+      propagate;
+   }
+
+   CreateStandardExits()
+   {
+      plEdge_exits = $;
+      plEdge_Exits = Cons([ LEAVE_WEST, RID_HAKKA, 43, 102, ROTATE_NONE ], plEdge_exits);
+
+      propagate;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

@@ -35,12 +35,11 @@ typedef struct
 
 typedef struct
 {
-   int num_interpreted;
-   int num_interpreted_highest;
-   int billions_interpreted;
-   int num_messages;
-   int num_top_level_messages;
-   int system_start_time;
+   UINT64 num_interpreted;
+   UINT64 num_interpreted_highest;
+   UINT64 num_messages;
+   UINT64 num_top_level_messages;
+   time_t system_start_time;
 
    double interpreting_time;
    int interpreting_time_highest;
@@ -58,8 +57,8 @@ typedef struct
 
    double ccall_total_time[MAX_C_FUNCTION];
    /* the number of calls to each C function */
-   int c_count_untimed[MAX_C_FUNCTION];
-   int c_count_timed[MAX_C_FUNCTION];
+   UINT64 c_count_untimed[MAX_C_FUNCTION];
+   UINT64 c_count_timed[MAX_C_FUNCTION];
 
    // Count for each opcode. Disabled live.
 #if KOD_OPCODE_TESTING
@@ -102,7 +101,7 @@ int SendTopLevelBlakodMessage(int object_id,int message_id,int num_parms,parm_no
 int SendBlakodMessage(int object_id,int message_id,int num_parms,parm_node parms[]);
 int SendBlakodClassMessage(int class_id,int message_id,int num_params,parm_node parm[]);
 char *BlakodDebugInfo(void);
-char *BlakodStackInfo(void);
+void PrintStackToDebug(void);
 
 /* this function used in sendmsg.c and ccode.c, but called all the time! */
 

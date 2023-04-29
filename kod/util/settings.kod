@@ -20,6 +20,9 @@ resources:
 
 classvars:
 
+   // Are the eastern regions of Jixa and Berg enabled?
+   vbExpansion_Enabled = FALSE
+
 properties:
 
    //
@@ -56,8 +59,12 @@ properties:
    //  secondary chance.
    piAdvancementRate = 100
 
+   // Original value for piKillKarmaSwingMonster was 6, but it was never used
+   // because a bug caused piKillKarmaSwingPlayer to always be used. The code
+   // is fixed and gets piKillKarmaSwingMonster now, but players expect it to
+   // work like piKillKarmaSwingPlayer (i.e. 10).
    piKillKarmaSwingNeutral = 3
-   piKillKarmaSwingMonster = 6
+   piKillKarmaSwingMonster = 10
    piKillKarmaSwingPlayer = 10
 
    pbMonsterFactionEnabled = TRUE
@@ -152,9 +159,9 @@ properties:
    // Can users buff each other in safe zones?
    pbBuffOthersInSafeZones = FALSE
 
-   // Can users buy spells which have been disabled, but are still
+   // Can users buy abilities which have been disabled, but are still
    // set as accessible? (i.e. pbEnabled FALSE, pbAccessible TRUE).
-   pbCanBuyDisabledSpells = TRUE
+   pbCanBuyDisabledAbilities = TRUE
 
    //
    // Guild settings
@@ -186,6 +193,10 @@ properties:
 
    // Maximum amount of tokens in the movement bucket
    piMovementBucketMax = 15000000
+
+   // Amount of moves from which to keep track of the speed to provide
+   // some leeway when losing a lot of movement speed (e.g. end of sprint).
+   piUserSpeedEntries = 5
 
    // Minutes between tests.
    piAutologTestScheduleMin = 10
@@ -443,8 +454,37 @@ properties:
    // Amount of rewards given for triggered invasions
    piHarbingerRewards = 100
 
+   // Can reflections and evil twins proc their original's weapons?
+   pbCanClonesProcWeapons = TRUE
+
+   // Items up for auction (in mins)
+   piBidDuration = 360
+
    // Default TRUE for testing, set to FALSE manually for 105/112.
    piCanDMsTPToExpRooms = TRUE
+
+   // Can wandering NPCs can teleport to expansion rooms
+   pbWanderersTravelToEast = FALSE
+
+   // How many kills per minute of questing should be awarded?
+   // Kills in .1 accuracy.
+   piQuestRewardFactor = 3
+
+   // If <> 0, will override the follower carry capacity.
+   piFollowerLoad = 0
+
+   // If piFollowerLoad = 0, will allow followers to carry
+   // this percentage of what players can.
+   piFollowerLoadPercentage = 100
+
+   // What percentage of base pushback should a knockback actually cause?
+   piKnockbackPushPercentage = 30
+
+   // Can players actively defend against attacks?
+   pbIsActiveDefenseEnabled = FALSE
+
+   // Can players be caught off guard?
+   pbIsExposedStateEnabled = FALSE
 
 messages:
 
@@ -680,9 +720,9 @@ messages:
       return pbBuffOthersInSafeZones;
    }
 
-   CanBuyDisabledSpells()
+   CanBuyDisabledAbilities()
    {
-      return pbCanBuyDisabledSpells;
+      return pbCanBuyDisabledAbilities;
    }
 
    //
@@ -725,6 +765,27 @@ messages:
    GetMovementBucketMax()
    {
       return piMovementBucketMax;
+   }
+
+   GetUserSpeedEntries()
+   {
+      return piUserSpeedEntries;
+   }
+
+   SetUserSpeedEntries(value = 0)
+   {
+      // Bound at reasonable values.
+      if (value < 0 OR value > 16)
+      {
+         Debug("Bad value in SetUserSpeedEntries ", value,
+               " using default value of 5.");
+         value = 5;
+      }
+      piUserSpeedEntries = value;
+      // Clear the entries for logged on users.
+      SendList(Send(SYS,@GetUsersLoggedOn),0,@ClearUserSpeedEntries);
+
+      return;
    }
 
    GetAutologTestScheduleMin()
@@ -1153,6 +1214,16 @@ messages:
       return piHarbingerRewards;
    }
 
+   CanClonesProcWeapons()
+   {
+      return pbCanClonesProcWeapons;
+   }
+
+   GetBidDuration()
+   {
+      return Bound(piBidDuration,1,99999);
+   }
+
    CanDMsTPToExpRooms()
    {
       return piCanDMsTPToExpRooms;
@@ -1163,6 +1234,46 @@ messages:
       piCanDMsTPToExpRooms = value;
 
       return;
+   }
+
+   IsExpansionEnabled()
+   {
+      return vbExpansion_Enabled;
+   }
+
+   CanWanderersTravelToEast()
+   {
+      return pbWanderersTravelToEast;
+   }
+
+   GetQuestRewardFactor()
+   {
+      return piQuestRewardFactor;
+   }
+
+   GetFollowerLoad()
+   {
+      return piFollowerLoad;
+   }
+
+   GetFollowerLoadPercentage()
+   {
+      return piFollowerLoadPercentage;
+   }
+
+   GetKnockbackPushPercentage()
+   {
+      return piKnockbackPushPercentage;
+   }
+
+   IsActiveDefenseEnabled()
+   {
+      return pbIsActiveDefenseEnabled;
+   }
+
+   IsExposedStateEnabled()
+   {
+      return pbIsExposedStateEnabled;
    }
 
 end

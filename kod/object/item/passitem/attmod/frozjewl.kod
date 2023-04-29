@@ -153,7 +153,7 @@ messages:
       }
 
       if stroke_obj <> $
-         AND IsClass(stroke_obj,&Spell)
+         AND IsClass(stroke_obj,&Touch)
       {
          Send(self,@DoFlash);
       }
@@ -188,7 +188,7 @@ messages:
          return damage;
       }
 
-      if IsClass(stroke_obj,&Spell)
+      if IsClass(stroke_obj,&Touch)
       {
          iMana = 0;
          if pbDoubleManaCost
@@ -208,8 +208,10 @@ messages:
             iMana = iMana + piManaLossJewel;
          }
 
-         if Send(who,@LoseMana,#amount=iMana) <> 0
+         if Send(who,@HasMana,#amount=iMana)
          {
+            Send(who,@LoseMana,#amount=iMana);
+
             // Add big damage if we spent the mana. Adjust it by how strong
             // the wielder is relative to their maximum potential. Throwaway
             // characters will get very little benefit.
@@ -325,7 +327,7 @@ messages:
       return Random(3,5);
    }
 
-   WeaponHitTarget()
+   DamageItem()
    {
       return;
    }

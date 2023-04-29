@@ -38,6 +38,7 @@ classvars:
    viWeaponQuality = WEAPON_QUALITY_NORMAL
 
    viProficiency_Needed = SKID_PROFICIENCY_AXE
+   viDefault_stroke_number = SKID_STRIKE
 
    viValue_average = 800
    viWeight = 90
@@ -50,7 +51,11 @@ classvars:
    viInventory_group = 3
    viBroken_group = 2
 
-   viRange = 4 * FINENESS
+   viUnleash_type = UNLEASH_CHARGE
+
+   vbCrush_enemies = TRUE
+
+   viRange = 2 * FINENESS + FINENESS_HALF
 
 properties:
 
@@ -62,6 +67,11 @@ messages:
    CanDyeItem()
    {
       return FALSE;
+   }
+
+   IsExpansionItem()
+   {
+      return TRUE;
    }
 
 end

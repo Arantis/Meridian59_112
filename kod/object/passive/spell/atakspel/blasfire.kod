@@ -25,6 +25,8 @@ resources:
       "target at short range."
    BlastOfFire_sound = fflame.ogg
 
+   BlastOfFire_projectile = proj_fire.bgf
+
 classvars:
 
    vrName = BlastOfFire_name_rsc
@@ -41,10 +43,11 @@ classvars:
 
    vrSucceed_wav = BlastOfFire_sound
 
-   // In seconds, since it works off GetTime().
-   viPostCast_time = 2
-
    viChance_To_Increase = 15
+
+   vrProjectile_icon = BlastOfFire_projectile
+   viProjectileLightIntensity = 50
+   viProjectileLightColor = LIGHT_FIRE
 
 properties:
 

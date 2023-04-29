@@ -38,6 +38,7 @@ classvars:
    viWeaponQuality = WEAPON_QUALITY_HIGH
 
    viProficiency_Needed = SKID_PROFICIENCY_SCIMITAR
+   viDefault_stroke_number = SKID_SLASH
 
    viValue_average = 150
    viWeight = 85
@@ -50,7 +51,7 @@ classvars:
    viInventory_group = 3
    viBroken_group = 2
 
-   viRange = 4 * FINENESS
+   viRange = 2 * FINENESS
 
 properties:
 
@@ -79,8 +80,10 @@ messages:
       return FALSE;
    }
 
+   IsExpansionItem()
+   {
+      return TRUE;
+   }
+
 end
 ////////////////////////////////////////////////////////////////////////////////
-
-
-

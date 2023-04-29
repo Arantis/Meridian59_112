@@ -103,14 +103,22 @@ messages:
       propagate;
    }
 
-   SetGuildUpgrades()
+   SetGuildUpgrades(lList=$)
    {
+
       if (plUpgrades <> $)
       {
          SendList(plUpgrades,1,@Delete);
       }
 
+      if lList <> $
+      {
+         plUpgrades = lList;
+         return;
+      }
+
       plUpgrades = [
+                     [Create(&PlantSoil,#bPotted=TRUE), 125000],
                      [Create(&SmallBox), 125000],
                      [Create(&Statue), 100000],
                      [Create(&KillerBunny), 100000],
@@ -151,7 +159,8 @@ messages:
    "Use a specific message for hall customization."
    {
       local oGuild, bMove, bPlace, bRemove, bClarify, oObject, iCost, i, 
-         each_obj, bFound, obj, iRow, iCol, iAngle, iFine_Row, iFine_Col;
+         each_obj, bFound, obj, iRow, iCol, iAngle, iFine_Row, iFine_Col,
+         oSpecialHall;
 
       if NOT IsClass(what,&User)
          OR NOT IsClass(poOwner,&GuildHall)
@@ -173,7 +182,29 @@ messages:
          OR (Send(poOwner,@GetGuildOwner) <> oGuild)
          OR Send(oGuild,@GetRank,#who=what) < RANK_LIEUTENANT
       {
-         return;
+         oSpecialHall = Send(SYS,@FindRoomByNum,#num=RID_GUILDH15);
+
+         // Necromancer hall doesn't require player to be guilded,
+         // only check for the amulet itself
+         if Send(what,@IsUsingA,#class=&NecromancerAmulet)
+            AND poOwner <> oSpecialHall
+         {
+            return;
+         }
+         else if Send(oSpecialHall,@CountHoldingHowMany,#class=&Lich) = 0
+         {
+            // if there is no lich, the necromancers don't own the hall
+            return;
+         }
+
+         // Likewise for hunter hall, check for sword of hunt
+         oSpecialHall = Send(SYS,@FindRoomByNum,#num=RID_GUILDH16);
+         if Send(what,@FindHoldingActive,#class=&HunterSword) <> $
+            AND poOwner <> oSpecialHall
+         {
+            return;
+         }
+
       }
 
       // Respond to special commands.
@@ -453,6 +484,23 @@ messages:
    SetCreditBalance(num=0)
    {
       piGuild_Credit = num;
+
+      return;
+   }
+
+   SendAnimation()
+   {
+      local iGroup;
+
+      iGroup = 1;
+
+      if poOwner <> $
+         AND Send(poOwner,@GetRoomNum) = RID_GUILDH15
+      {
+         iGroup = 2;
+      }
+
+      AddPacket(1, ANIMATE_NONE, 2, iGroup);
 
       return;
    }
