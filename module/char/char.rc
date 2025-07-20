@@ -214,7 +214,7 @@ BEGIN
     262                     "DMSchool"
     263                     "Waffenfertigkeit"
     264                     "Ringen"
-    265                     "Diebstahl"
+    265                     "Diebesfertigkeiten"
 END
 
 #endif    // German resources
@@ -519,7 +519,7 @@ BEGIN
     IDS_DMSCHOOL            "DMSchool"
     IDS_WEAPONCRAFT         "Weaponcraft"
     IDS_DMSKILL             "DMSkill"
-    IDS_ROGUE               "Roguery"
+    IDS_ROGUECRAFT          "Roguecraft"
 END
 
 STRINGTABLE

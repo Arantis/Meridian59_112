@@ -28,15 +28,16 @@ messages:
    InitTreasureLists()
    {
       plTreasure = [ [ &BlueDragonScale, 18],
-                     [ &DarkAngelFeather, 18],
+                     [ &DarkAngelFeather, 17],
                      [ &PurpleMushroom, 13],
-                     [ &InkyCap, 14], //TBD: swap to Truffle
+                     [ &Truffle, 14],
                      [ &Emerald, 10],
                      [ &GreenMushroom, 10],
                      [ &NightVisionPotion, 5],
                      [ &BerserkerRing, 5],
-                     [ &KnightShield, 4],  //TBD: swap to TowerShield
-                     [ &SpessartineRock, 3]
+                     [ &TowerShield, 4],
+                     [ &SpessartineRock, 3],
+                     [ &Dagger, 1]
                    ];
 
       propagate;

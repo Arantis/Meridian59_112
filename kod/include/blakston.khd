@@ -171,7 +171,7 @@
    NC_SUPER        = 0x00FF00   // Set if object is a "super DM".
    NC_MODERATOR    = 0x0078FF   // Set if object is a "moderator".
    NC_EVENTCHAR    = 0xFF00FF   // Set if object is an event character.
-   NC_DAENKS       = 0xB300B3   // Purple name color for Daenks.
+   NC_PURPLE       = 0xB300B3   // Purple name color for staff.
    NC_NPC          = 0xC8C8C8   // Grey for NPCs
    NC_COLOR_MAX    = 0xFFFFFF   // Max color, defined for clarity.
 
@@ -860,7 +860,7 @@
    // Keep these up to date!
    // NOTE: don't increment RID_GUILDH_MAX for inaccessible halls.
    RID_GUILDH_MIN = 701
-   RID_GUILDH_MAX = 716
+   RID_GUILDH_MAX = 718
 
    RID_ICE_CAVE1 = 750
 
@@ -1048,6 +1048,7 @@
    RID_BERG_LEADER_HALL = 2824
    RID_BERG_GRAVE = 2825
    RID_BERG_JAIL = 2826
+   RID_BERG_DEVROOM = 2827
    
    // DeathValley Area 2850-2900
    RID_DVALLEY_1 = 2850
@@ -2224,11 +2225,35 @@
    CR_TWINKLECAP  = 13
 
    // Forgeable Items
-   FI_NONE             = 0
-   FI_RUBICITEARMOR    = 1
-   FI_BLACKAXE         = 2
-   FI_BLACKHAMMER      = 3
-   FI_GOLDARROW        = 4
+   FI_NONE                = 0
+   FI_RUBICITEARMOR       = 1
+   FI_BLACKARMOR          = 2
+   FI_MYSTICARMOR         = 3
+   FI_BLACKAXE            = 4
+   FI_BLACKHAMMER         = 5
+   FI_GOLDARROW           = 6
+
+   FI_EMBERHEART          = 7
+   FI_EMBERHEART_RED      = 8
+   FI_EMBERHEART_BLACK    = 9
+   FI_EMBERHEART_BLUE     = 10
+   FI_EMBERHEART_BROWN    = 11
+   FI_EMBERHEART_GREEN    = 12
+   FI_EMBERHEART_PURPLE  = 13
+   FI_EMBERHEART_SKY     = 14
+   FI_EMBERHEART_WHITE   = 15
+   FI_EMBERHEART_DGREEN  = 16
+
+   FI_FUSED_EMBERHEART          = 17
+   FI_FUSED_EMBERHEART_RED      = 17
+   FI_FUSED_EMBERHEART_BLACK    = 18
+   FI_FUSED_EMBERHEART_BLUE     = 19
+   FI_FUSED_EMBERHEART_BROWN    = 20
+   FI_FUSED_EMBERHEART_GREEN    = 21
+   FI_FUSED_EMBERHEART_PURPLE   = 22
+   FI_FUSED_EMBERHEART_SKY      = 23
+   FI_FUSED_EMBERHEART_WHITE    = 24
+   FI_FUSED_EMBERHEART_DGREEN   = 25
 
    // Herald shields
 
@@ -2372,6 +2397,13 @@
    SKID_DISARM = 406
    SKID_CRUSHING_BLOWS = 407
 
+   // Roguecraft non-active skills
+   SKID_FLANKING = 408
+   SKID_SNEAK = 409
+   SKID_EVADE = 410
+   SKID_SHIELD_BASH = 411
+   SKID_RIPOSTE = 412
+
    // Melee weapon strokes start here.
    SKID_DEFAULT = 420
    SKID_SLASH = 421
@@ -2418,12 +2450,23 @@
    // Duplicate, for the easily confused.
    SKID_PROFICIENCY_SHORTSWORD = 457
    SKID_PROFICIENCY_THROW_WEAPON = 458
+   SKID_PROFICIENCY_KNIFE = 459
+   SKID_PROFICIENCY_DAGGER = 460
+
+   // Roguecraft proficiencies
+   SKID_COMPETENCY_UNARMED = 461
+   SKID_COMPETENCY_BLUNT = 462
+   SKID_COMPETENCY_SWORD = 463
 
    // Active skills
    SKID_CLEAVE = 470
    SKID_UNLEASH = 471
    SKID_SPRINT = 472
    SKID_MARK = 473
+   SKID_DASH = 474
+   SKID_BACKSTAB = 475
+   SKID_SHADOW_STEP = 476
+   SKID_APPLY_POISON = 477
 
    // Unique spell constants
 
@@ -2655,6 +2698,7 @@
    SID_COOLDOWN_SPRINT = 221
    SID_COOLDOWN_UNLEASH = 222
    SID_ICEWALL = 223
+   SID_COOLDOWN_DASH = 224
 
    // Depreciated spell IDs
    SID_LIGHTNING = 1                   // use SID_LIGHTNING_BOLT
@@ -2692,7 +2736,7 @@
    SPELL_INDEFINITE_DURATION = 0
 
    // Skill Schools
-   NUM_SKILL_SCHOOLS=1
+   NUM_SKILL_SCHOOLS=2
    NUM_SKILL_SCHOOL_LEVELS = 6
    
    // Spell Schools
@@ -2715,8 +2759,8 @@
 
    // We may use skill and spell schools in the same routines, thus no overlap.
    SKS_WEAPONCRAFT = 10
-   SKS_DM = 11
-   SKS_ROGUE = 12
+   SKS_ROGUECRAFT = 11
+   SKS_DM = 12
 
    // Enchantment icon showing
    ENCHANTMENT_SHOW_NONE = 0
@@ -2910,7 +2954,11 @@
    // piFlags3 can now be used as a proper bitfield, and no longer
    // modifies player advancement.
    // A mask of flags that are unaffected by ResetPlayerFlagList
-   PFLAG3_MASK             = 0x0000000
+   PFLAG3_MASK             = 0x0000003
+   // Flags for whether the player has visited specific cities.
+   // Used to determine e.g. whether the location is valid for elusion
+   PFLAG3_VISITED_JIXA     = 0x0000001
+   PFLAG3_VISITED_BERG     = 0x0000002
 
    // Set of flags just for DM's
    // DM is completely invisible
@@ -3692,37 +3740,40 @@
    QST_ID_ABSTAIN_PVP            = 75
    QST_ID_MANA_NODE              = 76
    QST_ID_RAZA_MUMMY             = 77
-   QNT_ID_RAT_KING_QUEST         = 78
-   QNT_ID_NERU_GOLEM             = 79
-   QNT_ID_SWAMP_HUNT             = 80
-   QNT_ID_FIRE_GOLEM             = 81
-   QNT_ID_EAST_LOVERS            = 82
-   QNT_ID_DARK_ANGEL             = 83
-   QNT_ID_WENDIGO_HUNT           = 84
-   QNT_ID_BERG_KING_POLITCS      = 85
-   QNT_ID_BERG_KING_SPIDER_QUEST = 86
-   QNT_ID_WOLF_HUNT              = 87
-   QNT_ID_JIXA_ESCORT            = 88
-   QNT_ID_ESCORT_ASSASSINATION   = 89
-   QNT_ID_JIXA_BANDIT            = 90
-   QNT_ID_SPINEBEAST_BOSS        = 100
-   QNT_ID_MONSTER_CHARM          = 101
+   QST_ID_RAT_KING_QUEST         = 78
+   QST_ID_NERU_GOLEM             = 79
+   QST_ID_SWAMP_HUNT             = 80
+   QST_ID_FIRE_GOLEM             = 81
+   QST_ID_EAST_LOVERS            = 82
+   QST_ID_DARK_ANGEL             = 83
+   QST_ID_WENDIGO_HUNT           = 84
+   QST_ID_BERG_KING_POLITCS      = 85
+   QST_ID_BERG_KING_SPIDER_QUEST = 86
+   QST_ID_WOLF_HUNT              = 87
+   QST_ID_JIXA_ESCORT            = 88
+   QST_ID_ESCORT_ASSASSINATION   = 89
+   QST_ID_JIXA_BANDIT            = 90
+   QST_ID_SPINEBEAST_BOSS        = 100
+   QST_ID_MONSTER_CHARM          = 101
    QST_ID_RESIGN_FACTION         = 102
-   QNT_ID_FIND_JASPERBANK        = 103
-   QNT_ID_FIND_CORNOTH           = 104
-   QNT_ID_TOS_ZOMBIES            = 105
-   QNT_ID_MAR_MUMMIES            = 106
-   QNT_ID_MAR_STATUES            = 107
-   QNT_ID_CASTLEVIC              = 108
-   QNT_ID_MAR_ENTS               = 109
-   QNT_ID_FUNGUSHUNT             = 110
-   QNT_ID_MAR_THRASHERS          = 111
-   QNT_ID_ORCHUNT                = 112
-   QNT_ID_FEYHUNT_EVIL           = 113
-   QNT_ID_FEYHUNT_GOOD           = 114
-   QNT_ID_MOLLUSKHUNT            = 115
-   QNT_ID_NERUTROLLHUNT          = 116
-   QNT_ID_LUPOGG_HUNT            = 117
+   QST_ID_FIND_BERGAUCTION       = 103
+   QST_ID_FIND_JIXA              = 104
+   QST_ID_TOS_ZOMBIES            = 105
+   QST_ID_MAR_MUMMIES            = 106
+   QST_ID_MAR_STATUES            = 107
+   QST_ID_CASTLEVIC              = 108
+   QST_ID_MAR_ENTS               = 109
+   QST_ID_FUNGUSHUNT             = 110
+   QST_ID_MAR_THRASHERS          = 111
+   QST_ID_ORCHUNT                = 112
+   QST_ID_FEYHUNT_EVIL           = 113
+   QST_ID_FEYHUNT_GOOD           = 114
+   QST_ID_MOLLUSKHUNT            = 115
+   QST_ID_NERUTROLLHUNT          = 116
+   QST_ID_LUPOGG_HUNT            = 117
+   QST_ID_NECHUNT                = 118
+   QST_ID_KILL_LICH              = 119
+   QST_ID_BERG_CRYPT             = 120
 
    // Quest Node Template IDs. Each quest has multple Quest Nodes.
    QNT_ID_DUKE_JOIN_ONE             = 1
@@ -3904,9 +3955,9 @@
    QNT_ID_LOVE_LETTERTWO_ONE        = 137
    QNT_ID_LOVE_LETTERTWO_TWO        = 138
    
-   QST_ID_SPAWN_LICH_ONE            = 139
-   QST_ID_SPAWN_LICH_TWO            = 140
-   QST_ID_SPAWN_LICH_THREE          = 141
+   QNT_ID_SPAWN_LICH_ONE            = 139
+   QNT_ID_SPAWN_LICH_TWO            = 140
+   QNT_ID_SPAWN_LICH_THREE          = 141
    
    QNT_ID_APHRODISIAC_ONE           = 142
    QNT_ID_APHRODISIAC_TWO           = 143
@@ -4082,11 +4133,11 @@
    QNT_ID_RESIGN_FACTION_ONE        = 272
    QNT_ID_RESIGN_FACTION_TWO        = 273
    
-   QNT_ID_FIND_JASPERBANK_ONE       = 274
-   QNT_ID_FIND_JASPERBANK_TWO       = 275
+   QNT_ID_FIND_BERGAUCTION_ONE      = 274
+   QNT_ID_FIND_BERGAUCTION_TWO      = 275
 
-   QNT_ID_FIND_CORNOTH_ONE          = 276
-   QNT_ID_FIND_CORNOTH_TWO          = 277
+   QNT_ID_FIND_JIXA_ONE             = 276
+   QNT_ID_FIND_JIXA_TWO             = 277
 
    QNT_ID_TOS_ZOMBIES_1             = 278
    QNT_ID_TOS_ZOMBIES_2             = 279
@@ -4126,6 +4177,17 @@
 
    QNT_ID_LUPOGG_HUNT_1             = 302
    QNT_ID_LUPOGG_HUNT_2             = 303
+
+   QNT_ID_NECHUNT_1                 = 304
+   QNT_ID_NECHUNT_2                 = 305
+
+   QNT_ID_KILL_LICH1                = 306
+   QNT_ID_KILL_LICH2                = 307
+
+   QNT_ID_BERG_CRYPT_1              = 308
+   QNT_ID_BERG_CRYPT_2              = 309
+   QNT_ID_BERG_CRYPT_3              = 310
+   QNT_ID_BERG_CRYPT_4              = 311
 
    // Quest misc constants
 

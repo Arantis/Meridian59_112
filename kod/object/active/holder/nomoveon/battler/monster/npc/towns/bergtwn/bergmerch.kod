@@ -30,23 +30,22 @@ resources:
    bergmerchant_name_rsc = "Luisane d'Ile"
    bergmerchant_icon_rsc = bergmerch.bgf
    bergmerchant_desc_rsc = \
-      "A gaunt woman whose nervous gaze tracks every customer entering the store.  "
-      "The dim light in the cave hides most of her haggard and sad features.  The "
-      "smell of exotic herbs clings to their clothes.  Their sight and their weary "
-      "smile give you the impression that Luisane once was a real beauty and younger "
-      "than a glimpse."
+      "A gaunt woman whose nervous eyes follow every customer who enters.  "
+      "The cave's dim light conceals much of her weathered features, while the "
+      "scent of exotic herbs lingers in the air.  Her tired smile hints at a "
+      "beauty and youth now faded by hardship."
 
    BergMerch_entry_welcome = \
-      "Welcome to my modest herb shop. Visit also the inn of my brother Bastiane "
-      "afterwards and rest there."
+      "Welcome to my humble herb shop.  If you need rest, my brother "
+      "Bastiane runs the inn nearby."
 
    BergMerchant_AlreadyHaveOne_rsc = \
-      "Can't you see, I already have one."
+      "Can't you see, I already have one of those."
    BergMerchant_Full_rsc = "You nyrphling, I cannot carry no more."
-   BergMerchant_Not_Interested = "As if I'm interested."
+   BergMerchant_Not_Interested = "As if I'm interested in that."
 
    BergMerchant_unwanted_rsc = "You're wasting my time."
-   BergMerchant_sold_rsc = "I'll see you again."
+   BergMerchant_sold_rsc = "I'll see you again soon."
 
 classvars:
 
@@ -55,7 +54,8 @@ classvars:
    vrDesc = bergmerchant_desc_rsc
    viAttributes = \
       MOB_NOFIGHT | MOB_RANDOM | MOB_LISTEN \
-      | MOB_NOMOVE | MOB_BUYER | MOB_SELLER | MOB_NOQUEST
+      | MOB_NOMOVE | MOB_BUYER | MOB_SELLER \
+      | MOB_TEACHER
    viOccupation = MOB_ROLE_MERCHANT
    viMerchant_markup = MERCHANT_FLAT
    viGender = GENDER_FEMALE
@@ -66,6 +66,8 @@ classvars:
 
    // We sell what other people have given us
    vbSellFromInventory = TRUE
+
+   viQuestID = QST_ID_ESCORT_ASSASSINATION
 
 properties:
 
@@ -157,7 +159,7 @@ messages:
          Send(self,@NewHold,#what=oInventory);
       }
 
-      plFor_sale = [lForSale, $ ,$, $];
+      plFor_sale = [lForSale, [ SKID_APPLY_POISON ], $, $];
 
       return;
    }
@@ -205,7 +207,7 @@ messages:
                              &Firesand,
                              &UncutSeraphym,
                              &Lantern,
-                             &Flask
+                             &Dagger
                           ];
       }
       else if (iRandom < 75)
@@ -241,6 +243,7 @@ messages:
    {
       local i;
 
+      // TODO: duplicated in other merchants
       if (NOT IsClass(what,&NumberItem)
          OR IsClass(what,&Money)
          OR IsClass(what,&Token)
@@ -357,6 +360,17 @@ messages:
 
       Post(who,@SomeoneSaid,#what=self,#string=BergMerch_entry_welcome,
             #type=SAY_RESOURCE);
+
+      propagate;
+   }
+
+   CanAddSkill(who=$,num=0)
+   "We require that a quest be done before one of the skills can be learned"
+   {
+      if NOT Send(self,@HasDoneLearnQuest,#who=who)
+      {
+         return FALSE;
+      }
 
       propagate;
    }

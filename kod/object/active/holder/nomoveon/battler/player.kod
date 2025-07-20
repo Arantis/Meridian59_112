@@ -842,7 +842,7 @@ resources:
 
    player_active_block_failed = "You thrust out your shield, but fail to block the attack."
    player_active_parry_failed = "You thrust out your weapon, but fail to parry the attack."
-   player_active_dodge_failed = "You try to move out of the way of the attack, but fail to dodge it."
+   player_active_dodge_failed = "You try to step out of the way of the attack, but failed to evade it."
 
    // Caught during unleash post swing delay.
    player_off_guard = "%s%s has caught you off-guard!"
@@ -2780,6 +2780,12 @@ messages:
             oSkill = Send(SYS,@FindSkillByNum,#num=i);
             oSchool = Send(oSkill,@GetSchool);
             iLevel = Send(oSkill,@GetLevel);
+            
+            // Skill must be available to new players.
+            if NOT Send(oSkill,@OfferToNewCharacters)
+            {
+               continue;
+            }
 
             iCount = 0;
 
@@ -5741,7 +5747,7 @@ messages:
    // This returns the battler's ability to-hit.  Ranges from 1 to 1000
    GetOffense(what = $, stroke_obj=$)
    {
-      local i, oWeapon, iStroke, iProficiency, iAim, iOffense, oMonster;
+      local i, oWeapon, iStroke, iProficiency, iAim, iOffense, oMonster, iCompetency;
 
       // Morphed?
       oMonster = Send(self,@GetIllusionForm);
@@ -5759,6 +5765,22 @@ messages:
          // Get weapon's numbers.
          iStroke = Send(oWeapon,@GetStroke,#who=self);
          iProficiency = Send(oWeapon,@GetProf,#who=self);
+
+         // Competency skills are used for Roguecraft, combining stroke and proficiency.
+         // Roguecraft proficiencies are usually not good as Weaponcraft.
+         iCompetency = (Send(oWeapon,@DetermineCompetency,#who=self) * 
+                           Send(SETTINGS_OBJECT,@GetRoguecraftCompetency)) / 100;
+
+         // check competency; if superior, rely on that instead 
+         if iCompetency > iStroke
+         {
+            iStroke = iCompetency;
+         }
+
+         if iCompetency > iProficiency
+         {
+            iProficiency = iCompetency;
+         }
 
          iAim = Send(self,@GetAim);
          iOffense = (iStroke*2) + (iProficiency*2) + (iAim*8) +
@@ -6365,6 +6387,13 @@ messages:
       {
          Send(Send(SYS,@FindSkillByNum,#num=SKID_DISARM),@DoSkill,#who=self,
                #oTarget=what,#oWeapon=oWeapon);
+      }
+
+      if Send(self,@GetSkillAbility,#Skill_num=SKID_FLANKING) > 0
+         AND IsClass(oWeapon,&Weapon)
+      {
+         Send(Send(SYS,@FindSkillByNum,#num=SKID_FLANKING),@DoSkill,
+            #who=self,#oTarget=what,#damage=amount);
       }
 
       if amount > 0
@@ -10433,8 +10462,8 @@ messages:
       if IsClass(killer,&Player)
          AND killer <> self
       {
-         iHonorLost = Send(self,@TransferHonorPoints,#who=self,
-                           #what=killer,#honor=iKillHonor);
+         iHonorLost = Send(self,@TransferHonorPoints,#who=killer,
+                           #honor=iKillHonor);
          Send(killer,@MsgSendUser,#message_rsc=player_honor_gain_kill,
                #parm1=iHonorLost,#parm2=Send(self,@GetName));
          iLostTotal += iHonorLost;
@@ -10476,8 +10505,8 @@ messages:
          if bIsNear
          {
             // The attacker is nearby and can participate in PvP. Give them the points.
-            iHonorLost = Send(self,@TransferHonorPoints,#who=self,
-                              #what=oHurter,#honor=iHonorEach);
+            iHonorLost = Send(self,@TransferHonorPoints,#who=oHurter,
+                              #honor=iHonorEach);
             iLostTotal += iHonorLost;
             Send(oHurter,@MsgSendUser,#message_rsc=player_honor_gain_assist,
                   #parm1=iHonorLost,#parm2=Send(self,@GetName));
@@ -11158,6 +11187,16 @@ messages:
    GetRemoveHair()
    {
       return poHair_remove;
+   }
+
+   SetHairRsc(what = $)
+   {
+      if (what <> $)
+      {
+         prToupee = what;
+      }
+
+      return;
    }
 
    RemoveHair(what = $)
@@ -13027,6 +13066,18 @@ messages:
       return count;
    }
 
+   GetMaxLearnPoints(intellect=$)
+   "Returns the number of learn points this player has with their raw "
+   "intellect, or with the intellect value passed in."
+   {
+      if (intellect = $)
+      {
+         intellect = Send(self,@GetRawIntellect);
+      }
+
+      return Send(SETTINGS_OBJECT,@GetMaxLearnPoints) + intellect * 2 / 5;
+   }
+
    PlayerCanLearn(spell_num=0,skill_num=0,scryer=$)
    "New routine as of 14 June 97. Intended to allow for more schools, "
    "odd numbers of spells at a spell level and easier understanding."
@@ -13184,7 +13235,7 @@ messages:
                iWeapon = nLevel;
             }
             break;
-         case SKS_ROGUE:
+         case SKS_ROGUECRAFT:
             if nLevel > iRogue
             {
                iRogue = nLevel;
@@ -13364,7 +13415,7 @@ messages:
          {
             nSchool = iWeapon;
          }
-         else if school = SKS_ROGUE
+         else if school = SKS_ROGUECRAFT
          {
             nSchool = iRogue;
          }
@@ -13547,7 +13598,7 @@ messages:
                iWeapon = nLevel;
             }
             break;
-         case SKS_ROGUE:
+         case SKS_ROGUECRAFT:
             if nLevel > iRogue
             {
                iRogue = nLevel;
@@ -13861,7 +13912,7 @@ messages:
                   iWeapon = iLevel;
                }
                break;
-            case SKS_ROGUE:
+            case SKS_ROGUECRAFT:
                if iLevel > iRogue
                {
                   iRogue = iLevel;
@@ -14985,7 +15036,7 @@ messages:
                weaponcraft_level = iLevel;
             }
          }
-         else if (iSchool = SKS_ROGUE)
+         else if (iSchool = SKS_ROGUECRAFT)
          {
             if iLevel > rogue_level
             {
@@ -16833,15 +16884,14 @@ messages:
       return;
    }
 
-   TransferHonorPoints(what = $, who = $, honor = 0)
+   TransferHonorPoints(who = $, honor = 0)
    {
-      // Attempts to transfer honor points from 'who' to 'what'
+      // Attempts to transfer honor points to 'who'.
       local iHonor;
 
       if who = $
-         OR what = $
       {
-         Debug("Attempted to transfer honor points from ",who," to ",what,".");
+         Debug("Attempted to transfer honor points from ",self," to ",who,".");
 
          return;
       }
@@ -16854,18 +16904,18 @@ messages:
          iHonor = 0;
          //Debug("Honor is 0");
       }
-      else if NOT Send(who,@CanParticipateInHonorSystem)
-              OR NOT Send(what,@CanParticipateInHonorSystem)
+      else if NOT Send(self,@CanParticipateInHonorSystem)
+              OR NOT Send(who,@CanParticipateInHonorSystem)
       {
          iHonor = 0;
          //Debug("Attacker or victim don't qualify for honor system.");
       }
       // No honor in attacking your own character!
       else if Send(SETTINGS_OBJECT,@NoHonorSameIP)
-              AND IsListMatch(Send(who,@GetIP),Send(what,@GetIP))
+              AND IsListMatch(Send(self,@GetIP),Send(who,@GetIP))
       {
          iHonor = 0;
-         Debug(what, "tried to gain honor from ",who," - both have the same IP.");
+         Debug(who, "tried to gain honor from ",self," - both have the same IP.");
       }
       // Don't award honor if the victim died recently.
       else if GetTime() < (piLastDeathTime + Send(SETTINGS_OBJECT,@GetHonorDeathTime))
@@ -16874,10 +16924,10 @@ messages:
          //Debug("Victim died too recently.");
       }
       // Don't award honor if the victim took too many penalties recently.
-      else if Send(who,@GetLogoffPenaltyCount) > Send(SETTINGS_OBJECT,@GetHonorMaxPenalty)
+      else if Send(self,@GetLogoffPenaltyCount) > Send(SETTINGS_OBJECT,@GetHonorMaxPenalty)
       {
          iHonor = 0;
-         Debug("Honor system: Victim ",Send(who,@GetTrueName),
+         Debug("Honor system: Victim ",Send(self,@GetTrueName),
                " took too many penalties recently, no points awarded.");
       }
       // They have some, but not the full amount. Grab the rest.
@@ -16897,20 +16947,20 @@ messages:
       {
          // Keep track so we notice any suspicious activity.
          // If we had SQL setup, that would be a better place to log this.
-         Debug("Transferred ",iHonor," from ",Send(who,@GetTrueName),
-               " to ", Send(what,@GetTrueName));
-         Send(who,@AddHonorPoints,#who=who,#honor=-iHonor);
-         Send(what,@AddHonorPoints,#who=what,#honor=iHonor);
+         Debug("Transferred ",iHonor," from ",Send(self,@GetTrueName),
+               " to ", Send(who,@GetTrueName));
+         Send(self,@AddHonorPoints,#honor=-iHonor);
+         Send(who,@AddHonorPoints,#honor=iHonor);
       }
 
       return iHonor;
    }
 
-   AddHonorPoints(who = $, honor = 0)
+   AddHonorPoints(honor = 0)
    {
       piHonorPoints += honor;
       piLastHonorChangeTime = GetTime();
-      Send(SYS, @UpdateHonorPoints,#who=who);
+      Send(SYS,@UpdateHonorPoints,#who=self);
 
       return;
    }
@@ -17696,7 +17746,7 @@ messages:
 
       if iDifference > MAX_ANGLE/2
       {
-         iDifference = MAX_ANGLE - iDifference; 
+         iDifference = MAX_ANGLE - iDifference;
       }
 
       if iDifference > MAX_ANGLE / 3
@@ -17705,7 +17755,7 @@ messages:
 
          if oShield <> $
          {
-            iNum = SKID_BLOCK;
+            iNum = SKID_SHIELD_BASH;
 
             if NOT bLate
             {
@@ -17755,7 +17805,7 @@ messages:
 
          if oWeapon <> $
          {
-            iNum = SKID_PARRY;
+            iNum = SKID_RIPOSTE;
 
             if NOT bLate
             {
@@ -17802,7 +17852,7 @@ messages:
 
       if NOT iNum
       {
-         iNum = SKID_DODGE;
+         iNum = SKID_EVADE;
 
          if NOT bLate
          {
@@ -17861,24 +17911,26 @@ messages:
 
    ActiveBlock()
    {
-      local oSkill, iAbility, iChance, iVigor;
+      local oSkill, iAbility, iChance;
 
-      oSkill = Send(SYS,@FindSkillByNum,#num=SKID_BLOCK);
-      iAbility = Send(self,@GetSkillAbility,#Skill_num=SKID_BLOCK);
+      oSkill = Send(SYS,@FindSkillByNum,#num=SKID_SHIELD_BASH);
+      iAbility = Send(self,@GetSkillAbility,#Skill_num=SKID_SHIELD_BASH);
 
       iChance = Send(oSkill,@GetActiveBlockChance,#ability=iAbility,#who=self);
 
-      iVigor = Send(oSkill,@GetActiveBlockCost);
-
-      if NOT Send(self,@HasVigor,#amount=iVigor,#precision=TRUE)
+      if NOT Send(oSkill,@CanPayCosts,#who=self)
       {
          return FALSE;
       }
-
-      Send(self,@LoseVigor,#amount=iVigor,#precision=TRUE);
+      else
+      {
+         Send(oSkill,@PayCosts,#who=self);
+      }
 
       if iChance > Random(0,99)
       {
+         Send(oSkill,@DoSkill,#who=self,#oTarget=First(Last(plAttackers)));
+
          return TRUE;
       }
 
@@ -17887,24 +17939,26 @@ messages:
 
    ActiveParry()
    {
-      local oSkill, iAbility, iChance, iVigor;
+      local oSkill, iAbility, iChance;
 
-      oSkill = Send(SYS,@FindSkillByNum,#num=SKID_PARRY);
-      iAbility = Send(self,@GetSkillAbility,#Skill_num=SKID_PARRY);
+      oSkill = Send(SYS,@FindSkillByNum,#num=SKID_RIPOSTE);
+      iAbility = Send(self,@GetSkillAbility,#Skill_num=SKID_RIPOSTE);
 
       iChance = Send(oSkill,@GetActiveParryChance,#ability=iAbility,#who=self);
 
-      iVigor = Send(oSkill,@GetActiveParryCost);
-
-      if NOT Send(self,@HasVigor,#amount=iVigor,#precision=TRUE)
+      if NOT Send(oSkill,@CanPayCosts,#who=self)
       {
          return FALSE;
       }
-
-      Send(self,@LoseVigor,#amount=iVigor,#precision=TRUE);
+      else
+      {
+         Send(oSkill,@PayCosts,#who=self);
+      }
 
       if iChance > Random(0,99)
       {
+         Send(oSkill,@DoSkill,#who=self,#oTarget=First(Last(plAttackers)));
+
          return TRUE;
       }
 
@@ -17913,24 +17967,26 @@ messages:
 
    ActiveDodge()
    {
-      local oSkill, iAbility, iChance, iVigor;
+      local oSkill, iAbility, iChance;
 
-      oSkill = Send(SYS,@FindSkillByNum,#num=SKID_DODGE);
-      iAbility = Send(self,@GetSkillAbility,#Skill_num=SKID_DODGE);
+      oSkill = Send(SYS,@FindSkillByNum,#num=SKID_EVADE);
+      iAbility = Send(self,@GetSkillAbility,#Skill_num=SKID_EVADE);
 
       iChance = Send(oSkill,@GetActiveDodgeChance,#ability=iAbility,#who=self);
 
-      iVigor = Send(oSkill,@GetActiveDodgeCost);
-
-      if NOT Send(self,@HasVigor,#amount=iVigor,#precision=TRUE)
+      if NOT Send(oSkill,@CanPayCosts,#who=self)
       {
          return FALSE;
       }
-
-      Send(self,@LoseVigor,#amount=iVigor,#precision=TRUE);
+      else
+      {
+         Send(oSkill,@PayCosts,#who=self);
+      }
 
       if iChance > Random(0,99)
       {
+         Send(oSkill,@DoSkill,#who=self);
+
          return TRUE;
       }
 
@@ -18084,6 +18140,19 @@ messages:
       piCombatState = state;
 
       return;
+   }
+
+   IsSneaking(iSpeed=0)
+   {
+      if Send(self,@HasSkill,#num=SKID_SNEAK)
+         AND iSpeed = USER_WALKING_SPEED
+      {
+         Send(Send(SYS,@FindSkillByNum,#num=SKID_SNEAK),@DoSkill,#who=self);
+
+         return TRUE;
+      }
+
+      return FALSE;
    }
 
 end

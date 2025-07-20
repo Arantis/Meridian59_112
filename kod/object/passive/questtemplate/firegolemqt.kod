@@ -36,7 +36,7 @@ resources:
    FireGolemQuest_name_rsc = "A Bard's Tale"
 
    FireGolemQuest_desc_rsc = \
-      "Frederick Merk shares a tale passed on by many bards.  "
+      "Roderick Merk shares a tale passed on by many bards.  "
       "During the great divide, Inferno a raging fire golem was said to have "
       "been summoned by Jala herself.  "
  
@@ -69,11 +69,11 @@ resources:
       "to know what is true."
 
    FireGolemQuest_success_2 = \
-      "You've defeated the all mighty Inferno?  It appears the legends were true "
-      "afterall...How ironic, how the very thing created from Jala's loneliness, "
-      "is now isolated from the rest of the world.  Are we no better than those "
-      "who have abandoned Jala?  You westeners won't understand.  I too had to "
-      "leave Jixa...I miss Jixa very much. I miss... my friend."
+      "Defeating the mighty Inferno?  The legends were true after all.  "
+      "It's ironic, isn't it?  That which was created from Jala's loneliness "
+      "is now isolated from the world.  Are we any better than those who abandoned Jala?  "
+      "Perhaps you Westerners cannot comprehend.  "
+      "I had to leave Jixa myself, and I still miss it dearly.  I miss my friend."
 
 classvars:
 
@@ -86,18 +86,16 @@ classvars:
    vrCompleted = FireGolemQuest_completed
 
    // The QST_ID constant for this quest.
-   viQuestID = QNT_ID_FIRE_GOLEM
+   viQuestID = QST_ID_FIRE_GOLEM
 
 properties:
-
-   pbDisabled = TRUE
 
    piNumPlayers = 1
    piPlayerRestrict = Q_PLAYER_NOTSUCCEEDED | Q_PLAYER_NOTFAILED_RECENTLY
    plSpecialRestrict = $
    piMaxPlayers = 30
    piSchedulePct = 100
-   piTimeLimit = 2 * 3600 // 2 hours.
+   piTimeLimit = 4 * 3600 // 4 hours.
 
    piQuestDuration = 7
    piQuestDifficulty = 10
@@ -137,7 +135,11 @@ messages:
       if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MONSTER,
                #NPC_modifier=QN_NPCMOD_SAME,#monsterlist=[&FireElementalBoss],
                #timelimit=piTimeLimit,#quest_node_index=QNT_ID_FIRE_GOLEM_2,
-               #prizelist=[ ])
+               #prizelist=[ [ QN_PRIZETYPE_ITEMCLASS, &Maul, 1 ],
+                            [ QN_PRIZETYPE_ITEMCLASS, &FireSword, 1 ],
+                            [ QN_PRIZETYPE_ITEMCLASS, &Dagger, 1 ],
+                            [ QN_PRIZETYPE_ITEMCLASS, &ThrowingAxe, 30 ],
+                            [ QN_PRIZETYPE_ITEMCLASS, &Machete, 1 ] ])
       {
                
          Send(oQE,@SetQuestNodeAssignHint,#index=QNT_ID_FIRE_GOLEM_2,

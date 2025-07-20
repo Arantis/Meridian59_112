@@ -12,8 +12,6 @@ ForgetPotionSkills is ForgetPotion
 
 constants:
 
-   MESSAGE_DELAY = 3000    /// three seconds
-
    include blakston.khd
 
 resources:
@@ -21,11 +19,8 @@ resources:
    include forgetsk.lkod
 
    forgetpotionskills_desc_rsc = \
-      "Drinking this potion causes one to forget all skills that he or she "
-      "possesses.\n\nMay have very serious side effects."
-
-   forgetpotionskills_forget_skill = "The art of '%s' slips from your mind!"
-   forgetpotionskills_vulnerable = "You suddenly feel more vulnerable!"
+      "Drinking this potion causes one to forget weaponcraft skills that he or she "
+      "possesses."
 
 classvars:
 
@@ -35,65 +30,6 @@ classvars:
 properties:
 
 messages:
-
-   QuaffTimer()
-   {
-      local i, oSkill, iSkillnum, ihp_loss, howmuch;
-
-      ptQuaff = $;
-
-      piCount = 0;
-      iHP_loss = 0;
-
-      foreach i in Send(poApply_target,@GetSkillList)
-      {
-         iSkillNum = Send(poApply_target,@DecodeSkillNum,#compound=i);
-         if iSkillNum = SKID_SLASH OR iSkillnum = SKID_DODGE
-         {
-            iHP_loss += Send(poApply_target,@DecodeSkillAbility,#compound=i);
-         }
-
-         oSkill = Send(SYS,@FindSkillByNum,#num=iSkillNum);
-
-         // Delete all skills!
-         Send(poApply_target,@RemoveSkill,#num=iSkillNum);
-         Send(poApply_target,@MsgSendUser,
-               #message_rsc=forgetpotionskills_forget_skill,
-               #parm1=Send(oSkill,@GetName));
-         ++piCount;
-      }
-
-      if piCount = 0
-      {
-         Send(poApply_target,@MsgSendUser,
-               #message_rsc=forgetpotion_nothing_happens);
-      }
-      else
-      {
-         Send(poApply_target,@MsgSendUser,
-               #message_rsc=forgetpotionskills_vulnerable);
-
-         howmuch = -Random((iHP_loss/40),iHP_loss/20);
-         howmuch = Bound(howmuch,$,-1);
-         Send(poApply_target,@GainBaseMaxHealth,#amount=howmuch);
-         Send(poApply_target,@ResetXPToLevel);
-
-         if Send(poApply_target,@CheckLog)
-         {
-            Debug("LOG:  ",Send(poApply_Target,@GetTrueName),
-                  " drank a forgetpotion.  Lost ",howmuch);
-         }
-
-         Send(self,@DoSideEffects);
-      }
-
-      // Check if player should regain guardian angel from HP loss.
-      Send(poApply_target,@EvaluatePKstatus);
-
-      Send(self,@Delete);
-
-      return;
-   }
 
 end
 ////////////////////////////////////////////////////////////////////////////////

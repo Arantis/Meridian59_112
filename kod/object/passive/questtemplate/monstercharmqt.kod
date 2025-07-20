@@ -9,7 +9,7 @@
 
 /////////////////////////////////////////////////////////////////////////////////
 MonsterCharmQuest is QuestTemplate
-// Quest template QNT_ID_MONSTER_CHARM = 101.
+// Quest template QST_ID_MONSTER_CHARM = 101.
 // Quest nodes 270, 271.
 // QNT_ID_MONSTER_CHARM_ONE, QNT_ID_MONSTER_CHARM_ONE
 
@@ -72,7 +72,7 @@ classvars:
    vrCompleted = MonsterCharmQuest_completed_rsc
 
    // The QST_ID constant for this quest.
-   viQuestID = QNT_ID_MONSTER_CHARM
+   viQuestID = QST_ID_MONSTER_CHARM
 
    viIcon_Animation_start = 1
 
@@ -125,7 +125,7 @@ messages:
       if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MONSTER_BRING,
             #prizelist=[ [ [ QN_PRIZETYPE_ITEMCLASS, &TwinkleCap, 20 ],
                            [ QN_PRIZETYPE_ITEMCLASS, &Kebab, 10 ],
-                           [ QN_PRIZETYPE_ITEMCLASS, &InkyCap, 5 ],
+                           [ QN_PRIZETYPE_ITEMCLASS, &InkyCap, 10 ],
                            [ QN_PRIZETYPE_ITEMCLASS, &WindrootLeaf, 25 ] ] ],
             #monsterlist=[ &Lupogg, &SewerRat, &SpectralMummy, &Frogman, 
                 &Scorpion, &FungusBeast, &RedAnt, &EvilFairy, &Fairy, &SnowRat,

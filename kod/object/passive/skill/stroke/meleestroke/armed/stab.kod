@@ -32,7 +32,6 @@ resources:
    stab_swish4 = DgSwish4.ogg
    stab_swish5 = DgSwish5.ogg
 
-
 classvars:
 
    vrName = Stab_name_rsc
@@ -40,10 +39,8 @@ classvars:
    vrDesc = Stab_desc_rsc
 
    viSkill_num = SKID_STAB
-   viSchool = SKS_DM
-   viSkill_level = 6
-
-   vrSkill_intro = stab_skill_intro
+   viSchool = SKS_ROGUECRAFT
+   viSkill_level = 1
 
    vrSwish1 = stab_swish1
    vrSwish2 = stab_swish2
@@ -53,6 +50,8 @@ classvars:
 
    viPreperation_time = 225
    viPostPerform_time = 775
+
+   vrSkill_intro = stab_skill_intro
 
 properties:
 

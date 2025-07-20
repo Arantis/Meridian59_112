@@ -9,7 +9,7 @@
 
 /////////////////////////////////////////////////////////////////////////////////
 JixaInnBanditQuest is QuestTemplate
-// Quest template QNT_ID_JIXA_BANDIT = 90.
+// Quest template QST_ID_JIXA_BANDIT = 90.
 // Quest nodes 266, 277.
 // QNT_ID_JIXA_BANDIT_ONE, QNT_ID_JIXA_BANDIT_ONE
 
@@ -36,13 +36,14 @@ resources:
    // Quest description.
    JixaInnBanditQuest_icon_rsc = ianonymo.bgf
    JixaInnBanditQuest_name_rsc = \
-      "In with the Crowd"
+      "Disciple Quest: In with the Crowd"
    JixaInnBanditQuest_desc_rsc = \
       "Jorgan would like to introduce some of his business partners to you.  They "
       "have set up camp outside of Berg.  You may want to dress appropriately "
       "if you want to fit in before meeting with their captain."
    JixaInnBanditQuest_completed_rsc = \
-      "You have met with the bandit captain and brought them back to Jorgan's inn."
+      "You have met with the bandit captain and brought them back to Jorgan's inn.  "
+      "Now that you're in with the crowd, Jorgan will teach Roguecraft."
 
    // Quest resources.
    JixaInnBanditQuest_trigger = "operation"
@@ -55,7 +56,7 @@ resources:
       "You may want dress appropriately."
    JixaInnBanditQuest_success = \
       "Great job westerner, you're in with the crowd now.  Keep it up and you "
-      "will go far around here."
+      "will go far around here.  I'll teach you the ways of the rogue."
    JixaInnBanditQuest_failure = \
       "Subject: Where are you?\n"
       "I haven't heard back from you, I get it you're not from around here.  "
@@ -70,13 +71,11 @@ classvars:
    vrCompleted = JixaInnBanditQuest_completed_rsc
 
    // The QST_ID constant for this quest.
-   viQuestID = QNT_ID_JIXA_BANDIT
+   viQuestID = QST_ID_JIXA_BANDIT
 
    viIcon_Animation_start = 1
 
 properties:
-
-   pbDisabled = TRUE
 
    piNumPlayers = 1
    piPlayerRestrict = Q_PLAYER_NOTTRIED_RECENTLY
@@ -90,7 +89,7 @@ messages:
 
    Constructor()
    {
-      plSpecialRestrict = [ [Q_R2_HAS_COMPLETED_QUEST_ID, QNT_ID_JIXA_ESCORT] ];
+      plSpecialRestrict = [ [Q_R2_HAS_COMPLETED_QUEST_ID, QST_ID_JIXA_ESCORT] ];
 
       // Quest node list to send to QuestEngine.
       plQuestNodes = [QNT_ID_JIXA_BANDIT_ONE,
@@ -125,8 +124,7 @@ messages:
       // QNT_ID_JIXA_BANDIT_TWO
       if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MONSTER_BRING,
             #prizelist=[ [ [ QN_PRIZETYPE_ITEMCLASS, &SpessartineRock, 20 ],
-                           [ QN_PRIZETYPE_ITEMCLASS, &Machete, 1 ],
-                           [ QN_PRIZETYPE_ITEMCLASS, &Truffle, 5 ],
+                           [ QN_PRIZETYPE_ITEMCLASS, &ChestKey, 1 ],
                            [ QN_PRIZETYPE_ITEMCLASS, &WindrootLeaf, 25 ] ] ],
             #monsterlist=[ &BanditCaptain ],
             #quest_node_index=QNT_ID_JIXA_BANDIT_TWO)

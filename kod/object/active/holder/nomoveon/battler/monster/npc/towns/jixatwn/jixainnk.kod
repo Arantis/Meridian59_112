@@ -35,15 +35,15 @@ classvars:
    vrIcon = JixaInnkeep_icon_rsc
    vrDesc = JixaInnkeep_desc_rsc
    viAttributes = \
-      MOB_NOFIGHT | MOB_SELLER | MOB_RANDOM | MOB_NOMOVE | MOB_NOQUEST \
+      MOB_NOFIGHT | MOB_SELLER | MOB_RANDOM | MOB_NOMOVE \
       | MOB_LISTEN | MOB_RECEIVE | MOB_TEACHER | MOB_COND_SELLER
    viOccupation = MOB_ROLE_INNKEEPER
    viMerchant_markup = MERCHANT_DISCOUNT
+   viQuestID = QST_ID_JIXA_BANDIT
 
 properties:
 
 messages:
-
    
    SetForSale()
    {
@@ -54,9 +54,26 @@ messages:
             Create(&Pear,#number=3),
             Create(&WineGoblet)
          ],
-      $,$,$];
+         [
+            SKID_STAB, SKID_PROFICIENCY_KNIFE, SKID_SNEAK,
+            SKID_PROFICIENCY_DAGGER, SKID_FLANKING,
+            SKID_THROW, SKID_PROFICIENCY_THROW_WEAPON,
+            SKID_COMPETENCY_UNARMED, SKID_COMPETENCY_SWORD,
+            SKID_COMPETENCY_BLUNT, SKID_DASH, SKID_BACKSTAB
+         ],
+      $,$];
 
       return;
+   }
+
+   CanAddSkill(who=$,num=0)
+   {
+      if NOT Send(self,@HasDoneLearnQuest,#who=who)
+      {
+         return FALSE;
+      }
+
+      propagate;
    }
 
    UserEntered(who=$)

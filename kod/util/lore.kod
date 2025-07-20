@@ -71,6 +71,7 @@ resources:
    lore_school_riija = "Riija"
    lore_school_jala = "Jala"
    lore_school_weaponcraft = "Weaponcraft"
+   lore_school_roguecraft = "Roguecraft"
 
 properties:
 
@@ -111,6 +112,9 @@ properties:
    // their watcher ID to access their particular list (which are otherwise
    // identical to start off with).
    plArenaChampions = $
+
+   // [player obj, waves, kills]
+   plSurvivalChampions = $
 
    // Contains all available recipes in their own seperate lists
    // [ RECIPE_TYPE [ [ingredient class, amount] ], [output class, amount] ]
@@ -214,9 +218,29 @@ messages:
    {
       plForge_Items = [
          [ FI_RUBICITEARMOR, [ [&PlateArmor, 1], [&RubiciteRock, 100] ], [&RubiciteArmor, 1] ],
+         [ FI_BLACKARMOR, [ [&NeruditeArmor, 1], [&BlackEmberheartFused, 1] ], [&BlackMetalArmor, 1] ],
+         [ FI_MYSTICARMOR, [ [&RubiciteArmor, 1], [&WhiteEmberheartFused, 1] ], [&MysticArmor, 1] ],
          [ FI_BLACKAXE, [ [&Axe, 1], [&OnyxRock, 100] ], [&BlackAxe, 1] ],
          [ FI_BLACKHAMMER, [ [&Hammer, 1], [&ObsidianRock, 100] ], [&BlackHammer, 1] ],
-         [ FI_GOLDARROW, [ [&Arrow, 1], [&Money, 100] ], [&GoldenArrow, 1] ]
+         [ FI_GOLDARROW, [ [&Arrow, 1], [&Money, 100] ], [&GoldenArrow, 1] ],
+         [ FI_EMBERHEART_RED, [ [&RedHeartStone, 1] ], [&RedEmberheart, 1] ],
+         [ FI_EMBERHEART_BLACK, [ [&BlackHeartStone, 1] ], [&BlackEmberheart, 1] ],
+         [ FI_EMBERHEART_BLUE, [ [&BlueHeartStone, 1] ], [&BlueEmberheart, 1] ],
+         [ FI_EMBERHEART_BROWN, [ [&BrownHeartStone, 1] ], [&BrownEmberheart, 1] ],
+         [ FI_EMBERHEART_GREEN, [ [&GreenHeartStone, 1] ], [&GreenEmberheart, 1] ],
+         [ FI_EMBERHEART_PURPLE, [ [&PurpleHeartStone, 1] ], [&PurpleEmberheart, 1] ],
+         [ FI_EMBERHEART_SKY, [ [&SkyHeartStone, 1] ], [&SkyEmberheart, 1] ],
+         [ FI_EMBERHEART_WHITE, [ [&WhiteHeartStone, 1] ], [&WhiteEmberheart, 1] ],
+         [ FI_EMBERHEART_DGREEN, [ [&DarkGreenHeartStone, 1] ], [&DarkGreenEmberheart, 1] ],
+         [ FI_FUSED_EMBERHEART_RED, [ [&RedEmberheart, 50] ], [&RedEmberheartFused, 1] ],
+         [ FI_FUSED_EMBERHEART_BLACK, [ [&BlackEmberheart, 50] ], [&BlackEmberheartFused, 1] ],
+         [ FI_FUSED_EMBERHEART_BLUE, [ [&BlueEmberheart, 50] ], [&BlueEmberheartFused, 1] ],
+         [ FI_FUSED_EMBERHEART_BROWN, [ [&BrownEmberheart, 50] ], [&BrownEmberheartFused, 1] ],
+         [ FI_FUSED_EMBERHEART_GREEN, [ [&GreenEmberheart, 50] ], [&GreenEmberheartFused, 1] ],
+         [ FI_FUSED_EMBERHEART_PURPLE, [ [&PurpleEmberheart, 50] ], [&PurpleEmberheartFused, 1] ],
+         [ FI_FUSED_EMBERHEART_SKY, [ [&SkyEmberheart, 50] ], [&SkyEmberheartFused, 1] ],
+         [ FI_FUSED_EMBERHEART_WHITE, [ [&WhiteEmberheart, 50] ], [&WhiteEmberheartFused, 1] ],
+         [ FI_FUSED_EMBERHEART_DGREEN, [ [&DarkGreenEmberheart, 50] ], [&DarkGreenEmberheartFused, 1] ]
       ];
 
       return;
@@ -1073,6 +1097,10 @@ messages:
          else if StringContain(string,lore_school_weaponcraft)
          {
             school = SKS_WEAPONCRAFT;
+         }
+         else if StringContain(string,lore_school_roguecraft)
+         {
+            school = SKS_ROGUECRAFT;
          }
       }
 

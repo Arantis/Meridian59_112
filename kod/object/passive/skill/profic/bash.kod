@@ -1,0 +1,52 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+BluntCompetency is Proficiency
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   //include bash.lkod
+
+   BluntCompetency_name_rsc = "bash"
+   BluntCompetency_icon_rsc = bashico.bgf
+   BluntCompetency_desc_rsc = \
+    "Enhances the user's striking abilities with blunt weapons."
+
+   BluntCompetency_skill_intro = "Roguecraft Lv. 2: Enhances striking with blunt weapons."
+
+classvars:
+
+   vrName = BluntCompetency_name_rsc
+   vrIcon = BluntCompetency_icon_rsc
+   vrDesc = BluntCompetency_desc_rsc
+
+   viSchool = SKS_ROGUECRAFT
+   viSkill_num = SKID_COMPETENCY_BLUNT
+   viSkill_level = 2
+   viChance_to_increase = 30
+
+   vrSkill_intro = BluntCompetency_skill_intro
+
+properties:
+
+messages:
+
+   GetRequisiteStat(who=$)
+   {
+     return send(who,@GetMight);
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////
+

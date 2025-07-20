@@ -69,7 +69,6 @@ messages:
    ResetReagents()
    {
       plReagents = $;
-      plReagents = Cons([&TwinkleCap,1],plReagents);
 
       return;
    }

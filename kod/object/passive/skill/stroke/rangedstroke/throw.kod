@@ -47,10 +47,10 @@ classvars:
    viIndefinite = ARTICLE_NONE
    viDefinite = ARTICLE_NONE
 
-   viSchool = SKS_WEAPONCRAFT
+   viSchool = SKS_ROGUECRAFT
    viSkill_Num = SKID_THROW
    viSkill_level = 4
-   viChance_to_increase = 50
+   viChance_to_increase = 100
    viMeditate_ratio = 30
 
    viSkillExertion = 50

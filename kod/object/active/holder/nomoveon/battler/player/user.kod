@@ -193,13 +193,6 @@ resources:
    user_resist_thrust = "Thrust Resist"
    user_resist_slash = "Slash Resist"
    user_resist_whip = "Whip"
-   
-   user_shal_power = "Shal'ille"
-   user_qor_power = "Qor"
-   user_faren_power = "Faren"
-   user_kraanan_power = "Kraanan"
-   user_riija_power = "Riija"
-   user_jala_power = "Jala"
 
    user_stat_health = heal.bgf
    user_stat_mana = ankh.bgf
@@ -1494,8 +1487,8 @@ messages:
          if bIsNear
          {
             // The attacker is nearby and can participate in PvP. Give them the points.
-            iHonorLost = Send(self,@TransferHonorPoints,#who=self,
-                              #what=oHurter,#honor=iHonorEach);
+            iHonorLost = Send(self,@TransferHonorPoints,#who=oHurter,
+                              #honor=iHonorEach);
             iLostTotal += iHonorLost;
             Send(oHurter,@MsgSendUser,#message_rsc=user_honor_gain_penalty,
                   #parm1=iHonorLost,#parm2=Send(self,@GetName));
@@ -1966,8 +1959,8 @@ messages:
             return;
          }
 
-         if Send(SETTINGS_OBJECT,@IsActiveDefenseEnabled)
-            AND (iSpeed = USER_WALKING_SPEED)
+         // Rogues can perform active defense
+         if Send(self,@IsSneaking,#iSpeed=iSpeed)
          {
             iState = Send(self,@CheckAttackers);
 
@@ -2624,8 +2617,10 @@ messages:
       if liClient_cmd = BP_CHANGED_STATS
       {
       
-         if Length(client_msg) <> 14
+         if Length(client_msg) <> 15
          {
+            Debug(self, " sent invalid number of params ", Length(client_msg),
+               " for BP_CHANGED_STATS (expected 15)");
             return;
          }
 
@@ -2649,7 +2644,8 @@ messages:
                                        #faren_lvl=Nth(client_msg,11),
                                        #riija_lvl=Nth(client_msg,12),
                                        #jala_lvl=Nth(client_msg,13),
-                                       #weaponcraft_lvl=Nth(client_msg,14));
+                                       #weaponcraft_lvl=Nth(client_msg,14),
+                                       #roguecraft_lvl=Nth(client_msg,15));
          return;
       }
 
@@ -6595,6 +6591,7 @@ messages:
       if type = SAY_NORMAL
       {
          if StringContain(string,user_say_survival)
+            AND Send(poOwner,@GetRoomNum) = RID_SURVIVAL_ARENA
             AND Send(poOwner,@GetRoomNum) <> RID_OUTOFGRACE
          {
             // If UserSaySurvival handles the string, don't keep checking.
@@ -6960,40 +6957,22 @@ messages:
    {
       local lSurvivalOptions, oForceBaseRoom;
 
+      // Can't start an arena from an existing one.
       if IsClass(poOwner,&SurvivalRoom)
+         OR NOT IsClass(poOwner,&SurvivalArena)
       {
-         // Can't start an arena from an existing one.
          return FALSE;
       }
 
       if StringContain(string,user_say_start_solo_survival)
       {
-         if NOT Send(poOwner,@CheckRoomFlag,#flag=ROOM_SAFELOGOFF)
-            OR Send(poOwner,@GetRoomNum) = RID_UNDERWORLD
-            OR Send(poOwner,@GetRoomNum) = RID_FIELD1
-         {
-            Send(self,@MsgSendUser,#message_rsc=survival_err_not_safe);
-
-            return TRUE;
-         }
-
          Send(Send(SYS,@GetSurvivalRoomMaintenance),@CreateRoom,
                #who=self,#sString=string);
 
          return TRUE;
       }
-
-      if StringEqual(string,user_say_join_pub_survival)
+      else if StringEqual(string,user_say_join_pub_survival)
       {
-         if NOT Send(poOwner,@CheckRoomFlag,#flag=ROOM_SAFELOGOFF)
-            OR Send(poOwner,@GetRoomNum) = RID_UNDERWORLD
-            OR Send(poOwner,@GetRoomNum) = RID_FIELD1
-         {
-            Send(self,@MsgSendUser,#message_rsc=survival_err_not_safe);
-
-            return TRUE;
-         }
-
          if Send(Send(SYS,@GetSurvivalRoomMaintenance),@FindPublicRoom) = $
          {
             Send(self,@MsgSendUser,#message_rsc=survival_no_public_rooms);
@@ -7014,19 +6993,9 @@ messages:
 
          return TRUE;
       }
-
-      if StringContain(string,user_say_start_pub_survival)
+      else if StringContain(string,user_say_start_pub_survival)
       {
          lSurvivalOptions = $;
-         if (NOT Send(poOwner,@CheckRoomFlag,#flag=ROOM_SAFELOGOFF)
-            OR Send(poOwner,@GetRoomNum) = RID_UNDERWORLD
-            OR Send(poOwner,@GetRoomNum) = RID_FIELD1)
-            AND NOT IsClass(self,&Admin)
-         {
-            Send(self,@MsgSendUser,#message_rsc=survival_err_not_safe);
-
-            return TRUE;
-         }
 
          oForceBaseRoom = $;
          if IsClass(self,&DM)
@@ -7055,8 +7024,7 @@ messages:
 
          return TRUE;
       }
-
-      if StringEqual(string,user_say_join_guild_survival)
+      else if StringEqual(string,user_say_join_guild_survival)
       {
          if poGuild = $
          {
@@ -7095,22 +7063,12 @@ messages:
 
          return TRUE;
       }
-
-      if StringContain(string,user_say_start_guild_survival)
+      else if StringContain(string,user_say_start_guild_survival)
       {
          lSurvivalOptions = $;
          if poGuild = $
          {
             Send(self,@MsgSendUser,#message_rsc=survival_err_no_guild);
-
-            return TRUE;
-         }
-
-         if NOT Send(poOwner,@CheckRoomFlag,#flag=ROOM_SAFELOGOFF)
-            OR Send(poOwner,@GetRoomNum) = RID_UNDERWORLD
-            OR Send(poOwner,@GetRoomNum) = RID_FIELD1
-         {
-            Send(self,@MsgSendUser,#message_rsc=survival_err_not_safe);
 
             return TRUE;
          }
@@ -11524,13 +11482,13 @@ messages:
 
       if piHomeroom <> $
       {
-         oRoom = Send(SYS,@FindRoomByNum,#num=abs(piHomeroom));
+         oRoom = Send(SYS,@FindRoomByNum,#num=Abs(piHomeroom));
       }
 
       if oRoom = $ OR piHomeroom = $ OR NOT Send(oRoom,@IsHometown)
       {
          Send(self,@SetRandomHomeroom);
-         oRoom = Send(SYS,@FindRoomByNum,#num=piHomeroom);
+         oRoom = Send(SYS,@FindRoomByNum,#num=Abs(piHomeroom));
       }
 
       // Remove damned string if rescuing from OoG.
@@ -11543,7 +11501,7 @@ messages:
          }
       }
 
-      piSave_room = piHomeroom;
+      piSave_room = Abs(piHomeroom);
       piSave_row = Send(oRoom,@GetTeleportRow);
       piSave_col = Send(oRoom,@GetTeleportCol);
       piSave_fine_row = 32;
@@ -12836,7 +12794,8 @@ messages:
                 1,piAgility, 1,piMysticism, 1,piAim, 1,First(lSpellLevels),
                 1,Nth(lSpellLevels,2), 1,Nth(lSpellLevels,3),
                 1,Nth(lSpellLevels,4), 1,Nth(lSpellLevels,5),
-                1,Nth(lSpellLevels,6), 1,First(lSkillLevels));
+                1,Nth(lSpellLevels,6), 1,First(lSkillLevels),
+                1,Nth(lSkillLevels,2));
       SendPacket(poSession);
 
       return;
@@ -12844,12 +12803,11 @@ messages:
 
    UserChangedStats(might=25,intellect=25,stamina=25,agility=25,mysticism=25,
                      aim=25,shallile_lvl=0,qor_lvl=0,kraanan_lvl=0,faren_lvl=0,
-                     riija_lvl=0,jala_lvl=0,weaponcraft_lvl=0)
+                     riija_lvl=0,jala_lvl=0,weaponcraft_lvl=0,roguecraft_lvl=0)
    "Processes a stat change request from the client"
    {
       local i, lSpellLevels, lSkillLevels, lSpellLevels_new, lSkillLevels_new,
-            iMaxLearnPoints, iPrimaryStat, oSpell, iSpellAbility, iSpellNum,
-            oSkill, iSkillAbility, iSkillNum, iTotalLearnPoints;
+            iPrimaryStat, oAbility, iAbilityPct, iAbilityNum, iTotalLearnPoints;
 
       // if stats reset is turned off, ignore the request
       if NOT Send(SETTINGS_OBJECT,@GetStatsResetEnabled)
@@ -12864,12 +12822,11 @@ messages:
       }
 
       iTotalLearnPoints = 0;
-      iMaxLearnPoints = 0;
       lSpellLevels = Send(self, @GetSpellSchoolLevels);
       lSpellLevels_new = [shallile_lvl,qor_lvl,kraanan_lvl,
                            faren_lvl,riija_lvl,jala_lvl];
       lSkillLevels = Send(self, @GetSkillSchoolLevels);
-      lSkillLevels_new = [weaponcraft_lvl];
+      lSkillLevels_new = [weaponcraft_lvl, roguecraft_lvl];
       ClearTempString();
 
       // Range Checks, no client hacking negative stats funny business!
@@ -12893,6 +12850,7 @@ messages:
          OR (riija_lvl < 0 OR riija_lvl > 6)
          OR (jala_lvl < 0 OR jala_lvl > 6)
          OR (weaponcraft_lvl < 0 OR weaponcraft_lvl > 6)
+         OR (roguecraft_lvl < 0 OR roguecraft_lvl > 6)
       {
          Debug("School Range Check: Failed for ", self, vrName);
 
@@ -12941,10 +12899,8 @@ messages:
          }
       }
 
-      iMaxLearnPoints = Send(SETTINGS_OBJECT,@GetMaxLearnPoints)
-                              + (intellect * 2) / 5;
       // See if the player has enough int to support their levels
-      if (iMaxLearnPoints < iTotalLearnPoints)
+      if (Send(self,@GetMaxLearnPoints,#intellect=intellect) < iTotalLearnPoints)
       {
          Debug("Int Check: Failed for ", self, vrName);
 
@@ -13013,40 +12969,40 @@ messages:
          }
       }
 
-      // Now iterate through the player's spells and strip 2// per stat loss
+      // Now iterate through the player's spells and strip 2% per stat loss
       foreach i in plSpells
       {
-         iSpellNum = Send(self,@DecodeSpellNum,#compound=i);
-         oSpell = Send(SYS,@FindSpellByNum,#num=iSpellNum);
-         iPrimaryStat = Send(oSpell,@GetPrimaryStat);
-         iSpellAbility = Send(self,@DecodeSpellAbility,#compound=i);
+         iAbilityNum = Send(self,@DecodeSpellNum,#compound=i);
+         oAbility = Send(SYS,@FindSpellByNum,#num=iAbilityNum);
+         iPrimaryStat = Send(oAbility,@GetPrimaryStat);
+         iAbilityPct = Send(self,@DecodeSpellAbility,#compound=i);
 
          if (iPrimaryStat = STAT_ID_STAMINA)
          {
-            if (iSpellAbility > (stamina * 2)) AND (stamina < piStamina)
-               OR (iSpellAbility = 99 AND piStamina = 50 AND stamina < 50)
+            if (iAbilityPct > (stamina * 2)) AND (stamina < piStamina)
+               OR (iAbilityPct = 99 AND piStamina = 50 AND stamina < 50)
             {
-               Send(self,@ChangeSpellAbility,#spell_num=iSpellNum,
+               Send(self,@ChangeSpellAbility,#spell_num=iAbilityNum,
                      #amount=((piStamina - stamina)
                      * Send(SETTINGS_OBJECT,@GetStatsResetPenalty)));
             }
          }
          else if (iPrimaryStat = STAT_ID_INTELLECT)
          {
-            if (iSpellAbility > (intellect * 2)) AND (intellect < piIntellect)
-               OR (iSpellAbility = 99 AND piIntellect = 50 AND intellect < 50)
+            if (iAbilityPct > (intellect * 2)) AND (intellect < piIntellect)
+               OR (iAbilityPct = 99 AND piIntellect = 50 AND intellect < 50)
             {
-               Send(self,@ChangeSpellAbility,#spell_num=iSpellNum,
+               Send(self,@ChangeSpellAbility,#spell_num=iAbilityNum,
                      #amount=((piIntellect - intellect)
                      * Send(SETTINGS_OBJECT,@GetStatsResetPenalty)));
             }
          }
          else if (iPrimaryStat = STAT_ID_MYSTICISM)
          {
-            if (iSpellAbility > (mysticism * 2)) AND (mysticism < piMysticism)
-               OR (iSpellAbility = 99 AND piMysticism = 50 AND mysticism < 50)
+            if (iAbilityPct > (mysticism * 2)) AND (mysticism < piMysticism)
+               OR (iAbilityPct = 99 AND piMysticism = 50 AND mysticism < 50)
             {
-               Send(self,@ChangeSpellAbility,#spell_num=iSpellNum,
+               Send(self,@ChangeSpellAbility,#spell_num=iAbilityNum,
                      #amount=((piMysticism - mysticism)
                      * Send(SETTINGS_OBJECT,@GetStatsResetPenalty)));
             }
@@ -13055,44 +13011,44 @@ messages:
 
       foreach i in plSkills
       {
-         iSkillNum = Send(self,@DecodeSkillNum,#compound=i);
-         oSkill = Send(SYS,@FindSkillByNum,#num=iSkillNum);
-         iPrimaryStat = Send(oSkill,@GetPrimaryStat);
-         iSkillAbility = Send(self,@DecodeSkillAbility,#compound=i);
+         iAbilityNum = Send(self,@DecodeSkillNum,#compound=i);
+         oAbility = Send(SYS,@FindSkillByNum,#num=iAbilityNum);
+         iPrimaryStat = Send(oAbility,@GetPrimaryStat);
+         iAbilityPct = Send(self,@DecodeSkillAbility,#compound=i);
          
          if (iPrimaryStat = STAT_ID_AGILITY)
          {
-            if (iSkillAbility > (agility * 2)) AND (agility < piAgility)
-               OR (iSkillAbility = 99 AND piAgility = 50 AND agility < 50)
+            if (iAbilityPct > (agility * 2)) AND (agility < piAgility)
+               OR (iAbilityPct = 99 AND piAgility = 50 AND agility < 50)
             {
-               Send(self,@ChangeSkillAbility,#skill_num=iSkillNum,
+               Send(self,@ChangeSkillAbility,#skill_num=iAbilityNum,
                      #amount=((piAgility - agility) * -2));
             }
          }
          else if (iPrimaryStat = STAT_ID_AIM)
          {
-            if (iSkillAbility > (aim * 2)) AND (aim < piAim)
-               OR (iSkillAbility = 99 AND piAim = 50 AND aim < 50)
+            if (iAbilityPct > (aim * 2)) AND (aim < piAim)
+               OR (iAbilityPct = 99 AND piAim = 50 AND aim < 50)
             {
-               Send(self,@ChangeSkillAbility,#skill_num=iSkillNum,
+               Send(self,@ChangeSkillAbility,#skill_num=iAbilityNum,
                      #amount=((piAim - aim) * -2));
             }
          }
          else if (iPrimaryStat = STAT_ID_MIGHT)
          {
-            if (iSkillAbility > (might * 2)) AND (might < piMight)
-               OR (iSkillAbility = 99 AND piMight = 50 AND might < 50)
+            if (iAbilityPct > (might * 2)) AND (might < piMight)
+               OR (iAbilityPct = 99 AND piMight = 50 AND might < 50)
             {
-               Send(self,@ChangeSkillAbility,#skill_num=iSkillNum,
+               Send(self,@ChangeSkillAbility,#skill_num=iAbilityNum,
                      #amount=((piMight - might) * -2));
             }
          }
          else if (iPrimaryStat = STAT_ID_STAMINA)
          {
-            if (iSkillAbility > (stamina * 2)) AND (stamina < piStamina)
-               OR (iSkillAbility = 99 AND piStamina = 50 AND stamina < 50)
+            if (iAbilityPct > (stamina * 2)) AND (stamina < piStamina)
+               OR (iAbilityPct = 99 AND piStamina = 50 AND stamina < 50)
             {
-               Send(self,@ChangeSkillAbility,#skill_num=iSkillNum,
+               Send(self,@ChangeSkillAbility,#skill_num=iAbilityNum,
                      #amount=((piStamina - stamina) * -2));
             }
          }

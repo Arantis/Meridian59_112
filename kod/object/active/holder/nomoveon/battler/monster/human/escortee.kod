@@ -51,6 +51,8 @@ classvars:
    viWimpy = 100
    viSocial = 0
 
+   vbMurderEnabled = FALSE
+
 properties:
 
    piBaseLevel = 50
@@ -101,7 +103,7 @@ messages:
          {
             if Send(self,@SquaredDistanceTo,#what=oObj) < 3
                AND (Send(oObj,@GetActiveQuestNode,
-                     #index=QNT_ID_JIXA_ESCORT) <> $)
+                     #index=QST_ID_JIXA_ESCORT) <> $)
                AND NOT Send(self,@IsOwnedByPlayer)
             {
                Send(self,@SetMaster,#oMaster=oObj);
@@ -121,6 +123,7 @@ messages:
    "Killing a traveller will make you a murderer."
    {
       if IsClass(what, &Player)
+         AND vbMurderEnabled
       {
          Send(what,@MakePlayerMurderer,#what=self);
       }

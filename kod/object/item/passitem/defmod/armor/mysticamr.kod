@@ -1,0 +1,83 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+MysticArmor is Armor
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include mysticamr.lkod
+
+   MysticArmor_name_rsc = "mystic armor"
+   MysticArmor_icon_rsc = mysticamr.bgf
+   MysticArmor_desc_rsc = \
+      "Stunning white breastplate crafted from the rare and precious Rubicite.  "
+      "It boasts a glossy finish that shimmers in the light, "
+      "making its wearer a sight to behold on the battlefield.  "
+      "But the mystical armor is more than just a pretty face - "
+      "it is also incredibly durable and provides superior protection."
+
+   MysticArmor_male_icon_rsc = btq.bgf
+   MysticArmor_female_icon_rsc = btr.bgf
+
+classvars:
+
+   vrName = MysticArmor_name_rsc
+   vrIcon = MysticArmor_icon_rsc
+   vrDesc = MysticArmor_desc_rsc
+
+   viHits_init_min = 950
+   viHits_init_max = 1000
+
+   viValue_average = 3500
+   viWeight = 650
+   viBulk = 650
+
+   viSpell_modifier = -10
+
+   vrIcon_male = MysticArmor_male_icon_rsc
+   vrIcon_female = MysticArmor_female_icon_rsc
+
+   viDefense_base = -200
+   viDamage_base = 7
+
+properties:
+
+messages:
+
+   ShowShirt()
+   {
+      return TRUE;
+   }
+
+   GetResistanceModifiers()
+   {
+      return [ [ATK_TYPE_THRUST,15],
+               [ATK_TYPE_SLASH,10],
+               [-SPL_TYPE_FIRE,-10],
+               [-SPL_TYPE_SHOCK,-15]
+             ];
+   }
+
+   GetHeatDamage()
+   {
+      return 1;
+   }
+
+   IsExpansionItem()
+   {
+      return TRUE;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

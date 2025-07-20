@@ -9,7 +9,7 @@
 
 /////////////////////////////////////////////////////////////////////////////////
 EscortAssassinationQuest is QuestTemplate
-// Quest template QNT_ID_ESCORT_ASSASSINATION = 89.
+// Quest template QST_ID_ESCORT_ASSASSINATION = 89.
 // Quest nodes 264, 265.
 // QNT_ID_ESCORT_ASSASSINATION_1, QNT_ID_ESCORT_ASSASSINATION_2
 
@@ -35,21 +35,25 @@ resources:
 
    // Quest description.
    EscortAssassination_icon_rsc = ikillfel.bgf
-   EscortAssassination_name_rsc = "Assassination"
+   EscortAssassination_name_rsc = "Disciple Quest: Assassination"
    EscortAssassination_desc_rsc = \
-      "Luisane d'Ile's shop has been struggling from the influx of travellers "
-      "trading with Jixa.  Find a traveller and eliminate them."
-      
+      "Luisane d'Ile, the owner of a struggling shop, has a proposition for you.  "
+      "She wants you to eliminate a troublesome traveler who has been affecting her "
+      "business by trading with Jixa.  If you accept this job, you will have to use "
+      "all of your stealth and cunning to get the job done without drawing any unwanted attention."
+
    EscortAssassination_node_two_start_rsc = \
       "Luisane d'Ile  has asked you to murder %s%s. Return when you "
       "have completed this task."
 
    EscortAssassination_node_two_rsc = \
-      "Return to Luisane d'Ile and let her know the task has been "
-      "completed."
+      "You've successfully eliminated the target without anyone noticing.  "
+      "You should return to Luisane d'Ile and let her know the job is done."
 
    EscortAssassination_completed = \
-      "You have sucessfully murdered a traveller."
+      "You have successfully completed the job and eliminated the troublesome traveler.  "
+      "You've earned a pouch of coins and the gratitude of Luisane d'Ile.  "
+      "But be warned, your reputation as an assassin may have attracted unwanted attention."
       
    EscortAssassination1_trigger = "assassination"
 
@@ -78,13 +82,11 @@ classvars:
    vrCompleted = EscortAssassination_completed
 
    // The QST_ID constant for this quest.
-   viQuestID = QNT_ID_ESCORT_ASSASSINATION
+   viQuestID = QST_ID_ESCORT_ASSASSINATION
 
    viIcon_Animation_start = 1
 
 properties:
-
-   pbDisabled = TRUE
 
    piNumPlayers = 1
    piPlayerRestrict = Q_PLAYER_NOTTRIED_RECENTLY
@@ -117,7 +119,16 @@ messages:
       // QNT_ID_ESCORT_ASSASSINATION_1
       if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MESSAGE,
                #cargolist=[EscortAssassination1_trigger],
-               #quest_node_index=QNT_ID_ESCORT_ASSASSINATION_1)
+               #quest_node_index=QNT_ID_ESCORT_ASSASSINATION_1,
+               #prizelist=[ [
+                  [ QN_PRIZETYPE_SPAWN, &Escortee, RID_CASTLE2B, 56, 46],
+                  [ QN_PRIZETYPE_SPAWN, &Escortee, RID_TOSEAST_MG, 44, 31],
+                  [ QN_PRIZETYPE_SPAWN, &Escortee, RID_SWAMP1, 11, 36],
+                  [ QN_PRIZETYPE_SPAWN, &Escortee, RID_SWAMPTOJIXA, 27, 8],
+                  [ QN_PRIZETYPE_SPAWN, &Escortee, RID_BERG_MINE, 13, 14],
+                  [ QN_PRIZETYPE_SPAWN, &Escortee, RID_BERG_JALA, 32, 20],
+                  [ QN_PRIZETYPE_SPAWN, &Escortee, RID_JIXA_2, 35, 39],
+                  [ QN_PRIZETYPE_SPAWN, &Escortee, RID_BERG_JAIL, 12, 9] ] ])
       {
          Send(oQE,@SetQuestNodeNPCList,#index=QNT_ID_ESCORT_ASSASSINATION_1,
                #new_NPC_list=Send(oLib,@GetOccupationList,
@@ -137,7 +148,7 @@ messages:
                               [ QN_PRIZETYPE_ITEMCLASS, &ScaleArmor, 1 ],
                               [ QN_PRIZETYPE_ITEMCLASS, &IceArrow, 20 ],
                               [ QN_PRIZETYPE_ITEMCLASS, &Money, 7500 ],
-                              [ QN_PRIZETYPE_ITEMCLASS, &Truffle, 5 ] ] ],
+                              [ QN_PRIZETYPE_ITEMCLASS, &BoonBerry, 1 ] ] ],
                #quest_node_index=QNT_ID_ESCORT_ASSASSINATION_2)
       {
          Send(oQE,@SetQuestNodeAssignHint,#index=QNT_ID_ESCORT_ASSASSINATION_2,

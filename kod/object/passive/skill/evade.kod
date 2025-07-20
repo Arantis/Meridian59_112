@@ -1,0 +1,105 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+////////////////////////////////////////////////////////////////////////////////
+Evade is Skill
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   //include evade.lkod
+
+   Evade_name_rsc = "evade"
+   Evade_icon_rsc = dodgeico.bgf
+   Evade_desc_rsc = \
+      "Cloaked in the shadows avoiding different dangers while sneaking.  "
+      "Side stepping in combat evades an attack.  "
+      "\n\nTo use this skill, hold shift to walk while moving sideways "
+      "to activate your defense."
+
+classvars:
+
+   vrName = Evade_name_rsc
+   vrIcon = Evade_icon_rsc
+   vrDesc = Evade_desc_rsc
+
+   viIndefinite = ARTICLE_NONE
+   viDefinite = ARTICLE_NONE
+
+   viSkill_num = SKID_EVADE
+   viSchool = SKS_ROGUECRAFT
+   viSkill_Level = 2
+   viChance_to_Increase = 75
+   viMeditate_ratio = 30
+
+   viSkillExertion = 200
+   vbCheck_exertion = FALSE
+
+   vbAutomatic = TRUE
+
+   piEvade_base_chance = 50
+   piEvade_ability_factor = 50
+
+   piSuccess_time = 1500
+   piFail_time = 1500
+   piFeint_time = 1000
+
+properties:
+
+messages:
+
+   DoSkill(who=$)
+   {
+      local iStealth;
+
+      iStealth = Send(who,@GetStealth,#what=who);
+
+      // Check for advancement conditions
+      if Random(iStealth,300) >= 100
+         AND Random(1,100) <= viChance_To_Increase
+      {
+         Send(self,@ImproveAbility,#who=who);
+      }
+
+      return;
+   }
+
+   GetActiveDodgeChance(who=$,ability=0)
+   {
+      if NOT ability
+      {
+         return 0;
+      }
+
+      return piEvade_base_chance*Send(who,@GetAgility)/50 + ability*piEvade_ability_factor/100;
+   }
+
+   // How much does a successful active defense delay us?
+   GetSuccessTime()
+   {
+      return piSuccess_time;
+   }
+
+   // How much does a late active defense delay us?
+   GetFailTime()
+   {
+      return piFail_time;
+   }
+
+   // How much does a feinted attack delay us?
+   GetFeintTime()
+   {
+      return piFeint_time;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

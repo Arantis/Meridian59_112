@@ -41,8 +41,8 @@ classvars:
    viBulk_hold_max = 50000
    viWeight_hold_max = $
 
-   viMinNumTreasure = 15
-   viMaxNumTreasure = 30
+   viMinNumTreasure = 30
+   viMaxNumTreasure = 50
 
    // Reset after 1 hour
    viReset_time = 6000000
@@ -77,36 +77,40 @@ messages:
       iRand = Random(1,100);
       if (piChestColor = LC_GRAY)
       {
+         lLootList = [ &RubiciteRock,
+                     &ObsidianRock,
+                     &OnyxRock,
+                     &KriipaClaw,
+                     &ThrowingAxe,
+                     &TwinkleCap ];
+      }
+      else if (piChestColor = LC_GREEN)
+      {
          if iRand > 66
          {
             lLootList = [ &OnyxRock,
                         &Truffle,
-                        &WindrootLeaf,
-                        &WebMoss,
-                        &BlueDragonScale,
+                        &WindrootSeed,
+                        &Cheese,
+                        &ThrowingAxe,
                         &PlateArmor,
                         &WarHelm,
-                        &Snack,
-                        &Spideye ];
+                        &Arsenic,
+                        &Moonshine ];
          }
          else if iRand > 33
          {
             lLootList = [ &SpessartineRock,
                         &ObsidianRock,
                         &OnyxRock,
-                        &TheurgicRemnant,
-                        &EssenceDust,
-                        &BoonBerry,
-                        &WindrootLeaf,
+                        &WindrootSeed,
                         &HealWand,
-                        &Snowball,
+                        &Arsenic,
                         &BlankScroll,
                         &BonkStick,
-                        &Herbs,
-                        &Mushroom,
+                        &Flask,
                         &ScaleArmor,
                         &Knife,
-                        &MetalShield,
                         &Pork,
                         &WineGoblet,
                         &TwinkleCap ];
@@ -115,9 +119,12 @@ messages:
          {
             lLootList = [ &RubiciteRock,
                         &ObsidianRock,
-                        &OnyxRock,
-                        &KriipaClaw,
-                        &Mace,
+                        &Pancake,
+                        &Lantern,
+                        &Club,
+                        &Spideye,
+                        &ThrowingAxe,
+                        &BlankScroll,
                         &TwinkleCap ];
          }
       }
@@ -125,36 +132,33 @@ messages:
       {
          if iRand > 66
          {
-            lLootList = [ &Rose,
-                        &Tanktop,
+            lLootList = [ &BerserkerRing,
+                        &Lantern,
                         &WindrootLeaf,
-                        &WebMoss,
-                        &BlueDragonScale,
-                        &PlateArmor,
+                        &ThrowingAxe,
+                        &ScaleArmor,
                         &WarHelm,
                         &Pork,
-                        &Spideye ];
+                        &GhostPepper ];
          }
          else if iRand > 33
          {
             lLootList = [ &SpessartineRock,
                         &ObsidianRock,
                         &OnyxRock,
-                        &TheurgicRemnant,
                         &EssenceDust,
-                        &BoonBerry,
-                        &WindrootLeaf,
+                        &ThrowingAxe,
+                        &WindrootSeed,
                         &HealWand,
-                        &Snowball,
+                        &Arsenic,
                         &BlankScroll,
                         &BonkStick,
-                        &Herbs,
-                        &YellowMushroom,
-                        &NeruditeArmor,
-                        &Scimitar,
-                        &Longbow,
+                        &Flask,
+                        &PlateArmor,
+                        &Machete,
+                        &ShortBow,
                         &Pork,
-                        &WineGoblet,
+                        &Moonshine,
                         &TwinkleCap ];
          }
          else
@@ -162,8 +166,9 @@ messages:
             lLootList = [ &RubiciteRock,
                         &ObsidianRock,
                         &OnyxRock,
-                        &KriipaClaw,
-                        &Mace,
+                        &GhostPepper,
+                        &ThrowingAxe,
+                        &BoonBerry,
                         &TwinkleCap ];
          }
       }
@@ -174,12 +179,12 @@ messages:
             lLootList = [ &OnyxRock,
                         &Truffle,
                         &WindrootLeaf,
-                        &WebMoss,
-                        &BlueDragonScale,
-                        &PlateArmor,
-                        &WarHelm,
-                        &Pork,
-                        &Spideye ];
+                        &GhostPepper,
+                        &ThrowingAxe,
+                        &RubiciteRock,
+                        &ThornedCirclet,
+                        &TwinkleCap,
+                        &ObsidianRock ];
          }
          else if iRand > 33
          {
@@ -191,16 +196,11 @@ messages:
                         &BoonBerry,
                         &WindrootLeaf,
                         &HealWand,
-                        &Snowball,
-                        &BlankScroll,
-                        &BonkStick,
-                        &Herbs,
-                        &Mushroom,
-                        &ScaleArmor,
-                        &Knife,
-                        &MetalShield,
-                        &Pork,
-                        &WineGoblet,
+                        &Arsenic,
+                        &Flask,
+                        &Hatchet,
+                        &TowerShield,
+                        &Moonshine,
                         &TwinkleCap ];
          }
          else
@@ -208,54 +208,7 @@ messages:
             lLootList = [ &RubiciteRock,
                         &ObsidianRock,
                         &OnyxRock,
-                        &KriipaClaw,
-                        &Mace,
-                        &TwinkleCap ];
-         }
-      }
-      else if (piChestColor = LC_GREEN)
-      {
-         if iRand > 66
-         {
-            lLootList = [ &OnyxRock,
-                        &Truffle,
-                        &WindrootLeaf,
-                        &Cheese,
-                        &BlueDragonScale,
-                        &PlateArmor,
-                        &WarHelm,
-                        &Snowball,
-                        &Mug ];
-         }
-         else if iRand > 33
-         {
-            lLootList = [ &SpessartineRock,
-                        &ObsidianRock,
-                        &OnyxRock,
-                        &TheurgicRemnant,
-                        &EssenceDust,
-                        &BoonBerry,
-                        &WindrootLeaf,
-                        &HealWand,
-                        &Snowball,
-                        &BlankScroll,
-                        &BonkStick,
-                        &Herbs,
-                        &Mushroom,
-                        &ScaleArmor,
-                        &Knife,
-                        &MetalShield,
-                        &Pork,
-                        &WineGoblet,
-                        &TwinkleCap ];
-         }
-         else
-         {
-            lLootList = [ &RubiciteRock,
-                        &ObsidianRock,
-                        &EntrootBerry,
-                        &KriipaClaw,
-                        &Mace,
+                        &ThrowingAxe,
                         &TwinkleCap ];
          }
       }
@@ -266,12 +219,12 @@ messages:
             lLootList = [ &TheurgicRemnant,
                         &Truffle,
                         &WindrootLeaf,
-                        &WebMoss,
-                        &BlueDragonScale,
-                        &NeruditeArmor,
-                        &WarHelm,
-                        &InkyCap,
-                        &Spideye ];
+                        &HuntingBow,
+                        &BlankScroll,
+                        &BoonBerry,
+                        &SpecialGiftTwo,
+                        &SpessartineRock,
+                        &ThrowingAxe ];
          }
          else if iRand > 33
          {
@@ -280,18 +233,15 @@ messages:
                         &OnyxRock,
                         &TheurgicRemnant,
                         &EssenceDust,
-                        &BoonBerry,
                         &WindrootLeaf,
                         &HealWand,
-                        &Snowball,
+                        &Arsenic,
                         &BlankScroll,
                         &BonkStick,
-                        &Herbs,
-                        &Mushroom,
-                        &ScaleArmor,
+                        &Flask,
+                        &NeruditeArmor,
                         &GoldSword,
-                        &TowerShield,
-                        &SpecialGiftTwo,
+                        &MultishotBow,
                         &SpecialGift,
                         &TwinkleCap ];
          }
@@ -300,8 +250,10 @@ messages:
             lLootList = [ &TheurgicRemnant,
                         &ObsidianRock,
                         &OnyxRock,
-                        &KriipaClaw,
-                        &NeruditeSword,
+                        &Maul,
+                        &EssenceDust,
+                        &Zjiriaesqe,
+                        &RubiciteRock,
                         &TwinkleCap ];
          }
       }

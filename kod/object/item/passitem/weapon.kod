@@ -357,42 +357,21 @@ messages:
 
    GetBaseDamage(who=$,target=$)
    {
-      local iDamage;
+      local iDamageMin, iDamageMax;
 
-      // Weapon type
-      if viWeaponType = WEAPON_TYPE_BLUDGEON
-      {
-         iDamage = random(WEAPON_DAMAGE_MID_MIN, WEAPON_DAMAGE_MID_MAX);
-      }
-      else if viWeaponType = WEAPON_TYPE_THRUST
-      {
-         iDamage = random(WEAPON_DAMAGE_LOW_MIN, WEAPON_DAMAGE_LOW_MAX);
-      }
-      else if viWeaponType = WEAPON_TYPE_SLASH
-      {
-         iDamage = random(WEAPON_DAMAGE_HIGH_MIN, WEAPON_DAMAGE_HIGH_MAX);
-      }
+      // piDamageBonus is added again at a later stage.
+      // Should clean this up a bit eventually.
+      iDamageMin = Send(self,@GetMinDamage) - piDamageBonus;
+      iDamageMax = Send(self,@GetMaxDamage) - piDamageBonus;
 
-      // Weapon quality modifiers
-      if viWeaponQuality = WEAPON_QUALITY_LOW
-      {
-         iDamage = iDamage + WEAPON_LOW_QUALITY_DAMAGE;
-      }
-      else if viWeaponQuality = WEAPON_QUALITY_HIGH
-      {
-         iDamage = iDamage + WEAPON_HIGH_QUALITY_DAMAGE;
-      }
-      else if viWeaponQuality = WEAPON_NERUDITE
-      {
-         iDamage = iDamage + WEAPON_NERUDITE_DAMAGE;
-      }
-
-      return iDamage;
+      // The damage of our weapon is randomly picked 
+      // between min and max damage values.
+      return Random(iDamageMin,iDamageMax);
    }
 
    GetMinDamage()
    {
-      local iDamage, oSkill;
+      local iDamage;
 
       // Weapon type
       if viWeaponType = WEAPON_TYPE_BLUDGEON
@@ -427,7 +406,7 @@ messages:
 
    GetMaxDamage()
    {
-      local iDamage, oSkill;
+      local iDamage;
       
       // Weapon type
       if viWeaponType = WEAPON_TYPE_BLUDGEON
@@ -502,24 +481,34 @@ messages:
 
    GetDamage(target=$)
    {
-      local iDamage, i, oWeapAtt;
+      local iDamage, i, oWeapAtt, oSkill, iMax;
 
       // First, get base damage.
       iDamage = Send(self,@GetBaseDamage,#who=poOwner,#target=target);
+      iMax = Send(self,@GetMaxDamage) - piDamageBonus;
+
+      // Flanking increases the minimum damage based on position
+      if Send(poOwner,@GetSkillAbility,#Skill_num=SKID_FLANKING) > 0
+      {
+         oSkill = Send(SYS,@FindSkillByNum,#num=SKID_FLANKING);
+         iDamage = Send(oSkill,@ModifyDamage,#who=poOwner,
+                        #what=target,#damage=iDamage,#damage_max=iMax);
+      }
 
       // Then check weapon attributes
       //  Weapon Attributes in general should only + or - damage - no multipliers!
       foreach i in plItem_Attributes
       {
-         oWeapAtt = Send(SYS,@FindItemAttByNum,#num=Send(self,@GetNumFromCompound,#compound=First(i)));
+         oWeapAtt = Send(SYS,@FindItemAttByNum,
+                        #num=Send(self,@GetNumFromCompound,#compound=First(i)));
          if IsClass(oWeapAtt,&WeaponAttribute)
          {
-            iDamage = Send(oWeapAtt,@ModifyDamage,#damage=iDamage,#wielder=poOwner,
-                           #target=target,#lData=i);
+            iDamage = Send(oWeapAtt,@ModifyDamage,#damage=iDamage,
+                        #wielder=poOwner,#target=target,#lData=i);
          }
       }
 
-      iDamage = iDamage + piDamageBonus;
+      iDamage += piDamageBonus;
 
       // Send(Send(poOwner,@getOwner),@SomeoneSaid,#what=self,#type=SAY_RESOURCE,
       //      #string=weapon_do_damage,#parm1=iDamage,#parm2=baseDamage);
@@ -632,7 +621,7 @@ messages:
 
    ImproveProficiency(who=$,target=$,bonus=0)
    {
-      Send(Send(SYS,@findSkillbynum,#num=viProficiency_needed),@ImproveAbility,
+      Send(Send(SYS,@FindSkillbyNum,#num=viProficiency_needed),@ImproveAbility,
             #who=who,#target=target,#bonus=bonus);
 
       return;
@@ -1176,8 +1165,9 @@ messages:
    {
       local i, oItemAtt, iSpell;
 
-      if piSpell_type <> 0
-         OR Send(self,@CheckTypeFlag,#flag=ATK_TYPE_MAGIC)
+      if ((piSpell_type <> 0
+            OR Send(self,@CheckTypeFlag,#flag=ATK_TYPE_MAGIC))
+         AND oSpell <> $)
       {
          iSpell = Send(oSpell,@GetSpellNum);
          if iSpell = SID_HOLY_WEAPON or iSpell = SID_UNHOLY_WEAPON
@@ -1285,5 +1275,57 @@ messages:
       return vbCrush_enemies;
    }
 
+   GetCompetencySkillNum(who=$)
+   {
+      if viWeaponType = WEAPON_TYPE_BLUDGEON
+      {
+         return SKID_COMPETENCY_BLUNT;
+      }
+      else if viWeaponType = WEAPON_TYPE_SLASH
+      {
+         return SKID_COMPETENCY_SWORD;
+      }
+
+      return 0;
+   }
+
+   ImproveCompetency(who=$,target=$,bonus=0)
+   {
+      local iNum;
+
+      iNum = Send(self,@GetCompetencySkillNum,#who=who);
+
+      if iNum <> 0
+      {
+         Send(Send(SYS,@FindSkillbyNum,#num=iNum),
+            @ImproveAbility,#who=who,#target=target,#bonus=bonus);
+      }
+
+      return;
+   }
+
+   DetermineCompetency(who=$)
+   {
+      local iNum; 
+
+      iNum = Send(self,@GetCompetencySkillNum,#who=who);
+      if iNum <> 0
+      {
+         return Send(who,@GetSkillAbility,#skill_num=iNum);
+      }
+
+      return 0;
+   }
+
+   CanBackstab(who=$)
+   {
+      if (viDefault_stroke_number = SKID_STAB)
+         OR (viWeaponType = WEAPON_TYPE_THRUST)
+      {
+         return TRUE;
+      }
+
+      return FALSE;
+   }
 end
 ////////////////////////////////////////////////////////////////////////////////

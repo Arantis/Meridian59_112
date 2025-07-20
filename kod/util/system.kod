@@ -78,7 +78,10 @@ resources:
    guildwar_kill_body3 = " has been slaughtered by "
    guildwar_kill_body4 = " in guild combat."
 
+   // Resources for building strings
    system_nothing_rsc = " "
+   system_and_space_rsc = "and "
+   system_comma_space_rsc = ", "
    system_admin_message = "%q"
    system_admin_message_bang = "~B~U~k[###]~n ~B%q"
    system_blank_resource = ""
@@ -387,6 +390,7 @@ properties:
    plSpells = $
    plNewCharSpells = $
    plSkills = $
+   plNewCharSkills = $
    plItem_Attributes = $
    plItemAttTreasure = $
    plNodes = $
@@ -617,8 +621,6 @@ messages:
    "Creates all necessary game objects on initial server startup (no savegame)."
    "Called by blakserv itself after all builtin objects are created."
    {
-      Send(self,@RecreateNecromancerBalance);
-
       Send(self,@RecreateAllBrains);
       Send(self,@RecreateLibrary);
       Send(self,@RecreateLore);
@@ -645,6 +647,7 @@ messages:
       Send(self,@RecreateAllRooms);
       Send(self,@RecreateNodeAttack);
       Send(self,@RecreateParliament);
+      Send(self,@RecreateNecromancerBalance);
 
       Send(self,@RecreateMonsterTemplates);
       Send(self,@RecreateItemTemplates);
@@ -725,7 +728,6 @@ messages:
 
       Send(self,@CreateUserTable);
 
-      Send(self,@RecreateNecromancerBalance);
       Send(self,@RecreateClearQuests);
       Send(self,@CreateAllBanksIfNew);
       Send(self,@CreateAllVaultsIfNew);
@@ -737,8 +739,9 @@ messages:
       // The following two lines are handled in Parliament
       // Send(self,@RecreateTerritoryGame);
       // Send(self,@RecreateTokenGame);
-      Send(self,@RecreateParliament);
       Send(self,@RecreateNodeAttack);
+      Send(self,@RecreateParliament);
+      Send(self,@RecreateNecromancerBalance);
       Send(self,@RecreateRentableRoomMaintenance);
       Send(self,@RecreateSurvivalRoomMaintenance);
       Send(self,@RecreateWarEvent);
@@ -2017,8 +2020,8 @@ messages:
          AND IsClass(killer,&User)
       {
          // Could be a war kill.  Check for it.
-         Send(Send(SYS,@GetWarEvent),@RecordWarKill,#who=killer,#victim=what);
-         Send(poNecromancerBalance,@RecordWarKill,#who=killer,#victim=what);
+         Send(Send(self,@GetWarEvent),@RecordWarKill,#who=killer,#victim=what);
+         Send(Send(self,@GetNecromancerBalance),@RecordWarKill,#who=killer,#victim=what);
 
           // PvP flag set to TRUE.
          RecordStat(STAT_PLAYERDEATH, TAG_RESOURCE, Send(what,@GetTrueName),
@@ -2515,19 +2518,10 @@ messages:
          AddPacket(1, Send(i, @GetSchool));
       }
 
-      iCount = 0;
-      foreach i in plSkills
-      {
-         if Send(i,@GetLevel) <= 2
-         {
-            iCount = iCount + 1;
-         }
-      }
-
       ////// Skills
-      AddPacket(4,iCount);
+      AddPacket(4,Length(plNewCharSkills));
 
-      foreach i in plSkills
+      foreach i in plNewCharSkills
       {
          if Send(i,@GetLevel) > 2
          {
@@ -2544,8 +2538,10 @@ messages:
          {
             AddPacket(4,10);
          }
-      }
 
+         AddPacket(1, Send(i, @GetSchool));
+      }
+   
       SendPacket(session_id);
 
       return;
@@ -2985,6 +2981,7 @@ messages:
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_LEADER,#class=&BergLeader);
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_LEADER_HALL,#class=&BergLeaderHall);
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_JAIL,#class=&BergJail);
+      Send(self,@CreateOneRoomIfNew,#num=RID_BERG_DEVROOM,#class=&BergDevRoom);
 
    // Berg Outskirts
       Send(self,@CreateOneRoomIfNew,#num=RID_BERG_MG,#class=&BergMG);
@@ -3614,7 +3611,7 @@ messages:
       local i, n;
       if plShrine_Allegiances <> $
       {
-         n = 5;
+         n = Length(plShrine_Allegiances);
 
          foreach i in plShrines
          {
@@ -3946,6 +3943,7 @@ messages:
       Send(self,@CreateOneSpellIfNew,#num=SID_NODE_TRAVEL,#class=&NodeTravel);
       Send(self,@CreateOneSpellIfNew,#num=SID_COOLDOWN_SPRINT,#class=&CooldownSprint);
       Send(self,@CreateOneSpellIfNew,#num=SID_COOLDOWN_UNLEASH,#class=&CooldownUnleash);
+      Send(self,@CreateOneSpellIfNew,#num=SID_COOLDOWN_DASH,#class=&CooldownDash);
 
       // Trance may be searched for frequently, leave at end of list
       Send(self,@CreateOneSpellIfNew,#num=SID_TRANCE,#class=&Trance);
@@ -3983,6 +3981,7 @@ messages:
       Send(self,@CreateOneItemAttIfNew,#num=WA_SLOW,#class=&WeapAttSlow);
       Send(self,@CreateOneItemAttIfNew,#num=WA_VAMPER,#class=&WeapAttVamper);
       Send(self,@CreateOneItemAttIfNew,#num=WA_SIPHON,#class=&WeapAttSiphon);
+      Send(self,@CreateOneItemAttIfNew,#num=WA_POISON,#class=&WeapAttPoison);
       Send(self,@CreateOneItemAttIfNew,#num=WA_BURN,#class=&WeapAttBurn);
       Send(self,@CreateOneItemAttIfNew,#num=WA_BLEED,#class=&WeapAttBleed);
       Send(self,@CreateOneItemAttIfNew,#num=WA_FATIGUE,#class=&WeapAttFatigue);
@@ -4134,7 +4133,7 @@ messages:
 
    CreateOneSkillIfNew(num = $,class = $)
    {
-      local oSkill;
+      local oSkill, iSchool;
 
       if Send(self,@FindSkillByNum,#num=num) = $
       {
@@ -4145,8 +4144,20 @@ messages:
 
             return;
          }
+
          AddTableEntry(phSkills,Send(oSkill,@GetSkillNum),oSkill);
          plSkills = Cons(oSkill,plSkills);
+
+         // Check if we should add this skill to new char skill list.
+         if (IsClass(oSkill,&Skill)
+            AND Send(oSkill,@OfferToNewCharacters))
+         {
+            iSchool = Send(oSkill,@GetSchool);
+            if (iSchool >= SKS_WEAPONCRAFT AND iSchool <= SKS_ROGUECRAFT)
+            {
+               plNewCharSkills = Cons(oSkill,plNewCharSkills);
+            }
+         }
       }
 
       return;
@@ -4172,6 +4183,12 @@ messages:
       Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_HAMMER,#class=&HammerProficiency);
       Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_AXE,#class=&AxeProficiency);
       Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_SHORT_SWORD,#class=&ShortSwordProficiency);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_DAGGER,#class=&DaggerProficiency);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_PROFICIENCY_KNIFE,#class=&KnifeProficiency);
+
+      Send(self,@CreateOneSKillIfNew,#num=SKID_COMPETENCY_UNARMED,#class=&UnarmedCompetency);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_COMPETENCY_BLUNT,#class=&BluntCompetency);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_COMPETENCY_SWORD,#class=&SwordCompetency);
 
       Send(self,@CreateOneSKillIfNew,#num=SKID_BRAWLING,#class=&Brawling);
       Send(self,@CreateOneSKillIfNew,#num=SKID_ASSESS,#class=&Assess);
@@ -4186,11 +4203,20 @@ messages:
       Send(self,@CreateOneSKillIfNew,#num=SKID_SECOND_WIND,#class=&SecondWind);
       Send(self,@CreateOneSKillIfNew,#num=SKID_DISARM,#class=&Disarm);
       Send(self,@CreateOneSKillIfNew,#num=SKID_CRUSHING_BLOWS,#class=&CrushingBlows);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_FLANKING,#class=&Flanking);
+      Send(self,@CreateOneSkillIfNew,#num=SKID_SNEAK,#class=&Sneak);
+      Send(self,@CreateOneSkillIfNew,#num=SKID_EVADE,#class=&Evade);
+      Send(self,@CreateOneSkillIfNew,#num=SKID_SHIELD_BASH,#class=&ShieldBash);
+      Send(self,@CreateOneSkillIfNew,#num=SKID_RIPOSTE,#class=&Riposte);
 
       Send(self,@CreateOneSKillIfNew,#num=SKID_CLEAVE,#class=&Cleave);
       Send(self,@CreateOneSKillIfNew,#num=SKID_UNLEASH,#class=&Unleash);
       Send(self,@CreateOneSKillIfNew,#num=SKID_SPRINT,#class=&Sprint);
       Send(self,@CreateOneSKillIfNew,#num=SKID_MARK,#class=&Mark);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_DASH,#class=&Dash);
+      Send(self,@CreateOneSKillIfNew,#num=SKID_BACKSTAB,#class=&Backstab);
+      Send(self,@CreateOneSkillIfNew,#num=SKID_SHADOW_STEP,#class=&ShadowStep);
+      Send(self,@CreateOneSkillIfNew,#num=SKID_APPLY_POISON,#class=&ApplyPoison);
 
       return;
    }
@@ -4211,6 +4237,9 @@ messages:
          Debug("Deleted all skills, but plSkills <> $");
          plSkills = $;
       }
+
+         // Clear new char skills. Skills objects already deleted above.
+      plNewCharSkills = $;
 
       Send(self,@CreateSkillTable);
 
@@ -4233,6 +4262,12 @@ messages:
    "Called by the skill when it is deleted, so we can remove it from our list of skills."
    {
       local i;
+
+      if (plNewCharSkills <> $
+         AND FindListElem(plNewCharSkills,what))
+      {
+         plNewCharSkills = DelListElem(plNewCharSkills,what);
+      }
 
       // any time a skill is deleted, clear its enchantment on all logged in users
       // just in case they have this skill
@@ -5620,6 +5655,11 @@ messages:
 
    GetNecromancerBalance()
    {
+      if poNecromancerBalance = $
+      {
+         Send(self,@RecreateNecromancerBalance);
+      }
+
       return poNecromancerBalance;
    }
 
@@ -6244,6 +6284,8 @@ messages:
       plItemTemplates = Cons(Create(&StatsResetToken,#temporary=FALSE),
                               plItemTemplates);
 
+      plItemTemplates = Cons(Create(&Zjiriaesqe),plItemTemplates);
+      
       // Gems
       plItemTemplates = Cons(Create(&GemRiijaPower),plItemTemplates);
       plItemTemplates = Cons(Create(&GemKraananPower),plItemTemplates);
@@ -6364,6 +6406,7 @@ messages:
       plItemTemplates = Cons(Create(&ForgetPotionSkills),plItemTemplates);
       plItemTemplates = Cons(Create(&ForgetPotionRiija),plItemTemplates);
       plItemTemplates = Cons(Create(&ForgetPotionJala),plItemTemplates);
+      plItemTemplates = Cons(Create(&ForgetPotionRoguecraft),plItemTemplates);
 
       plItemTemplates = Cons(Create(&IllusionaryFormPotion),plItemTemplates);
       plItemTemplates = Cons(Create(&PurifyPotion),plItemTemplates);
@@ -6403,6 +6446,25 @@ messages:
       plItemTemplates = Cons(Create(&RubiciteRock),plItemTemplates);
       plItemTemplates = Cons(Create(&OnyxRock),plItemTemplates);
       plItemTemplates = Cons(Create(&ObsidianRock),plItemTemplates);
+
+      plItemTemplates = Cons(Create(&RedEmberheartFused),plItemTemplates);
+      plItemTemplates = Cons(Create(&SkyEmberheartFused),plItemTemplates);
+      plItemTemplates = Cons(Create(&BlueEmberheartFused),plItemTemplates);
+      plItemTemplates = Cons(Create(&BrownEmberheartFused),plItemTemplates);
+      plItemTemplates = Cons(Create(&GreenEmberheartFused),plItemTemplates);
+      plItemTemplates = Cons(Create(&BlackEmberheartFused),plItemTemplates);
+      plItemTemplates = Cons(Create(&WhiteEmberheartFused),plItemTemplates);
+      plItemTemplates = Cons(Create(&DarkGreenEmberheartFused),plItemTemplates);
+      plItemTemplates = Cons(Create(&PurpleEmberheartFused),plItemTemplates);
+      plItemTemplates = Cons(Create(&RedEmberheart),plItemTemplates);
+      plItemTemplates = Cons(Create(&SkyEmberheart),plItemTemplates);
+      plItemTemplates = Cons(Create(&BlueEmberheart),plItemTemplates);
+      plItemTemplates = Cons(Create(&BrownEmberheart),plItemTemplates);
+      plItemTemplates = Cons(Create(&GreenEmberheart),plItemTemplates);
+      plItemTemplates = Cons(Create(&BlackEmberheart),plItemTemplates);
+      plItemTemplates = Cons(Create(&WhiteEmberheart),plItemTemplates);
+      plItemTemplates = Cons(Create(&DarkGreenEmberheart),plItemTemplates);
+      plItemTemplates = Cons(Create(&PurpleEmberheart),plItemTemplates);
 
       // Reagents
       plItemTemplates = Cons(Create(&RedHeartStone),plItemTemplates);
@@ -6457,6 +6519,15 @@ messages:
       plItemTemplates = Cons(Create(&Herbs),plItemTemplates);
 
       // Edibles
+      // Thanksgiving food
+      plItemTemplates = Cons(Create(&Corn),plItemTemplates);
+      plItemTemplates = Cons(Create(&PecanPie),plItemTemplates);
+      plItemTemplates = Cons(Create(&PumpkinPie),plItemTemplates);
+      plItemTemplates = Cons(Create(&MashedPotatoes),plItemTemplates);
+      plItemTemplates = Cons(Create(&Stuffing),plItemTemplates);
+      plItemTemplates = Cons(Create(&Ham),plItemTemplates);
+      plItemTemplates = Cons(Create(&Rouladen),plItemTemplates);
+
       plItemTemplates = Cons(Create(&EasterEgg),plItemTemplates);
       plItemTemplates = Cons(Create(&BoonBerry),plItemTemplates);
 
@@ -6498,6 +6569,8 @@ messages:
       plItemTemplates = Cons(Create(&Apple),plItemTemplates);
 
       // Head
+      plItemTemplates = Cons(Create(&PilgrimHat),plItemTemplates);
+      plItemTemplates = Cons(Create(&WarBonnet),plItemTemplates);
       plItemTemplates = Cons(Create(&CowboyHat),plItemTemplates);
       plItemTemplates = Cons(Create(&DaemonHelm),plItemTemplates);
       plItemTemplates = Cons(Create(&Helm),plItemTemplates);
@@ -6520,6 +6593,8 @@ messages:
       plItemTemplates = Cons(Create(&WoodenShield),plItemTemplates);
 
       // Armor
+      plItemTemplates = Cons(Create(&MysticArmor),plItemTemplates);
+      plItemTemplates = Cons(Create(&BlackMetalArmor),plItemTemplates);
       plItemTemplates = Cons(Create(&RubiciteArmor),plItemTemplates);
       plItemTemplates = Cons(Create(&NeruditeArmor),plItemTemplates);
       plItemTemplates = Cons(Create(&PlateArmor),plItemTemplates);
@@ -6549,6 +6624,9 @@ messages:
       plItemTemplates = Cons(Create(&AcidArrow),plItemTemplates);
       plItemTemplates = Cons(Create(&GoldenArrow),plItemTemplates);
 
+      // Throwing Weapons
+      plItemTemplates = cons(Create(&ThrowingAxe),plItemTemplates);
+
       // Weapons
       plItemTemplates = Cons(Create(&MultishotBow),plItemTemplates);
       plItemTemplates = Cons(Create(&HuntingBow),plItemTemplates);
@@ -6573,6 +6651,7 @@ messages:
       plItemTemplates = cons(Create(&ShortSword),plItemTemplates);
 
       plItemTemplates = cons(Create(&Machete),plItemTemplates);
+      plItemTemplates = cons(Create(&Dagger),plItemTemplates);
       plItemTemplates = cons(Create(&Kukri),plItemTemplates);
       plItemTemplates = cons(Create(&Knife),plItemTemplates);
 
@@ -9370,6 +9449,21 @@ messages:
          }
       }
       //Debug("Honor ranks calculated.");
+      Send(self,@SetHonorStatues);
+
+      return;
+   }
+
+   SetHonorStatues()
+   "Sets the statues in Berg throne room based on the current honor list."
+   {
+      local oRoom;
+      
+      oRoom = Send(SYS,@FindRoomByNum,#num=RID_BERG_LEADER_HALL);
+      if (oRoom <> $)
+      {
+         Send(oRoom,@UpdateStatues);
+      }
 
       return;
    }

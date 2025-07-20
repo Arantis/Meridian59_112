@@ -85,11 +85,9 @@ classvars:
    vrCompleted = DarkAngelQuest_completed
 
    // The QST_ID constant for this quest.
-   viQuestID = QNT_ID_DARK_ANGEL
+   viQuestID = QST_ID_DARK_ANGEL
 
 properties:
-
-   pbDisabled = TRUE
 
    piNumPlayers = 1
    piPlayerRestrict = Q_PLAYER_NOTSUCCEEDED | Q_PLAYER_NOTFAILED_RECENTLY
@@ -106,7 +104,7 @@ messages:
    Constructor()
    {
       // Quest node - restrictions
-      plSpecialRestrict = [ [Q_R2_HAS_COMPLETED_QUEST_ID, QNT_ID_SWAMP_HUNT] ];
+      plSpecialRestrict = [ [Q_R2_HAS_COMPLETED_QUEST_ID, QST_ID_SWAMP_HUNT] ];
 
    
       // Quest node list to send to QuestEngine.
@@ -140,7 +138,8 @@ messages:
       if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MONSTER,
                #NPC_modifier=QN_NPCMOD_SAME,#monsterlist=[&DarkAngel],
                #timelimit=piTimeLimit,#quest_node_index=QNT_ID_DARK_ANGEL_2,
-               #prizelist=[ [ [ QN_PRIZETYPE_ITEMCLASS, &EssenceDust, 25 ] ] ])
+               #prizelist=[ [ [ QN_PRIZETYPE_ITEMCLASS, &EssenceDust, 25 ] ],
+                              [ QN_PRIZETYPE_ITEMCLASS, &Lyre, 1 ] ])
       {
                
          Send(oQE,@SetQuestNodeAssignHint,#index=QNT_ID_DARK_ANGEL_2,

@@ -75,11 +75,9 @@ classvars:
    vrCompleted = WolfHuntQuest_completed
 
    // The QST_ID constant for this quest.
-   viQuestID = QNT_ID_WOLF_HUNT
+   viQuestID = QST_ID_WOLF_HUNT
 
 properties:
-
-   pbDisabled = TRUE
 
    piNumPlayers = 1
    piPlayerRestrict = Q_PLAYER_NOTSUCCEEDED | Q_PLAYER_NOTFAILED_RECENTLY
@@ -123,7 +121,7 @@ messages:
       if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MONSTER_MULTIPLE,
                #NPC_modifier=QN_NPCMOD_SAME,#monsterlist=[ [&Wolf, 100] ],
                #timelimit=piTimeLimit,#quest_node_index=QNT_ID_WOLF_HUNT_2,
-               #prizelist=[ [ QN_PRIZETYPE_ITEMCLASS, &WolfMask ] ])
+               #prizelist=[ [ QN_PRIZETYPE_ITEMCLASS, &WolfMask, 1 ] ])
       {
                
          Send(oQE,@SetQuestNodeAssignHint,#index=QNT_ID_WOLF_HUNT_2,
