@@ -234,6 +234,11 @@
 
    UC_REQ_TIME  = 60
 
+   UC_ACHIEVEMENT         = 70
+   UC_REQ_ACHIEVEMENTS    = 71
+   UC_ACHIEVEMENTS        = 72
+   UC_CLAIM_ACHIEVEMENT   = 73
+
    // enchantment byte
    ENCHANTMENT_PLAYER = 1
    ENCHANTMENT_ROOM = 2

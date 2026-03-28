@@ -20,5 +20,18 @@ classvars:
    viWeatherMask = WEATHER_MASK_DEFAULT_NS
    viRegion = REGION_BARLOQUE
 
+messages:
+
+   NewHoldObject(what = $, new_pos = $)
+   {
+      if IsClass(what, &User)
+      {
+         Send(what, @AwardAchievement,
+              #achievement_id=ACHIEVE_VISIT_BARLOQUE);
+      }
+
+      propagate;
+   }
+
 end
 ////////////////////////////////////////////////////////////////////////////////

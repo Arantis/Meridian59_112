@@ -12,6 +12,7 @@
 #include "client.h"
 #include "merintr.h"
 #include "skills.h"
+#include "achieve.h"
 
 HINSTANCE hInst;              // Handle of this DLL
 
@@ -85,6 +86,8 @@ static handler_struct user_handler_table[] = {
 { UC_SEND_QUIT,            HandleSendQuit, },
 { UC_SPELL_SCHOOLS,        HandleSpellSchools, },
 { UC_RECEIVE_PREFERENCES,  HandlePreferences, },
+{ UC_ACHIEVEMENT,          HandleAchievementEarned, },
+{ UC_ACHIEVEMENTS,         HandleAchievements, },
 { 0, NULL},
 };
 
@@ -123,6 +126,8 @@ client_message user_msg_table[] = {
 { UC_BALANCE,              { PARAM_END }, },
 { UC_APPEAL,               { PARAM_STRING, PARAM_END }, },
 { UC_REQ_TIME,              { PARAM_END }, },
+{ UC_REQ_ACHIEVEMENTS,      { PARAM_END }, },
+{ UC_CLAIM_ACHIEVEMENT,     { PARAM_INT, PARAM_END }, },
 { 0,                       { PARAM_END, }, },    // Must end table this way
 };
 
@@ -433,6 +438,8 @@ static TypedCommand commands[] = {
 { "spellpower aus",     CommandSpellPowerOff, },
 { "time",               CommandTime, },
 { "Zeit",               CommandTime, },
+{ "achievements",       CommandAchievements, },
+{ "erfolge",            CommandAchievements, },
 { NULL,          NULL},    // Must end table this way
 };
 

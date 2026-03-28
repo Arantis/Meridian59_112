@@ -442,6 +442,9 @@ properties:
    // Singleton object that keeps track of various game statistics
    poStatistics = $
 
+   // Achievement engine - central registry for all achievements
+   poAchievementEngine = $
+
    poWarEvent = $
    
    // Hash table for users.
@@ -629,6 +632,7 @@ messages:
 
 
       Send(self,@RecreateAssassinGame);
+      Send(self,@RecreateAchievementEngine);
       Send(self,@RecreateAllBanks);
       Send(self,@RecreateAllVaults);
 
@@ -785,6 +789,7 @@ messages:
       piRecreate_State = RECREATE_PHASE_TWO;
 
       Send(self,@RecreateQuestEngine);
+      Send(self,@RecreateAchievementEngine);
       Send(self,@RecreateAllItemAttributes);
       Send(self,@RecreateAllGuildCommands);
       Send(self,@RecreateAllTreasureTypes);
@@ -5022,7 +5027,7 @@ messages:
       }
 
       if NOT StringConsistsOf(sName, 
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_ '!@$^&*()+=:[]{};/?|<>ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏĞÑÒÓÔÕÖØÙÚÛÜİŞßàáâãäåæçèéêëìíîïğñòóôõöøùúûüışÿ")
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_ '!@$^&*()+=:[]{};/?|<>ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½")
       {
          Debug("Got char name with illegal characters for user ", oUser);
 
@@ -5537,6 +5542,30 @@ messages:
    GetQuestEngine()                     // -AJM
    {
       return poQuestEngine;
+   }
+
+   RecreateAchievementEngine()
+   {
+      if poAchievementEngine <> $
+      {
+         Send(poAchievementEngine,@Recreate);
+      }
+      else
+      {
+         poAchievementEngine = Create(&AchievementEngine);
+      }
+
+      return;
+   }
+
+   GetAchievementEngine()
+   {
+      if poAchievementEngine = $
+      {
+         poAchievementEngine = Create(&AchievementEngine);
+      }
+
+      return poAchievementEngine;
    }
 
    AllPlayersClearQuestHistory(index = $,allBelow = FALSE,allAbove = FALSE)

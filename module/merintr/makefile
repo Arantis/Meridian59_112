@@ -36,6 +36,7 @@ $(OUTDIR)\merintr.dll: \
       $(OUTDIR)\groupdlg.obj \
       $(OUTDIR)\skills.obj \
       $(OUTDIR)\language.obj \
+      $(OUTDIR)\achieve.obj \
       $(OUTDIR)\merintr.res
 
 !include $(TOPDIR)\rules.mak

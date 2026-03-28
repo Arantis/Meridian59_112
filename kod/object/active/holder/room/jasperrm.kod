@@ -28,5 +28,18 @@ properties:
 
    prMusic = JasperRoom_music
 
+messages:
+
+   NewHoldObject(what = $, new_pos = $)
+   {
+      if IsClass(what, &User)
+      {
+         Send(what, @AwardAchievement,
+              #achievement_id=ACHIEVE_VISIT_JASPER);
+      }
+
+      propagate;
+   }
+
 end
 ////////////////////////////////////////////////////////////////////////////////

@@ -258,7 +258,7 @@ resources:
       "shield in %i %s."
    user_guild_shield_error_disabled = \
       "Your guild is unable to claim a different heraldic design at this "
-      "time – you have already claimed one."
+      "time ï¿½ you have already claimed one."
    user_time_days = "days"
    user_time_hours = "hours"
    user_time_minutes = "minutes"
@@ -522,6 +522,9 @@ resources:
    // Tried to actively defend an attack post impact.
    user_active_defense_late = "You leave yourself exposed."
 
+   // Achievement system resources
+   achieve_earned_msg = "~B~k[Achievement] ~n%s"
+
 classvars:
 
    viIndefinite = ARTICLE_NONE
@@ -561,6 +564,15 @@ properties:
 
    plQuestHistory = $
    plActiveQuests = $
+
+   // Achievement system: list of earned achievement IDs (integers)
+   plAchievements = $
+
+   // Achievement progress: sparse list of [achievement_id, current_count]
+   plAchievementProgress = $
+
+   // Achievement rewards not yet claimed: list of achievement IDs
+   plUnclaimedRewards = $
 
    piLogoffPenaltyCount = 0
 
@@ -3182,6 +3194,13 @@ messages:
             return;
          case UC_MINIGAME_RESET_PLAYERS:
             Send(Nth(client_msg,2),@ResetPlayers,#who=self);
+            return;
+         case UC_REQ_ACHIEVEMENTS:
+            Send(self,@SendAchievementList);
+            return;
+         case UC_CLAIM_ACHIEVEMENT:
+            Send(self,@ClaimAchievementReward,
+                 #achievement_id=Nth(client_msg,2));
             return;
          case UC_REQ_TIME:
                ClearTempString();
@@ -7445,12 +7464,12 @@ messages:
          string = psPlayerDescription;
       }
 
-      if StringContain(psPlayerDescription,"¶")
+      if StringContain(psPlayerDescription,"ï¿½")
       {
          iCount = 0;
-         while StringContain(psPlayerDescription,"¶")
+         while StringContain(psPlayerDescription,"ï¿½")
          {
-            StringSubstitute(psPlayerDescription,"¶","");
+            StringSubstitute(psPlayerDescription,"ï¿½","");
             if ++iCount > 10
             {
                // At this point, it's malicious.
@@ -13463,6 +13482,316 @@ messages:
       }
 
       return TRUE;
+   }
+
+   //// Achievement System ////
+
+   HasAchievement(achievement_id = 0)
+   "Returns TRUE if the user has the given achievement."
+   {
+      local i;
+
+      foreach i in plAchievements
+      {
+         if i = achievement_id
+         {
+            return TRUE;
+         }
+      }
+
+      return FALSE;
+   }
+
+   AwardAchievement(achievement_id = 0)
+   "Awards an achievement to the user if they don't already have it. "
+   "Sends notification to the client."
+   {
+      local oEngine, rName;
+
+      if Send(self,@HasAchievement,#achievement_id=achievement_id)
+      {
+         return FALSE;
+      }
+
+      oEngine = Send(SYS,@GetAchievementEngine);
+      rName = Send(oEngine,@GetAchievementName,
+                   #achievement_id=achievement_id);
+
+      if rName = $
+      {
+         Debug("AwardAchievement: unknown achievement_id");
+
+         return FALSE;
+      }
+
+      plAchievements = Cons(achievement_id, plAchievements);
+
+      // Mark reward as unclaimed.
+      plUnclaimedRewards = Cons(achievement_id, plUnclaimedRewards);
+
+      // Send notification message to chat area.
+      Send(self,@MsgSendUser,#message_rsc=achieve_earned_msg,
+           #parm1=rName);
+
+      // Check meta-achievements after any achievement is awarded.
+      Send(self,@CheckMetaAchievements,#just_earned=achievement_id);
+
+      // Send UC_ACHIEVEMENT to client for popup/tracking.
+      if pbLogged_on
+      {
+         AddPacket(1,BP_USERCOMMAND, 1,UC_ACHIEVEMENT,
+                   4,achievement_id,
+                   STRING_RESOURCE,rName,
+                   STRING_RESOURCE,Send(oEngine,@GetAchievementDesc,
+                                        #achievement_id=achievement_id));
+         SendPacket(poSession);
+      }
+
+      return TRUE;
+   }
+
+   SendAchievementList()
+   "Sends the full list of achievements to the client via UC_ACHIEVEMENTS."
+   {
+      local oEngine, lAll, i, iTotal, iEarned;
+
+      if NOT pbLogged_on
+      {
+         return;
+      }
+
+      oEngine = Send(SYS,@GetAchievementEngine);
+      iTotal = Send(oEngine,@GetAchievementCount);
+      iEarned = Length(plAchievements);
+
+      AddPacket(1,BP_USERCOMMAND, 1,UC_ACHIEVEMENTS,
+                2,iTotal, 2,iEarned);
+
+      // Send all registered achievements with status, progress, points, rewards.
+      lAll = Send(oEngine,@GetAchievementList);
+      foreach i in lAll
+      {
+         // i = [id, name_rsc, desc_rsc, category, target, points,
+         //      reward_gold, reward_item_class, reward_item_count]
+         AddPacket(4,First(i),
+                   STRING_RESOURCE,Nth(i,2),
+                   STRING_RESOURCE,Nth(i,3),
+                   1,Send(self,@HasAchievement,#achievement_id=First(i)),
+                   1,Nth(i,4),
+                   2,Send(self,@GetAchievementProgress,
+                          #achievement_id=First(i)),
+                   2,Nth(i,5),
+                   2,Nth(i,6),
+                   2,Nth(i,7),
+                   2,Nth(i,9),
+                   1,Send(self,@IsRewardUnclaimed,#achievement_id=First(i)));
+      }
+
+      SendPacket(poSession);
+
+      return;
+   }
+
+   GetAchievementProgress(achievement_id = 0)
+   "Returns the current progress count for a progress-based achievement."
+   {
+      local i;
+
+      foreach i in plAchievementProgress
+      {
+         if First(i) = achievement_id
+         {
+            return Nth(i,2);
+         }
+      }
+
+      return 0;
+   }
+
+   IncrementAchievementProgress(achievement_id = 0, amount = 1)
+   "Increments progress for a progress-based achievement. "
+   "Automatically awards the achievement when the target is reached."
+   {
+      local oEngine, iTarget, i, iCurrent, bFound;
+
+      // Already earned? Skip.
+      if Send(self,@HasAchievement,#achievement_id=achievement_id)
+      {
+         return;
+      }
+
+      oEngine = Send(SYS,@GetAchievementEngine);
+      iTarget = Send(oEngine,@GetAchievementTarget,
+                     #achievement_id=achievement_id);
+
+      if iTarget = 0
+      {
+         // Not a progress achievement, just award directly.
+         Send(self,@AwardAchievement,#achievement_id=achievement_id);
+
+         return;
+      }
+
+      // Find or create progress entry.
+      bFound = FALSE;
+      foreach i in plAchievementProgress
+      {
+         if First(i) = achievement_id
+         {
+            iCurrent = Nth(i,2) + amount;
+            SetNth(i,2,iCurrent);
+            bFound = TRUE;
+
+            break;
+         }
+      }
+
+      if NOT bFound
+      {
+         iCurrent = amount;
+         plAchievementProgress = Cons([achievement_id, iCurrent],
+                                      plAchievementProgress);
+      }
+
+      // Check if target reached.
+      if iCurrent >= iTarget
+      {
+         Send(self,@AwardAchievement,#achievement_id=achievement_id);
+      }
+
+      return;
+   }
+
+   KilledSomething(what=$,use_weapon=$,stroke_obj=$,oMinion=$)
+   "Override to track achievement progress on monster kills."
+   {
+      // Track mummy kills.
+      if IsClass(what,&Mummy)
+      {
+         Send(self,@IncrementAchievementProgress,
+              #achievement_id=ACHIEVE_KILL_MUMMIES);
+      }
+
+      // Track total monster kills.
+      if IsClass(what,&Monster)
+         AND NOT Send(what,@IsIllusion)
+      {
+         Send(self,@IncrementAchievementProgress,
+              #achievement_id=ACHIEVE_KILL_100);
+         Send(self,@IncrementAchievementProgress,
+              #achievement_id=ACHIEVE_KILL_500);
+      }
+
+      // First PvP kill.
+      if IsClass(what,&User)
+         AND what <> self
+      {
+         Send(self,@AwardAchievement,
+              #achievement_id=ACHIEVE_FIRST_PVP);
+      }
+
+      propagate;
+   }
+
+   CheckMetaAchievements(just_earned = 0)
+   "Check if any meta-achievements should be awarded based on current state."
+   {
+      // Grand Explorer: all five cities visited.
+      if just_earned >= ACHIEVE_VISIT_TOS
+         AND just_earned <= ACHIEVE_VISIT_JASPER
+      {
+         if Send(self,@HasAchievement,#achievement_id=ACHIEVE_VISIT_TOS)
+            AND Send(self,@HasAchievement,#achievement_id=ACHIEVE_VISIT_CORNOTH)
+            AND Send(self,@HasAchievement,#achievement_id=ACHIEVE_VISIT_BARLOQUE)
+            AND Send(self,@HasAchievement,#achievement_id=ACHIEVE_VISIT_MARION)
+            AND Send(self,@HasAchievement,#achievement_id=ACHIEVE_VISIT_JASPER)
+         {
+            Send(self,@AwardAchievement,
+                 #achievement_id=ACHIEVE_GRAND_EXPLORER);
+         }
+      }
+
+      return;
+   }
+
+   GetAchievementScore()
+   "Returns the total achievement points earned by this player."
+   {
+      local oEngine, i, iScore;
+
+      oEngine = Send(SYS,@GetAchievementEngine);
+      iScore = 0;
+
+      foreach i in plAchievements
+      {
+         iScore = iScore + Send(oEngine,@GetAchievementPoints,
+                                #achievement_id=i);
+      }
+
+      return iScore;
+   }
+
+   IsRewardUnclaimed(achievement_id = 0)
+   "Returns TRUE if the achievement reward has not been claimed yet."
+   {
+      local i;
+
+      foreach i in plUnclaimedRewards
+      {
+         if i = achievement_id
+         {
+            return TRUE;
+         }
+      }
+
+      return FALSE;
+   }
+
+   ClaimAchievementReward(achievement_id = 0)
+   "Claims the reward for an earned achievement."
+   {
+      local oEngine, i, bFound;
+
+      // Check that the achievement is actually unclaimed.
+      bFound = FALSE;
+      foreach i in plUnclaimedRewards
+      {
+         if i = achievement_id
+         {
+            bFound = TRUE;
+
+            break;
+         }
+      }
+
+      if NOT bFound
+      {
+         return FALSE;
+      }
+
+      // Remove from unclaimed list.
+      plUnclaimedRewards = DelListElem(plUnclaimedRewards, achievement_id);
+
+      // Give the reward.
+      oEngine = Send(SYS,@GetAchievementEngine);
+      Send(oEngine,@GiveReward,#who=self,#achievement_id=achievement_id);
+
+      // Refresh the achievement list on the client.
+      Send(self,@SendAchievementList);
+
+      return TRUE;
+   }
+
+   ResetAchievements()
+   "Admin command: Resets all achievements, progress, and unclaimed rewards."
+   {
+      plAchievements = $;
+      plAchievementProgress = $;
+      plUnclaimedRewards = $;
+
+      Debug("Achievements reset for ", vrName);
+
+      return;
    }
 
 end

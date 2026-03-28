@@ -36,6 +36,8 @@ static Action actions[] = {
   { IDM_SAD,      IDS_MENU_SAD,      "sad",     },
   { IDM_NEUTRAL,  IDS_MENU_NEUTRAL,  "neutral", },
   { IDM_WRY,      IDS_MENU_WRY,      "wry",     },
+  { 0,            0,              NULL,      },  // Separator
+  { IDM_ACHIEVEMENTS, IDS_MENU_ACHIEVEMENTS, "achievements", },
 };
 
 static int num_actions = (sizeof(actions) / sizeof(Action));

@@ -8270,6 +8270,13 @@ messages:
       poGuild = guild_obj;
       Send(self,@EvaluatePKStatus,#dbug=TRUE);
 
+      // Achievement: joined a guild.
+      if guild_obj <> $
+         AND IsClass(self,&User)
+      {
+         Send(self,@AwardAchievement,#achievement_id=ACHIEVE_JOIN_GUILD);
+      }
+
       return;
    }
 
@@ -8730,6 +8737,14 @@ messages:
               #wave_rsc=player_sound_learn_spell);
       }
 
+      // Achievement: first spell learned.
+      if IsClass(self,&User)
+         AND NOT bDM
+         AND NOT initial
+      {
+         Send(self,@AwardAchievement,#achievement_id=ACHIEVE_FIRST_SPELL);
+      }
+
       foreach i in plUsing
       {
          if IsClass(i,&DiscipleRobe)
@@ -9167,6 +9182,14 @@ messages:
          Send(self,@AddToSchools,#school=Send(oSkill,@GetSchool),
                #change=iBoundAbility);
          Send(self,@PlayerNewAbilityLevel,#skill_num=num,#new_value=iBoundAbility);
+      }
+
+      // Achievement: first skill learned.
+      if IsClass(self,&User)
+         AND NOT bDM
+         AND NOT initial
+      {
+         Send(self,@AwardAchievement,#achievement_id=ACHIEVE_FIRST_SKILL);
       }
 
       return TRUE;

@@ -1,0 +1,451 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+///////////////////////////////////////////////////////////////////////////
+//
+// achieveeng.kod:  Achievement Engine - central registry for all achievements.
+//
+// Each achievement is registered with: ID, name, description, category,
+// target (0=binary), points, reward gold, reward item class, reward count.
+//
+///////////////////////////////////////////////////////////////////////////
+
+AchievementEngine is UtilityFunctions
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   include achieveeng.lkod
+
+   // Exploration achievements
+   achieve_visit_tos_name = "Explorer of Tos"
+   achieve_visit_tos_desc = "Visit the city of Tos."
+   achieve_visit_cornoth_name = "Explorer of Cor Noth"
+   achieve_visit_cornoth_desc = "Visit the city of Cor Noth."
+   achieve_visit_barloque_name = "Explorer of Barloque"
+   achieve_visit_barloque_desc = "Visit the city of Barloque."
+   achieve_visit_marion_name = "Explorer of Marion"
+   achieve_visit_marion_desc = "Visit the city of Marion."
+   achieve_visit_jasper_name = "Explorer of Jasper"
+   achieve_visit_jasper_desc = "Visit the city of Jasper."
+
+   // Combat achievements
+   achieve_kill_mummies_name = "Mummy Slayer"
+   achieve_kill_mummies_desc = "Kill 50 mummies."
+   achieve_kill_100_name = "Monster Hunter"
+   achieve_kill_100_desc = "Kill 100 monsters."
+   achieve_kill_500_name = "Monster Slayer"
+   achieve_kill_500_desc = "Kill 500 monsters."
+   achieve_first_pvp_name = "First Blood"
+   achieve_first_pvp_desc = "Defeat another player in combat."
+
+   // Progression achievements
+   achieve_first_spell_name = "Apprentice Mage"
+   achieve_first_spell_desc = "Learn your first spell."
+   achieve_first_skill_name = "Skill Initiate"
+   achieve_first_skill_desc = "Learn your first skill."
+
+   // Social achievements
+   achieve_join_guild_name = "Guild Member"
+   achieve_join_guild_desc = "Join a guild."
+
+   // Meta achievements
+   achieve_grand_explorer_name = "Grand Explorer"
+   achieve_grand_explorer_desc = \
+      "Visit all five major cities: Tos, Cor Noth, Barloque, Marion, "
+      "and Jasper."
+
+   // Reward description resources
+   achieve_reward_gold = "Reward: %i shillings"
+   achieve_reward_gold_item = "Reward: %i shillings, %i %s"
+   achieve_reward_item = "Reward: %i %s"
+
+classvars:
+
+properties:
+
+   // List of achievement definitions.
+   // Each entry: [id, name_rsc, desc_rsc, category, target, points,
+   //              reward_gold, reward_item_class, reward_item_count]
+   plAchievements = $
+
+messages:
+
+   Constructor()
+   {
+      Send(self,@RegisterAllAchievements);
+
+      propagate;
+   }
+
+   Recreate()
+   {
+      Send(self,@RegisterAllAchievements);
+
+      return;
+   }
+
+   RegisterAllAchievements()
+   "Clears and rebuilds the achievement registry."
+   {
+      plAchievements = $;
+
+      //// Exploration: City Visits (1pt, 1000 gold + 10 mushrooms) ////
+      Send(self,@RegisterAchievement,
+           #achievement_id=ACHIEVE_VISIT_TOS,
+           #name_rsc=achieve_visit_tos_name,
+           #desc_rsc=achieve_visit_tos_desc,
+           #category=ACHIEVE_CAT_EXPLORATION,
+           #points=1,
+           #reward_gold=1000,
+           #reward_item_class=&Mushroom,
+           #reward_item_count=10);
+      Send(self,@RegisterAchievement,
+           #achievement_id=ACHIEVE_VISIT_CORNOTH,
+           #name_rsc=achieve_visit_cornoth_name,
+           #desc_rsc=achieve_visit_cornoth_desc,
+           #category=ACHIEVE_CAT_EXPLORATION,
+           #points=1,
+           #reward_gold=1000,
+           #reward_item_class=&Mushroom,
+           #reward_item_count=10);
+      Send(self,@RegisterAchievement,
+           #achievement_id=ACHIEVE_VISIT_BARLOQUE,
+           #name_rsc=achieve_visit_barloque_name,
+           #desc_rsc=achieve_visit_barloque_desc,
+           #category=ACHIEVE_CAT_EXPLORATION,
+           #points=1,
+           #reward_gold=1000,
+           #reward_item_class=&Mushroom,
+           #reward_item_count=10);
+      Send(self,@RegisterAchievement,
+           #achievement_id=ACHIEVE_VISIT_MARION,
+           #name_rsc=achieve_visit_marion_name,
+           #desc_rsc=achieve_visit_marion_desc,
+           #category=ACHIEVE_CAT_EXPLORATION,
+           #points=1,
+           #reward_gold=1000,
+           #reward_item_class=&Mushroom,
+           #reward_item_count=10);
+      Send(self,@RegisterAchievement,
+           #achievement_id=ACHIEVE_VISIT_JASPER,
+           #name_rsc=achieve_visit_jasper_name,
+           #desc_rsc=achieve_visit_jasper_desc,
+           #category=ACHIEVE_CAT_EXPLORATION,
+           #points=1,
+           #reward_gold=1000,
+           #reward_item_class=&Mushroom,
+           #reward_item_count=10);
+
+      //// Combat (5-10pt) ////
+      Send(self,@RegisterAchievement,
+           #achievement_id=ACHIEVE_KILL_MUMMIES,
+           #name_rsc=achieve_kill_mummies_name,
+           #desc_rsc=achieve_kill_mummies_desc,
+           #category=ACHIEVE_CAT_COMBAT,
+           #target=ACHIEVE_KILL_MUMMIES_TARGET,
+           #points=5,
+           #reward_gold=1000,
+           #reward_item_class=&Mushroom,
+           #reward_item_count=10);
+      Send(self,@RegisterAchievement,
+           #achievement_id=ACHIEVE_KILL_100,
+           #name_rsc=achieve_kill_100_name,
+           #desc_rsc=achieve_kill_100_desc,
+           #category=ACHIEVE_CAT_COMBAT,
+           #target=100,
+           #points=5,
+           #reward_gold=1000,
+           #reward_item_class=&Mushroom,
+           #reward_item_count=10);
+      Send(self,@RegisterAchievement,
+           #achievement_id=ACHIEVE_KILL_500,
+           #name_rsc=achieve_kill_500_name,
+           #desc_rsc=achieve_kill_500_desc,
+           #category=ACHIEVE_CAT_COMBAT,
+           #target=500,
+           #points=10,
+           #reward_gold=1000,
+           #reward_item_class=&Mushroom,
+           #reward_item_count=10);
+      Send(self,@RegisterAchievement,
+           #achievement_id=ACHIEVE_FIRST_PVP,
+           #name_rsc=achieve_first_pvp_name,
+           #desc_rsc=achieve_first_pvp_desc,
+           #category=ACHIEVE_CAT_COMBAT,
+           #points=5,
+           #reward_gold=1000,
+           #reward_item_class=&Mushroom,
+           #reward_item_count=10);
+
+      //// Progression (1pt) ////
+      Send(self,@RegisterAchievement,
+           #achievement_id=ACHIEVE_FIRST_SPELL,
+           #name_rsc=achieve_first_spell_name,
+           #desc_rsc=achieve_first_spell_desc,
+           #category=ACHIEVE_CAT_PROGRESSION,
+           #points=1,
+           #reward_gold=1000,
+           #reward_item_class=&Mushroom,
+           #reward_item_count=10);
+      Send(self,@RegisterAchievement,
+           #achievement_id=ACHIEVE_FIRST_SKILL,
+           #name_rsc=achieve_first_skill_name,
+           #desc_rsc=achieve_first_skill_desc,
+           #category=ACHIEVE_CAT_PROGRESSION,
+           #points=1,
+           #reward_gold=1000,
+           #reward_item_class=&Mushroom,
+           #reward_item_count=10);
+
+      //// Social (5pt) ////
+      Send(self,@RegisterAchievement,
+           #achievement_id=ACHIEVE_JOIN_GUILD,
+           #name_rsc=achieve_join_guild_name,
+           #desc_rsc=achieve_join_guild_desc,
+           #category=ACHIEVE_CAT_SOCIAL,
+           #points=5,
+           #reward_gold=1000,
+           #reward_item_class=&Mushroom,
+           #reward_item_count=10);
+
+      //// Meta (50pt, bigger reward) ////
+      Send(self,@RegisterAchievement,
+           #achievement_id=ACHIEVE_GRAND_EXPLORER,
+           #name_rsc=achieve_grand_explorer_name,
+           #desc_rsc=achieve_grand_explorer_desc,
+           #category=ACHIEVE_CAT_META,
+           #points=50,
+           #reward_gold=5000,
+           #reward_item_class=&Mushroom,
+           #reward_item_count=50);
+
+      return;
+   }
+
+   RegisterAchievement(achievement_id = 0, name_rsc = $, desc_rsc = $,
+                        category = 0, target = 0, points = 1,
+                        reward_gold = 0, reward_item_class = $,
+                        reward_item_count = 0)
+   "Registers a single achievement definition."
+   {
+      plAchievements = Cons([achievement_id, name_rsc, desc_rsc,
+                             category, target, points,
+                             reward_gold, reward_item_class,
+                             reward_item_count],
+                            plAchievements);
+
+      return;
+   }
+
+   GetAchievementName(achievement_id = 0)
+   {
+      local i;
+      foreach i in plAchievements
+      {
+         if First(i) = achievement_id
+         {
+            return Nth(i,2);
+         }
+      }
+      return $;
+   }
+
+   GetAchievementDesc(achievement_id = 0)
+   {
+      local i;
+      foreach i in plAchievements
+      {
+         if First(i) = achievement_id
+         {
+            return Nth(i,3);
+         }
+      }
+      return $;
+   }
+
+   GetAchievementCategory(achievement_id = 0)
+   {
+      local i;
+      foreach i in plAchievements
+      {
+         if First(i) = achievement_id
+         {
+            return Nth(i,4);
+         }
+      }
+      return 0;
+   }
+
+   GetAchievementTarget(achievement_id = 0)
+   {
+      local i;
+      foreach i in plAchievements
+      {
+         if First(i) = achievement_id
+         {
+            return Nth(i,5);
+         }
+      }
+      return 0;
+   }
+
+   GetAchievementPoints(achievement_id = 0)
+   {
+      local i;
+      foreach i in plAchievements
+      {
+         if First(i) = achievement_id
+         {
+            return Nth(i,6);
+         }
+      }
+      return 0;
+   }
+
+   GetAchievementRewardGold(achievement_id = 0)
+   {
+      local i;
+      foreach i in plAchievements
+      {
+         if First(i) = achievement_id
+         {
+            return Nth(i,7);
+         }
+      }
+      return 0;
+   }
+
+   GetAchievementRewardItemClass(achievement_id = 0)
+   {
+      local i;
+      foreach i in plAchievements
+      {
+         if First(i) = achievement_id
+         {
+            return Nth(i,8);
+         }
+      }
+      return $;
+   }
+
+   GetAchievementRewardItemCount(achievement_id = 0)
+   {
+      local i;
+      foreach i in plAchievements
+      {
+         if First(i) = achievement_id
+         {
+            return Nth(i,9);
+         }
+      }
+      return 0;
+   }
+
+   GetAchievementCount()
+   {
+      return Length(plAchievements);
+   }
+
+   GetAchievementList()
+   {
+      return plAchievements;
+   }
+
+   GetTotalPoints()
+   {
+      local i, iTotal;
+      iTotal = 0;
+      foreach i in plAchievements
+      {
+         iTotal = iTotal + Nth(i,6);
+      }
+      return iTotal;
+   }
+
+   GiveReward(who = $, achievement_id = 0)
+   "Gives the reward for an achievement to the player."
+   {
+      local i, iGold, cItem, iCount, oItem;
+
+      foreach i in plAchievements
+      {
+         if First(i) = achievement_id
+         {
+            iGold = Nth(i,7);
+            cItem = Nth(i,8);
+            iCount = Nth(i,9);
+
+            // Give gold.
+            if iGold > 0
+            {
+               Send(who,@NewHold,#what=Create(&Money,#number=iGold));
+            }
+
+            // Give item.
+            if cItem <> $
+               AND iCount > 0
+            {
+               oItem = Create(cItem,#number=iCount);
+               Send(who,@NewHold,#what=oItem);
+            }
+
+            return;
+         }
+      }
+
+      return;
+   }
+
+   GetRewardString(achievement_id = 0)
+   "Returns a resource + parms describing the reward for the client."
+   {
+      local i, iGold, cItem, iCount;
+
+      foreach i in plAchievements
+      {
+         if First(i) = achievement_id
+         {
+            iGold = Nth(i,7);
+            cItem = Nth(i,8);
+            iCount = Nth(i,9);
+
+            if iGold > 0
+               AND cItem <> $
+               AND iCount > 0
+            {
+               return achieve_reward_gold_item;
+            }
+
+            if iGold > 0
+            {
+               return achieve_reward_gold;
+            }
+
+            if cItem <> $
+               AND iCount > 0
+            {
+               return achieve_reward_item;
+            }
+         }
+      }
+
+      return $;
+   }
+
+   Delete()
+   {
+      plAchievements = $;
+
+      propagate;
+   }
+
+end
+////////////////////////////////////////////////////////////////////////////////

@@ -4532,7 +4532,7 @@
 
    // Gravity Acceleration = speed-up falling objects
    // Same value as used in clients, but upscaled to work with integers
-   // unit/millisecond² -> it would be -0.00032 for KOD-FINENESS base (64)
+   // unit/millisecondï¿½ -> it would be -0.00032 for KOD-FINENESS base (64)
    // Hence it's upscaled by 100000 and becomes
    GRAVITY_ACCELERATION = -32
 
@@ -4602,3 +4602,35 @@
    UNLEASH_AMBUSH = 4
    UNLEASH_CHARGE = 5
    UNLEASH_STAGGER = 6
+
+   // Achievement system constants
+   // Achievement categories
+   ACHIEVE_CAT_EXPLORATION = 1
+   ACHIEVE_CAT_COMBAT      = 2
+   ACHIEVE_CAT_PROGRESSION = 3
+   ACHIEVE_CAT_SOCIAL      = 4
+   ACHIEVE_CAT_META        = 5
+
+   // Achievement IDs - Exploration: City Visits (1pt each)
+   ACHIEVE_VISIT_TOS      = 1
+   ACHIEVE_VISIT_CORNOTH  = 2
+   ACHIEVE_VISIT_BARLOQUE = 3
+   ACHIEVE_VISIT_MARION   = 4
+   ACHIEVE_VISIT_JASPER   = 5
+
+   // Achievement IDs - Combat (5-10pt)
+   ACHIEVE_KILL_MUMMIES   = 10
+   ACHIEVE_KILL_MUMMIES_TARGET = 50
+   ACHIEVE_KILL_100       = 11
+   ACHIEVE_KILL_500       = 12
+   ACHIEVE_FIRST_PVP      = 13
+
+   // Achievement IDs - Progression (1-5pt)
+   ACHIEVE_FIRST_SPELL    = 20
+   ACHIEVE_FIRST_SKILL    = 21
+
+   // Achievement IDs - Social (5pt)
+   ACHIEVE_JOIN_GUILD     = 30
+
+   // Achievement IDs - Meta (50pt)
+   ACHIEVE_GRAND_EXPLORER = 100

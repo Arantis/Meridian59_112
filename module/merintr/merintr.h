@@ -33,6 +33,7 @@
 #include "drawint.h"
 #include "groupdlg.h"
 #include "language.h"
+#include "achieve.h"
 
 #define MODULE_ID 100    // Unique module id #
 
@@ -94,6 +95,8 @@
 #define RequestBalance()           ToServer(BP_USERCOMMAND, user_msg_table, UC_BALANCE)
 #define RequestAppeal(s)           ToServer(BP_USERCOMMAND, user_msg_table, UC_APPEAL, s)
 #define RequestPreferences()       ToServer(BP_USERCOMMAND, user_msg_table, UC_REQ_PREFERENCES)
+#define RequestAchievements()      ToServer(BP_USERCOMMAND, user_msg_table, UC_REQ_ACHIEVEMENTS)
+#define ClaimAchievement(id)       ToServer(BP_USERCOMMAND, user_msg_table, UC_CLAIM_ACHIEVEMENT, id)
 
 extern client_message msg_table[];
 extern client_message user_msg_table[];

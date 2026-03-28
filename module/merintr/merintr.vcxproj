@@ -34,6 +34,7 @@
     <ClInclude Include="statnum.h" />
     <ClInclude Include="stats.h" />
     <ClInclude Include="userarea.h" />
+    <ClInclude Include="achieve.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="merintr.rc" />
@@ -67,6 +68,7 @@
     <ClCompile Include="statnum.c" />
     <ClCompile Include="stats.c" />
     <ClCompile Include="userarea.c" />
+    <ClCompile Include="achieve.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{932BC11A-53D3-4A49-8D8F-196AE329B972}</ProjectGuid>
@@ -127,7 +129,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>meridian.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>meridian.lib;comctl32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../../lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>merintr.def</ModuleDefinitionFile>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
@@ -175,7 +177,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>meridian.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>meridian.lib;comctl32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../../lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>merintr.def</ModuleDefinitionFile>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>

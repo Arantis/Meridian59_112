@@ -13,7 +13,7 @@ CFLAGS = $(CFLAGS) /arch:SSE2 /TP /D_USING_V110_SDK71_
 # /DLL                         Create DLL 
 LINKFLAGS = $(LINKFLAGS) /SUBSYSTEM:WINDOWS",5.01" /DLL
 
-LIBS            = user32.lib gdi32.lib comctl32.lib $(BLAKLIBDIR)\meridian.lib
+LIBS            = user32.lib gdi32.lib comctl32.lib winmm.lib $(BLAKLIBDIR)\meridian.lib
 INCLUDE         = $(INCLUDE);$(CLIENTDIR);$(CLIENTDIR)\$(OUTDIR)
 SOURCEDIR       = $(MODULEDIR)\$(MODULE)
 MODULECLIENTDIR = $(TOPDIR)\run\localclient\resource

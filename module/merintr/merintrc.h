@@ -271,6 +271,15 @@
 #define IDS_CHAT_BROADCAST              264
 #define IDS_CHAT_HELP                   265
 #define IDS_DOPERFORM                   266
+#define IDS_ACHIEVEMENTS                267
+#define IDD_ACHIEVEMENTS                268
+#define IDC_ACHIEVELIST                 1270
+#define IDC_ACHIEVEHEADER               1271
+#define IDC_ACHIEVEDESC                 1272
+#define IDC_ACHIEVECAT                  1273
+#define IDC_ACHIEVESEARCH               1274
+#define IDC_ACHIEVETRACK                1275
+#define IDC_ACHIEVECLAIM                1276
 #define IDC_ALIASF1                     1000
 #define IDC_ALIASF2                     1001
 #define IDC_DEFINE                      1001
@@ -393,6 +402,8 @@
 #define IDM_GROUP                       4009
 #define IDM_VERBALIAS                   4010
 #define IDM_DANCE                       4011
+#define IDM_ACHIEVEMENTS                4012
+#define IDS_MENU_ACHIEVEMENTS           269
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -400,9 +411,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        266
+#define _APS_NEXT_RESOURCE_VALUE        269
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1267
+#define _APS_NEXT_CONTROL_VALUE         1277
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif

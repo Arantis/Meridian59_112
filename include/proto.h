@@ -294,6 +294,11 @@ enum {
    UC_MINIGAME_RESET_PLAYERS= 49,
 
    UC_REQ_TIME = 60,
+
+   UC_ACHIEVEMENT         = 70,   // Server -> Client: achievement earned notification
+   UC_REQ_ACHIEVEMENTS    = 71,   // Client -> Server: request achievement list
+   UC_ACHIEVEMENTS        = 72,   // Server -> Client: full achievement list
+   UC_CLAIM_ACHIEVEMENT   = 73,   // Client -> Server: claim achievement reward
 };
 
 // Character creation error enum
