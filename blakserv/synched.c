@@ -530,7 +530,9 @@ void VerifyLogin(session_node *s)
          && strcmp(s->rsb_hash, str) != 0)
       {
          if (s->version_major == 50)
+         {
             SynchedSendClientPatchClassic(s);
+         }
          else if (s->version_major == 90)
             SynchedSendClientPatchOgre(s);
          InterfaceUpdateSession(s);
@@ -538,7 +540,9 @@ void VerifyLogin(session_node *s)
          SetSessionTimer(s, 60 * ConfigInt(INACTIVE_TRANSFER));
       }
       else
+      {
          SynchedDoMenu(s);
+      }
    }
 }
 

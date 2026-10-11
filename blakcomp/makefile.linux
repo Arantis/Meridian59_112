@@ -11,8 +11,8 @@ SOURCEDIR = .
 
 BLAKINCLUDEDIR += -I .
 
-CFLAGS = -m32 -I $(BLAKINCLUDEDIR) -DBLAK_PLATFORM_LINUX  -Wno-write-strings
-LINKFLAGS = -m32
+CFLAGS = -m64 -I $(BLAKINCLUDEDIR) -std=c++20 -DBLAK_PLATFORM_LINUX  -Wno-write-strings
+LINKFLAGS = -m64
 LIBS =
 
 OBJS = \
@@ -28,6 +28,7 @@ OBJS = \
 	$(OUTDIR)/sort.obj \
 	$(OUTDIR)/optimize.obj \
 	$(OUTDIR)/resource.obj \
+	$(OUTDIR)/dircompile.obj \
 
 all: makedirs $(OUTDIR)/bc
 
@@ -51,7 +52,7 @@ $(OUTDIR)/blakcomp.tab.c $(OUTDIR)/blakcomp.tab.h: $(SOURCEDIR)/blakcomp.y $(SOU
 	$(YACC) $(SOURCEDIR)/blakcomp.y -o $(OUTDIR)/blakcomp.tab.c
 
 makedirs:
-	-$(MKDIR) $(OUTDIR)
+	$(MKDIR) -p $(OUTDIR)
 
 clean:
 	-$(RM) $(OUTDIR)/*

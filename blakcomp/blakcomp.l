@@ -260,7 +260,7 @@ void handle_error(void)
 void yyerror(const char *s)
 {
    // Kod files store full path, include files don't.
-   char *fname = strrchr(current_fname, '\\');
+   char *fname = strrchr(current_fname, DIR_SEPARATOR[0]);
    if (fname)
       fname++; // Move past the slash.
    else
@@ -323,7 +323,7 @@ void action_error(const char *fmt, ...)
       errline--;
 
    // Kod files store full path, include files don't.
-   char *fname = strrchr(current_fname, '\\');
+   char *fname = strrchr(current_fname, DIR_SEPARATOR[0]);
    if (fname)
       fprintf(stderr, "%s(%d): error: ", fname + 1, errline);
    else
@@ -606,8 +606,8 @@ void add_include_directory(char *dirname)
 */
 void check_output_directory(char *dirname)
 {
-   sprintf(bof_output_dir, "%s\\loadkod", dirname);
-   sprintf(rsc_output_dir, "%s\\rsc", dirname);
+   sprintf(bof_output_dir, "%s%sloadkod", dirname, DIR_SEPARATOR);
+   sprintf(rsc_output_dir, "%s%srsc", dirname, DIR_SEPARATOR);
 
    if (access(dirname, 4) != 0)
    {
@@ -698,7 +698,7 @@ int main(int argc, char **argv)
    for (i = 1; i < argc; i++)
    {
       arg = argv[i];
-      if (*arg == '-' || *arg == '/')
+      if (*arg == '-')
       {
          /* Switch on command-line options */
          switch(toupper(*(arg + 1)))
@@ -780,17 +780,15 @@ int main(int argc, char **argv)
       }
    }
 
-#ifdef BLAK_PLATFORM_WINDOWS
    if (directory_mode)
       compile_directory_mode();
    else
-#endif
-   compile_file_list(".\\", file_list);
+      compile_file_list(DIR_SEPARATOR, file_list);
 
    return !generate_code;
 }
 
-void compile_file_list(char *path, list_type l)
+void compile_file_list(const char *path, list_type l)
 {
    if (l == NULL)
    {

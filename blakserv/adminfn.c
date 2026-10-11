@@ -35,10 +35,9 @@
 
 enum { N,S,I,R }; /* no more params, string param, int param, rest of line param */
 
-enum 
-{ 
+enum {
 	A = 0x01,
-		M = 0x02
+	M = 0x02
 }; /* admin mode can do vs. maintenance mode can do */
 
 #define T True
@@ -642,7 +641,7 @@ void SendSessionAdminText(int session_id,const char *fmt,...)
 	
 	admin_session_id = session_id;
 	
-	SendAdminBuffer(s,strlen(s));
+	SendAdminBuffer(s,(int)strlen(s));
 	
 	admin_session_id = prev_admin_session_id;
 }
@@ -866,7 +865,7 @@ void AdminTable(int len_command_table,admin_table_type command_table[],int sessi
 				}
 				
 				text = (char *) parm_str;
-				SetTempString( text, strlen( text ) );	// Copies to global temp_str
+				SetTempString(text, (int)strlen(text));	// Copies to global temp_str
 				
 				// we need to set type, name_id, and value
 				//	type is CONSTANT (set above)
@@ -1327,12 +1326,12 @@ void AdminShowStatus(int session_id,admin_parm_type parms[],
 		now - kstat->system_start_time);
 	
 	aprintf("----\n");
-	aprintf("Interpreted %llu total instructions in %.2f seconds\n",
+	aprintf("Interpreted %" PRIu64 " total instructions in %.2f seconds\n",
 		kstat->num_interpreted, kstat->interpreting_time / 1000000.0);
-	aprintf("Handled %llu top level messages, total %llu messages\n",
+	aprintf("Handled %" PRIu64 " top level messages, total %" PRIu64 " messages\n",
 		kstat->num_top_level_messages, kstat->num_messages);
 	aprintf("Deepest message call stack is %i calls from top level\n",kstat->message_depth_highest);
-	aprintf("Most instructions on one top level message is %llu instructions\n",kstat->num_interpreted_highest);
+	aprintf("Most instructions on one top level message is %" PRIu64 " instructions\n",kstat->num_interpreted_highest);
 	aprintf("Number of top level messages over 1000 milliseconds is %i\n",kstat->interpreting_time_over_second);
 	aprintf("Longest time on one top level message is %i milliseconds\n",(int)(kstat->interpreting_time_highest/1000.0));
 	if (kstat->interpreting_time_object_id != INVALID_ID)
@@ -1358,7 +1357,7 @@ void AdminShowStatus(int session_id,admin_parm_type parms[],
 		GetUsedSessions());
 	
 	aprintf("----\n");
-   aprintf("Performed %llu MySQL DB calls\n", MySQLGetRecordCount());
+   aprintf("Performed %" PRIu64 " MySQL DB calls\n", MySQLGetRecordCount());
 	aprintf("Used %i list nodes\n",GetListNodesUsed());
 	aprintf("Used %i tables\n",GetTablesUsed());
 	aprintf("Used %i object nodes\n",GetObjectsUsed());
@@ -1375,7 +1374,8 @@ void AdminShowStatus(int session_id,admin_parm_type parms[],
 void AdminShowMemory(int session_id,admin_parm_type parms[],
                      int num_blak_parm,parm_node blak_parm[])
 {
-	int i,total;
+	int i;
+	size_t total;
 	memory_statistics *mstat;
 	
 	aprintf("System Memory -----------------------------\n");
@@ -1387,10 +1387,10 @@ void AdminShowMemory(int session_id,admin_parm_type parms[],
 	aprintf("%s\n",TimeStr(GetTime()));
 	for (i=0;i<GetNumMemoryStats();i++)
 	{
-		aprintf("%-20s %8lu\n",GetMemoryStatName(i),mstat->allocated[i]);
+		aprintf("%-20s %8zu\n",GetMemoryStatName(i),mstat->allocated[i]);
 		total += mstat->allocated[i];
 	}
-	aprintf("%-20s %4lu MB\n","-- Total",total/1024/1024);
+	aprintf("%-20s %4zu MB\n","-- Total",total/1024/1024);
 	
 	aprintf("-------------------------------------------\n");
 }
@@ -2601,10 +2601,10 @@ void AdminShowOpcodes(int session_id, admin_parm_type parms[],
          // Convert to nanoseconds.
          iTime = kstat->opcode_total_time[i] * 1000.0 / kstat->opcode_count[i];
       }
-      aprintf("Opcode: %3i, count: %10llu, time: %8.3f ns\n", i, kstat->opcode_count[i], iTime);
+		aprintf("Opcode: %3i, count: %10" PRIu64 ", time: %8.3f ns\n", i, kstat->opcode_count[i], iTime);
    }
    aprintf("\nUnused opcodes: %i\n", unused_opcodes);
-   aprintf("Total instructions: %llu\n", total_opcodes);
+	aprintf("Total instructions: %" PRIu64 "\n", total_opcodes);
 #else
    aprintf("Opcode count/timing disabled - enable by building \nblakserv with preprocessor define KOD_OPCODE_TESTING.\n");
 #endif
@@ -2749,7 +2749,7 @@ void AdminShowCalls(int session_id,admin_parm_type parms[],
       double avgTime = 0.0;
       if (kstat->c_count_timed[max_index] > 0)
          avgTime = kstat->ccall_total_time[max_index] / (double)kstat->c_count_timed[max_index];
-      aprintf("%3i. %-23s %-12llu %4.3f\n", count + 1, c_name, ignore_val, avgTime);
+	aprintf("%3i. %-23s %-12" PRIu64 " %4.3f\n", count + 1, c_name, ignore_val, avgTime);
 	}
 }
 
@@ -2796,11 +2796,11 @@ void AdminShowMessage(int session_id,admin_parm_type parms[],
 	if (c != found_class)
 		aprintf(" (handled by CLASS %s)",found_class->class_name);
 	aprintf("\n");
-   aprintf("Called count (total): %llu\n", m->timed_call_count + m->untimed_call_count);
+	aprintf("Called count (total): %" PRIu64 "\n", m->timed_call_count + m->untimed_call_count);
    if (m->timed_call_count > 0)
       aprintf("Average running time: %8.3f\n", m->total_call_time / (double)m->timed_call_count);
    if (m->untimed_call_count > 0)
-      aprintf("Called count (untimed): %llu\n", m->untimed_call_count);
+		aprintf("Called count (untimed): %" PRIu64 "\n", m->untimed_call_count);
 	aprintf("--------------------------------------------------------------\n");
 	aprintf("  Parameters:\n");
 	/* we need to read the first few bytes from the bkod to get the parms */
@@ -4651,9 +4651,10 @@ void AdminDeleteAccount(int session_id,admin_parm_type parms[],
 	
 	aprintf("Account %i will be deleted.\n",a->account_id);
 
-   // XXX Need a replacement for this on Linux
 #ifdef BLAK_PLATFORM_WINDOWS
 	PostThreadMessage(main_thread_id,WM_BLAK_MAIN_DELETE_ACCOUNT,0,a->account_id);
+#else
+	DeleteAccountAndAssociatedUsersByID(a->account_id);
 #endif
 }
 
@@ -4861,7 +4862,7 @@ void AdminSendObject(int session_id,admin_parm_type parms[],
 			int len;
 			if (rnod && rnod->resource_val[0] && *rnod->resource_val[0])
 			{
-            len = std::min(strlen(rnod->resource_val[0]), (size_t) 60);
+				len = (int)std::min(strlen(rnod->resource_val[0]), size_t(60));
 			  aprintf(":   == \"");
 			  AdminBufferSend(rnod->resource_val[0], len);
 			  if (len < (int)strlen(rnod->resource_val[0]))
@@ -4895,7 +4896,7 @@ void AdminSendUsers(int session_id,admin_parm_type parms[],
 	
 	if (!text)
 		return;
-	SetTempString(text,strlen(text));
+	SetTempString(text,(int)strlen(text));
 	str_val.v.tag = TAG_TEMP_STRING;
 	str_val.v.data = 0;		/* doesn't matter for TAG_TEMP_STRING */
 	
@@ -5580,7 +5581,8 @@ void AdminRead(int session_id,admin_parm_type parms[],
 	
 	while (fgets(line,sizeof(line)-1,fptr))
 	{
-		ptr = strtok(line,"\n");
+		line[strcspn(line, "\r\n")] = '\0';
+		ptr = line;
 		if (ptr)
 		{
 			while (*ptr == ' ' || *ptr == '\t')
@@ -5601,7 +5603,7 @@ void AdminRead(int session_id,admin_parm_type parms[],
 }
 
 void AdminMark(int session_id,admin_parm_type parms[],
-               int num_blak_parm,parm_node blak_parm[])               
+               int num_blak_parm,parm_node blak_parm[])
 {
 	lprintf("-------------------------------------------------------------------------------------\n");
 	dprintf("-------------------------------------------------------------------------------------\n");

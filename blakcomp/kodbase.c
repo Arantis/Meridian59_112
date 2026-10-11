@@ -75,6 +75,7 @@ int load_kodbase(void)
    while (fgets(line, MAX_LINE+1, kodbase))
    {
       kodbase_line++;
+      line[strcspn(line, "\r\n")] = '\0';
 
       type_char = strtok(line," \t");
       if (type_char == NULL || strlen(type_char) != 1)
@@ -248,7 +249,7 @@ int load_add_class(char *class_name, int class_id, int superclass_id, char *supe
    c->is_new = False;  /* Don't generate code for this class */
    /* Store superclass id # in pointer for now.  Id # will be converted to pointer
     * when build_superclasses below is called. */
-   c->superclass = (class_type) superclass_id;
+   c->superclass = (class_type)(intptr_t) superclass_id;
 
    /* Add to list of classes that have been read in */
    st.classes = list_add_item(st.classes, (void *) c);
@@ -424,21 +425,21 @@ int build_superclasses(list_type classes)
    while (l != NULL)
    {
       class_type c = (class_type) l->data;
-      if ( (int) c->superclass != NO_SUPERCLASS)
+      if ( (intptr_t) c->superclass != NO_SUPERCLASS)
       {
-	 superclass_idnum = (int) c->superclass;
-	 /* Search through classes looking for parent */
-	 temp = classes;
-	 while (temp != NULL)
-	 {
-	    class_type parent = (class_type) temp->data;
-	    if (parent->class_id->idnum == superclass_idnum)
-	    {
-	       c->superclass = parent;
-	       break;
-	    }
-	    temp = temp->next;
-	 }
+         superclass_idnum = *((int *)(&c->superclass));
+         /* Search through classes looking for parent */
+         temp = classes;
+         while (temp != NULL)
+         {
+            class_type parent = (class_type) temp->data;
+            if (parent->class_id->idnum == superclass_idnum)
+            {
+               c->superclass = parent;
+               break;
+            }
+            temp = temp->next;
+         }
       }
       l = l->next;
    }

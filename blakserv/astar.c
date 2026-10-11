@@ -632,12 +632,18 @@ void AStarBuildEdgesCache(room_type* Room)
    const int cols = Room->colshighres;
 
    // iterate all squares
+#ifdef BLAK_PLATFORM_WINDOWS
    ::concurrency::parallel_for(size_t(0), (size_t)rows, [&](size_t r)
    {
-      for (int c = 0; c < cols; c++)
+#else
+   #pragma omp parallel for schedule(dynamic)
+   for (size_t r = 0; r < (size_t)rows; r++)
+   {
+#endif
+      for (size_t c = 0; c < cols; c++)
       {
          // calculate index of node in edgecache
-         const unsigned int idx = r * cols + c;
+         const size_t idx = r * cols + c;
 
          // node in astar grid
          astar_node* node = &AStar.Grid[r][c];
@@ -649,45 +655,41 @@ void AStarBuildEdgesCache(room_type* Room)
          // straight neighbours
 
          // n
-         nr = r - 1;
-         nc = c;
+         nr = (int)r - 1;
          if (nr >= 0)
          {
             const bool can = BSPCanMoveInRoom(
-               Room, &node->Location, &AStar.Grid[nr][nc].Location,
+               Room, &node->Location, &AStar.Grid[nr][c].Location,
                0, false, false, true, &blockWall);
 
             flags |= (can) ? (EDGECACHE_CAN_N | EDGECACHE_KNOWS_N) : EDGECACHE_KNOWS_N;
          }
          // s
-         nr = r + 1;
-         nc = c;
+         nr = (int)r + 1;
          if (nr < rows)
          {
             const bool can = BSPCanMoveInRoom(
-               Room, &node->Location, &AStar.Grid[nr][nc].Location,
+               Room, &node->Location, &AStar.Grid[nr][c].Location,
                0, false, false, true, &blockWall);
 
             flags |= (can) ? (EDGECACHE_CAN_S | EDGECACHE_KNOWS_S) : EDGECACHE_KNOWS_S;
          }
          // e
-         nr = r;
-         nc = c + 1;
+         nc = (int)c + 1;
          if (nc < cols)
          {
             const bool can = BSPCanMoveInRoom(
-               Room, &node->Location, &AStar.Grid[nr][nc].Location,
+               Room, &node->Location, &AStar.Grid[r][nc].Location,
                0, false, false, true, &blockWall);
 
             flags |= (can) ? (EDGECACHE_CAN_E | EDGECACHE_KNOWS_E) : EDGECACHE_KNOWS_E;
          }
          // w
-         nr = r;
-         nc = c - 1;
+         nc = (int)c - 1;
          if (nc >= 0)
          {
             const bool can = BSPCanMoveInRoom(
-               Room, &node->Location, &AStar.Grid[nr][nc].Location,
+               Room, &node->Location, &AStar.Grid[r][nc].Location,
                0, false, false, true, &blockWall);
 
             flags |= (can) ? (EDGECACHE_CAN_W | EDGECACHE_KNOWS_W) : EDGECACHE_KNOWS_W;
@@ -696,8 +698,8 @@ void AStarBuildEdgesCache(room_type* Room)
          // diagonal
 
          // ne
-         nr = r - 1;
-         nc = c + 1;
+         nr = (int)r - 1;
+         nc = (int)c + 1;
          if (!((nr < 0) | (nc >= cols)))
          {
             const bool can = BSPCanMoveInRoom(
@@ -707,8 +709,8 @@ void AStarBuildEdgesCache(room_type* Room)
             flags |= (can) ? (EDGECACHE_CAN_NE | EDGECACHE_KNOWS_NE) : EDGECACHE_KNOWS_NE;
          }
          // se
-         nr = r + 1;
-         nc = c + 1;
+         nr = (int)r + 1;
+         nc = (int)c + 1;
          if (!((nr >= rows) | (nc >= cols)))
          {
             const bool can = BSPCanMoveInRoom(
@@ -718,8 +720,8 @@ void AStarBuildEdgesCache(room_type* Room)
             flags |= (can) ? (EDGECACHE_CAN_SE | EDGECACHE_KNOWS_SE) : EDGECACHE_KNOWS_SE;
          }
          // sw
-         nr = r + 1;
-         nc = c - 1;
+         nr = (int)r + 1;
+         nc = (int)c - 1;
          if (!((nr >= rows) | (nc < 0)))
          {
             const bool can = BSPCanMoveInRoom(
@@ -729,8 +731,8 @@ void AStarBuildEdgesCache(room_type* Room)
             flags |= (can) ? (EDGECACHE_CAN_SW | EDGECACHE_KNOWS_SW) : EDGECACHE_KNOWS_SW;
          }
          // nw
-         nr = r - 1;
-         nc = c - 1;
+         nr = (int)r - 1;
+         nc = (int)c - 1;
          if (!((nr < 0) | (nc < 0)))
          {
             const bool can = BSPCanMoveInRoom(
@@ -743,7 +745,11 @@ void AStarBuildEdgesCache(room_type* Room)
          // save flags/edges
          Room->EdgesCache[idx] = (unsigned short)flags;
       }
+#ifdef BLAK_PLATFORM_WINDOWS
    });
+#else
+   }
+#endif
 }
 
 bool AStarGetStepFromCache(room_type* Room, astar_node* S, astar_node* E, V2* P, unsigned int* Flags, int ObjectID)

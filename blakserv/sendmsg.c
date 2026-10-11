@@ -372,7 +372,7 @@ int SendTopLevelBlakodMessage(int object_id,int message_id,int num_parms,parm_no
    if (message_depth != 0)
    {
       eprintf("SendTopLevelBlakodMessage called with message_depth %i "
-         "and message id %i\n", message_depth,message_id);
+         "and message id %i\n", message_depth, message_id);
    }
 
    start_time = GetMicroCountDouble();

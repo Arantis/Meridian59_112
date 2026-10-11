@@ -10,14 +10,80 @@
 */
 
 #include "blakcomp.h"
+
+#include <cinttypes>
+
+#ifdef BLAK_PLATFORM_WINDOWS
 #include "Windows.h"
 #include "psapi.h"
-
-#if defined(WIN32) || defined(WIN64)
 // Copied from linux libc sys/stat.h:
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
+
+#ifdef BLAK_PLATFORM_LINUX
+#include <errno.h>
+#include <sys/stat.h>
+#include <libgen.h>
+#define _fullpath(abs, rel, maxlen) realpath((rel), (abs))
+#endif
+
+static void copy_compiled_file(const char *source_path, const char *destination_path)
+{
+#ifdef BLAK_PLATFORM_WINDOWS
+   CopyFile(source_path, destination_path, FALSE);
+#else
+   struct stat source_info;
+   if (stat(source_path, &source_info) != 0)
+   {
+      if (errno == ENOENT || errno == ENOTDIR)
+         unlink(destination_path);
+      return;
+   }
+
+   if (!S_ISREG(source_info.st_mode) || source_info.st_size <= 0)
+   {
+      unlink(destination_path);
+      return;
+   }
+
+   FILE *input = fopen(source_path, "rb");
+   if (input == NULL)
+   {
+      if (errno == ENOENT || errno == ENOTDIR)
+         unlink(destination_path);
+      return;
+   }
+
+   if (fstat(fileno(input), &source_info) != 0)
+   {
+      fclose(input);
+      return;
+   }
+
+   if (!S_ISREG(source_info.st_mode) || source_info.st_size <= 0)
+   {
+      fclose(input);
+      unlink(destination_path);
+      return;
+   }
+
+   FILE *output = fopen(destination_path, "wb");
+   if (output == NULL)
+   {
+      fclose(input);
+      return;
+   }
+
+   char buffer[4096];
+   size_t bytes_read;
+   while ((bytes_read = fread(buffer, 1, sizeof(buffer), input)) > 0)
+      fwrite(buffer, 1, bytes_read, output);
+
+   fclose(input);
+   fclose(output);
+#endif
+}
 
 extern list_type directory_list;
 extern list_type file_list;
@@ -73,8 +139,8 @@ void compile_directory_mode()
    failed_compile_files = NULL;
 
    // Remove trailing \ if we have one.
-   int len = strlen(full_path) - 1;
-   if (len > 1 && full_path[len] == '\\')
+   int len = (int)strlen(full_path) - 1;
+   if (len > 1 && full_path[len] == DIR_SEPARATOR[0])
       full_path[len] = 0;
 
    // Remove directory (should now be null).
@@ -117,7 +183,7 @@ void compile_directory_mode()
          if (compile)
          {
             if (d->dir_name)
-               printf("Building %s\n", strrchr(d->dir_name, '\\') + 1);
+               printf("Building %s\n", strrchr(d->dir_name, DIR_SEPARATOR[0]) + 1);
 
             compile_file_list(d->dir_name, d->dir_file_list);
 
@@ -186,12 +252,14 @@ void compile_directory_mode()
 
    // Print some stats.
    timeEnd = time(NULL);
-   printf("Elapsed time: %lld seconds\n", timeEnd - timeStart);
+   printf("Elapsed time: %" PRIdMAX " seconds\n", (intmax_t)(timeEnd - timeStart));
 
+#ifdef BLAK_PLATFORM_WINDOWS
    PROCESS_MEMORY_COUNTERS pmc;
    GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
    printf("Peak mem: %i bytes\n", (int)pmc.PeakWorkingSetSize);
    printf("Current mem: %i bytes\n",(int) pmc.WorkingSetSize);
+#endif
 
    return;
 }
@@ -210,7 +278,7 @@ void fill_lists_from_makefile(char *full_path, int recompiled_parent)
    char *tmpptr;
    int done = False;
 
-   sprintf(makefile_path, "%s\\makefile", full_path);
+   sprintf(makefile_path, "%s%smakefile", full_path, DIR_SEPARATOR);
    makefile = fopen(makefile_path, "r");
    if (makefile == NULL)
    {
@@ -223,7 +291,7 @@ void fill_lists_from_makefile(char *full_path, int recompiled_parent)
 
    // Have to allocate based on size here, no strdup.
    // Length of parent dir string, plus 4 for .kod, plus 1 for \0
-   d->parent_file_name = (char *)SafeMalloc(strlen(full_path) + 4 + 1);
+   d->parent_file_name = (char *)SafeMalloc((int)strlen(full_path) + 4 + 1);
    strcpy(d->parent_file_name, full_path);
    strcat(d->parent_file_name, ".kod");
 
@@ -235,6 +303,8 @@ void fill_lists_from_makefile(char *full_path, int recompiled_parent)
    int at_bofs = False;
    while (fgets(temp, 256, makefile) != NULL)
    {
+      temp[strcspn(temp, "\r\n")] = '\0';
+
       // Our line must be greater than 6 characters
       if (strlen(temp) <= 6 || temp[0] == '#')
          continue;
@@ -260,7 +330,7 @@ void fill_lists_from_makefile(char *full_path, int recompiled_parent)
                // Handle file.
                file_name[filelen] = 0;
 
-               sprintf(dir_name, "%s\\%s", full_path, file_name);
+               sprintf(dir_name, "%s%s%s", full_path, DIR_SEPARATOR, file_name);
                int retval = recompile_check(dir_name, d, recompiled_parent);
                // Returns > 0 if we should check for a directory.
                if (retval)
@@ -276,12 +346,12 @@ void fill_lists_from_makefile(char *full_path, int recompiled_parent)
                // Skip bof.
                tmpptr += 3;
             }
-            else if (*tmpptr == '\\')
+            else if (*tmpptr == '/' || *tmpptr == '\\')
             {
                // Next line.
                break;
             }
-            else if (*tmpptr == '\n')
+            else if (*tmpptr == '\n' || *tmpptr == '\0')
             {
                done = True;
                break;
@@ -323,7 +393,7 @@ int recompile_check(char *name, dir_data d, int recompiled_parent)
    // Kod must exist, others don't have to.
    if (stat(kodname, &time_kod) != 0)
    {
-      simple_error("Found makefile entry with missing kod file %s", strrchr(kodname,'\\') + 1);
+      simple_error("Found makefile entry with missing kod file %s", strrchr(kodname, DIR_SEPARATOR[0]) + 1);
       return False;
    }
 
@@ -363,9 +433,9 @@ void dircompile_copy_files(char *bof_source, char *rsc_source, char *bofname, ch
 {
    char combine[_MAX_PATH];
 
-   sprintf(combine, "%s\\%s", bof_output_dir, bofname);
-   CopyFile(bof_source, combine, FALSE);
+   sprintf(combine, "%s%s%s", bof_output_dir, DIR_SEPARATOR, bofname);
+   copy_compiled_file(bof_source, combine);
 
-   sprintf(combine, "%s\\%s", rsc_output_dir, rscname);
-   CopyFile(rsc_source, combine, FALSE);
+   sprintf(combine, "%s%s%s", rsc_output_dir, DIR_SEPARATOR, rscname);
+   copy_compiled_file(rsc_source, combine);
 }

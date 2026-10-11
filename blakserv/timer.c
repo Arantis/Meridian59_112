@@ -19,7 +19,11 @@
 #define RCHILD(x) (2 * x + 2)
 #define PARENT(x) ((x-1)/2)
 
+#ifdef BLAK_PLATFORM_WINDOWS
 static Bool in_main_loop = False;
+#else
+extern bool in_main_loop;
+#endif
 static int numActiveTimers = 0;
 
 // Min binary heap array of pointers of timer_node.
@@ -120,7 +124,11 @@ __forceinline void TimerAddNode(timer_node *t)
    {
       // We're making a new first-timer, so the time main loop should wait might
       // have changed, so have it break out of loop and recalibrate
+#ifdef BLAK_PLATFORM_WINDOWS
       MessagePost(main_thread_id, WM_BLAK_MAIN_RECALIBRATE, 0, 0);
+#elif defined(BLAK_PLATFORM_LINUX)
+      WakeupMainLoop();
+#endif
    }
 
    // Start node off at end of heap.
@@ -364,6 +372,7 @@ void TimerActivate()
    }
 }
 
+#ifdef BLAK_PLATFORM_WINDOWS
 Bool InMainLoop(void)
 {
    return in_main_loop;
@@ -422,7 +431,7 @@ void ServiceTimers(void)
                case WM_BLAK_MAIN_READ :
                EnterServerLock();
 
-               PollSession(msg.lParam);
+               PollSession((int)msg.lParam);
                TimerActivate();
 
                LeaveServerLock();
@@ -435,19 +444,19 @@ void ServiceTimers(void)
 
                case WM_BLAK_MAIN_DELETE_ACCOUNT :
                EnterServerLock();
-               DeleteAccountAndAssociatedUsersByID(msg.lParam);
+               DeleteAccountAndAssociatedUsersByID((int)msg.lParam);
                LeaveServerLock();
                break;
 
                case WM_BLAK_MAIN_VERIFIED_LOGIN :
                EnterServerLock();
-               VerifiedLoginSession(msg.lParam);
+               VerifiedLoginSession((int)msg.lParam);
                LeaveServerLock();
                break;
 
                case WM_BLAK_MAIN_LOAD_GAME :
                EnterServerLock();
-               LoadFromKod(msg.lParam);
+               LoadFromKod((int)msg.lParam);
                LeaveServerLock();
                break;
 
@@ -466,6 +475,14 @@ void ServiceTimers(void)
          LeaveServerLock();
       }
    }
+}
+#endif // BLAK_PLATFORM_WINDOWS
+
+INT64 GetNextTimerTime(void)
+{
+   if (numActiveTimers == 0)
+      return 0;
+   return timer_heap[0]->time;
 }
 
 // Iterate through timer_heap array and compare timer_id.

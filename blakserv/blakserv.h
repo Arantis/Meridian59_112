@@ -149,7 +149,7 @@ enum
 #endif  // BLAK_PLATFORM_WINDOWS
 
 #ifdef BLAK_PLATFORM_LINUX
-#include "linux-types.h"
+#include "osd_linux.h"
 #endif  // BLAK_PLATFORM_LINUX
 
 #include <algorithm>
@@ -157,13 +157,18 @@ enum
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <limits.h>
 #include <malloc.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <math.h>
+#include <cinttypes>
+#include <filesystem>
+#ifdef BLAK_PLATFORM_WINDOWS
 #include <ppl.h>
+#endif
 
 #include "btime.h"
 
@@ -206,11 +211,13 @@ typedef struct
 extern DWORD main_thread_id;
 void MainReloadGameData();
 char * GetLastErrorStr();
+#ifdef BLAK_PLATFORM_WINDOWS
 #define WM_BLAK_MAIN_READ           (WM_APP + 4000)
 #define WM_BLAK_MAIN_RECALIBRATE    (WM_APP + 4001)
 #define WM_BLAK_MAIN_DELETE_ACCOUNT (WM_APP + 4002)
 #define WM_BLAK_MAIN_VERIFIED_LOGIN (WM_APP + 4003)
 #define WM_BLAK_MAIN_LOAD_GAME      (WM_APP + 4004)
+#endif
 
 #include "bof.h"
 
@@ -297,8 +304,15 @@ char * GetLastErrorStr();
 
 #ifdef BLAK_PLATFORM_WINDOWS
 #include "async_windows.h"
-#else
-#include "async_linux.h"
+#endif
+
+// Linux OSD functions that need session_node/buffer_node (defined after session.h/bufpool.h)
+#ifdef BLAK_PLATFORM_LINUX
+void InterfaceLogon(session_node *s);
+void InterfaceLogoff(session_node *s);
+void InterfaceUpdateSession(session_node *s);
+void InterfaceSendBufferList(buffer_node *blist);
+void StartAsyncSession(session_node *s);
 #endif
 
 #include "debug.h"
@@ -310,8 +324,10 @@ char * GetLastErrorStr();
 #include "maintenance.h"
 #include "block.h"
 
-#ifdef BLAK_PLATFORM_WINDOWS
+#if defined(BLAK_PLATFORM_WINDOWS) && !defined(BLAK_USE_POSTGRESQL)
 #include "database.h"
+#else
+#include "database_pg.h"
 #endif
 
 #include "jansson.h"
