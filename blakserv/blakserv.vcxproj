@@ -400,6 +400,9 @@ call "$(ProjectDir)copy_postgres_runtime.bat" "$(SolutionDir)bin" "$(SolutionDir
     <ClInclude Include="commcli.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="database.h" />
+    <ClInclude Include="database_procedures.h" />
+    <ClInclude Include="database_schema.h" />
+    <ClInclude Include="database_common.h" />
     <ClInclude Include="debug.h" />
     <ClInclude Include="dllist.h" />
     <ClInclude Include="files.h" />

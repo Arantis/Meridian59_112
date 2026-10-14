@@ -227,6 +227,15 @@
     <ClInclude Include="database.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="database_procedures.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="database_schema.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="database_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="astar.h">
       <Filter>Header Files</Filter>
     </ClInclude>

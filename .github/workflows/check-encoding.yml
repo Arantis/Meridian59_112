@@ -3,7 +3,8 @@ name: Check File Encoding on Changed Files
 on:
   pull_request:  # PR opened, added to, re-opened
     paths:
-      - '**.*kod'
+      - '**.kod'
+      - '**.lkod'
       - '**.khd'
       - '**.rc'
 jobs:
@@ -27,6 +28,10 @@ jobs:
           FOUND_UTF8=0
           while read -r file; do
             if [[ -n "$file" && -f "$file" ]]; then
+              case "$file" in
+                *.kod|*.lkod|*.khd|*.rc) ;;
+                *) continue ;;
+              esac
               if [[ $(file -i "$file" | grep 'charset=utf-8') ]]; then
                 FOUND_UTF8=1
                 echo "::error::UTF-8 encoded file found: $file"

@@ -7,6 +7,9 @@
 #include <unistd.h>
 #endif
 #include <libpq-fe.h>
+#define DATABASE_SCHEMA_POSTGRESQL
+#include "database_schema.h"
+#include "database_common.h"
 
 // Worker thread state
 enum { DB_STOPPED=0, DB_STOPPING, DB_STARTING, DB_CONNECTED, DB_READY };
@@ -31,38 +34,10 @@ static HANDLE db_thread = NULL;
 static pthread_t db_thread;
 #endif
 
-#define MAX_RECORD_QUEUE 15000
-#define MAX_SQL_PARAMS 45
 #define DB_WORKER_SLEEP_MS 10
 #define DB_RECONNECT_SLEEP_MS 5000
-#define MAX_ITEMS_PER_LOOP 10
 
 #ifdef BLAK_PLATFORM_WINDOWS
-static bool PgQueueInit(void)
-{
-   queue.mutex = CreateMutex(NULL, FALSE, NULL);
-   return queue.mutex != NULL;
-}
-
-static void PgQueueShutdown(void)
-{
-   if (queue.mutex != NULL)
-   {
-      CloseHandle(queue.mutex);
-      queue.mutex = NULL;
-   }
-}
-
-static void PgQueueLock(void)
-{
-   WaitForSingleObject(queue.mutex, INFINITE);
-}
-
-static void PgQueueUnlock(void)
-{
-   ReleaseMutex(queue.mutex);
-}
-
 static void PgSleepMs(unsigned int delay_ms)
 {
    Sleep(delay_ms);
@@ -77,26 +52,6 @@ static bool PgThreadStart(void);
 static void PgThreadJoin(void);
 static unsigned __stdcall PgWorker(void *arg);
 #else
-static bool PgQueueInit(void)
-{
-   return pthread_mutex_init(&queue.mutex, NULL) == 0;
-}
-
-static void PgQueueShutdown(void)
-{
-   pthread_mutex_destroy(&queue.mutex);
-}
-
-static void PgQueueLock(void)
-{
-   pthread_mutex_lock(&queue.mutex);
-}
-
-static void PgQueueUnlock(void)
-{
-   pthread_mutex_unlock(&queue.mutex);
-}
-
 static void PgSleepMs(unsigned int delay_ms)
 {
    usleep(delay_ms * 1000);
@@ -140,530 +95,6 @@ static void PgThreadJoin(void)
 #endif
 }
 
-// Statistics table - maps STAT_TYPE to table name and expected field count
-// timestamp_pos: 0 = no auto-timestamp, 1 = NOW() as first value, -1 = NOW() as last value
-static sql_statistic_type Statistics_Table[] = {
-   {STAT_NONE,             0, false, NULL,                        0},
-   {STAT_TOTALMONEY,       1, true,  "money_total",               1},
-   {STAT_MONEYCREATED,     1, true,  "money_created",             1},
-   {STAT_PLAYERLOGIN,      3, true,  "player_logins",            -1},
-   {STAT_ASSESS_DAM,       7, true,  "player_damaged",           -1, true},
-   {STAT_PLAYERDEATH,      5, true,  "player_death",             -1},
-   {STAT_PLAYER,          13, true,  "player",                    0},
-   {STAT_PLAYERSUICIDE,    2, true,  "player",                    0},
-   {STAT_GUILD,            4, true,  "guild",                     0},
-   {STAT_GUILDDISBAND,     1, true,  "guild",                     0},
-   {STAT_SPELLS,          14, true,  "wiki_spells",               0},
-   {STAT_SPELL_REAGENT,    3, true,  "wiki_spell_reagent",        0},
-   {STAT_TREASURE_GEN,     3, true,  "wiki_treasure_gen",         0},
-   {STAT_MONSTER,         13, true,  "wiki_monster",              0},
-   {STAT_MONSTER_ZONE,     3, true,  "wiki_monster_zone",         0},
-   {STAT_NPCS,             7, true,  "wiki_npcs",                 0},
-   {STAT_WEAPONS,         14, true,  "wiki_weapons",              0},
-   {STAT_ROOMS,            6, true,  "wiki_rooms",                0},
-   {STAT_NPC_ZONE,         4, true,  "wiki_npc_zone",             0},
-   {STAT_NPC_SELLITEM,     3, true,  "wiki_npc_sellitem",         0},
-   {STAT_NPC_SELLSKILL,    2, true,  "wiki_npc_sellskill",        0},
-   {STAT_NPC_SELLSPELL,    2, true,  "wiki_npc_sellspell",        0},
-   {STAT_REAGENTS,        11, true,  "wiki_reagents",             0},
-   {STAT_FOOD,            11, true,  "wiki_food",                 0},
-   {STAT_AMMO,            11, true,  "wiki_ammo",                 0},
-   {STAT_ARMOR,           11, true,  "wiki_armor",                0},
-   {STAT_MISCITEMS,       11, true,  "wiki_miscitems",            0},
-   {STAT_RINGS,           11, true,  "wiki_rings",                0},
-   {STAT_RODS,            11, true,  "wiki_rods",                 0},
-   {STAT_POTIONS,         11, true,  "wiki_potions",              0},
-   {STAT_SCROLLS,         11, true,  "wiki_scrolls",              0},
-   {STAT_WANDS,           11, true,  "wiki_wands",                0},
-   {STAT_QUESTITEMS,      11, true,  "wiki_questitems",           0},
-   {STAT_SKILLS,          12, true,  "wiki_skills",               0},
-   {STAT_NECKLACE,        11, true,  "wiki_necklace",             0},
-   {STAT_INSTRUMENTS,     11, true,  "wiki_instruments",          0},
-   {STAT_GEMS,            11, true,  "wiki_gems",                 0},
-   {STAT_OFFERINGS,       11, true,  "wiki_offerings",            0},
-   {STAT_QUESTS,          11, true,  "wiki_quests",               0},
-   {STAT_TREASURE_EXTRA,   4, true,  "wiki_treasure_extra",       0},
-   {STAT_TREASURE_MAGIC,   3, true,  "wiki_treasure_magic",       0},
-   {STAT_NPC_SELLCOND,     4, true,  "wiki_npc_sellcond",         0},
-   {STAT_LOGPEN,           7, true,  "player_logpen",             0},
-   {STAT_LOGPEN_ITEM,      3, true,  "player_logpen_items",       0},
-   {STAT_QUESTGIVER,       2, true,  "wiki_quest_giver",          0},
-   {STAT_ACCOUNTS,         8, true,  "server_accounts",           0},
-   {STAT_ACCOUNT_CHARS,    2, true,  "server_account_chars",      0},
-   {STAT_COMPL_QUESTS,     5, true,  "player_completed_quests",   0},
-   {STAT_COMPL_QUEST_ITEMS,4, true,  "player_quest_reward_items", 0}
-};
-
-/******************************************************************************/
-// Schema creation - all tables
-/******************************************************************************/
-
-static const char *schema_sql =
-"CREATE TABLE IF NOT EXISTS money_total ("
-"  money_total_time TIMESTAMP NOT NULL DEFAULT NOW(),"
-"  money_total_amount VARCHAR(18) NOT NULL,"
-"  PRIMARY KEY (money_total_time, money_total_amount));"
-
-"CREATE TABLE IF NOT EXISTS money_created ("
-"  money_created_time TIMESTAMP NOT NULL DEFAULT NOW(),"
-"  money_created_amount INT NOT NULL,"
-"  PRIMARY KEY (money_created_time, money_created_amount));"
-
-"CREATE TABLE IF NOT EXISTS player_logins ("
-"  plogin_account_name VARCHAR(45) NOT NULL,"
-"  plogin_character_name VARCHAR(45) NOT NULL,"
-"  plogin_IP VARCHAR(45) NOT NULL,"
-"  plogin_time TIMESTAMP NOT NULL DEFAULT NOW(),"
-"  PRIMARY KEY (plogin_account_name, plogin_time));"
-
-"CREATE TABLE IF NOT EXISTS player_damaged ("
-"  idpdamaged SERIAL PRIMARY KEY,"
-"  pdamaged_who VARCHAR(45) NOT NULL,"
-"  pdamaged_attacker VARCHAR(45) NOT NULL,"
-"  pdamaged_aspell INT NOT NULL,"
-"  pdamaged_atype INT NOT NULL,"
-"  pdamaged_applied INT NOT NULL,"
-"  pdamaged_original INT NOT NULL,"
-"  pdamaged_weapon VARCHAR(45) NOT NULL,"
-"  pdamaged_time TIMESTAMP NOT NULL DEFAULT NOW());"
-
-"CREATE TABLE IF NOT EXISTS player_death ("
-"  pdeath_victim VARCHAR(45) NOT NULL,"
-"  pdeath_killer VARCHAR(45) NOT NULL,"
-"  pdeath_room VARCHAR(63) NOT NULL,"
-"  pdeath_attack VARCHAR(45) NOT NULL,"
-"  pdeath_ispvp INT NOT NULL,"
-"  pdeath_time TIMESTAMP NOT NULL DEFAULT NOW(),"
-"  PRIMARY KEY (pdeath_victim, pdeath_time));"
-
-"CREATE TABLE IF NOT EXISTS player ("
-"  player_account_id INT NOT NULL,"
-"  player_name VARCHAR(45) NOT NULL PRIMARY KEY,"
-"  player_home VARCHAR(128),"
-"  player_bind VARCHAR(128),"
-"  player_guild VARCHAR(45),"
-"  player_max_health INT,"
-"  player_max_mana INT,"
-"  player_might INT,"
-"  player_int INT,"
-"  player_myst INT,"
-"  player_stam INT,"
-"  player_agil INT,"
-"  player_aim INT,"
-"  player_suicide INT DEFAULT 0,"
-"  player_suicide_time TIMESTAMP);"
-
-"CREATE TABLE IF NOT EXISTS guild ("
-"  guild_name VARCHAR(100) NOT NULL PRIMARY KEY,"
-"  guild_leader VARCHAR(45) NOT NULL,"
-"  guild_hall VARCHAR(100),"
-"  guild_rent_paid INT NOT NULL,"
-"  guild_disbanded INT NOT NULL DEFAULT 0,"
-"  guild_disbanded_time TIMESTAMP);"
-
-"CREATE TABLE IF NOT EXISTS wiki_spells ("
-"  spell_id INT NOT NULL PRIMARY KEY,"
-"  spell_name VARCHAR(63) NOT NULL,"
-"  spell_name_ger VARCHAR(63) NOT NULL,"
-"  spell_icon VARCHAR(63) NOT NULL,"
-"  spell_desc TEXT,"
-"  spell_desc_ger TEXT,"
-"  spell_school INT,"
-"  spell_level INT,"
-"  spell_mana INT,"
-"  spell_chance INT,"
-"  spell_mediate_ratio INT,"
-"  spell_exertion INT,"
-"  spell_casttime INT,"
-"  spell_iflag INT NOT NULL);"
-
-"CREATE TABLE IF NOT EXISTS wiki_spell_reagent ("
-"  spell_id INT NOT NULL,"
-"  spell_reagent VARCHAR(63) NOT NULL,"
-"  spell_reagent_amount INT,"
-"  PRIMARY KEY (spell_id, spell_reagent));"
-
-"CREATE TABLE IF NOT EXISTS wiki_treasure_gen ("
-"  treasure_id INT NOT NULL,"
-"  item_name VARCHAR(63) NOT NULL,"
-"  item_chance INT,"
-"  PRIMARY KEY (treasure_id, item_name));"
-
-"CREATE TABLE IF NOT EXISTS wiki_monster ("
-"  monster_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  monster_name_ger VARCHAR(63) NOT NULL,"
-"  monster_icon VARCHAR(63) NOT NULL,"
-"  monster_desc TEXT,"
-"  monster_desc_ger TEXT,"
-"  monster_level INT,"
-"  monster_karma INT,"
-"  monster_treasure INT,"
-"  monster_speed INT,"
-"  monster_behavior INT,"
-"  monster_difficulty INT,"
-"  monster_visiondistance INT,"
-"  monster_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_monster_zone ("
-"  monster_rid INT NOT NULL,"
-"  monster_name VARCHAR(63) NOT NULL,"
-"  monster_spawnchance INT,"
-"  PRIMARY KEY (monster_rid, monster_name));"
-
-"CREATE TABLE IF NOT EXISTS wiki_npcs ("
-"  npc_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  npc_name_ger VARCHAR(63) NOT NULL,"
-"  npc_icon VARCHAR(63) NOT NULL,"
-"  npc_desc TEXT,"
-"  npc_desc_ger TEXT,"
-"  npc_merchantmarkup INT,"
-"  npc_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_weapons ("
-"  weapon_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  weapon_name_ger VARCHAR(63) NOT NULL,"
-"  weapon_icon VARCHAR(63) NOT NULL,"
-"  weapon_group INT NOT NULL,"
-"  weapon_color INT NOT NULL,"
-"  weapon_desc TEXT,"
-"  weapon_desc_ger TEXT,"
-"  weapon_value INT,"
-"  weapon_weight INT,"
-"  weapon_bulk INT,"
-"  weapon_range INT,"
-"  weapon_skill INT,"
-"  weapon_prof INT,"
-"  weapon_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_rooms ("
-"  room_name VARCHAR(63) NOT NULL,"
-"  room_name_ger VARCHAR(63) NOT NULL,"
-"  room_roo VARCHAR(63) NOT NULL,"
-"  room_number INT NOT NULL PRIMARY KEY,"
-"  room_region INT NOT NULL,"
-"  room_iflag INT NOT NULL);"
-
-"CREATE TABLE IF NOT EXISTS wiki_npc_zone ("
-"  npc_name VARCHAR(63) NOT NULL,"
-"  npc_roomid INT NOT NULL,"
-"  npc_row INT NOT NULL,"
-"  npc_col INT NOT NULL,"
-"  PRIMARY KEY (npc_name, npc_roomid, npc_row, npc_col));"
-
-"CREATE TABLE IF NOT EXISTS wiki_npc_sellitem ("
-"  npc_name VARCHAR(63) NOT NULL,"
-"  npc_item_sold VARCHAR(63) NOT NULL,"
-"  item_color INT NOT NULL,"
-"  PRIMARY KEY (npc_name, npc_item_sold, item_color));"
-
-"CREATE TABLE IF NOT EXISTS wiki_npc_sellskill ("
-"  npc_name VARCHAR(63) NOT NULL,"
-"  npc_skill_id INT NOT NULL,"
-"  PRIMARY KEY (npc_name, npc_skill_id));"
-
-"CREATE TABLE IF NOT EXISTS wiki_npc_sellspell ("
-"  npc_name VARCHAR(63) NOT NULL,"
-"  npc_spell_id INT NOT NULL,"
-"  PRIMARY KEY (npc_name, npc_spell_id));"
-
-"CREATE TABLE IF NOT EXISTS wiki_npc_sellcond ("
-"  npc_name VARCHAR(63) NOT NULL,"
-"  npc_item_sold VARCHAR(63) NOT NULL,"
-"  item_color INT NOT NULL,"
-"  item_price INT NOT NULL,"
-"  PRIMARY KEY (npc_name, npc_item_sold, item_color));"
-
-"CREATE TABLE IF NOT EXISTS wiki_reagents ("
-"  reagent_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  reagent_name_ger VARCHAR(63) NOT NULL,"
-"  reagent_icon VARCHAR(63) NOT NULL,"
-"  reagent_group INT NOT NULL,"
-"  reagent_color INT NOT NULL,"
-"  reagent_desc TEXT,"
-"  reagent_desc_ger TEXT,"
-"  reagent_value INT,"
-"  reagent_weight INT,"
-"  reagent_bulk INT,"
-"  reagent_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_food ("
-"  food_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  food_name_ger VARCHAR(63) NOT NULL,"
-"  food_icon VARCHAR(63) NOT NULL,"
-"  food_group INT NOT NULL,"
-"  food_color INT NOT NULL,"
-"  food_desc TEXT,"
-"  food_desc_ger TEXT,"
-"  food_value INT,"
-"  food_weight INT,"
-"  food_bulk INT,"
-"  food_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_ammo ("
-"  ammo_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  ammo_name_ger VARCHAR(63) NOT NULL,"
-"  ammo_icon VARCHAR(63) NOT NULL,"
-"  ammo_group INT NOT NULL,"
-"  ammo_color INT NOT NULL,"
-"  ammo_desc TEXT,"
-"  ammo_desc_ger TEXT,"
-"  ammo_value INT,"
-"  ammo_weight INT,"
-"  ammo_bulk INT,"
-"  ammo_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_armor ("
-"  armor_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  armor_name_ger VARCHAR(63) NOT NULL,"
-"  armor_icon VARCHAR(63) NOT NULL,"
-"  armor_group INT NOT NULL,"
-"  armor_color INT NOT NULL,"
-"  armor_desc TEXT,"
-"  armor_desc_ger TEXT,"
-"  armor_value INT,"
-"  armor_weight INT,"
-"  armor_bulk INT,"
-"  armor_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_miscitems ("
-"  misc_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  misc_name_ger VARCHAR(63) NOT NULL,"
-"  misc_icon VARCHAR(63) NOT NULL,"
-"  misc_group INT NOT NULL,"
-"  misc_color INT NOT NULL,"
-"  misc_desc TEXT,"
-"  misc_desc_ger TEXT,"
-"  misc_value INT,"
-"  misc_weight INT,"
-"  misc_bulk INT,"
-"  misc_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_rings ("
-"  rings_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  rings_name_ger VARCHAR(63) NOT NULL,"
-"  rings_icon VARCHAR(63) NOT NULL,"
-"  rings_group INT NOT NULL,"
-"  rings_color INT NOT NULL,"
-"  rings_desc TEXT,"
-"  rings_desc_ger TEXT,"
-"  rings_value INT,"
-"  rings_weight INT,"
-"  rings_bulk INT,"
-"  rings_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_rods ("
-"  rods_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  rods_name_ger VARCHAR(63) NOT NULL,"
-"  rods_icon VARCHAR(63) NOT NULL,"
-"  rods_group INT NOT NULL,"
-"  rods_color INT NOT NULL,"
-"  rods_desc TEXT,"
-"  rods_desc_ger TEXT,"
-"  rods_value INT,"
-"  rods_weight INT,"
-"  rods_bulk INT,"
-"  rods_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_potions ("
-"  potion_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  potion_name_ger VARCHAR(63) NOT NULL,"
-"  potion_icon VARCHAR(63) NOT NULL,"
-"  potion_group INT NOT NULL,"
-"  potion_color INT NOT NULL,"
-"  potion_desc TEXT,"
-"  potion_desc_ger TEXT,"
-"  potion_value INT,"
-"  potion_weight INT,"
-"  potion_bulk INT,"
-"  potion_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_scrolls ("
-"  scrolls_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  scrolls_name_ger VARCHAR(63) NOT NULL,"
-"  scrolls_icon VARCHAR(63) NOT NULL,"
-"  scrolls_group INT NOT NULL,"
-"  scrolls_color INT NOT NULL,"
-"  scrolls_desc TEXT,"
-"  scrolls_desc_ger TEXT,"
-"  scrolls_value INT,"
-"  scrolls_weight INT,"
-"  scrolls_bulk INT,"
-"  scrolls_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_wands ("
-"  wands_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  wands_name_ger VARCHAR(63) NOT NULL,"
-"  wands_icon VARCHAR(63) NOT NULL,"
-"  wands_group INT NOT NULL,"
-"  wands_color INT NOT NULL,"
-"  wands_desc TEXT,"
-"  wands_desc_ger TEXT,"
-"  wands_value INT,"
-"  wands_weight INT,"
-"  wands_bulk INT,"
-"  wands_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_questitems ("
-"  questitem_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  questitem_name_ger VARCHAR(63) NOT NULL,"
-"  questitem_icon VARCHAR(63) NOT NULL,"
-"  questitem_group INT NOT NULL,"
-"  questitem_color INT NOT NULL,"
-"  questitem_desc TEXT,"
-"  questitem_desc_ger TEXT,"
-"  questitem_value INT,"
-"  questitem_weight INT,"
-"  questitem_bulk INT,"
-"  questitem_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_skills ("
-"  skill_id INT NOT NULL PRIMARY KEY,"
-"  skill_name VARCHAR(63) NOT NULL,"
-"  skill_name_ger VARCHAR(63) NOT NULL,"
-"  skill_icon VARCHAR(63) NOT NULL,"
-"  skill_desc TEXT,"
-"  skill_desc_ger TEXT,"
-"  skill_school INT,"
-"  skill_level INT,"
-"  skill_chance INT,"
-"  skill_mediate_ratio INT,"
-"  skill_exertion INT,"
-"  skill_iflag INT NOT NULL);"
-
-"CREATE TABLE IF NOT EXISTS wiki_necklace ("
-"  necklace_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  necklace_name_ger VARCHAR(63) NOT NULL,"
-"  necklace_icon VARCHAR(63) NOT NULL,"
-"  necklace_group INT NOT NULL,"
-"  necklace_color INT NOT NULL,"
-"  necklace_desc TEXT,"
-"  necklace_desc_ger TEXT,"
-"  necklace_value INT,"
-"  necklace_weight INT,"
-"  necklace_bulk INT,"
-"  necklace_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_instruments ("
-"  instrument_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  instrument_name_ger VARCHAR(63) NOT NULL,"
-"  instrument_icon VARCHAR(63) NOT NULL,"
-"  instrument_group INT NOT NULL,"
-"  instrument_color INT NOT NULL,"
-"  instrument_desc TEXT,"
-"  instrument_desc_ger TEXT,"
-"  instrument_value INT,"
-"  instrument_weight INT,"
-"  instrument_bulk INT,"
-"  instrument_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_gems ("
-"  gem_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  gem_name_ger VARCHAR(63) NOT NULL,"
-"  gem_icon VARCHAR(63) NOT NULL,"
-"  gem_group INT NOT NULL,"
-"  gem_color INT NOT NULL,"
-"  gem_desc TEXT,"
-"  gem_desc_ger TEXT,"
-"  gem_value INT,"
-"  gem_weight INT,"
-"  gem_bulk INT,"
-"  gem_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_offerings ("
-"  offering_name VARCHAR(63) NOT NULL PRIMARY KEY,"
-"  offering_name_ger VARCHAR(63) NOT NULL,"
-"  offering_icon VARCHAR(63) NOT NULL,"
-"  offering_group INT NOT NULL,"
-"  offering_color INT NOT NULL,"
-"  offering_desc TEXT,"
-"  offering_desc_ger TEXT,"
-"  offering_value INT,"
-"  offering_weight INT,"
-"  offering_bulk INT,"
-"  offering_iflag INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_quests ("
-"  quest_id INT NOT NULL PRIMARY KEY,"
-"  quest_name VARCHAR(63) NOT NULL,"
-"  quest_name_ger VARCHAR(63) NOT NULL,"
-"  quest_icon VARCHAR(63) NOT NULL,"
-"  quest_icon_group INT NOT NULL,"
-"  quest_desc TEXT,"
-"  quest_desc_ger TEXT,"
-"  quest_recent_time INT,"
-"  quest_schedule_pct INT,"
-"  quest_est_time INT,"
-"  quest_est_diff INT);"
-
-"CREATE TABLE IF NOT EXISTS wiki_treasure_extra ("
-"  treasure_id INT NOT NULL,"
-"  item_name VARCHAR(63) NOT NULL,"
-"  item_min_amount INT,"
-"  item_max_amount INT,"
-"  PRIMARY KEY (treasure_id, item_name));"
-
-"CREATE TABLE IF NOT EXISTS wiki_treasure_magic ("
-"  treasure_id INT NOT NULL,"
-"  item_name VARCHAR(63) NOT NULL,"
-"  item_attribute_id INT NOT NULL,"
-"  PRIMARY KEY (treasure_id, item_name, item_attribute_id));"
-
-"CREATE TABLE IF NOT EXISTS player_logpen ("
-"  player_name VARCHAR(63) NOT NULL,"
-"  logpen_time TIMESTAMP NOT NULL DEFAULT NOW(),"
-"  room_id INT,"
-"  logpen_xp INT NOT NULL,"
-"  logpen_hp INT NOT NULL,"
-"  logpen_spellpct INT NOT NULL,"
-"  logpen_skillpct INT NOT NULL,"
-"  logpen_numitems INT NOT NULL,"
-"  PRIMARY KEY (player_name, logpen_time));"
-
-"CREATE TABLE IF NOT EXISTS player_logpen_items ("
-"  logpen_item_id SERIAL PRIMARY KEY,"
-"  player_name VARCHAR(63) NOT NULL,"
-"  logpen_time TIMESTAMP NOT NULL DEFAULT NOW(),"
-"  item_name VARCHAR(63) NOT NULL,"
-"  item_number INT NOT NULL);"
-
-"CREATE TABLE IF NOT EXISTS player_completed_quests ("
-"  quest_id INT NOT NULL,"
-"  player_name VARCHAR(63) NOT NULL,"
-"  completion_time TIMESTAMP NOT NULL DEFAULT NOW(),"
-"  num_seconds_taken INT NOT NULL,"
-"  xp_rewarded INT NOT NULL,"
-"  tp_rewarded INT NOT NULL,"
-"  PRIMARY KEY (quest_id, player_name, completion_time));"
-
-"CREATE TABLE IF NOT EXISTS player_quest_reward_items ("
-"  quest_rewarditem_id SERIAL PRIMARY KEY,"
-"  quest_id INT NOT NULL,"
-"  player_name VARCHAR(63) NOT NULL,"
-"  completion_time TIMESTAMP NOT NULL DEFAULT NOW(),"
-"  item_name VARCHAR(63) NOT NULL,"
-"  item_number INT NOT NULL);"
-
-"CREATE TABLE IF NOT EXISTS wiki_quest_giver ("
-"  quest_id INT NOT NULL,"
-"  quest_npc_name VARCHAR(63) NOT NULL,"
-"  PRIMARY KEY (quest_id, quest_npc_name));"
-
-"CREATE TABLE IF NOT EXISTS server_accounts ("
-"  acct_id INT NOT NULL PRIMARY KEY,"
-"  acct_name VARCHAR(63) NOT NULL,"
-"  acct_password VARCHAR(63) NOT NULL,"
-"  acct_email VARCHAR(255) NOT NULL,"
-"  acct_type INT NOT NULL,"
-"  acct_loggedin_time INT NOT NULL,"
-"  acct_last_login INT NOT NULL,"
-"  acct_suspend_time INT NOT NULL);"
-
-"CREATE TABLE IF NOT EXISTS server_account_chars ("
-"  entry_id SERIAL PRIMARY KEY,"
-"  acct_id INT NOT NULL,"
-"  char_name VARCHAR(63) NOT NULL);"
-;
-
 /******************************************************************************/
 // Internal functions
 /******************************************************************************/
@@ -693,14 +124,17 @@ static bool PgConnect(void)
 
 static bool PgVerifySchema(void)
 {
-   PGresult *res = PQexec(pg_conn, schema_sql);
-   if (PQresultStatus(res) != PGRES_COMMAND_OK)
+   for (size_t i = 0; i < DATABASE_SCHEMA_STATEMENT_COUNT; ++i)
    {
-      eprintf("PostgreSQL schema creation failed: %s\n", PQerrorMessage(pg_conn));
+      PGresult *res = PQexec(pg_conn, DatabaseSchemaStatements[i]);
+      if (PQresultStatus(res) != PGRES_COMMAND_OK)
+      {
+         eprintf("PostgreSQL schema creation failed: %s\n", PQerrorMessage(pg_conn));
+         PQclear(res);
+         return false;
+      }
       PQclear(res);
-      return false;
    }
-   PQclear(res);
    dprintf("PostgreSQL schema verified\n");
    return true;
 }
@@ -718,6 +152,92 @@ static bool PgIsConnected(void)
    return true;
 }
 
+static bool PgAppendInsertColumns(std::string &sql,
+   const sql_statistic_type *operation, bool values)
+{
+   bool first_item = true;
+   for (int i = 0; i <= operation->num_fields; ++i)
+   {
+      if (operation->timestamp_column && operation->timestamp_position == i)
+      {
+         DatabaseAppendSqlItem(sql,
+            values ? "NOW()" : operation->timestamp_column, first_item);
+      }
+
+      if (i == operation->num_fields)
+         break;
+
+      std::string item;
+      if (values)
+         item = "$" + std::to_string(i + 1);
+      else if (!DatabaseGetColumn(operation->columns, i, item))
+         return false;
+
+      DatabaseAppendSqlItem(sql, item, first_item);
+   }
+
+   return true;
+}
+
+static std::string PgBuildWriteQuery(
+   const sql_statistic_type *operation)
+{
+   bool first_item = true;
+   std::string sql;
+
+   if (operation->write_mode == DB_WRITE_UPDATE)
+   {
+      sql = "UPDATE ";
+      sql += operation->table_name;
+      sql += " SET ";
+      sql += operation->update_assignments;
+      sql += " WHERE ";
+
+      for (int i = 0; i < operation->num_fields; ++i)
+      {
+         std::string column;
+         if (!DatabaseGetColumn(operation->columns, i, column))
+            return std::string();
+         if (i > 0)
+            sql += " AND ";
+         sql += column + " = $" + std::to_string(i + 1);
+      }
+      return sql;
+   }
+
+   sql = "INSERT INTO ";
+   sql += operation->table_name;
+   sql += " (";
+
+   if (!PgAppendInsertColumns(sql, operation, false))
+      return std::string();
+   sql += ") VALUES (";
+
+   first_item = true;
+   if (!PgAppendInsertColumns(sql, operation, true))
+      return std::string();
+   sql += ")";
+
+   if (operation->write_mode == DB_WRITE_UPSERT)
+   {
+      sql += " ON CONFLICT (";
+      sql += operation->conflict_columns;
+      sql += ") DO UPDATE SET ";
+
+      first_item = true;
+      for (int i = 0; ; ++i)
+      {
+         std::string column;
+         if (!DatabaseGetColumn(operation->update_columns, i, column))
+            break;
+         std::string assignment = column + " = EXCLUDED." + column;
+         DatabaseAppendSqlItem(sql, assignment, first_item);
+      }
+   }
+
+   return sql;
+}
+
 static void PgWriteNode(sql_queue_node *node)
 {
    sql_data_node *data = (sql_data_node *)node->data;
@@ -730,17 +250,24 @@ static void PgWriteNode(sql_queue_node *node)
    if (!Statistics_Table[type].enabled)
       return;
 
-   const char *table = Statistics_Table[type].table_name;
-   if (!table)
+   const sql_statistic_type *operation = &Statistics_Table[type];
+   if (!operation->table_name)
       return;
+
+   if (nf != operation->num_fields || nf > DATABASE_MAX_SQL_PARAMS)
+   {
+      eprintf("Invalid PostgreSQL field count for statistic %d: found %d, expected %d\n",
+         type, nf, operation->num_fields);
+      return;
+   }
 
    // Build parameterized INSERT
    // Convert all fields to string params for PQexecParams
-   const char *paramValues[MAX_SQL_PARAMS];
-   char numbufs[MAX_SQL_PARAMS][20];
+   const char *paramValues[DATABASE_MAX_SQL_PARAMS];
+   char numbufs[DATABASE_MAX_SQL_PARAMS][20];
    int nParams = 0;
 
-   for (int i = 0; i < nf && i < MAX_SQL_PARAMS; i++)
+   for (int i = 0; i < nf && i < DATABASE_MAX_SQL_PARAMS; i++)
    {
       switch (data[i].type)
       {
@@ -766,113 +293,14 @@ static void PgWriteNode(sql_queue_node *node)
       nParams++;
    }
 
-   char sql[4096];
-   bool customSql = true;
-
-   // These records omit generated/default columns or mirror UPDATE/UPSERT
-   // procedures in database.c, so they cannot use a positional table insert.
-   switch (type)
+   std::string sql = PgBuildWriteQuery(operation);
+   if (sql.empty())
    {
-   case STAT_PLAYER:
-      snprintf(sql, sizeof(sql),
-         "INSERT INTO player (player_account_id, player_name, player_home, player_bind, player_guild, "
-         "player_max_health, player_max_mana, player_might, player_int, player_myst, player_stam, player_agil, player_aim) "
-         "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) "
-         "ON CONFLICT (player_name) DO UPDATE SET "
-         "player_account_id = EXCLUDED.player_account_id, player_home = EXCLUDED.player_home, "
-         "player_bind = EXCLUDED.player_bind, player_guild = EXCLUDED.player_guild, "
-         "player_max_health = EXCLUDED.player_max_health, player_max_mana = EXCLUDED.player_max_mana, "
-         "player_might = EXCLUDED.player_might, player_int = EXCLUDED.player_int, "
-         "player_myst = EXCLUDED.player_myst, player_stam = EXCLUDED.player_stam, "
-         "player_agil = EXCLUDED.player_agil, player_aim = EXCLUDED.player_aim");
-      break;
-
-   case STAT_PLAYERSUICIDE:
-      snprintf(sql, sizeof(sql),
-         "UPDATE player SET player_suicide = 1, player_suicide_time = NOW() "
-         "WHERE player_account_id = $1 AND player_name = $2");
-      break;
-
-   case STAT_GUILD:
-      snprintf(sql, sizeof(sql),
-         "INSERT INTO guild (guild_name, guild_leader, guild_hall, guild_rent_paid) "
-         "VALUES ($1, $2, $3, $4) "
-         "ON CONFLICT (guild_name) DO UPDATE SET "
-         "guild_leader = EXCLUDED.guild_leader, guild_hall = EXCLUDED.guild_hall, "
-         "guild_rent_paid = EXCLUDED.guild_rent_paid");
-      break;
-
-   case STAT_GUILDDISBAND:
-      snprintf(sql, sizeof(sql),
-         "UPDATE guild SET guild_hall = '', guild_disbanded = 1, guild_disbanded_time = NOW() "
-         "WHERE guild_name = $1");
-      break;
-
-   case STAT_LOGPEN:
-      snprintf(sql, sizeof(sql),
-         "INSERT INTO player_logpen (player_name, room_id, logpen_xp, logpen_hp, "
-         "logpen_spellpct, logpen_skillpct, logpen_numitems) "
-         "VALUES ($1, $2, $3, $4, $5, $6, $7)");
-      break;
-
-   case STAT_LOGPEN_ITEM:
-      snprintf(sql, sizeof(sql),
-         "INSERT INTO player_logpen_items (player_name, item_name, item_number) "
-         "VALUES ($1, $2, $3)");
-      break;
-
-   case STAT_ACCOUNT_CHARS:
-      snprintf(sql, sizeof(sql),
-         "INSERT INTO server_account_chars (acct_id, char_name) VALUES ($1, $2)");
-      break;
-
-   case STAT_COMPL_QUESTS:
-      snprintf(sql, sizeof(sql),
-         "INSERT INTO player_completed_quests "
-         "(quest_id, player_name, num_seconds_taken, xp_rewarded, tp_rewarded) "
-         "VALUES ($1, $2, $3, $4, $5)");
-      break;
-
-   case STAT_COMPL_QUEST_ITEMS:
-      snprintf(sql, sizeof(sql),
-         "INSERT INTO player_quest_reward_items (quest_id, player_name, item_name, item_number) "
-         "VALUES ($1, $2, $3, $4)");
-      break;
-
-   default:
-      customSql = false;
-      break;
+      eprintf("Could not build PostgreSQL write query for statistic %d\n", type);
+      return;
    }
 
-   if (!customSql)
-   {
-      // Generic tables whose parameter order matches their physical columns.
-      // Auto-columns are supported only at the beginning or end of the row.
-      int ts_pos = Statistics_Table[type].timestamp_pos;
-      bool has_serial = Statistics_Table[type].has_serial;
-      char placeholders[1024];
-      placeholders[0] = 0;
-
-      if (has_serial)
-         strcat(placeholders, "DEFAULT,");
-
-      if (ts_pos == 1)
-         strcat(placeholders, "NOW(),");
-
-      for (int i = 0; i < nParams; i++)
-      {
-         char ph[8];
-         snprintf(ph, sizeof(ph), "%s$%d", i > 0 ? "," : "", i + 1);
-         strcat(placeholders, ph);
-      }
-
-      if (ts_pos == -1)
-         strcat(placeholders, ",NOW()");
-
-      snprintf(sql, sizeof(sql), "INSERT INTO %s VALUES (%s) ON CONFLICT DO NOTHING", table, placeholders);
-   }
-
-   PGresult *res = PQexecParams(pg_conn, sql, nParams, NULL,
+   PGresult *res = PQexecParams(pg_conn, sql.c_str(), nParams, NULL,
       paramValues, NULL, NULL, 0);
 
    if (PQresultStatus(res) != PGRES_COMMAND_OK)
@@ -880,7 +308,7 @@ static void PgWriteNode(sql_queue_node *node)
       // Don't spam errors - just log once
       static int error_count = 0;
       if (error_count++ < 10)
-         eprintf("PostgreSQL INSERT into %s failed: %s\n", table, PQerrorMessage(pg_conn));
+         eprintf("PostgreSQL write to %s failed: %s\n", operation->table_name, PQerrorMessage(pg_conn));
    }
    else
    {
@@ -898,34 +326,38 @@ static void PgTruncateTable(int type)
    if (!table)
       return;
 
-   char sql[256];
-   snprintf(sql, sizeof(sql), "TRUNCATE TABLE %s", table);
-   PGresult *res = PQexec(pg_conn, sql);
+   std::string sql = "TRUNCATE TABLE ";
+   sql += table;
+   PGresult *res = PQexec(pg_conn, sql.c_str());
    if (PQresultStatus(res) != PGRES_COMMAND_OK)
       eprintf("PostgreSQL TRUNCATE %s failed: %s\n", table, PQerrorMessage(pg_conn));
    PQclear(res);
 }
 
-static bool PgDequeue(void)
+static bool PgEnqueueNode(sql_queue_node *node)
 {
-   PgQueueLock();
-   if (queue.count == 0)
-   {
-      PgQueueUnlock();
+   if (!node || db_state == DB_STOPPED || db_state == DB_STOPPING)
       return false;
+
+   if (db_state == DB_STOPPED || db_state == DB_STOPPING)
+      return false;
+
+   return DatabaseQueueEnqueue(&queue, node, DATABASE_MAX_RECORD_QUEUE);
+}
+
+static bool PgDequeue(bool processNode)
+{
+   sql_queue_node *node = DatabaseQueueDequeue(&queue);
+   if (!node)
+      return false;
+
+   if (processNode)
+   {
+      if (node->num_fields < 0)
+         PgTruncateTable(node->type);
+      else
+         PgWriteNode(node);
    }
-
-   sql_queue_node *node = queue.first;
-   queue.first = node->next;
-   if (queue.first == NULL)
-      queue.last = NULL;
-   queue.count--;
-   PgQueueUnlock();
-
-   if (node->num_fields < 0)
-      PgTruncateTable(node->type);
-   else
-      PgWriteNode(node);
 
    // Free data
    if (node->data)
@@ -942,18 +374,6 @@ static unsigned __stdcall PgWorker(void *arg)
 static void *PgWorker(void *arg)
 #endif
 {
-   if (!PgQueueInit())
-   {
-   db_state = DB_STOPPED;
-#ifdef BLAK_PLATFORM_WINDOWS
-   return 0;
-#else
-   return NULL;
-#endif
-   }
-
-   db_state = DB_STARTING;
-
    // Connect
    while (db_state != DB_STOPPING)
    {
@@ -977,9 +397,9 @@ static void *PgWorker(void *arg)
       if (db_state == DB_READY && PgIsConnected())
       {
          int processed = 0;
-         for (int i = 0; i < MAX_ITEMS_PER_LOOP; i++)
+         for (int i = 0; i < DATABASE_MAX_ITEMS_PER_LOOP; i++)
          {
-            if (PgDequeue())
+            if (PgDequeue(true))
                processed++;
             else
                break;
@@ -1001,15 +421,15 @@ static void *PgWorker(void *arg)
       }
    }
 
-   // Drain remaining queue
-   while (PgDequeue()) {}
+   // Discard queued records if shutdown occurs before they can be written.
+   while (PgDequeue(false)) {}
 
    if (pg_conn)
    {
       PQfinish(pg_conn);
       pg_conn = NULL;
    }
-   PgQueueShutdown();
+   DatabaseQueueShutdown(&queue);
    db_state = DB_STOPPED;
 #ifdef BLAK_PLATFORM_WINDOWS
    return 0;
@@ -1039,8 +459,31 @@ void MySQLInit(char *Host, int Port, char *User, char *Password, char *DB)
    db_pass = PgStrdup(Password);
    db_name = PgStrdup(DB);
 
+   if (!db_host || !db_user || !db_pass || !db_name)
+   {
+      free(db_host); db_host = NULL;
+      free(db_user); db_user = NULL;
+      free(db_pass); db_pass = NULL;
+      free(db_name); db_name = NULL;
+      eprintf("PostgreSQL init failed: could not allocate connection parameters\n");
+      return;
+   }
+
+   if (!DatabaseQueueInit(&queue))
+   {
+      free(db_host); db_host = NULL;
+      free(db_user); db_user = NULL;
+      free(db_pass); db_pass = NULL;
+      free(db_name); db_name = NULL;
+      eprintf("PostgreSQL init failed: could not initialize queue\n");
+      return;
+   }
+
+   db_state = DB_STARTING;
+
    if (!PgThreadStart())
    {
+      DatabaseQueueShutdown(&queue);
       free(db_host); db_host = NULL;
       free(db_user); db_user = NULL;
       free(db_pass); db_pass = NULL;
@@ -1069,8 +512,14 @@ void MySQLEnd()
 
 BOOL MySQLRecordGeneric(int type, int num_fields, sql_data_node data[])
 {
-   if (type <= STAT_NONE || type > STAT_MAXSTAT)
+   if (num_fields < 0)
       return FALSE;
+
+   if (type <= STAT_NONE || type > STAT_MAXSTAT)
+   {
+      FreeDataNodeMemory(num_fields, num_fields, data);
+      return FALSE;
+   }
 
    if (!Statistics_Table[type].enabled)
    {
@@ -1078,7 +527,14 @@ BOOL MySQLRecordGeneric(int type, int num_fields, sql_data_node data[])
       return FALSE;
    }
 
-   if (db_state < DB_READY)
+   if (num_fields < 0 || num_fields > DATABASE_MAX_SQL_PARAMS ||
+      num_fields != Statistics_Table[type].num_fields)
+   {
+      FreeDataNodeMemory(num_fields, num_fields, data);
+      return FALSE;
+   }
+
+   if (db_state == DB_STOPPED || db_state == DB_STOPPING)
    {
       FreeDataNodeMemory(num_fields, num_fields, data);
       return FALSE;
@@ -1086,49 +542,47 @@ BOOL MySQLRecordGeneric(int type, int num_fields, sql_data_node data[])
 
    sql_queue_node *node = (sql_queue_node *)AllocateMemory(MALLOC_ID_SQL,
       sizeof(sql_queue_node));
+   if (!node)
+   {
+      FreeDataNodeMemory(num_fields, num_fields, data);
+      return FALSE;
+   }
    node->type = (sql_recordtype)type;
    node->num_fields = num_fields;
    node->data = data;
    node->next = NULL;
 
-   PgQueueLock();
-   if (queue.count >= MAX_RECORD_QUEUE)
+   if (!PgEnqueueNode(node))
    {
-      PgQueueUnlock();
       FreeDataNodeMemory(num_fields, num_fields, data);
       FreeMemory(MALLOC_ID_SQL, node, sizeof(sql_queue_node));
-      eprintf("PostgreSQL queue full, dropping record\n");
+      eprintf("PostgreSQL queue unavailable or full, dropping record\n");
       return FALSE;
    }
-
-   if (queue.last)
-      queue.last->next = node;
-   else
-      queue.first = node;
-   queue.last = node;
-   queue.count++;
-   PgQueueUnlock();
 
    return TRUE;
 }
 
 BOOL MySQLEmptyTable(int type)
 {
+   if (type <= STAT_NONE || type > STAT_MAXSTAT ||
+      db_state == DB_STOPPED || db_state == DB_STOPPING)
+      return FALSE;
+
    sql_queue_node *node = (sql_queue_node *)AllocateMemory(MALLOC_ID_SQL,
       sizeof(sql_queue_node));
+   if (!node)
+      return FALSE;
    node->type = (sql_recordtype)type;
    node->num_fields = -1;
    node->data = NULL;
    node->next = NULL;
 
-   PgQueueLock();
-   if (queue.last)
-      queue.last->next = node;
-   else
-      queue.first = node;
-   queue.last = node;
-   queue.count++;
-   PgQueueUnlock();
+   if (!PgEnqueueNode(node))
+   {
+      FreeMemory(MALLOC_ID_SQL, node, sizeof(sql_queue_node));
+      return FALSE;
+   }
 
    return TRUE;
 }

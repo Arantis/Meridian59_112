@@ -4471,7 +4471,7 @@
    CC_DESC_TOO_LONG = 12
    CC_INVALID_GENDER = 13
 
-   //Statistics Constants, must match enum sql_recordtype in database.h
+   //Statistics Constants, must match enum sql_recordtype in blakserv
    STAT_TOTALMONEY = 1
    STAT_MONEYCREATED = 2
    STAT_PLAYERLOGIN = 3
