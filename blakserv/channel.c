@@ -172,6 +172,20 @@ void gprintf(const char *fmt,...)
    vsprintf(s+strlen(s),fmt,marker);
    va_end(marker);
 
+   const char *excludedword1 = "account";
+   const char *excludedword2 = "ACCOUNT";
+   const char *excludedword3 = "email";
+   const char *excludedword4 = "automated";
+
+   if (strstr(s, excludedword1) != NULL
+      || strstr(s, excludedword2) != NULL
+      || strstr(s, excludedword3) != NULL
+      || strstr(s, excludedword4) != NULL)
+   {
+      sprintf(s, "%s | Line excluded due to personal information.",
+         TimeStr(GetTime()));
+   }
+
    if (s[strlen(s)-1] != '\n')
       strcat(s,"\r\n");
 
