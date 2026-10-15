@@ -21,7 +21,7 @@ resources:
    DeathsDoor_name_rsc = "shadow rift"
    DeathsDoor_icon_rsc = ideadoor.bgf
    DeathsDoor_desc_rsc = \
-      "One of the most guarded secrets in Meridian’s history, this ancient "
+      "One of the most guarded secrets in Meridian's history, this ancient "
       "ritual allowed the necromancers of old to summon the darkest of magics "
       "to tear a rift into the fabric of space itself, thus granting safe "
       "passage to their armies in case the need for an expeditious retreat "

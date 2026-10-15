@@ -115,8 +115,8 @@ static bool PgConnect(void)
       return false;
    }
 
-   // Set client encoding to LATIN1 for German umlauts and legacy data
-   PQsetClientEncoding(pg_conn, "LATIN1");
+   // Set client encoding to WIN1252 for German umlauts and legacy data
+   PQsetClientEncoding(pg_conn, "WIN1252");
 
    lprintf("PostgreSQL connected to %s:%d/%s\n", db_host, db_port, db_name);
    return true;

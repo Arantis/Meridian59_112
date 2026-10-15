@@ -18,7 +18,7 @@ parl_liege_token_secret = de \
    "Tut mir leid, aber ich kann nur Mitgliedern meiner eigenen Fraktion Auskünfte "
    "über den Aufenthaltsort von Artefakten erteilen."
 parl_liege_token_location = de \
-   "Unsere Spione haben neue Informationen. %s%s wurde kÃ¼rzlich gesichtet. "
+   "Unsere Spione haben neue Informationen. %s%s wurde kürzlich gesichtet. "
    "%s sollte unbedingt untersucht werden. "
 parl_liege_token_none = de \
    "Unsere Spione berichten, dass alle Artefakte in den Händen ihrer Ratsmitglieder sind."

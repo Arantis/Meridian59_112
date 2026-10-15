@@ -8069,7 +8069,7 @@ send o 0 randomlibquote who class BergBlacksmith quote q ~kRoderick Merk reminis
 
 send o 0 randomlibquote who class BergBlacksmith quote q ~kRoderick Merk says, "Did you know that the Innkeeper in Jixa is the secret leader of a thieves' guild?  But that does not seem to interest anyone there and here."
 
-send o 0 randomlibquote who class BergBlacksmith quote q ~kRoderick Merk whispers, "Do you know the blacksmith from Jixa?  Perhaps you’ve come from there and know how he fares?  I miss him dearly, but I had to leave."
+send o 0 randomlibquote who class BergBlacksmith quote q ~kRoderick Merk whispers, "Do you know the blacksmith from Jixa?  Perhaps you've come from there and know how he fares?  I miss him dearly, but I had to leave."
 
 send o 0 randomlibquote who class BergBlacksmith quote q ~kRoderick Merk sighs and continues his work.
 

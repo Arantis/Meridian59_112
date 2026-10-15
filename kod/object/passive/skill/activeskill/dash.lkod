@@ -5,7 +5,7 @@ Dash_desc_rsc = de \
    "Doch der Preis ist hoch: Der Anwender bleibt keuchend zurück, "
    "außer Atem und erschöpft in beschleunigtem Tempo. "
    "\n\nHinweis: Dies ist eine aktive Fähigkeit und muss manuell "
-   "über den Befehl „perform Vorstoß“ oder eine zugewiesene Hotkey-Taste aktiviert werden. "
+   "über den Befehl 'perform Vorstoß' oder eine zugewiesene Hotkey-Taste aktiviert werden. "
 
 Dash_start = de "Du beginnst vorzustoßen."
 Dash_end = de "Du hörst auf zu rennen."

@@ -550,7 +550,7 @@ void GameProtocolParse(session_node *s, client_msg *msg)
       len = *(short *)(msg->data + index);
       if (index + 2 + len > msg->len) /* 2 = length word len */
          break;
-      if (len - 1 > sizeof(password))
+      if (len < 0 || len >= (int) sizeof(password))
          break;
       memcpy(password, msg->data + index + 2, len);
       password[len] = 0; /* null terminate string */
@@ -559,7 +559,7 @@ void GameProtocolParse(session_node *s, client_msg *msg)
       len = *(short *)(msg->data + index);
       if (index + 2 + len > msg->len)
          break;
-      if (len - 1 > sizeof(new_password))
+      if (len < 0 || len >= (int) sizeof(new_password))
          break;
       memcpy(new_password, msg->data + index + 2, len);
       new_password[len] = 0; /* null terminate string */
